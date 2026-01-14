@@ -19,23 +19,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: "18"
-          cache: 'npm'
-          
+
       - name: Install dependencies
-        run: cd adysunventures.com && npm ci
+        run: npm install
+
       - name: Build
-        run: cd adysunventures.com && npm run build
+        run: npm run build
+
       - name: Copy 404 page
-        run: cp adysunventures.com/out/404.html adysunventures.com/out/
+        run: cp out/index.html out/404.html
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: adysunventures.com/out
+          path: out
 
   deploy:
     environment:

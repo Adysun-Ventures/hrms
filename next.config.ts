@@ -3,10 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   // Remove static export for Netlify - it supports SSR
-  // output: 'export', // Required for GitHub Pages static deployment
-  // basePath: basePath, // For GitHub Pages deployment
-  // assetPrefix: basePath, // For GitHub Pages deployment
-  // trailingSlash: true, // Makes URLs end with a slash for better compatibility with static hosting
+output: 'export',
+basePath: '/hrms',
+assetPrefix: '/hrms/',
+trailingSlash: true,
+
   
   // Webpack configuration to handle chunking issues
   webpack: (config, { isServer }) => {

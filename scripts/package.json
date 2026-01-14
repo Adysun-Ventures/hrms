@@ -1,0 +1,7 @@
+{
+  "name": "adysun-hrms-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for Adysun HRMS",
+  "type": "commonjs",
+  "private": true
+}

@@ -1,0 +1,340 @@
+.appointment-letter-page {
+    /* font-family: Arial, sans-serif; */
+    font-size: 12px;
+    line-height: 1.6;
+    color: #000000;
+    padding: 40px 60px;
+    background: white;
+    height: 297mm;
+    width: 210mm;
+    margin: 0 auto;
+    position: relative;
+    box-sizing: border-box;
+    page-break-after: always;
+}
+.footer {
+    position: absolute;
+    bottom: 40px;
+    left: 60px;
+    right: 60px;
+    text-align: center;
+    /* border-top: 1px solid #000; */
+    padding-top: 20px;
+}
+.company-logo {
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+.letter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 40px;
+}
+
+.letter-date {
+    font-size: 12px;
+}
+
+.address-section {
+    margin-bottom: 20px;
+}
+
+.subject-line {
+    margin: 20px 0;
+    font-weight: bold;
+}
+
+.appointment-table {
+    margin: 20px 0;
+    width: 100%;
+}
+
+.appointment-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.appointment-table td {
+    border: 1px solid #000;
+    padding: 8px;
+}
+
+.appointment-table td:first-child {
+    width: 40%;
+    font-weight: bold;
+}
+
+.footer-section {
+    position: absolute;
+    bottom: 40px;
+    left: 60px;
+    right: 60px;
+    font-size: 11px;
+    line-height: 1.4;
+}
+
+.section-heading {
+    font-weight: bold;
+    margin: 20px 0 10px;
+    text-decoration: none;
+}
+
+.benefits-list,
+.posting-list,
+.responsibility-list {
+    padding-left: 20px;
+    margin: 10px 0;
+}
+
+.benefits-list li,
+.posting-list li,
+.responsibility-list li {
+    margin-bottom: 15px;
+    text-align: justify;
+}
+
+.training-list,
+.termination-list {
+    padding-left: 20px;
+    margin: 10px 0;
+}
+
+.training-list li,
+.termination-list li {
+    margin-bottom: 15px;
+    text-align: justify;
+}
+
+/* Adjust spacing for long paragraphs */
+.termination-list li {
+    margin-bottom: 20px;
+}
+
+/* Ensure proper page breaks */
+.appointment-letter-page {
+    page-break-after: always;
+}
+
+/* Adjust spacing for second page */
+.appointment-letter-page:nth-child(2) .letter-header {
+    margin-bottom: 20px;
+}
+
+/* Ensure proper section headings */
+.section-heading {
+    font-weight: bold;
+    margin: 20px 0 10px;
+    text-decoration: none;
+}
+
+/* Ensure proper page breaks */
+.appointment-letter-page:nth-child(3) .letter-header {
+    margin-bottom: 20px;
+}
+
+/* Add these new styles to the existing CSS */
+
+.confidentiality-list {
+    padding-left: 20px;
+    margin: 10px 0;
+}
+
+.confidentiality-list li {
+    margin-bottom: 15px;
+    text-align: justify;
+}
+
+/* Ensure proper spacing for long paragraphs */
+.termination-list li,
+.confidentiality-list li {
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+/* Adjust spacing for fourth page */
+.appointment-letter-page:nth-child(4) .letter-header {
+    margin-bottom: 20px;
+}
+
+/* Ensure proper list numbering */
+.termination-list,
+.confidentiality-list {
+    counter-reset: none;
+}
+
+/* Add these new styles to the existing CSS */
+
+.general-list {
+    padding-left: 20px;
+    margin: 10px 0;
+}
+
+.general-list li {
+    margin-bottom: 15px;
+    text-align: justify;
+}
+
+/* Ensure proper spacing for long paragraphs */
+.confidentiality-list li,
+.general-list li {
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+/* Adjust spacing for fifth page */
+.appointment-letter-page:nth-child(5) .letter-header {
+    margin-bottom: 20px;
+}
+
+/* Ensure proper list numbering */
+.general-list {
+    counter-reset: none;
+}
+
+/* Add these new styles to the existing CSS */
+
+.closing-section {
+    margin-top: 40px;
+}
+
+.closing-section p {
+    margin-bottom: 15px;
+    text-align: justify;
+}
+
+.company-name {
+    margin-top: 30px;
+    font-weight: bold;
+    font-size: 12px;
+    color: #000000;
+}
+
+.signature-section {
+    margin-top: 20px;
+}
+
+.signature-image {
+    width: 150px;
+    margin-bottom: 10px;
+}
+
+.signatory-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.signatory-designation {
+    font-size: 12px;
+}
+
+/* Adjust spacing for sixth page */
+.appointment-letter-page:nth-child(6) .letter-header {
+    margin-bottom: 20px;
+}
+
+/* Ensure proper list numbering */
+.general-list {
+    counter-reset: none;
+}
+
+.general-list li:last-child {
+    margin-bottom: 30px;
+}
+
+/* Add these styles for the salary table page */
+
+.salary-table {
+    margin: 20px 0;
+    width: 100%;
+}
+
+.salary-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+.salary-table th,
+.salary-table td {
+    border: 1px solid #000;
+    padding: 8px;
+    text-align: left;
+}
+
+.salary-table th {
+    font-weight: bold;
+    background-color: #fff;
+}
+
+.salary-table td:nth-child(2),
+.salary-table td:nth-child(3) {
+    text-align: right;
+}
+
+.salary-table .sub-total,
+.salary-table .total {
+    font-weight: bold;
+}
+
+.salary-notes {
+    margin-top: 20px;
+    font-size: 12px;
+}
+
+.notes-heading {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.salary-notes ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.salary-notes li {
+    margin-bottom: 5px;
+    text-align: justify;
+}
+
+/* Adjust signature section for this page */
+.salary-page .signature-section {
+    margin-top: 40px;
+}
+
+.form-section {
+    margin-bottom: 2rem;
+}
+
+.preview-section {
+    padding: 2rem;
+    background: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #374151;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #D1D5DB;
+    border-radius: 0.375rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}

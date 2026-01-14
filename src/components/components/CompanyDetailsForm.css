@@ -1,0 +1,235 @@
+.company-details-form {
+    /* max-width: 600px; */
+    /* margin: 30px auto;
+    padding: 30px; */
+    border-radius: 12px;
+    background: white;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.company-details-form h3 {
+    color: #2c3e50;
+    font-size: 24px;
+    margin-bottom: 25px;
+    text-align: center;
+    font-weight: 600;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #eee;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #34495e;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    background-color: #f8f9fa;
+}
+
+.form-group input.error,
+
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+}
+
+.form-group input::placeholder {
+    color: #95a5a6;
+}
+
+/* Hover effects */
+.form-group:hover label {
+    color: #3498db;
+}
+
+.form-group:hover input {
+    border-color: #bdc3c7;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .company-details-form {
+        margin: 20px;
+        padding: 20px;
+    }
+
+    .form-group input {
+        padding: 10px 14px;
+    }
+}
+
+/* Optional: Add a container background */
+.App {
+    background-color: #f5f6fa;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/* Optional: Add animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+
+/* Optional: Style for success/error states */
+.form-group.success input {
+    border-color: #2ecc71;
+}
+
+
+
+/* Optional: Add icons for input fields */
+.form-group {
+    position: relative;
+}
+
+.form-group i {
+    position: absolute;
+    right: 15px;
+    top: 45px;
+    color: #95a5a6;
+}
+
+/* Optional: Add a submit button style */
+.submit-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+}
+
+.submit-button:hover {
+    background-color: #2980b9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+}
+
+.submit-button:active {
+    transform: translateY(0);
+}
+
+/* Add these styles to your existing CSS */
+
+
+
+input[type="date"] {
+    padding: 10px;
+    width: 100%;
+}
+
+input[type="number"] {
+    padding-right: 5px;
+}
+
+textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    min-height: 100px;
+    resize: vertical;
+}
+
+.submit-button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 20px;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+}
+
+.submit-button:hover {
+    background-color: #45a049;
+}
+
+/* Responsive styling for date input on mobile */
+@media screen and (max-width: 768px) {
+    input[type="date"] {
+        -webkit-appearance: none;
+        min-height: 40px;
+    }
+}
+
+/* Add these rules instead */
+
+
+.form-group input:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.1);
+}
+
+/* Add these styles */
+
+
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+}
+
+.readonly-input {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+/* Add to your existing CSS */
+.input-with-symbol {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.rupee-symbol {
+    position: absolute;
+    left: 10px;
+    color: #666;
+    z-index: 1;
+    margin-top: -3px;
+}
+
+.amount-input {
+    padding-left: 25px !important;
+}

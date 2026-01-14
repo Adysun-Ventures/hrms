@@ -1,0 +1,176 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+
+.offer-letter-page {
+    font-family: 'Times New Roman', serif;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #000000;
+    padding: 40px 60px;
+    background: white;
+    height: 297mm;
+    width: 210mm;
+    margin: 0 auto;
+    position: relative;
+    box-sizing: border-box;
+    page-break-after: always;
+}
+
+.company-name {
+    /* color: #FF6B00; */
+    font-size: 24px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+}
+
+.page-title {
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    margin: 40px 0 30px;
+    text-decoration: underline;
+}
+
+.contact-info {
+    font-size: 13px;
+    line-height: 1.4;
+    margin-bottom: 2px;
+}
+
+.letter-content {
+    margin-bottom: 60px;
+    /* Space for contact section */
+}
+
+.letter-date {
+    margin-bottom: 20px;
+}
+
+.letter-address {
+    margin-bottom: 15px;
+}
+
+.letter-salutation {
+    margin-bottom: 15px;
+}
+
+.letter-paragraph {
+    text-align: justify;
+    margin-bottom: 15px;
+    text-indent: 40px;
+}
+
+.contact-section {
+    /* border-top: 1px solid #000; */
+    padding-top: 10px;
+    margin-top: auto;
+}
+.footer {
+    position: absolute;
+    bottom: 40px;
+    left: 60px;
+    right: 60px;
+    text-align: left;
+    /* border-top: 1px solid #000; */
+    padding-top: 20px;
+}
+
+.contact-section p {
+    margin: 2px 0;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.salary-table {
+    margin: 20px 40px;
+    font-size: 14px;
+}
+
+.compensation-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+}
+
+.compensation-row span:last-child {
+    font-family: monospace;
+}
+
+/* PDF specific styles */
+@media print {
+    .offer-letter-page {
+        page-break-after: always;
+        margin: 0;
+    }
+}
+
+/* Container styles */
+.offer-letter-container {
+    background: #f3f4f6;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.page-wrapper {
+    max-width: 210mm;
+    margin: 0 auto;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Header section */
+.letter-header {
+    margin-bottom: 40px;
+}
+
+/* Content spacing */
+.content-section {
+    margin-bottom: 20px;
+}
+
+/* Signature section */
+.signature-section {
+    margin-top: 40px;
+}
+
+.signature-line {
+    margin-top: 30px;
+    border-top: 1px solid #000;
+    width: 200px;
+}
+
+/* Add this new style for the main content wrapper */
+.letter-content-wrapper {
+    min-height: 100%;
+    position: relative;
+    padding-bottom: 80px;
+    /* Space for contact section */
+}
+
+/* Add specific styles for each page */
+.offer-letter-page.page-1 {
+    margin-bottom: 20px;
+}
+
+.offer-letter-page.page-2 {
+    margin-bottom: 20px;
+}
+
+.offer-letter-page.page-3 {
+    margin-bottom: 0;
+}
+
+/* Remove ALL spacing between pages */
+.space-y-8 {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.space-y-8>* {
+    margin: 0;
+}

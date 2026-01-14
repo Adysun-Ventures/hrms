@@ -19,27 +19,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-
+        uses: actions/checkout@v3
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: "18"
           cache: 'npm'
           cache-dependency-path: 'admin-dashboard/package-lock.json'
-
       - name: Install dependencies
         run: cd admin-dashboard && npm ci
-
       - name: Build
         run: cd admin-dashboard && npm run build
-
       - name: Copy 404 page
         run: cp admin-dashboard/out/404.html admin-dashboard/out/
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

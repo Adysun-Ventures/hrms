@@ -1,0 +1,594 @@
+// Hardcoded data
+const HARDCODED_DATA = {
+  companyName: 'ADYSUN VENTURES PVT. LTD.',
+  companyContact: '9579537523 | hr@adysunventures.com | AdysunVentures.com',
+  companyAddress: 'Adysun Ventures Pvt. Ltd., S no 47, Workplex, Pune-Satara Rd, Opp City Pride Theater, Near Bhapkar petrol pump, Pune, Maharashtra - 411009',
+  employeeName: 'Mr. Arnab Kumar Baishya',
+  employeeFirstName: 'Arnab',
+  employeeAddress: [
+    'C/O: Apurba Kumar Baishya,',
+    'H.No.-5, Ananda Nagar,',
+    'Six Mile, Khanapara,',
+    'Kamrup Metro, Assam-781022'
+  ],
+  designation: 'Software Engineer',
+  joiningDate: '01 Aug 2024',
+  letterDate: '19-July-2024',
+  ctc: '₹4,00,000',
+  fixedCompensation: '₹3,00,000',
+  variablePay: '₹1,00,000',
+  hrName: 'Prachi Jadhav',
+  hrDesignation: 'Head - HR Department',
+  hrEmail: 'hr@adysunventures.com',
+  salaryBreakdown: {
+    basic: { monthly: '5,400', annual: '64,800' },
+    hra: { monthly: '2,000', annual: '24,000' },
+    conveyance: { monthly: '800', annual: '9,600' },
+    otherAllowances: { monthly: '7,000', annual: '84,000' },
+    grossSalary: { monthly: '15,200', annual: '1,82,400' },
+    professionalTax: { monthly: '200', annual: '2,400' },
+    totalDeductions: { monthly: '200', annual: '2,400' },
+    netInHand: { monthly: '15,000', annual: '1,80,000' },
+    variableIncentive: { monthly: '', annual: '2,20,000' },
+    totalCTC: { monthly: '33,533', annual: '4,00,000' }
+  }
+};
+
+// Watermark Component
+const Watermark = ({ logoSrc }) => {
+  if (!logoSrc) return null;
+  
+  return (
+    <View style={styles.watermark}>
+      <Image src={logoSrc} style={styles.watermarkImage} />
+    </View>
+  );
+};
+
+// Main Offer Letter Component
+const OfferLetter = () => {
+  const data = HARDCODED_DATA;
+  const companyLogo = 'https://via.placeholder.com/60x60/FF0000/FFFFFF?text=LOGO'; // Placeholder - 60x60
+  const signatureLogo = 'https://via.placeholder.com/120x60/000000/FFFFFF?text=SIGN'; // Placeholder - 120x60
+
+  return (
+    <Document>
+      {/* Page 1 - Header, Date, Address, Title, Greeting, Opening */}
+      <Page size="A4" style={styles.page}>
+        <Watermark logoSrc={companyLogo} />
+        
+        <View style={styles.companyHeader}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.companyName}>{data.companyName}</Text>
+              <Text style={styles.companyContact}>{data.companyContact}</Text>
+              <Text style={styles.companyAddress}>{data.companyAddress}</Text>
+            </View>
+            {companyLogo && (
+              <Image src={companyLogo} style={styles.companyLogo} />
+            )}
+          </View>
+        </View>
+        
+        <Text style={styles.dateText}>Date: {data.letterDate}</Text>
+        
+        <View style={{ marginTop: 8, marginBottom: 8 }}>
+          <Text style={styles.bodyTextBold}>{data.employeeName}</Text>
+          {data.employeeAddress.map((line, index) => (
+            <Text key={index} style={styles.bodyText}>{line}</Text>
+          ))}
+        </View>
+        
+        <Text style={styles.letterTitle}>LETTER OF APPOINTMENT</Text>
+        
+        <Text style={styles.bodyText}>Dear {data.employeeFirstName},</Text>
+        
+        <View style={{ marginTop: 12 }}>
+          <Text style={styles.bodyText}>
+            We are pleased to extend this formal appointment as a symbol of our mutual commitment to integrity, excellence, and professional growth. This letter marks the beginning of your journey with <Text style={styles.bodyTextBold}>{data.companyName}</Text>, where we strive to build a future founded on vision, discipline, and respect.
+          </Text>
+          
+          <Text style={styles.bodyText}>
+            You are hereby appointed to the position of <Text style={styles.bodyTextBold}>{data.designation}</Text>, effective from <Text style={styles.bodyTextBold}>{data.joiningDate}</Text>. Please note, this offer shall be considered null and void should you fail to commence employment on or before the aforementioned date.
+          </Text>
+        </View>
+      </Page>
+
+      {/* Page 2 - Pre-Employment, Responsibilities, Confidentiality, IP Rights */}
+      <Page size="A4" style={styles.page}>
+        <Watermark logoSrc={companyLogo} />
+        
+        <Text style={styles.sectionHeading}>Pre-Employment Formalities</Text>
+        <Text style={styles.bodyText}>
+          The continuation of your employment is contingent upon submission of the following documents:
+        </Text>
+        <View style={{ marginLeft: 36 }}>
+          <Text style={styles.listItem}>Relieving letter from your previous employer</Text>
+          <Text style={styles.listItemNested}>Last 3 months' pay slips (digital copy)</Text>
+          <Text style={styles.listItemNested}>Last 3 months' bank statements reflecting salary credits</Text>
+          <Text style={styles.listItemNested}>Scanned copy of Aadhaar card or Passport</Text>
+          <Text style={styles.listItemNested}>Valid residential proof (e.g., electricity bill, property tax receipt)</Text>
+          <Text style={styles.listItemNested}>Valid email ID and mobile contact number</Text>
+          <Text style={[styles.listItemNested, { paddingBottom: 12 }]}>Four (4) recent passport-size photographs with a white background</Text>
+        </View>
+        
+        <Text style={styles.sectionHeading}>Responsibilities and Expectations</Text>
+        <View style={{ marginLeft: 36 }}>
+          <Text style={styles.listItem}>You are expected to execute duties as assigned, including any future assignments, promotions, or departmental transitions.</Text>
+          <Text style={styles.listItemNested}>Working hours and shift timings may vary depending on business needs.</Text>
+          <Text style={styles.listItemNested}>In case of illness or emergency, the management must be informed promptly.</Text>
+          <Text style={[styles.listItemNested, { paddingBottom: 12 }]}>Any fraudulent activity or damage to company assets must be reported without delay.</Text>
+        </View>
+        
+        <Text style={styles.sectionHeading}>Confidentiality and Data Ethics</Text>
+        <Text style={styles.bodyText}>
+          Throughout and post your tenure, you shall:
+        </Text>
+        <View style={{ marginLeft: 36 }}>
+          <Text style={styles.listItem}>Maintain absolute confidentiality over proprietary, personal, strategic, technical, and financial information.</Text>
+          <Text style={styles.listItemNested}>Refrain from sharing, misusing, duplicating, or disclosing such data without written authorization.</Text>
+          <Text style={styles.listItemNested}>Not exploit any intellectual or operational asset of the company for personal or third-party benefit.</Text>
+          <Text style={[styles.listItemNested, { paddingBottom: 12 }]}>Acknowledge that all such information is and remains the exclusive property of {data.companyName}.</Text>
+        </View>
+        
+        <Text style={styles.sectionHeading}>Intellectual Property Rights</Text>
+        <View style={{ marginLeft: 36 }}>
+          <Text style={styles.listItem}>
+            All intellectual contributions made by you during the course of employment—arising from company work or resources—shall be deemed the exclusive property of <Text style={styles.bodyTextBold}>{data.companyName}</Text>.
+          </Text>
+          <Text style={styles.listItemNested}>You are obligated to report such innovations and assign all rights, titles, and interests to the company.</Text>
+          <Text style={styles.listItemNested}>No separate compensation shall be claimable for such assignment, as it is inherent in your remuneration</Text>
+          <Text style={[styles.listItemNested, { paddingBottom: 12 }]}>You shall offer full cooperation in registering or protecting any such intellectual property, both during and after employment.</Text>
+        </View>
+      </Page>
+
+      {/* Page 3 - Conflict of Interest, General Terms, Jurisdiction, Probationary Terms */}
+      <Page size="A4" style={styles.page}>
+        <Watermark logoSrc={companyLogo} />
+        
+        <Text style={styles.sectionHeading}>Conflict of Interest & Ethical Compliance</Text>
+        <View style={{ marginLeft: 36 }}>
+          <Text style={styles.listItem}>You must refrain from engaging in any external business, employment, or consulting activities that conflict with the interests of {data.companyName}.</Text>
+          <Text style={styles.listItemNested}>Any actual or potential conflict must be reported immediately for review and resolution.</Text>
+          <Text style={styles.listItemNested}>Acceptance of gifts, favors, or commissions from individuals or entities conducting business with the company is strictly prohibited.</Text>
+          <Text style={[styles.listItemNested, { paddingBottom: 12 }]}>Use of company resources must reflect integrity and alignment with corporate objectives.</Text>
+        </View>
+        
+        <Text style={styles.sectionHeading}>General Terms</Text>
+        <View style={{ marginLeft: 36 }}>
+          <Text style={styles.listItem}>All official communications shall be in English and delivered via hand, email, courier, or registered post.</Text>
+          <Text style={styles.listItemNested}>If any provision of this letter is held unenforceable, the remaining provisions shall continue in full force and effect.</Text>
+          <Text style={styles.listItemNested}>Disparagement or defamation of the company or its affiliates shall attract disciplinary or legal action.</Text>
+          <Text style={styles.listItemNested}>This document, along with any annexures, constitutes the entire agreement and supersedes any prior discussions or arrangements.</Text>
+          <Text style={[styles.listItemNested, { paddingBottom: 12 }]}>{data.companyName} reserves the right to seek injunctive relief in case of breach of obligations.</Text>
+        </View>
+        
+        <Text style={styles.sectionHeading}>Jurisdiction</Text>
+        <View style={{ marginLeft: 36 }}>
+          <Text style={styles.listItem}>This letter shall be governed by the applicable laws of India. Any disputes shall fall under the exclusive jurisdiction of competent courts.</Text>
+          <Text style={[styles.listItemNested, { paddingBottom: 12 }]}>You are required to devote your full working time and attention solely to the business interests. Any concurrent employment or freelance engagements shall render this appointment liable for immediate termination and legal recourse.</Text>
+        </View>
+        
+        <Text style={styles.sectionHeading}>Probationary Terms</Text>
+        <View style={{ marginLeft: 36 }}>
+          <Text style={styles.listItem}>Your appointment is subject to a probationary period of three (3) months. The duration may be extended or shortened at the sole discretion of the management, contingent upon performance and conduct.</Text>
+          <Text style={[styles.listItemNested, { paddingBottom: 12 }]}>Leave shall not be availed during the probation period. Any such absence, if unavoidable, shall be adjusted against paid leave, subject to management approval.</Text>
+        </View>
+        
+        <Text style={styles.sectionHeading}>Joining and Probation Period</Text>
+        <View style={{ marginLeft: 36 }}>
+          <Text style={[styles.listItem, { paddingBottom: 12 }]}>
+            The initial <Text style={styles.bodyTextBold}>probation period will be for 3 months</Text> from your joining date. Based on satisfactory performance, your employment will be confirmed thereafter.
+          </Text>
+        </View>
+      </Page>
+
+      {/* Page 4 - Notice Period, Compensation Structure, CTC Breakdown */}
+      <Page size="A4" style={styles.page}>
+        <Watermark logoSrc={companyLogo} />
+        
+        <Text style={styles.sectionHeading}>Notice Period</Text>
+        <View style={{ marginLeft: 36 }}>
+          <Text style={styles.listItem}>You are required to serve a notice period of 30 days in case of resignation.</Text>
+          <Text style={[styles.listItemNested, { paddingBottom: 12 }]}>Failure to serve the full notice period may result in salary deductions or forfeiture of dues and legal action.</Text>
+        </View>
+        
+        <Text style={styles.sectionHeading}>Compensation Structure</Text>
+        <Text style={styles.bodyText}>
+          Your total <Text style={styles.bodyTextBold}>Annual Cost to Company (CTC)</Text> will be {data.ctc}, broken down as follows:
+        </Text>
+        <Text style={[styles.bodyText, { marginTop: 8 }]}>
+          <Text style={styles.bodyTextBold}>A. Fixed Compensation:</Text> {data.fixedCompensation} per annum
+        </Text>
+        <Text style={styles.bodyText}>
+          <Text style={styles.bodyTextBold}>B. Performance-Based Variable Pay:</Text> {data.variablePay} per annum
+        </Text>
+        <Text style={[styles.bodyTextItalic, { marginTop: 4, marginBottom: 12 }]}>
+          (Payable annually based on performance parameters set by the company)
+        </Text>
+        
+        <Text style={styles.sectionHeading}>CTC Breakdown – Annual and Monthly</Text>
+        
+        <View style={{ marginTop: 8 }}>
+          {/* Table Header */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCellBold, { flex: 4 }]}>
+              <Text>Component</Text>
+            </View>
+            <View style={[styles.tableCellBold, { flex: 3 }]}>
+              <Text>Monthly (₹)</Text>
+            </View>
+            <View style={[styles.tableCellBoldLast, { flex: 3 }]}>
+              <Text>Annual (₹)</Text>
+            </View>
+          </View>
+          
+          {/* Basic Salary */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCell, { flex: 4 }]}>
+              <Text>Basic Salary</Text>
+            </View>
+            <View style={[styles.tableCell, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.basic.monthly}</Text>
+            </View>
+            <View style={[styles.tableCellLast, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.basic.annual}</Text>
+            </View>
+          </View>
+          
+          {/* HRA */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCell, { flex: 4 }]}>
+              <Text>HRA</Text>
+            </View>
+            <View style={[styles.tableCell, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.hra.monthly}</Text>
+            </View>
+            <View style={[styles.tableCellLast, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.hra.annual}</Text>
+            </View>
+          </View>
+          
+          {/* Conveyance Allowance */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCell, { flex: 4 }]}>
+              <Text>Conveyance Allowance</Text>
+            </View>
+            <View style={[styles.tableCell, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.conveyance.monthly}</Text>
+            </View>
+            <View style={[styles.tableCellLast, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.conveyance.annual}</Text>
+            </View>
+          </View>
+          
+          {/* Other Allowances */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCell, { flex: 4 }]}>
+              <Text>Other Allowances</Text>
+            </View>
+            <View style={[styles.tableCell, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.otherAllowances.monthly}</Text>
+            </View>
+            <View style={[styles.tableCellLast, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.otherAllowances.annual}</Text>
+            </View>
+          </View>
+          
+          {/* Gross Salary */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCellBold, { flex: 4 }]}>
+              <Text>Gross Salary</Text>
+            </View>
+            <View style={[styles.tableCellBold, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.grossSalary.monthly}</Text>
+            </View>
+            <View style={[styles.tableCellBoldLast, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.grossSalary.annual}</Text>
+            </View>
+          </View>
+          
+          {/* Deductions Header */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCellBold, { flex: 4 }]}>
+              <Text>Deductions</Text>
+            </View>
+            <View style={[styles.tableCell, { flex: 3 }]}>
+              <Text></Text>
+            </View>
+            <View style={[styles.tableCellLast, { flex: 3 }]}>
+              <Text></Text>
+            </View>
+          </View>
+          
+          {/* Professional Tax */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCell, { flex: 4 }]}>
+              <Text>Professional Tax (est.)</Text>
+            </View>
+            <View style={[styles.tableCell, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.professionalTax.monthly}</Text>
+            </View>
+            <View style={[styles.tableCellLast, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.professionalTax.annual}</Text>
+            </View>
+          </View>
+          
+          {/* Total Deductions */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCellBold, { flex: 4 }]}>
+              <Text>Total Deductions</Text>
+            </View>
+            <View style={[styles.tableCellBold, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.totalDeductions.monthly}</Text>
+            </View>
+            <View style={[styles.tableCellBoldLast, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.totalDeductions.annual}</Text>
+            </View>
+          </View>
+          
+          {/* Net In-Hand Salary */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCellBold, { flex: 4 }]}>
+              <Text>Net In-Hand Salary</Text>
+            </View>
+            <View style={[styles.tableCellBold, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.netInHand.monthly}</Text>
+            </View>
+            <View style={[styles.tableCellBoldLast, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.netInHand.annual}</Text>
+            </View>
+          </View>
+          
+          {/* Additional Benefits Header */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCellBold, { flex: 4 }]}>
+              <Text>Additional Benefits</Text>
+            </View>
+            <View style={[styles.tableCell, { flex: 3 }]}>
+              <Text></Text>
+            </View>
+            <View style={[styles.tableCellLast, { flex: 3 }]}>
+              <Text></Text>
+            </View>
+          </View>
+          
+          {/* Variable Incentive */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCell, { flex: 4 }]}>
+              <Text>Ann. Perfr. Incentive (Variable)</Text>
+            </View>
+            <View style={[styles.tableCell, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.variableIncentive.monthly}</Text>
+            </View>
+            <View style={[styles.tableCellLast, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.variableIncentive.annual}</Text>
+            </View>
+          </View>
+          
+          {/* Total CTC */}
+          <View style={styles.tableRow}>
+            <View style={[styles.tableCellBold, { flex: 4 }]}>
+              <Text>Total CTC</Text>
+            </View>
+            <View style={[styles.tableCellBold, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.totalCTC.monthly}</Text>
+            </View>
+            <View style={[styles.tableCellBoldLast, { flex: 3 }]}>
+              <Text>{data.salaryBreakdown.totalCTC.annual}</Text>
+            </View>
+          </View>
+        </View>
+        
+        <Text style={[styles.bodyText, { marginTop: 12 }]}>
+          Note: There is currently <Text style={styles.bodyTextBold}>no deduction for Provident Fund (PF)</Text>.
+        </Text>
+      </Page>
+
+      {/* Page 5 - Acknowledgement & Acceptance */}
+      <Page size="A4" style={styles.page}>
+        <Watermark logoSrc={companyLogo} />
+        
+        <Text style={styles.sectionHeading}>Acknowledgement And Acceptance</Text>
+        <Text style={styles.bodyText}>
+          I, the undersigned, hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with {data.companyName} and confirm my commitment to fulfill all responsibilities entrusted to me with sincerity and integrity.
+        </Text>
+        
+        <Text style={[styles.bodyText, { marginTop: 12 }]}>
+          Candidate Name: <Text style={styles.bodyTextBold}>{data.employeeName}</Text>
+        </Text>
+        
+        <Text style={[styles.bodyText, { marginTop: 8 }]}>
+          Signature: _________________________
+        </Text>
+        
+        <Text style={[styles.bodyText, { marginTop: 8 }]}>
+          Date: _________________________
+        </Text>
+        
+        <Text style={[styles.bodyText, { marginTop: 12 }]}>
+          Warm regards,
+        </Text>
+        
+        {signatureLogo && (
+          <View style={{ marginTop: 8, marginBottom: 8 }}>
+            <Image src={signatureLogo} style={{ width: 120, height: 60 }} />
+          </View>
+        )}
+        
+        <Text style={styles.bodyTextBold}>{data.hrName}</Text>
+        <Text style={styles.bodyText}>{data.hrDesignation}</Text>
+        <Text style={styles.bodyText}>{data.hrEmail}</Text>
+      </Page>
+    </Document>
+  );
+};
+
+// Styles
+const styles = StyleSheet.create({
+  page: {
+    paddingTop: 72,
+    paddingLeft: 72,
+    paddingRight: 54,
+    paddingBottom: 72,
+    fontFamily: 'Helvetica',
+    fontSize: 12,
+    lineHeight: 1.0,
+    color: '#000000',
+  },
+  companyHeader: {
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#000000',
+    borderBottomStyle: 'solid',
+  },
+  companyName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FF0000',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    fontFamily: 'Helvetica',
+  },
+  companyContact: {
+    fontSize: 11,
+    marginBottom: 2,
+    fontFamily: 'Helvetica',
+  },
+  companyAddress: {
+    fontSize: 11,
+    marginBottom: 4,
+    fontFamily: 'Helvetica',
+  },
+  companyLogo: {
+    width: 60,
+    height: 60,
+  },
+  sectionHeading: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    textDecoration: 'underline',
+    paddingTop: 14,
+    paddingBottom: 4,
+    lineHeight: 1.0,
+    fontFamily: 'Helvetica',
+    color: '#000000',
+  },
+  listItem: {
+    marginLeft: 36,
+    paddingTop: 12,
+    paddingLeft: 0,
+    paddingBottom: 0,
+    lineHeight: 1.0,
+    fontSize: 11,
+    fontFamily: 'Helvetica',
+  },
+  listItemNested: {
+    marginLeft: 36,
+    paddingTop: 0,
+    paddingLeft: 0,
+    paddingBottom: 0,
+    lineHeight: 1.0,
+    fontSize: 11,
+    fontFamily: 'Helvetica',
+  },
+  bodyText: {
+    fontSize: 12,
+    fontFamily: 'Helvetica',
+    lineHeight: 1.0,
+    paddingTop: 12,
+    paddingBottom: 12,
+    textAlign: 'left',
+  },
+  bodyTextBold: {
+    fontSize: 12,
+    fontFamily: 'Helvetica',
+    fontWeight: 'bold',
+    lineHeight: 1.0,
+  },
+  bodyTextItalic: {
+    fontSize: 12,
+    fontFamily: 'Helvetica',
+    fontStyle: 'italic',
+    color: '#666666',
+    lineHeight: 1.0,
+  },
+  letterTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textDecoration: 'underline',
+    textAlign: 'center',
+    paddingTop: 14,
+    paddingBottom: 4,
+    fontFamily: 'Helvetica',
+  },
+  dateText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    fontFamily: 'Helvetica',
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#000000',
+    borderTopStyle: 'solid',
+    borderLeftWidth: 1,
+    borderLeftColor: '#000000',
+    borderLeftStyle: 'solid',
+    borderRightWidth: 1,
+    borderRightColor: '#000000',
+    borderRightStyle: 'solid',
+    borderBottomWidth: 1,
+    borderBottomColor: '#000000',
+    borderBottomStyle: 'solid',
+  },
+  tableCell: {
+    padding: 5,
+    borderRightWidth: 1,
+    borderRightColor: '#000000',
+    borderRightStyle: 'solid',
+    fontSize: 12,
+    fontFamily: 'Helvetica',
+  },
+  tableCellLast: {
+    padding: 5,
+    fontSize: 12,
+    fontFamily: 'Helvetica',
+  },
+  tableCellBold: {
+    padding: 5,
+    borderRightWidth: 1,
+    borderRightColor: '#000000',
+    borderRightStyle: 'solid',
+    fontSize: 12,
+    fontFamily: 'Helvetica',
+    fontWeight: 'bold',
+  },
+  tableCellBoldLast: {
+    padding: 5,
+    fontSize: 12,
+    fontFamily: 'Helvetica',
+    fontWeight: 'bold',
+  },
+  watermark: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: -1,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  watermarkImage: {
+    width: '80%',
+    height: 'auto',
+    opacity: 0.15,
+  },
+});
+
+ReactPDF.render(<OfferLetter />);

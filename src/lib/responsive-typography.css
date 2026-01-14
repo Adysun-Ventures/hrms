@@ -1,0 +1,196 @@
+/* Enhanced Responsive Typography System for Adysun Ventures */
+/* Standardized typography with improved accessibility and consistency */
+
+:root {
+  /* Responsive Typography Scale - Reduced to 8 core sizes */
+  --font-size-xs: clamp(0.75rem, 1vw, 0.875rem);      /* 12-14px */
+  --font-size-sm: clamp(0.875rem, 1.5vw, 1rem);      /* 14-16px */
+  --font-size-base: clamp(1rem, 2vw, 1.125rem);       /* 16-18px */
+  --font-size-lg: clamp(1.125rem, 2.5vw, 1.25rem);   /* 18-20px */
+  --font-size-xl: clamp(1.25rem, 3vw, 1.5rem);       /* 20-24px */
+  --font-size-2xl: clamp(1.5rem, 4vw, 1.875rem);     /* 24-30px */
+  --font-size-3xl: clamp(1.875rem, 5vw, 2.25rem);    /* 30-36px */
+  --font-size-4xl: clamp(2.25rem, 6vw, 3rem);        /* 36-48px */
+  --font-size-5xl: clamp(3rem, 7vw, 3.75rem);       /* 48-60px */
+
+  /* Line Heights */
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.375;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.625;
+  --line-height-loose: 2;
+
+  /* Font Weights */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  /* Letter Spacing */
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+  --letter-spacing-wider: 0.05em;
+  --letter-spacing-widest: 0.1em;
+}
+
+/* Typography Utility Classes */
+.text-responsive-xs {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}
+
+.text-responsive-sm {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+}
+
+.text-responsive-base {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+}
+
+.text-responsive-lg {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+}
+
+.text-responsive-xl {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-snug);
+}
+
+.text-responsive-2xl {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-snug);
+}
+
+.text-responsive-3xl {
+  font-size: var(--font-size-3xl);
+  line-height: var(--line-height-tight);
+}
+
+.text-responsive-4xl {
+  font-size: var(--font-size-4xl);
+  line-height: var(--line-height-tight);
+}
+
+.text-responsive-5xl {
+  font-size: var(--font-size-5xl);
+  line-height: var(--line-height-tight);
+}
+
+.text-responsive-6xl {
+  font-size: var(--font-size-6xl);
+  line-height: var(--line-height-tight);
+}
+
+.text-responsive-7xl {
+  font-size: var(--font-size-7xl);
+  line-height: var(--line-height-tight);
+}
+
+/* Heading Styles */
+.heading-1 {
+  font-size: var(--font-size-5xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.heading-2 {
+  font-size: var(--font-size-4xl);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-tight);
+}
+
+.heading-3 {
+  font-size: var(--font-size-3xl);
+  line-height: var(--line-height-snug);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.heading-4 {
+  font-size: var(--font-size-2xl);
+  line-height: var(--line-height-snug);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.heading-5 {
+  font-size: var(--font-size-xl);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+.heading-6 {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+/* Body Text Styles */
+.body-large {
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-relaxed);
+  font-weight: var(--font-weight-normal);
+}
+
+.body-medium {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-relaxed);
+  font-weight: var(--font-weight-normal);
+}
+
+.body-small {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-normal);
+}
+
+.body-caption {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  font-weight: var(--font-weight-normal);
+}
+
+/* Mobile-First Responsive Adjustments */
+@media (max-width: 640px) {
+  :root {
+    /* Slightly smaller font sizes on mobile for better readability */
+    --font-size-5xl: clamp(2.5rem, 8vw, 3.5rem);
+    --font-size-4xl: clamp(2rem, 7vw, 2.75rem);
+    --font-size-3xl: clamp(1.5rem, 6vw, 2rem);
+    --font-size-2xl: clamp(1.25rem, 5vw, 1.5rem);
+  }
+}
+
+/* High DPI Display Optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .text-responsive-base,
+  .text-responsive-sm,
+  .text-responsive-xs {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Print Styles */
+@media print {
+  :root {
+    /* Larger font sizes for print */
+    --font-size-base: 12pt;
+    --font-size-lg: 14pt;
+    --font-size-xl: 16pt;
+    --font-size-2xl: 18pt;
+    --font-size-3xl: 20pt;
+    --font-size-4xl: 24pt;
+    --font-size-5xl: 28pt;
+  }
+}

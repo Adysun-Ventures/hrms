@@ -1,0 +1,997 @@
+// Tailwind-like Utility Styles (No installation needed!)
+const tw = StyleSheet.create({
+  // Flexbox
+  'flex': { display: 'flex' },
+  'flex-row': { flexDirection: 'row' },
+  'flex-col': { flexDirection: 'column' },
+  'flex-row-reverse': { flexDirection: 'row-reverse' },
+  'flex-col-reverse': { flexDirection: 'column-reverse' },
+  'flex-wrap': { flexWrap: 'wrap' },
+  'flex-nowrap': { flexWrap: 'nowrap' },
+  'items-center': { alignItems: 'center' },
+  'items-start': { alignItems: 'flex-start' },
+  'items-end': { alignItems: 'flex-end' },
+  'items-stretch': { alignItems: 'stretch' },
+  'items-baseline': { alignItems: 'baseline' },
+  'justify-start': { justifyContent: 'flex-start' },
+  'justify-center': { justifyContent: 'center' },
+  'justify-end': { justifyContent: 'flex-end' },
+  'justify-between': { justifyContent: 'space-between' },
+  'justify-around': { justifyContent: 'space-around' },
+  'justify-evenly': { justifyContent: 'space-evenly' },
+  'flex-1': { flex: 1 },
+  'flex-2': { flex: 2 },
+  'flex-3': { flex: 3 },
+  'flex-4': { flex: 4 },
+  'flex-none': { flex: 'none' },
+  'flex-grow': { flexGrow: 1 },
+  'flex-shrink': { flexShrink: 1 },
+  'flex-no-grow': { flexGrow: 0 },
+  'flex-no-shrink': { flexShrink: 0 },
+  
+  // Spacing - Padding (Comprehensive)
+  'p-0': { padding: 0 },
+  'p-1': { padding: 4 },
+  'p-5px': { padding: 5 },
+  'p-2': { padding: 8 },
+  'p-3': { padding: 12 },
+  'p-4': { padding: 16 },
+  'p-5': { padding: 20 },
+  'p-6': { padding: 24 },
+  'p-7': { padding: 28 },
+  'p-8': { padding: 32 },
+  'p-9': { padding: 36 },
+  'p-10': { padding: 40 },
+  'p-11': { padding: 44 },
+  'p-12': { padding: 48 },
+  'p-14': { padding: 56 },
+  'p-16': { padding: 64 },
+  'p-20': { padding: 80 },
+  'p-24': { padding: 96 },
+  // Padding X (horizontal)
+  'px-0': { paddingLeft: 0, paddingRight: 0 },
+  'px-1': { paddingLeft: 4, paddingRight: 4 },
+  'px-2': { paddingLeft: 8, paddingRight: 8 },
+  'px-3': { paddingLeft: 12, paddingRight: 12 },
+  'px-4': { paddingLeft: 16, paddingRight: 16 },
+  'px-5': { paddingLeft: 20, paddingRight: 20 },
+  'px-6': { paddingLeft: 24, paddingRight: 24 },
+  'px-7': { paddingLeft: 28, paddingRight: 28 },
+  'px-8': { paddingLeft: 32, paddingRight: 32 },
+  'px-9': { paddingLeft: 36, paddingRight: 36 },
+  'px-10': { paddingLeft: 40, paddingRight: 40 },
+  'px-11': { paddingLeft: 44, paddingRight: 44 },
+  'px-12': { paddingLeft: 48, paddingRight: 48 },
+  'px-14': { paddingLeft: 56, paddingRight: 56 },
+  'px-16': { paddingLeft: 64, paddingRight: 64 },
+  'px-20': { paddingLeft: 80, paddingRight: 80 },
+  'px-24': { paddingLeft: 96, paddingRight: 96 },
+  // Padding Y (vertical)
+  'py-0': { paddingTop: 0, paddingBottom: 0 },
+  'py-1': { paddingTop: 4, paddingBottom: 4 },
+  'py-2': { paddingTop: 8, paddingBottom: 8 },
+  'py-3': { paddingTop: 12, paddingBottom: 12 },
+  'py-4': { paddingTop: 16, paddingBottom: 16 },
+  'py-5': { paddingTop: 20, paddingBottom: 20 },
+  'py-6': { paddingTop: 24, paddingBottom: 24 },
+  'py-7': { paddingTop: 28, paddingBottom: 28 },
+  'py-8': { paddingTop: 32, paddingBottom: 32 },
+  'py-9': { paddingTop: 36, paddingBottom: 36 },
+  'py-10': { paddingTop: 40, paddingBottom: 40 },
+  'py-11': { paddingTop: 44, paddingBottom: 44 },
+  'py-12': { paddingTop: 48, paddingBottom: 48 },
+  'py-14': { paddingTop: 56, paddingBottom: 56 },
+  'py-16': { paddingTop: 64, paddingBottom: 64 },
+  'py-20': { paddingTop: 80, paddingBottom: 80 },
+  'py-24': { paddingTop: 96, paddingBottom: 96 },
+  // Padding Top
+  'pt-0': { paddingTop: 0 },
+  'pt-1': { paddingTop: 4 },
+  'pt-2': { paddingTop: 8 },
+  'pt-3': { paddingTop: 12 },
+  'pt-4': { paddingTop: 16 },
+  'pt-5': { paddingTop: 20 },
+  'pt-6': { paddingTop: 24 },
+  'pt-8': { paddingTop: 32 },
+  'pt-9': { paddingTop: 36 },
+  'pt-10': { paddingTop: 40 },
+  'pt-11': { paddingTop: 44 },
+  'pt-12': { paddingTop: 48 },
+  'pt-14': { paddingTop: 56 },
+  'pt-16': { paddingTop: 64 },
+  'pt-20': { paddingTop: 80 },
+  'pt-24': { paddingTop: 96 },
+  'pt-50': { paddingTop: 50 }, // Used in Page 1 layout
+  'pt-72': { paddingTop: 72 }, // Common PDF page margin (1 inch)
+  // Padding Bottom
+  'pb-0': { paddingBottom: 0 },
+  'pb-1': { paddingBottom: 4 },
+  'pb-2': { paddingBottom: 8 },
+  'pb-3': { paddingBottom: 12 },
+  'pb-4': { paddingBottom: 16 },
+  'pb-5': { paddingBottom: 20 },
+  'pb-6': { paddingBottom: 24 },
+  'pb-7': { paddingBottom: 28 },
+  'pb-8': { paddingBottom: 32 },
+  'pb-9': { paddingBottom: 36 },
+  'pb-10': { paddingBottom: 40 },
+  'pb-11': { paddingBottom: 44 },
+  'pb-12': { paddingBottom: 48 },
+  'pb-14': { paddingBottom: 56 },
+  'pb-16': { paddingBottom: 64 },
+  'pb-20': { paddingBottom: 80 },
+  'pb-24': { paddingBottom: 96 },
+  'pb-72': { paddingBottom: 72 }, // Common PDF page margin (1 inch)
+  // Padding Left
+  'pl-0': { paddingLeft: 0 },
+  'pl-1': { paddingLeft: 4 },
+  'pl-2': { paddingLeft: 8 },
+  'pl-3': { paddingLeft: 12 },
+  'pl-4': { paddingLeft: 16 },
+  'pl-5': { paddingLeft: 20 },
+  'pl-6': { paddingLeft: 24 },
+  'pl-8': { paddingLeft: 32 },
+  'pl-9': { paddingLeft: 36 },
+  'pl-10': { paddingLeft: 40 },
+  'pl-11': { paddingLeft: 44 },
+  'pl-12': { paddingLeft: 48 },
+  'pl-14': { paddingLeft: 56 },
+  'pl-16': { paddingLeft: 64 },
+  'pl-20': { paddingLeft: 80 },
+  'pl-24': { paddingLeft: 96 },
+  'pl-72': { paddingLeft: 72 }, // Common PDF page margin (1 inch)
+  // Padding Right
+  'pr-0': { paddingRight: 0 },
+  'pr-1': { paddingRight: 4 },
+  'pr-2': { paddingRight: 8 },
+  'pr-3': { paddingRight: 12 },
+  'pr-4': { paddingRight: 16 },
+  'pr-5': { paddingRight: 20 },
+  'pr-6': { paddingRight: 24 },
+  'pr-8': { paddingRight: 32 },
+  'pr-9': { paddingRight: 36 },
+  'pr-10': { paddingRight: 40 },
+  'pr-11': { paddingRight: 44 },
+  'pr-12': { paddingRight: 48 },
+  'pr-14': { paddingRight: 56 },
+  'pr-16': { paddingRight: 64 },
+  'pr-20': { paddingRight: 80 },
+  'pr-24': { paddingRight: 96 },
+  'pr-54': { paddingRight: 54 }, // Used in PDF page layout
+  'pr-72': { paddingRight: 72 }, // Common PDF page margin (1 inch)
+  
+  // Spacing - Margin (Comprehensive)
+  'm-0': { margin: 0 },
+  'm-1': { margin: 4 },
+  'm-2': { margin: 8 },
+  'm-3': { margin: 12 },
+  'm-4': { margin: 16 },
+  'm-5': { margin: 20 },
+  'm-6': { margin: 24 },
+  'm-7': { margin: 28 },
+  'm-8': { margin: 32 },
+  'm-9': { margin: 36 },
+  'm-10': { margin: 40 },
+  'm-11': { margin: 44 },
+  'm-12': { margin: 48 },
+  'm-14': { margin: 56 },
+  'm-16': { margin: 64 },
+  'm-20': { margin: 80 },
+  'm-24': { margin: 96 },
+  // Margin X (horizontal)
+  'mx-0': { marginLeft: 0, marginRight: 0 },
+  'mx-1': { marginLeft: 4, marginRight: 4 },
+  'mx-2': { marginLeft: 8, marginRight: 8 },
+  'mx-3': { marginLeft: 12, marginRight: 12 },
+  'mx-4': { marginLeft: 16, marginRight: 16 },
+  'mx-5': { marginLeft: 20, marginRight: 20 },
+  'mx-6': { marginLeft: 24, marginRight: 24 },
+  'mx-7': { marginLeft: 28, marginRight: 28 },
+  'mx-8': { marginLeft: 32, marginRight: 32 },
+  'mx-9': { marginLeft: 36, marginRight: 36 },
+  'mx-10': { marginLeft: 40, marginRight: 40 },
+  'mx-11': { marginLeft: 44, marginRight: 44 },
+  'mx-12': { marginLeft: 48, marginRight: 48 },
+  'mx-14': { marginLeft: 56, marginRight: 56 },
+  'mx-16': { marginLeft: 64, marginRight: 64 },
+  'mx-20': { marginLeft: 80, marginRight: 80 },
+  'mx-24': { marginLeft: 96, marginRight: 96 },
+  'mx-auto': { marginLeft: 'auto', marginRight: 'auto' },
+  // Margin Y (vertical)
+  'my-0': { marginTop: 0, marginBottom: 0 },
+  'my-1': { marginTop: 4, marginBottom: 4 },
+  'my-2': { marginTop: 8, marginBottom: 8 },
+  'my-3': { marginTop: 12, marginBottom: 12 },
+  'my-4': { marginTop: 16, marginBottom: 16 },
+  'my-5': { marginTop: 20, marginBottom: 20 },
+  'my-6': { marginTop: 24, marginBottom: 24 },
+  'my-7': { marginTop: 28, marginBottom: 28 },
+  'my-8': { marginTop: 32, marginBottom: 32 },
+  'my-9': { marginTop: 36, marginBottom: 36 },
+  'my-10': { marginTop: 40, marginBottom: 40 },
+  'my-11': { marginTop: 44, marginBottom: 44 },
+  'my-12': { marginTop: 48, marginBottom: 48 },
+  'my-14': { marginTop: 56, marginBottom: 56 },
+  'my-16': { marginTop: 64, marginBottom: 64 },
+  'my-20': { marginTop: 80, marginBottom: 80 },
+  'my-24': { marginTop: 96, marginBottom: 96 },
+  // Margin Top
+  'mt-0': { marginTop: 0 },
+  'mt-1': { marginTop: 4 },
+  'mt-2': { marginTop: 8 },
+  'mt-3': { marginTop: 12 },
+  'mt-4': { marginTop: 16 },
+  'mt-5': { marginTop: 20 },
+  'mt-6': { marginTop: 24 },
+  'mt-7': { marginTop: 28 },
+  'mt-8': { marginTop: 32 },
+  'mt-9': { marginTop: 36 },
+  'mt-10': { marginTop: 40 },
+  'mt-11': { marginTop: 44 },
+  'mt-12': { marginTop: 48 },
+  'mt-14': { marginTop: 56 },
+  'mt-16': { marginTop: 64 },
+  'mt-20': { marginTop: 80 },
+  'mt-24': { marginTop: 96 },
+  'mt-25': { marginTop: 25 }, // Used in document layout
+  // Negative margins (Tailwind: -mt-1, -mt-2, etc.)
+  '-mt-1': { marginTop: -4 },
+  '-mt-2': { marginTop: -8 },
+  '-mt-3': { marginTop: -12 },
+  '-mt-4': { marginTop: -16 },
+  '-mt-6': { marginTop: -24 },
+  '-mt-8': { marginTop: -32 },
+  '-mt-10': { marginTop: -40 },
+  '-mt-12': { marginTop: -48 },
+  '-mt-16': { marginTop: -64 },
+  '-mt-20': { marginTop: -80 },
+  '-mt-5': { marginTop: -5 }, // Used in document layout
+  '-mb-1': { marginBottom: -4 },
+  '-mb-2': { marginBottom: -8 },
+  '-mb-3': { marginBottom: -12 },
+  '-mb-4': { marginBottom: -16 },
+  '-mb-5': { marginBottom: -20 },
+  '-mb-6': { marginBottom: -24 },
+  '-mb-8': { marginBottom: -32 },
+  '-mb-10': { marginBottom: -40 },
+  '-mb-12': { marginBottom: -48 },
+  '-mb-16': { marginBottom: -64 },
+  '-mb-20': { marginBottom: -80 },
+  '-ml-1': { marginLeft: -4 },
+  '-ml-2': { marginLeft: -8 },
+  '-ml-3': { marginLeft: -12 },
+  '-ml-4': { marginLeft: -16 },
+  '-ml-5': { marginLeft: -20 },
+  '-ml-6': { marginLeft: -24 },
+  '-ml-8': { marginLeft: -32 },
+  '-ml-10': { marginLeft: -40 },
+  '-ml-12': { marginLeft: -48 },
+  '-ml-16': { marginLeft: -64 },
+  '-ml-20': { marginLeft: -80 },
+  '-mr-1': { marginRight: -4 },
+  '-mr-2': { marginRight: -8 },
+  '-mr-3': { marginRight: -12 },
+  '-mr-4': { marginRight: -16 },
+  '-mr-5': { marginRight: -20 },
+  '-mr-6': { marginRight: -24 },
+  '-mr-8': { marginRight: -32 },
+  '-mr-10': { marginRight: -40 },
+  '-mr-12': { marginRight: -48 },
+  '-mr-16': { marginRight: -64 },
+  '-mr-20': { marginRight: -80 },
+  // Margin Bottom
+  'mb-0': { marginBottom: 0 },
+  'mb-1': { marginBottom: 4 },
+  'mb-2': { marginBottom: 8 },
+  'mb-3': { marginBottom: 12 },
+  'mb-4': { marginBottom: 16 },
+  'mb-5': { marginBottom: 20 },
+  'mb-6': { marginBottom: 24 },
+  'mb-7': { marginBottom: 28 },
+  'mb-8': { marginBottom: 32 },
+  'mb-9': { marginBottom: 36 },
+  'mb-10': { marginBottom: 40 },
+  'mb-11': { marginBottom: 44 },
+  'mb-12': { marginBottom: 48 },
+  'mb-14': { marginBottom: 56 },
+  'mb-16': { marginBottom: 64 },
+  'mb-20': { marginBottom: 80 },
+  'mb-24': { marginBottom: 96 },
+  'mb-15': { marginBottom: 15 }, // Used in document layout
+  // Margin Left
+  'ml-0': { marginLeft: 0 },
+  'ml-1': { marginLeft: 4 },
+  'ml-2': { marginLeft: 8 },
+  'ml-3': { marginLeft: 12 },
+  'ml-4': { marginLeft: 16 },
+  'ml-5': { marginLeft: 20 },
+  'ml-6': { marginLeft: 24 },
+  'ml-7': { marginLeft: 28 },
+  'ml-8': { marginLeft: 32 },
+  'ml-9': { marginLeft: 36 },
+  'ml-10': { marginLeft: 40 },
+  'ml-11': { marginLeft: 44 },
+  'ml-12': { marginLeft: 48 },
+  'ml-14': { marginLeft: 56 },
+  'ml-16': { marginLeft: 64 },
+  'ml-20': { marginLeft: 80 },
+  'ml-24': { marginLeft: 96 },
+  'ml-36': { marginLeft: 36 }, // Used in document layout
+  // Margin Right
+  'mr-0': { marginRight: 0 },
+  'mr-1': { marginRight: 4 },
+  'mr-2': { marginRight: 8 },
+  'mr-3': { marginRight: 12 },
+  'mr-4': { marginRight: 16 },
+  'mr-5': { marginRight: 20 },
+  'mr-6': { marginRight: 24 },
+  'mr-7': { marginRight: 28 },
+  'mr-8': { marginRight: 32 },
+  'mr-9': { marginRight: 36 },
+  'mr-10': { marginRight: 40 },
+  'mr-11': { marginRight: 44 },
+  'mr-12': { marginRight: 48 },
+  'mr-14': { marginRight: 56 },
+  'mr-16': { marginRight: 64 },
+  'mr-20': { marginRight: 80 },
+  'mr-24': { marginRight: 96 },
+  
+  // Typography - Font Sizes
+  'text-xs': { fontSize: 10 },
+  'text-sm': { fontSize: 12 },
+  'text-base': { fontSize: 14 },
+  'text-14': { fontSize: 14 }, // Alias for textBase
+  'text-lg': { fontSize: 16 },
+  'text-xl': { fontSize: 18 },
+  'text-2xl': { fontSize: 20 },
+  'text-3xl': { fontSize: 24 },
+  'text-4xl': { fontSize: 28 },
+  'text-5xl': { fontSize: 32 },
+  'text-6xl': { fontSize: 36 },
+  'text-7xl': { fontSize: 40 },
+  'text-8xl': { fontSize: 48 },
+  'text-9xl': { fontSize: 56 },
+  'text-10': { fontSize: 10 },
+  'text-11': { fontSize: 11 },
+  'text-13': { fontSize: 13 },
+  'text-15': { fontSize: 15 },
+  'text-17': { fontSize: 17 },
+  'text-19': { fontSize: 19 },
+  'text-22': { fontSize: 22 },
+  'text-26': { fontSize: 26 },
+  'text-30': { fontSize: 30 },
+  // Font Weight
+  'font-thin': { fontWeight: '100' },
+  'font-light': { fontWeight: '300' },
+  'font-normal': { fontWeight: 'normal' },
+  'font-medium': { fontWeight: '500' },
+  'font-semibold': { fontWeight: '600' },
+  'font-bold': { fontWeight: 'bold' },
+  'font-extrabold': { fontWeight: '800' },
+  'font-black': { fontWeight: '900' },
+  // Text Align
+  'text-center': { textAlign: 'center' },
+  'text-left': { textAlign: 'left' },
+  'text-right': { textAlign: 'right' },
+  'text-justify': { textAlign: 'justify' },
+  // Text Transform
+  'uppercase': { textTransform: 'uppercase' },
+  'lowercase': { textTransform: 'lowercase' },
+  'capitalize': { textTransform: 'capitalize' },
+  'normal-case': { textTransform: 'none' },
+  // Text Decoration
+  'underline': { textDecoration: 'underline' },
+  'no-underline': { textDecoration: 'none' },
+  'line-through': { textDecoration: 'line-through' },
+  
+  // Colors - Text
+  'text-black': { color: '#000000' },
+  'text-white': { color: '#FFFFFF' },
+  'text-gray': { color: '#6B7280' },
+  'text-gray-50': { color: '#F9FAFB' },
+  'text-gray-100': { color: '#F3F4F6' },
+  'text-gray-200': { color: '#E5E7EB' },
+  'text-gray-300': { color: '#D1D5DB' },
+  'text-gray-400': { color: '#9CA3AF' },
+  'text-gray-500': { color: '#6B7280' },
+  'text-gray-600': { color: '#4B5563' },
+  'text-gray-700': { color: '#374151' },
+  'text-gray-800': { color: '#1F2937' },
+  'text-gray-900': { color: '#111827' },
+  'text-gray-333': { color: '#333333' },
+  'text-gray-666': { color: '#666666' },
+  'text-red': { color: '#EF4444' },
+  'text-red-50': { color: '#FEF2F2' },
+  'text-red-500': { color: '#EF4444' },
+  'text-red-600': { color: '#DC2626' },
+  'text-blue': { color: '#3B82F6' },
+  'text-blue-50': { color: '#EFF6FF' },
+  'text-blue-500': { color: '#3B82F6' },
+  'text-blue-600': { color: '#2563EB' },
+  'text-green': { color: '#10B981' },
+  'text-green-50': { color: '#F0FDF4' },
+  'text-green-500': { color: '#10B981' },
+  'text-green-600': { color: '#059669' },
+  'text-yellow': { color: '#F59E0B' },
+  'text-yellow-500': { color: '#F59E0B' },
+  'text-yellow-600': { color: '#D97706' },
+  'text-orange': { color: '#FF4500' },
+  'text-orange-500': { color: '#F97316' },
+  'text-purple': { color: '#8B5CF6' },
+  'text-purple-500': { color: '#8B5CF6' },
+  'text-pink': { color: '#EC4899' },
+  'text-pink-500': { color: '#EC4899' },
+  'text-indigo': { color: '#6366F1' },
+  'text-indigo-500': { color: '#6366F1' },
+  
+  // Borders
+  'border': { borderWidth: 1, borderColor: '#000000', borderStyle: 'solid' },
+  'border-0': { borderWidth: 0 },
+  'border-1': { borderWidth: 1 },
+  'border-2': { borderWidth: 2 },
+  'border-4': { borderWidth: 4 },
+  'border-8': { borderWidth: 8 },
+  'border-top': { borderTopWidth: 1, borderTopColor: '#000000', borderTopStyle: 'solid' },
+  'border-top-0': { borderTopWidth: 0 },
+  'border-top-1': { borderTopWidth: 1 },
+  'border-top-2': { borderTopWidth: 2 },
+  'border-bottom': { borderBottomWidth: 1, borderBottomColor: '#000000', borderBottomStyle: 'solid' },
+  'border-bottom-0': { borderBottomWidth: 0 },
+  'border-bottom-1': { borderBottomWidth: 1 },
+  'border-bottom-2': { borderBottomWidth: 2 },
+  'border-bottom-15': { borderBottomWidth: 1.5, borderBottomColor: '#000000', borderBottomStyle: 'solid' },
+  'border-left': { borderLeftWidth: 1, borderLeftColor: '#000000', borderLeftStyle: 'solid' },
+  'border-left-0': { borderLeftWidth: 0 },
+  'border-left-1': { borderLeftWidth: 1 },
+  'border-left-2': { borderLeftWidth: 2 },
+  'border-right': { borderRightWidth: 1, borderRightColor: '#000000', borderRightStyle: 'solid' },
+  'border-right-0': { borderRightWidth: 0 },
+  'border-right-1': { borderRightWidth: 1, borderRightColor: '#000000', borderRightStyle: 'solid' },
+  'border-right-2': { borderRightWidth: 2 },
+  'border-all': { borderTopWidth: 1, borderTopColor: '#000000', borderTopStyle: 'solid', borderLeftWidth: 1, borderLeftColor: '#000000', borderLeftStyle: 'solid', borderRightWidth: 1, borderRightColor: '#000000', borderRightStyle: 'solid', borderBottomWidth: 1, borderBottomColor: '#000000', borderBottomStyle: 'solid' },
+  // Border Radius
+  'rounded': { borderRadius: 4 },
+  'rounded-none': { borderRadius: 0 },
+  'rounded-sm': { borderRadius: 2 },
+  'rounded-md': { borderRadius: 4 },
+  'rounded-lg': { borderRadius: 8 },
+  'rounded-xl': { borderRadius: 12 },
+  'rounded-2xl': { borderRadius: 16 },
+  'rounded-3xl': { borderRadius: 24 },
+  'rounded-full': { borderRadius: 9999 },
+  
+  // Width/Height
+  'w-full': { width: '100%' },
+  'h-full': { height: '100%' },
+  'w-auto': { width: 'auto' },
+  'h-auto': { height: 'auto' },
+  'w-0': { width: 0 },
+  'w-1': { width: 4 },
+  'w-2': { width: 8 },
+  'w-3': { width: 12 },
+  'w-4': { width: 16 },
+  'w-5': { width: 20 },
+  'w-6': { width: 24 },
+  'w-8': { width: 32 },
+  'w-10': { width: 40 },
+  'w-12': { width: 48 },
+  'w-16': { width: 64 },
+  'w-20': { width: 80 },
+  'w-24': { width: 96 },
+  'w-70': { width: 70 }, // Used for logo sizing
+  'w-80': { width: '80%' }, // Used for watermark
+  'w-120': { width: 120 }, // Used for signature
+  'w-1/2': { width: '50%' },
+  'w-1/3': { width: '33.333333%' },
+  'w-2/3': { width: '66.666667%' },
+  'w-1/4': { width: '25%' },
+  'w-3/4': { width: '75%' },
+  'h-0': { height: 0 },
+  'h-1': { height: 4 },
+  'h-2': { height: 8 },
+  'h-3': { height: 12 },
+  'h-4': { height: 16 },
+  'h-5': { height: 20 },
+  'h-6': { height: 24 },
+  'h-8': { height: 32 },
+  'h-10': { height: 40 },
+  'h-12': { height: 48 },
+  'h-16': { height: 64 },
+  'h-20': { height: 80 },
+  'h-24': { height: 96 },
+  'h-60': { height: 60 }, // Used for signature
+  'h-70': { height: 70 }, // Used for logo sizing
+  'h-1/2': { height: '50%' },
+  'h-1/3': { height: '33.333333%' },
+  'h-2/3': { height: '66.666667%' },
+  'h-1/4': { height: '25%' },
+  'h-3/4': { height: '75%' },
+  
+  // Position
+  'relative': { position: 'relative' },
+  'absolute': { position: 'absolute' },
+  'fixed': { position: 'fixed' },
+  
+  // Line Height
+  'leading-none': { lineHeight: 1 },
+  'leading-tight': { lineHeight: 1.25 },
+  'leading-snug': { lineHeight: 1.375 },
+  'leading-normal': { lineHeight: 1.5 },
+  'leading-relaxed': { lineHeight: 1.75 },
+  'leading-loose': { lineHeight: 2 },
+  'leading-13': { lineHeight: 1.3 },
+  'leading-14': { lineHeight: 1.4 },
+  'leading-16': { lineHeight: 1.6 },
+  'leading-18': { lineHeight: 1.8 },
+  'leading-20': { lineHeight: 2.0 },
+  
+  // Opacity
+  'opacity-0': { opacity: 0 },
+  'opacity-5': { opacity: 0.05 },
+  'opacity-10': { opacity: 0.1 },
+  'opacity-15': { opacity: 0.15 },
+  'opacity-20': { opacity: 0.2 },
+  'opacity-25': { opacity: 0.25 },
+  'opacity-30': { opacity: 0.3 },
+  'opacity-40': { opacity: 0.4 },
+  'opacity-50': { opacity: 0.5 },
+  'opacity-60': { opacity: 0.6 },
+  'opacity-70': { opacity: 0.7 },
+  'opacity-75': { opacity: 0.75 },
+  'opacity-80': { opacity: 0.8 },
+  'opacity-90': { opacity: 0.9 },
+  'opacity-95': { opacity: 0.95 },
+  'opacity-100': { opacity: 1 },
+  
+  // Letter Spacing
+  'letter-spacing-tighter': { letterSpacing: -0.5 },
+  'letter-spacing-tight': { letterSpacing: -0.25 },
+  'letter-spacing-normal': { letterSpacing: 0 },
+  'letter-spacing-wide': { letterSpacing: 0.25 },
+  'letter-spacing-wider': { letterSpacing: 0.5 },
+  'letter-spacing-widest': { letterSpacing: 1 },
+  'letter-spacing-05': { letterSpacing: 0.5 },
+  'letter-spacing-1': { letterSpacing: 1 },
+  
+  // Font Families
+  'font-helvetica': { fontFamily: 'Helvetica' },
+  'font-helvetica-bold': { fontFamily: 'Helvetica-Bold' },
+  'font-helvetica-oblique': { fontFamily: 'Helvetica-Oblique' },
+  'font-lato': { fontFamily: 'Lato' },
+  'font-lato-bold': { fontFamily: 'Lato-Bold' },
+  'font-times': { fontFamily: 'Times-Roman' },
+  'font-times-bold': { fontFamily: 'Times-Bold' },
+  'font-courier': { fontFamily: 'Courier' },
+  'font-courier-bold': { fontFamily: 'Courier-Bold' },
+  
+  // Font Style
+  'italic': { fontStyle: 'italic' },
+  'not-italic': { fontStyle: 'normal' },
+  
+  // Z-index
+  'z-0': { zIndex: 0 },
+  'z-10': { zIndex: 10 },
+  'z-20': { zIndex: 20 },
+  'z-30': { zIndex: 30 },
+  'z-40': { zIndex: 40 },
+  'z-50': { zIndex: 50 },
+  '-z-1': { zIndex: -1 },
+  '-z-10': { zIndex: -10 },
+  
+  // Overflow
+  'overflow-visible': { overflow: 'visible' },
+  'overflow-hidden': { overflow: 'hidden' },
+  'overflow-scroll': { overflow: 'scroll' },
+  
+  // Display
+  'hidden': { display: 'none' },
+  'block': { display: 'block' },
+  
+  // Top, Right, Bottom, Left
+  'top-0': { top: 0 },
+  'right-0': { right: 0 },
+  'bottom-0': { bottom: 0 },
+  'left-0': { left: 0 },
+  
+  // Min/Max Width/Height
+  'min-w-0': { minWidth: 0 },
+  'min-w-full': { minWidth: '100%' },
+  'max-w-full': { maxWidth: '100%' },
+  'min-h-0': { minHeight: 0 },
+  'min-h-full': { minHeight: '100%' },
+  'max-h-full': { maxHeight: '100%' },
+});
+
+
+
+// Watermark Component
+const Watermark = ({ logoSrc }) => {
+  if (!logoSrc) return null;
+  
+  return (
+    <View style={[tw['absolute'], tw['top-0'], tw['left-0'], tw['right-0'], tw['bottom-0'], tw['-z-1'], tw['flex'], tw['justify-center'], tw['items-center']]}>
+      <Image src={logoSrc} style={[tw['w-80'], tw['h-auto'], tw['opacity-15']]} />
+    </View>
+  );
+};
+
+// Main Offer Letter Component
+const OfferLetter = () => {
+  
+  const companyLogo = '/images/quijote1.jpg'; // Playground sample image - will be resized to 60x60
+  const signatureLogo = '/images/quijote2.png'; // Playground sample image - will be resized to 120x60
+
+  return (
+    <Document>
+      {/* Page 1 - Header, Date, Address, Title, Greeting, Opening */}
+      <Page size="A4" style={[tw['pt-50'], tw['pl-72'], tw['pr-72'], tw['pb-72'], tw['font-lato'], tw['text-sm'], tw['leading-14'], tw['text-black']]}>
+        <Watermark logoSrc={companyLogo} />
+        
+        <View style={[tw['mb-5'], tw['pb-10'], tw['border-bottom-15']]}>
+          <View style={[tw['flex-row'], tw['justify-between'], tw['items-start']]}>
+            <View style={[tw['flex-1'], tw['pr-20']]}>
+              <Text style={[tw['text-2xl'], tw['font-bold'], tw['text-red-600'], tw['mb-2'], tw['font-lato-bold'], tw['letter-spacing-05']]}>ADYSUN VENTURES PVT. LTD.</Text>
+              <Text style={[tw['text-xs'], tw['mb-2'], tw['font-lato'], tw['text-black']]}>9579537523 | hr@adysunventures.com | AdysunVentures.com</Text>
+              <Text style={[tw['text-xs'], tw['font-lato'], tw['text-black'], tw['leading-13']]}>Adysun Ventures Pvt. Ltd., S no 47, Workplex, Pune-Satara Rd, Opp City Pride Theater, Near Bhapkar petrol pump, Pune, Maharashtra - 411009</Text>
+            </View>
+            {companyLogo && (
+              <Image src={companyLogo} style={[tw['w-70'], tw['h-70'], tw['-mt-5']]} />
+            )}
+          </View>
+        </View>
+        
+        <Text style={[tw['text-sm'], tw['font-bold'], tw['font-lato-bold'], tw['mt-0'], tw['mb-0']]}>Date: 19-July-2024</Text>
+        
+        <View style={[tw['mb-10']]}>
+          <Text style={[tw['text-sm'], tw['font-lato-bold'], tw['font-bold'], tw['mb-2']]}>Mr. Arnab Kumar Baishya</Text>
+          {['C/O: Apurba Kumar Baishya,', 'H.No.-5, Ananda Nagar,', 'Six Mile, Khanapara,', 'Kamrup Metro, Assam-781022'].map((line, index) => (
+            <Text key={index} style={[tw['text-sm'], tw['font-lato'], tw['leading-13'], tw['m-0']]}>{line}</Text>
+          ))}
+        </View>
+        
+        <Text style={[tw['text-13'], tw['font-bold'], tw['underline'], tw['text-center'], tw['mt-0'], tw['mb-10'], tw['font-lato-bold'], tw['letter-spacing-1']]}>LETTER OF APPOINTMENT</Text>
+        
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-normal'], tw['mb-15']]}>Dear <Text style={[tw['text-sm'], tw['font-lato-bold'], tw['font-bold']]}>Arnab</Text>,</Text>
+        
+        <View>
+          <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-normal'], tw['mb-3'], tw['text-justify']]}>
+            We are pleased to extend this formal appointment as a symbol of our mutual commitment to integrity, excellence, and professional growth. This letter marks the beginning of your journey with <Text style={[tw['text-sm'], tw['font-lato-bold'], tw['font-bold']]}>Adysun Ventures Private Limited</Text>, where we strive to build a future founded on vision, discipline, and respect.
+          </Text>
+          
+          <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-normal'], tw['text-justify']]}>
+            You are hereby appointed to the position of <Text style={[tw['text-sm'], tw['font-lato-bold'], tw['font-bold']]}>Software Engineer</Text>, effective from <Text style={[tw['text-sm'], tw['font-lato-bold'], tw['font-bold']]}>01 Aug 2024</Text>. Please note, this offer shall be considered null and void should you fail to commence employment on or before the aforementioned date.
+          </Text>
+        </View>
+      </Page>
+
+      {/* Page 2 - Pre-Employment, Responsibilities, Confidentiality, IP Rights */}
+      <Page size="A4" style={[tw['pt-72'], tw['pl-72'], tw['pr-54'], tw['pb-72'], tw['font-lato'], tw['text-sm'], tw['leading-tight'], tw['text-black']]}>
+        <Watermark logoSrc={companyLogo} />
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Pre-Employment Formalities</Text>
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left']]}>
+          The continuation of your employment is contingent upon submission of the following documents:
+        </Text>
+        <View style={[tw['ml-36']]}>
+          <Text style={[tw['ml-36'], tw['pt-3'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Relieving letter from your previous employer</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Last 3 months' pay slips (digital copy)</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Last 3 months' bank statements reflecting salary credits</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Scanned copy of Aadhaar card or Passport</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Valid residential proof (e.g., electricity bill, property tax receipt)</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Valid email ID and mobile contact number</Text>
+          <Text style={[tw['ml-36'], tw['pt-0'], tw['pl-0'], tw['pb-3'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Four (4) recent passport-size photographs with a white background</Text>
+        </View>
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Responsibilities and Expectations</Text>
+        <View style={[tw['ml-36']]}>
+          <Text style={[tw['ml-36'], tw['pt-3'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>You are expected to execute duties as assigned, including any future assignments, promotions, or departmental transitions.</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Working hours and shift timings may vary depending on business needs.</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>In case of illness or emergency, the management must be informed promptly.</Text>
+          <Text style={[tw['ml-36'], tw['pt-0'], tw['pl-0'], tw['pb-3'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Any fraudulent activity or damage to company assets must be reported without delay.</Text>
+        </View>
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Confidentiality and Data Ethics</Text>
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left']]}>
+          Throughout and post your tenure, you shall:
+        </Text>
+        <View style={[tw['ml-36']]}>
+          <Text style={[tw['ml-36'], tw['pt-3'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Maintain absolute confidentiality over proprietary, personal, strategic, technical, and financial information.</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Refrain from sharing, misusing, duplicating, or disclosing such data without written authorization.</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Not exploit any intellectual or operational asset of the company for personal or third-party benefit.</Text>
+          <Text style={[tw['ml-36'], tw['pt-0'], tw['pl-0'], tw['pb-3'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Acknowledge that all such information is and remains the exclusive property of ADYSUN VENTURES PVT. LTD..</Text>
+        </View>
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Intellectual Property Rights</Text>
+        <View style={[tw['ml-36']]}>
+          <Text style={[tw['ml-36'], tw['pt-3'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>
+            All intellectual contributions made by you during the course of employment—arising from company work or resources—shall be deemed the exclusive property of <Text style={[tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['leading-tight']]}>ADYSUN VENTURES PVT. LTD.</Text>.
+          </Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>You are obligated to report such innovations and assign all rights, titles, and interests to the company.</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>No separate compensation shall be claimable for such assignment, as it is inherent in your remuneration</Text>
+          <Text style={[tw['ml-36'], tw['pt-0'], tw['pl-0'], tw['pb-3'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>You shall offer full cooperation in registering or protecting any such intellectual property, both during and after employment.</Text>
+        </View>
+      </Page>
+
+      {/* Page 3 - Conflict of Interest, General Terms, Jurisdiction, Probationary Terms */}
+      <Page size="A4" style={[tw['pt-72'], tw['pl-72'], tw['pr-54'], tw['pb-72'], tw['font-lato'], tw['text-sm'], tw['leading-tight'], tw['text-black']]}>
+        <Watermark logoSrc={companyLogo} />
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Conflict of Interest & Ethical Compliance</Text>
+        <View style={[tw['ml-36']]}>
+          <Text style={[tw['ml-36'], tw['pt-3'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>You must refrain from engaging in any external business, employment, or consulting activities that conflict with the interests of ADYSUN VENTURES PVT. LTD..</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Any actual or potential conflict must be reported immediately for review and resolution.</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Acceptance of gifts, favors, or commissions from individuals or entities conducting business with the company is strictly prohibited.</Text>
+          <Text style={[tw['ml-36'], tw['pt-0'], tw['pl-0'], tw['pb-3'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Use of company resources must reflect integrity and alignment with corporate objectives.</Text>
+        </View>
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>General Terms</Text>
+        <View style={[tw['ml-36']]}>
+          <Text style={[tw['ml-36'], tw['pt-3'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>All official communications shall be in English and delivered via hand, email, courier, or registered post.</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>If any provision of this letter is held unenforceable, the remaining provisions shall continue in full force and effect.</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Disparagement or defamation of the company or its affiliates shall attract disciplinary or legal action.</Text>
+          <Text style={[tw['ml-36'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>This document, along with any annexures, constitutes the entire agreement and supersedes any prior discussions or arrangements.</Text>
+          <Text style={[tw['ml-36'], tw['pt-0'], tw['pl-0'], tw['pb-3'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>ADYSUN VENTURES PVT. LTD. reserves the right to seek injunctive relief in case of breach of obligations.</Text>
+        </View>
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Jurisdiction</Text>
+        <View style={[tw['ml-36']]}>
+          <Text style={[tw['ml-36'], tw['pt-3'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>This letter shall be governed by the applicable laws of India. Any disputes shall fall under the exclusive jurisdiction of competent courts.</Text>
+          <Text style={[tw['ml-36'], tw['pt-0'], tw['pl-0'], tw['pb-3'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>You are required to devote your full working time and attention solely to the business interests. Any concurrent employment or freelance engagements shall render this appointment liable for immediate termination and legal recourse.</Text>
+        </View>
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Probationary Terms</Text>
+        <View style={[tw['ml-36']]}>
+          <Text style={[tw['ml-36'], tw['pt-3'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Your appointment is subject to a probationary period of three (3) months. The duration may be extended or shortened at the sole discretion of the management, contingent upon performance and conduct.</Text>
+          <Text style={[tw['ml-36'], tw['pt-0'], tw['pl-0'], tw['pb-3'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Leave shall not be availed during the probation period. Any such absence, if unavoidable, shall be adjusted against paid leave, subject to management approval.</Text>
+        </View>
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Joining and Probation Period</Text>
+        <View style={[tw['ml-36']]}>
+          <Text style={[tw['ml-36'], tw['pt-3'], tw['pl-0'], tw['pb-3'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>
+            The initial <Text style={[tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['leading-tight']]}>probation period will be for 3 months</Text> from your joining date. Based on satisfactory performance, your employment will be confirmed thereafter.
+          </Text>
+        </View>
+      </Page>
+
+      {/* Page 4 - Notice Period, Compensation Structure, CTC Breakdown */}
+      <Page size="A4" style={[tw['pt-72'], tw['pl-72'], tw['pr-54'], tw['pb-72'], tw['font-lato'], tw['text-sm'], tw['leading-tight'], tw['text-black']]}>
+        <Watermark logoSrc={companyLogo} />
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Notice Period</Text>
+        <View style={[tw['ml-36']]}>
+          <Text style={[tw['ml-36'], tw['pt-3'], tw['p-0'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>You are required to serve a notice period of 30 days in case of resignation.</Text>
+          <Text style={[tw['ml-36'], tw['pt-0'], tw['pl-0'], tw['pb-3'], tw['leading-tight'], tw['text-sm'], tw['font-lato']]}>Failure to serve the full notice period may result in salary deductions or forfeiture of dues and legal action.</Text>
+        </View>
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Compensation Structure</Text>
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left']]}>
+          Your total <Text style={[tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['leading-tight']]}>Annual Cost to Company (CTC)</Text> will be ₹4,00,000, broken down as follows:
+        </Text>
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left'], tw['mt-2']]}>
+          <Text style={[tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['leading-tight']]}>A. Fixed Compensation:</Text> ₹3,00,000 per annum
+        </Text>
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left']]}>
+          <Text style={[tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['leading-tight']]}>B. Performance-Based Variable Pay:</Text> ₹1,00,000 per annum
+        </Text>
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['italic'], tw['text-gray-666'], tw['leading-tight'], tw['mt-1'], tw['mb-3']]}>
+          (Payable annually based on performance parameters set by the company)
+        </Text>
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>CTC Breakdown – Annual and Monthly</Text>
+        
+        <View style={[tw['mt-2']]}>
+          {/* Table Header */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-4']]}>
+              <Text>Component</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-3']]}>
+              <Text>Monthly (₹)</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-3']]}>
+              <Text>Annual (₹)</Text>
+            </View>
+          </View>
+          
+          {/* Basic Salary */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-4']]}>
+              <Text>Basic Salary</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>5,400</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>64,800</Text>
+            </View>
+          </View>
+          
+          {/* HRA */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-4']]}>
+              <Text>HRA</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>2,000</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>24,000</Text>
+            </View>
+          </View>
+          
+          {/* Conveyance Allowance */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-4']]}>
+              <Text>Conveyance Allowance</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>800</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>9,600</Text>
+            </View>
+          </View>
+          
+          {/* Other Allowances */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-4']]}>
+              <Text>Other Allowances</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>7,000</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>84,000</Text>
+            </View>
+          </View>
+          
+          {/* Gross Salary */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-4']]}>
+              <Text>Gross Salary</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-3']]}>
+              <Text>15,200</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-3']]}>
+              <Text>1,82,400</Text>
+            </View>
+          </View>
+          
+          {/* Deductions Header */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-4']]}>
+              <Text>Deductions</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text></Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text></Text>
+            </View>
+          </View>
+          
+          {/* Professional Tax */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-4']]}>
+              <Text>Professional Tax (est.)</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>200</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>2,400</Text>
+            </View>
+          </View>
+          
+          {/* Total Deductions */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-4']]}>
+              <Text>Total Deductions</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-3']]}>
+              <Text>200</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-3']]}>
+              <Text>2,400</Text>
+            </View>
+          </View>
+          
+          {/* Net In-Hand Salary */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-4']]}>
+              <Text>Net In-Hand Salary</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-3']]}>
+              <Text>15,000</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-3']]}>
+              <Text>1,80,000</Text>
+            </View>
+          </View>
+          
+          {/* Additional Benefits Header */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-4']]}>
+              <Text>Additional Benefits</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text></Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text></Text>
+            </View>
+          </View>
+          
+          {/* Variable Incentive */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-4']]}>
+              <Text>Ann. Perfr. Incentive (Variable)</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text></Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['flex-3']]}>
+              <Text>2,20,000</Text>
+            </View>
+          </View>
+          
+          {/* Total CTC */}
+          <View style={[tw['flex-row'], tw['border-all']]}>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-4']]}>
+              <Text>Total CTC</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['border-right-1'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-3']]}>
+              <Text>33,533</Text>
+            </View>
+            <View style={[tw['p-5px'], tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['flex-3']]}>
+              <Text>4,00,000</Text>
+            </View>
+          </View>
+        </View>
+        
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left'], tw['mt-3']]}>
+          Note: There is currently <Text style={[tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['leading-tight']]}>no deduction for Provident Fund (PF)</Text>.
+        </Text>
+      </Page>
+
+      {/* Page 5 - Acknowledgement & Acceptance */}
+      <Page size="A4" style={[tw['pt-72'], tw['pl-72'], tw['pr-54'], tw['pb-72'], tw['font-lato'], tw['text-sm'], tw['leading-tight'], tw['text-black']]}>
+        <Watermark logoSrc={companyLogo} />
+        
+        <Text style={[tw['text-14'], tw['font-bold'], tw['underline'], tw['pt-14'], tw['pb-1'], tw['leading-tight'], tw['font-lato'], tw['text-black']]}>Acknowledgement And Acceptance</Text>
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left']]}>
+          I, the undersigned, hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with ADYSUN VENTURES PVT. LTD. and confirm my commitment to fulfill all responsibilities entrusted to me with sincerity and integrity.
+        </Text>
+        
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left'], tw['mt-3']]}>
+          Candidate Name: <Text style={[tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['leading-tight']]}>Mr. Arnab Kumar Baishya</Text>
+        </Text>
+        
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left'], tw['mt-2']]}>
+          Signature: _________________________
+        </Text>
+        
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left'], tw['mt-2']]}>
+          Date: _________________________
+        </Text>
+        
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left'], tw['mt-3']]}>
+          Warm regards,
+        </Text>
+        
+        {signatureLogo && (
+          <View style={[tw['my-2']]}>
+            <Image src={signatureLogo} style={[tw['w-120'], tw['h-60']]} />
+          </View>
+        )}
+        
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['font-bold'], tw['leading-tight']]}>Prachi Jadhav</Text>
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left']]}>Head - HR Department</Text>
+        <Text style={[tw['text-sm'], tw['font-lato'], tw['leading-tight'], tw['py-3'], tw['text-left']]}>hr@adysunventures.com</Text>
+      </Page>
+    </Document>
+  );
+};
+
+ReactPDF.render(<OfferLetter />);

@@ -1,0 +1,90 @@
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .document-card {
+        @apply p-4;
+    }
+
+    .card-title {
+        @apply text-base;
+    }
+
+    .card-description {
+        @apply text-xs;
+    }
+}
+
+.container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.logo {
+    height: 60px;
+    margin-bottom: 20px;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 40px;
+    font-size: 2.5rem;
+}
+
+.links-container {
+    display: grid;
+    gap: 15px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.document-link {
+    display: block;
+    padding: 15px 20px;
+    background-color: white;
+    color: #333;
+    text-decoration: none;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.3s ease;
+    font-size: 16px;
+    text-align: left;
+}
+
+.document-link:hover {
+    background-color: #f8f9fa;
+    border-color: #0066cc;
+    color: #0066cc;
+    transform: translateX(10px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Animation for links */
+
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+

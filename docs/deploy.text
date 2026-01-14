@@ -1,0 +1,5 @@
+zip -r adysun_hrms_build.zip .next public package.json package-lock.json next.config.js tsconfig.json
+
+scp adysun_hrms_build.zip user@server_ip:/var/www/html/your_project/
+
+unzip adysun_hrms_build.zip

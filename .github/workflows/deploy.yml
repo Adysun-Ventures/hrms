@@ -27,15 +27,15 @@ jobs:
           cache: 'npm'
           
       - name: Install dependencies
-        run: cd admin-dashboard && npm ci
+        run: cd adysunventures.com && npm ci
       - name: Build
-        run: cd admin-dashboard && npm run build
+        run: cd adysunventures.com && npm run build
       - name: Copy 404 page
-        run: cp admin-dashboard/out/404.html admin-dashboard/out/
+        run: cp adysunventures.com/out/404.html adysunventures.com/out/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: admin-dashboard/out
+          path: adysunventures.com/out
 
   deploy:
     environment:

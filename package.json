@@ -12,6 +12,7 @@
     "deploy": "node scripts/deploy.js"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.9",
     "@netlify/plugin-nextjs": "^5.11.6",
     "@radix-ui/react-slot": "^1.2.3",
     "@react-pdf/renderer": "^4.3.0",

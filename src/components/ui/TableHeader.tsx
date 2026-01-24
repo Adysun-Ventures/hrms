@@ -98,7 +98,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   isRefreshing = false,
   actionButtons = [],
   showStats = true,
-  showSearch = true,
+  showSearch = false,
   backButton,
   filterValue = 'all',
   onFilterChange,

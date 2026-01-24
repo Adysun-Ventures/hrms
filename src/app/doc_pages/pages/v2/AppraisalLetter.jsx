@@ -1,721 +1,386 @@
-'use client';
+"use client";
 
 import React, { useState, useEffect } from "react";
-import Link from 'next/link';
-import { PDFViewer, PDFDownloadLink, Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
-import { db } from '@/firebase/config';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { FiArrowLeft, FiDownload } from "react-icons/fi";
-import { commonStyles } from '@/components/pdf/PDFStyles';
-import { CompanyHeader, FormattedDate, Paragraph, Signature, Footer } from '@/components/pdf/PDFComponents';
-import { formatIndianCurrency, numberToWords } from '@/components/pdf/SalaryUtils';
-import toast, { Toaster } from 'react-hot-toast';
+import { FiDownload } from "react-icons/fi";
+import TableHeader from "@/components/ui/TableHeader";
 
-// Define styles for the AppraisalLetter
-const appraisalLetterStyles = StyleSheet.create({
-  page: {
-    padding: 40,
-    paddingBottom: 60,
-    fontFamily: 'Calibri',
-    fontSize: 12,
-    lineHeight: 1.5,
-  },
-  title: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: 10,
-    marginTop: 10,
-    fontWeight: 'bold',
-    fontFamily: 'Calibri',
-  },
-  date: {
-    marginBottom: 8,
-    fontFamily: 'Calibri',
-  },
-  employeeName: {
-    marginBottom: 8,
-    fontFamily: 'Calibri',
-    textTransform: 'capitalize',
-  },
-  subject: {
-    marginBottom: 10,
-    fontFamily: 'Calibri',
-  },
-  para: {
-    marginBottom: 8,
-    textAlign: 'justify',
-    fontFamily: 'Calibri',
-    lineHeight: 1.3,
-  },
-  tableContainer: {
-    marginTop: 10,
-    marginBottom: 10,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000000',
-    paddingBottom: 3,
-    marginBottom: 3,
-    fontWeight: 'bold',
-  },
-  tableRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#dddddd',
-    paddingVertical: 4,
-  },
-  tableRowTotal: {
-    flexDirection: 'row',
-    borderTopWidth: 2,
-    borderTopColor: '#000000',
-    borderBottomWidth: 2,
-    borderBottomColor: '#000000',
-    paddingVertical: 4,
-    fontWeight: 'bold',
-  },
-  tableCol1: {
-    width: '60%',
-  },
-  tableCol2: {
-    width: '40%',
-    textAlign: 'right',
-  },
-  signatureSection: {
-    marginTop: 25,
-    fontFamily: 'Calibri',
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 25,
-    left: 50,
-    right: 50,
-    borderTopWidth: 1,
-    borderTopColor: '#FF0000',
-    paddingTop: 5,
-    textAlign: 'center',
-  },
-  footerText: {
-    fontSize: 8,
-    marginBottom: 1,
-    fontFamily: 'Calibri',
-    textAlign: 'center',
-  }
-});
+import {
+  Document,
+  Page,
+  PDFDownloadLink,
+  PDFViewer,
+  Text,
+  View,
+  Image
+} from "@react-pdf/renderer";
 
-// Watermark styles
-const watermarkStyles = StyleSheet.create({
-  watermarkContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: -1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  watermarkImage: {
-    width: '80%',
-    height: 'auto',
-    opacity: 0.17,
-  }
-});
+import { db } from "@/firebase/config";
+import { collection, getDocs } from "firebase/firestore";
+import toast, { Toaster } from "react-hot-toast";
+import { offerLetterStyles } from "@/components/pdf/PDFStyles";
+import { Combobox } from "@headlessui/react";
+import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 
-// Watermark component
-const Watermark = ({ logoSrc }) => {
-  if (!logoSrc) return null;
-  return (
-    <View style={watermarkStyles.watermarkContainer}>
-      <Image src={logoSrc} style={watermarkStyles.watermarkImage} />
-    </View>
-  );
+/* ---------------- COMPANY DATA ---------------- */
+const COMPANY_DATA = {
+  name: "ADYSUN VENTURES PVT. LTD.",
+  contact: "9579537523 | hr@adysunventures.com | AdysunVentures.com",
+  address:
+    "S no 47, Workplex, Pune-Satara Rd, Opp City Pride Theater, Near Bhapkar petrol pump, Pune, Maharashtra - 411009",
+  hrName: "Prachi Jadhav",
+  hrDesignation: "Head - HR Department",
+  hrEmail: "hr@adysunventures.com",
+  logo: "/assets/adysunventures_logo.png",
+  signature: "/assets/hr-sign.png"
 };
 
-// Appraisal Letter PDF Document Component
-const AppraisalLetterPDF = ({ formData }) => {
-  // Helper to safely access formData
-  const safeFormData = formData || {};
-  
-  // Format date function
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    try {
-      const date = new Date(dateString);
-      return new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      }).format(date);
-    } catch (e) {
-      return "";
-    }
-  };
+const Watermark = ({ logoSrc }) => (
+  <View style={offerLetterStyles.watermark}>
+    <Image src={logoSrc} style={offerLetterStyles.watermarkImage} />
+  </View>
+);
+
+const formatDate = (d) =>
+  new Date(d).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric"
+  });
+
+/* ---------------- PDF COMPONENT ---------------- */
+const AppraisalLetterPDF = ({
+  employee,
+  currentCTC,
+  percentIncrease,
+  revisedCTC,
+  effectiveDate
+}) => {
+  const employeeName = employee?.name || "";
+  const shortName = employeeName.split(" ")[0];
+  const formattedCurrent = Number(currentCTC).toLocaleString("en-IN");
+  const formattedRevised = Number(revisedCTC).toLocaleString("en-IN");
+  const formattedEffective = formatDate(effectiveDate);
+  const today = formatDate(new Date());
 
   return (
     <Document>
-      <Page size="A4" wrap={false} style={{...commonStyles.page, ...appraisalLetterStyles.page}}>
-        {/* Watermark */}
-        <Watermark logoSrc={safeFormData.companyLogo} />
-        {/* Company Header - More compact */}
-        <View style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          borderBottomWidth: 1,
-          borderBottomColor: safeFormData.companyColor || '#FF0000',
-          paddingBottom: 4,
-          marginBottom: 10,
-        }}>
+      <Page
+        size="A4"
+        style={{ padding: 35, fontSize: 12, lineHeight: 1.45, position: "relative" }}
+      >
+        <Watermark logoSrc={COMPANY_DATA.logo} />
+
+        {/* HEADER */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
           <View>
-            <Text style={{
-              color: safeFormData.companyColor || '#FF0000',
-              fontSize: 12,
-              fontWeight: 'bold',
-              fontFamily: 'Calibri',
-              textTransform: 'uppercase',
-            }}>
-              {safeFormData.companyName || 'COMPANY NAME'}
+            <Text style={{ fontSize: 18, fontWeight: "bold", color: "#d42626" }}>
+              {COMPANY_DATA.name}
             </Text>
-            <Text style={{fontFamily: 'Calibri', fontSize: 8}}>
-              {safeFormData.companyAddressLine1 || 'COMPANY ADDRESS'}
-            </Text>
-            <Text style={{fontFamily: 'Calibri', fontSize: 8}}>
-              Phone: {safeFormData.companyPhone || 'PHONE NUMBER'}
-            </Text>
-            <Text style={{fontFamily: 'Calibri', fontSize: 8}}>
-              {safeFormData.companyWebsite || 'WEBSITE'}
-            </Text>
+            <Text style={{ fontSize: 11, marginTop: 4 }}>{COMPANY_DATA.contact}</Text>
+            {(() => {
+              const parts = COMPANY_DATA.address.split(/[,;\n]+/).map(v => v.trim());
+              const mid = Math.ceil(parts.length / 2);
+              return (
+                <>
+                  <Text style={{ fontSize: 11, marginTop: 4 }}>{parts.slice(0, mid).join(", ")}</Text>
+                  <Text style={{ fontSize: 11 }}>{parts.slice(mid).join(", ")}</Text>
+                </>
+              );
+            })()}
           </View>
-          {safeFormData.companyLogo && (
-            <Image src={safeFormData.companyLogo} style={{width: 40, height: 40}} />
-          )}
+          <Image src={COMPANY_DATA.logo} style={{ width: 55, height: 55 }} />
         </View>
-        
-        {/* Letter Title */}
-        <Text style={appraisalLetterStyles.title}>
-          Employee Appraisal Letter
+
+        <View style={{ borderBottom: "1px solid #000", marginBottom: 16 }} />
+
+        {/* DATE + NAME */}
+        <Text style={{ marginBottom: 12 }}>
+          <Text style={{ fontWeight: "bold" }}>Date:</Text> {today}
         </Text>
-        
-        {/* Letter Content - Everything in one continuous flow with no fixed height container */}
-        <View style={{ position: 'relative' }}>
-          {/* Date */}
-          <Text style={appraisalLetterStyles.date}>
-            Date - {formatDate(safeFormData.date)}
-          </Text>
-          
-          {/* Employee Name */}
-          <Text style={appraisalLetterStyles.employeeName}>
-            {safeFormData.employeeName || 'Employee Name'},
-          </Text>
-          
-          {/* Subject */}
-          <Text style={appraisalLetterStyles.subject}>
-            Sub: Appraisal Letter
-          </Text>
-          
-          {/* Appreciation Text */}
-          <Text style={appraisalLetterStyles.para}>
-            We would like to express our appreciation and commendation for all the passion
-            and commitment you have been exhibiting in your existing role. In recognition
-            of your contribution, it is our pleasure to award you a gross increase in your
-            salary with effect from {formatDate(safeFormData.date)}.
-          </Text>
-          
-          <Text style={{...appraisalLetterStyles.para, marginBottom: 5}}>
-            Your revised salary structure as follows:
-          </Text>
-          
-          {/* Compensation Table - More compact */}
-          <View style={appraisalLetterStyles.tableContainer}>
-            {/* Table Header */}
-            <View style={appraisalLetterStyles.tableHeader}>
-              <Text style={appraisalLetterStyles.tableCol1}>Compensation Heads</Text>
-              <Text style={appraisalLetterStyles.tableCol2}>Compensation (In INR)</Text>
-            </View>
-            
-            {/* Basic Row */}
-            <View style={appraisalLetterStyles.tableRow}>
-              <Text style={appraisalLetterStyles.tableCol1}>Basic</Text>
-              <Text style={appraisalLetterStyles.tableCol2}>Rs {safeFormData.basic || '0.00'}</Text>
-            </View>
-            
-            {/* DA Row */}
-            <View style={appraisalLetterStyles.tableRow}>
-              <Text style={appraisalLetterStyles.tableCol1}>Dearness Allowance</Text>
-              <Text style={appraisalLetterStyles.tableCol2}>Rs {safeFormData.da || '0.00'}</Text>
-            </View>
-            
-            {/* Conveyance Row */}
-            <View style={appraisalLetterStyles.tableRow}>
-              <Text style={appraisalLetterStyles.tableCol1}>Conveyance Allowance</Text>
-              <Text style={appraisalLetterStyles.tableCol2}>Rs {safeFormData.conveyance || '0.00'}</Text>
-            </View>
-            
-            {/* Other Row */}
-            <View style={appraisalLetterStyles.tableRow}>
-              <Text style={appraisalLetterStyles.tableCol1}>Other allowance</Text>
-              <Text style={appraisalLetterStyles.tableCol2}>Rs {safeFormData.other || '0.00'}</Text>
-            </View>
-            
-            {/* Total Row */}
-            <View style={appraisalLetterStyles.tableRowTotal}>
-              <Text style={appraisalLetterStyles.tableCol1}>Monthly Total</Text>
-              <Text style={appraisalLetterStyles.tableCol2}>Rs {safeFormData.total || '0.00'}</Text>
-            </View>
+
+        <Text style={{ fontWeight: "bold", marginBottom: 14 }}>{employeeName}</Text>
+
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: "bold",
+            textDecoration: "underline",
+            textAlign: "center",
+            marginBottom: 14
+          }}
+        >
+          INCREMENT LETTER
+        </Text>
+
+        {/* BODY */}
+        <Text style={{ marginBottom: 10 }}>Dear {shortName},</Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          I am pleased to inform you that due to your consistent outstanding performance and dedication to your role, we are providing you with a salary increment effective from <Text style={{ fontWeight: "bold" }}>{formattedEffective}</Text>.
+        </Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          Your new annual CTC will be <Text style={{ fontWeight: "bold" }}> {formattedRevised}</Text> which is an increase from your previous annual CTC of <Text style={{ fontWeight: "bold" }}> {formattedCurrent}</Text>.
+        </Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          Your recent contributions across various responsibilities and deliverables have not gone unnoticed, and this increment reflects our recognition of your continued efforts and commitment towards the goals of the organization.
+        </Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          We appreciate your continuous hard work and commitment to <Text style={{ fontWeight: "bold" }}>{COMPANY_DATA.name}</Text>, and we believe you will continue to excel and contribute towards the company’s success.
+        </Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          Thank you for being an integral part of our team. We look forward to seeing your continued growth and success.
+        </Text>
+
+        {/* SIGN */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 40 }}>
+          <View>
+            {/* <Text><Text style={{ fontWeight: "bold" }}>Place:</Text> Pune</Text> */}
+            <Text style={{ marginTop: 4 }}><Text style={{ fontWeight: "bold" }}>Effective:</Text> {formattedEffective}</Text>
           </View>
-          
-          {/* Expectation Text */}
-          <Text style={appraisalLetterStyles.para}>
-            We expect you to keep up your performance in the years to come and grow with
-            the organization. Please sign and return the duplicate copy in token of your
-            acceptance, for your records.
-          </Text>
-          
-          <Text style={{...appraisalLetterStyles.para, marginBottom: 15}}>
-            Wish you all the best.
-          </Text>
-          
-          {/* Signature Section - Increased bottom margin to prevent footer overlap */}
-          <View style={{...appraisalLetterStyles.signatureSection, marginBottom: 60}}>
-            <Text>Signature</Text>
-            <Text style={{ marginTop: 20 }}>Hr Manager</Text>
+
+          <View style={{ width: "45%", textAlign: "right" }}>
+            <Image
+              src={COMPANY_DATA.signature}
+              style={{ width: 120, height: 50, marginBottom: 4, alignSelf: "flex-end" }}
+            />
+            <Text style={{ fontWeight: "bold" }}>{COMPANY_DATA.hrName}</Text>
+            <Text>{COMPANY_DATA.hrDesignation}</Text>
+            <Text>{COMPANY_DATA.hrEmail}</Text>
           </View>
-          
-          {/* Spacer to prevent overlap */}
-          <View style={{ height: 20 }}></View>
         </View>
-        
-        {/* Footer - Adjusted position */}
-        <View fixed style={{
-          position: 'absolute',
-          bottom: 20,
-          left: 50,
-          right: 50,
-          borderTopWidth: 1,
-          borderTopColor: safeFormData.companyColor || '#FF0000',
-          paddingTop: 4,
-          textAlign: 'center',
-        }}>
-          <Text style={appraisalLetterStyles.footerText}>{safeFormData.companyName || 'COMPANY NAME'}</Text>
-          <Text style={appraisalLetterStyles.footerText}>{safeFormData.companyAddressLine1 || 'COMPANY ADDRESS'}</Text>
-          <Text style={appraisalLetterStyles.footerText}>+91 {safeFormData.companyPhone || 'PHONE NUMBER'}</Text>
-          <Text style={appraisalLetterStyles.footerText}>{safeFormData.companyWebsite || 'WEBSITE'}</Text>
-        </View>
+        <GlobalPDFFooter/>
       </Page>
     </Document>
   );
 };
 
-// Main Component
-function AppraisalLetterV2() {
-  const [companies, setCompanies] = useState([]);
+/* ---------------- MAIN COMPONENT ---------------- */
+export default function AppraisalLetterV2() {
   const [candidates, setCandidates] = useState([]);
-  const [employments, setEmployments] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [employee, setEmployee] = useState(null);
+  const [currentCTC, setCurrentCTC] = useState("");
+  const [percentIncrease, setPercentIncrease] = useState("");
+  const [revisedCTC, setRevisedCTC] = useState("");
+  const [effectiveDate, setEffectiveDate] = useState("");
   const [showPDF, setShowPDF] = useState(false);
-  const [formData, setFormData] = useState({
-    employeeName: "",
-    designation: "",
-    department: "",
-    effectiveDate: "",
-    incrementDate: "",
-    joiningDate: "",
-    previousSalary: "",
-    newSalary: "",
-    incrementAmount: "",
-    percentageIncrease: "",
-    companyName: "",
-    companyAddressLine1: "",
-    companyColor: "",
-    companyEmail: "",
-    companyPhone: "",
-    companyWebsite: "",
-    companyLogo: "",
-    // Add salary breakdown fields
-    basic: "0.00",
-    da: "0.00",
-    conveyance: "0.00",
-    other: "0.00",
-    total: "0.00",
-    date: new Date().toISOString().split('T')[0]
-  });
-
-  // Use React.useMemo to memoize the PDF document to prevent unnecessary re-renders
-  const memoizedPdfDocument = React.useMemo(() => (
-    <AppraisalLetterPDF formData={formData} />
-  ), [formData]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [employments, setEmployments] = useState({});
+  const [employment,setEmployment] = useState({})
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        await fetchCompanies();
-        await fetchCandidates();
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error("Failed to load data");
-      }
-      setIsLoading(false);
-    };
-
-    fetchData();
+    async function load() {
+      const qs = await getDocs(collection(db, "employees"));
+      setCandidates(qs.docs.map(d => ({ id: d.id, ...d.data() })));
+    }
+    load();
   }, []);
 
-  const fetchCompanies = async () => {
-    const querySnapshot = await getDocs(collection(db, "companies"));
-    const companyList = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    setCompanies(companyList);
+  const calcRevised = (current, percent) => {
+    if (!current || !percent) return "";
+    return (Number(current) + Number(current) * (percent / 100)).toFixed(0);
   };
 
-  const fetchCandidates = async () => {
-    try {
-      // Try fetching from 'employees' collection
-      const querySnapshot = await getDocs(collection(db, 'employees'));
-      const employeesList = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      console.log("Fetched Employees:", employeesList);
-      setCandidates(employeesList);
-      
-      // Now fetch all employments for these employees
-      const employmentData = {};
-      for (const employee of employeesList) {
-        try {
-          // Query employments for this employee
-          const q = query(collection(db, 'employments'), where('employeeId', '==', employee.id));
-          const empSnapshot = await getDocs(q);
-          
-          if (!empSnapshot.empty) {
-            // Get the most recent employment (usually there will be just one)
-            const employmentsList = empSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            
-            // Sort by startDate (descending) to get the most recent employment first
-            const sortedEmployments = employmentsList.sort((a, b) => {
-              return new Date(b.startDate) - new Date(a.startDate);
-            });
-            
-            employmentData[employee.id] = sortedEmployments[0];
-            console.log(`Found employment for ${employee.name}:`, sortedEmployments[0]);
-          } else {
-            console.log(`No employment found for employee: ${employee.name}`);
-          }
-        } catch (err) {
-          console.error(`Error fetching employment for employee ${employee.id}:`, err);
-        }
-      }
-      
-      setEmployments(employmentData);
-      
-      if (employeesList.length === 0) {
-        console.warn("No employees found in the database. Please add employees in the admin dashboard first.");
-      }
-    } catch (error) {
-      console.error("Error fetching employees:", error);
-      toast.error("Failed to load employees");
-    }
+  const calcPercent = (current, revised) => {
+    if (!current || !revised) return "";
+    return (((revised - current) / current) * 100).toFixed(2);
   };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    
-    if (name === "company") {
-      const selectedCompany = companies.find(company => company.name === value);
-      if (selectedCompany) {
-        setFormData(prev => ({
-          ...prev,
-          companyName: selectedCompany.name,
-          companyAddressLine1: selectedCompany.address,
-          companyColor: selectedCompany.serverColor,
-          companyEmail: selectedCompany.email,
-          companyPhone: selectedCompany.mobile,
-          companyWebsite: selectedCompany.website,
-          companyLogo: selectedCompany.logo
-        }));
-      }
-    } else if (name === "employeeName") {
-      const selectedEmployee = candidates.find(employee => employee.name === value);
-      if (selectedEmployee) {
-        console.log("Selected Employee:", selectedEmployee);
-        
-        // Get the employment details for this employee
-        const employmentDetails = employments[selectedEmployee.id];
-        console.log("Employment details:", employmentDetails);
-        
-        let joiningDate;
-        let employeeDesignation;
-        let employeeDepartment;
-        let employeeSalary;
-        let incrementDate;
-        
-        if (employmentDetails) {
-          // If we have employment details, use those
-          joiningDate = employmentDetails.joiningDate || employmentDetails.startDate;
-          employeeDesignation = employmentDetails.jobTitle || employmentDetails.designation;
-          employeeDepartment = employmentDetails.department;
-          employeeSalary = employmentDetails.salary;
-          incrementDate = employmentDetails.incrementDate || new Date().toISOString().split('T')[0];
-        } else {
-          // Fallback to employee record if no employment details
-          joiningDate = selectedEmployee.joinDate;
-          employeeDesignation = selectedEmployee.position || selectedEmployee.jobTitle;
-          employeeDepartment = selectedEmployee.department;
-          employeeSalary = selectedEmployee.salary;
-          incrementDate = new Date().toISOString().split('T')[0];
-        }
-        
-        // Default values for new salary calculations
-        const previousSalary = employeeSalary || 0;
-        const percentageIncrease = 10; // Default 10% increase
-        const incrementAmount = Math.round(previousSalary * (percentageIncrease / 100));
-        const newSalary = previousSalary + incrementAmount;
-        
-        // Calculate monthly breakdown
-        const monthlySalary = newSalary / 12;
-        const basic = Math.round(monthlySalary * 0.4); // 40% of monthly salary
-        const da = Math.round(monthlySalary * 0.1); // 10% of monthly salary
-        const conveyance = 1600; // Fixed amount (19200 annually)
-        const hra = Math.round(basic * 0.5); // 50% of Basic
-        const medical = 1250; // Fixed monthly amount (15000 annually)
-        const other = monthlySalary - basic - da - conveyance - hra - medical; // Remaining amount
-        const total = monthlySalary;
-        
-        setFormData(prev => ({
-          ...prev,
-          employeeName: selectedEmployee.name,
-          designation: employeeDesignation || "",
-          department: employeeDepartment || "",
-          joiningDate: joiningDate || new Date().toISOString().split('T')[0],
-          incrementDate: incrementDate,
-          effectiveDate: incrementDate,
-          previousSalary: previousSalary.toString(),
-          newSalary: newSalary.toString(),
-          incrementAmount: incrementAmount.toString(),
-          percentageIncrease: percentageIncrease.toString(),
-          // Add monthly breakdown components
-          basic: formatIndianCurrency(basic),
-          da: formatIndianCurrency(da),
-          conveyance: formatIndianCurrency(conveyance),
-          other: formatIndianCurrency(other),
-          total: formatIndianCurrency(monthlySalary),
-          date: incrementDate
-        }));
-      }
-    } else if (name === "newSalary" || name === "previousSalary") {
-      // Recalculate percentage and increment when salary values change
-      let updatedFormData = { ...formData, [name]: value };
-      const prevSalary = parseFloat(updatedFormData.previousSalary) || 0;
-      const newSalary = parseFloat(updatedFormData.newSalary) || 0;
-      
-      if (prevSalary > 0 && newSalary > 0) {
-        const incrementAmount = newSalary - prevSalary;
-        const percentageIncrease = prevSalary > 0 ? ((incrementAmount / prevSalary) * 100).toFixed(2) : 0;
-        
-        // Calculate monthly breakdown
-        const monthlySalary = newSalary / 12;
-        const basic = Math.round(monthlySalary * 0.4); // 40% of monthly salary
-        const da = Math.round(monthlySalary * 0.1); // 10% of monthly salary
-        const conveyance = 1600; // Fixed amount (19200 annually)
-        const hra = Math.round(basic * 0.5); // 50% of Basic
-        const medical = 1250; // Fixed monthly amount (15000 annually)
-        const other = monthlySalary - basic - da - conveyance - hra - medical; // Remaining amount
-        const total = monthlySalary;
-        
-        updatedFormData = {
-          ...updatedFormData,
-          incrementAmount: incrementAmount.toString(),
-          percentageIncrease: percentageIncrease.toString(),
-          // Add monthly breakdown components
-          basic: formatIndianCurrency(basic),
-          da: formatIndianCurrency(da),
-          conveyance: formatIndianCurrency(conveyance),
-          other: formatIndianCurrency(other),
-          total: formatIndianCurrency(monthlySalary)
-        };
-      }
-      
-      setFormData(updatedFormData);
-    } else if (name === "percentageIncrease") {
-      // Recalculate new salary when percentage changes
-      const percentage = parseFloat(value) || 0;
-      const prevSalary = parseFloat(formData.previousSalary) || 0;
-      const incrementAmount = Math.round(prevSalary * (percentage / 100));
-      const newSalary = prevSalary + incrementAmount;
-      
-      // Calculate monthly breakdown
-      const monthlySalary = newSalary / 12;
-      const basic = Math.round(monthlySalary * 0.4); // 40% of monthly salary
-      const da = Math.round(monthlySalary * 0.1); // 10% of monthly salary
-      const conveyance = 1600; // Fixed amount (19200 annually)
-      const hra = Math.round(basic * 0.5); // 50% of Basic
-      const medical = 1250; // Fixed monthly amount (15000 annually)
-      const other = monthlySalary - basic - da - conveyance - hra - medical; // Remaining amount
-      const total = monthlySalary;
-      
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        incrementAmount: incrementAmount.toString(),
-        newSalary: newSalary.toString(),
-        // Add monthly breakdown components
-        basic: formatIndianCurrency(basic),
-        da: formatIndianCurrency(da),
-        conveyance: formatIndianCurrency(conveyance),
-        other: formatIndianCurrency(other),
-        total: formatIndianCurrency(monthlySalary)
-      }));
-    } else if (name === "effectiveDate") {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value,
-        date: value
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+  const onPercentChange = (v) => {
+    setPercentIncrease(v);
+    setRevisedCTC(calcRevised(currentCTC, v));
   };
-  
-  const handleGenerateDocument = () => {
+
+  const onRevisedChange = (v) => {
+    setRevisedCTC(v);
+    setPercentIncrease(calcPercent(currentCTC, v));
+  };
+
+  const generate = () => {
+    if (!employee) return toast.error("Select employee");
+    if (!currentCTC) return toast.error("Enter current CTC");
+    if (!percentIncrease) return toast.error("Enter % increase");
+    if (!revisedCTC) return toast.error("Revised CTC missing");
+    if (!effectiveDate) return toast.error("Select effective date");
     setShowPDF(true);
   };
 
-  const handleDownloadSuccess = () => {
-    toast.success("Appraisal letter downloaded successfully");
-  };
-
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto p-4">
       <Toaster position="top-center" />
-      <Link href="/dashboard/documents" className="back-link flex items-center text-slate-700 hover:text-gray-900">
-        <FiArrowLeft className="h-5 w-5 mr-2" />
-        <span>Back to Documents</span>
-      </Link>
 
-      <div className="grid md:grid-cols-2 gap-8 mt-8">
-        <div>
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">Enter Appraisal Letter Details</h2>
-          
-          <form onSubmit={handleGenerateDocument}>
-            <div className="mb-4">
-              <label className="block mb-2 text-sm font-medium text-slate-800">Employee Name</label>
-              <select
-                name="employeeName"
-                value={formData.employeeName}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded"
-                required
-              >
-                <option value="">Select Employee</option>
-                {candidates.map((candidate) => (
-                  <option key={candidate.id} value={candidate.name}>
-                    {candidate.name}
-                  </option>
-                ))}
-              </select>
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <TableHeader
+          title="Generate Increment Letter"
+          backButton={{ href: "/dashboard/documents", label: "Back" }}
+          showStats={false}
+          showSearch={false}
+          showFilter={false}
+          headerClassName="px-6 py-6"
+        />
+
+        <div className="p-6 space-y-6">
+
+          {/* SECTION CARD */}
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
+              Increment Information
+            </h2>
+
+            <div className="bg-white p-4 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                    Employee <span className="text-red-500">*</span>
+                  </label>
+                
+                  <Combobox
+                  value={employee}
+                  onChange={(e) => {
+                    setEmployee(e || null);
+                    setEmployment(employments[e?.id] || null);
+                  }}
+                >
+                  <div className="relative">
+                
+                    <Combobox.Input
+                      className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      placeholder="Select or Search employee..."
+                      displayValue={(emp) => emp?.name ?? ""}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                    />
+                
+                    <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
+                      {candidates
+                        .filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .map(emp => (
+                          <Combobox.Option
+                            key={emp.id}
+                            value={emp}
+                            className={({ active }) =>
+                              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white'}`
+                            }
+                          >
+                            {emp.name}
+                          </Combobox.Option>
+                        ))}
+                
+                      {candidates.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                        <div className="px-3 py-2 text-gray-500 italic">
+                          No results found
+                        </div>
+                      )}
+                    </Combobox.Options>
+                  </div>
+                </Combobox>
+                
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Current CTC (Annual) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full p-2 border rounded-md"
+                    value={currentCTC}
+                    onChange={(e) => setCurrentCTC(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    % Increase <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full p-2 border rounded-md"
+                    value={percentIncrease}
+                    onChange={(e) => onPercentChange(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Revised CTC (Annual) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full p-2 border rounded-md"
+                    value={revisedCTC}
+                    onChange={(e) => onRevisedChange(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Effective Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full p-2 border rounded-md"
+                    value={effectiveDate}
+                    onChange={(e) => setEffectiveDate(e.target.value)}
+                  />
+                </div>
+
+              </div>
             </div>
-            
-            <div className="mb-4">
-              <label className="block mb-2 text-sm font-medium text-slate-800">Company</label>
-              <select
-                name="company"
-                value={formData.companyName}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded"
-                required
-              >
-                <option value="">Select Company</option>
-                {companies.map((company) => (
-                  <option key={company.id} value={company.name}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="mb-4">
-              <label className="block mb-2 text-sm font-medium text-slate-800">Effective Date</label>
-              <input
-                type="date"
-                name="effectiveDate"
-                value={formData.effectiveDate}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block mb-2 text-sm font-medium text-slate-800">Previous Salary (Annual)</label>
-              <input
-                type="number"
-                name="previousSalary"
-                value={formData.previousSalary}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block mb-2 text-sm font-medium text-slate-800">New Salary (Annual)</label>
-              <input
-                type="number"
-                name="newSalary"
-                value={formData.newSalary}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block mb-2 text-sm font-medium text-slate-800">Percentage Increase (%)</label>
-              <input
-                type="number"
-                name="percentageIncrease"
-                value={formData.percentageIncrease}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded"
-                required
-              />
-            </div>
-            
+          </div>
+
+          <div className="flex justify-end">
             <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              onClick={generate}
+              className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Generate Letter
+              <FiDownload size={18} className="mr-2" />
+              <span>Generate Letter</span>
             </button>
-          </form>
+          </div>
+
         </div>
-        
-        {showPDF && (
-          <div>
-            <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
-            <div className="mt-4 border border-gray-300" style={{height: '600px'}}>
-              <PDFViewer width="100%" height="100%">
-                {memoizedPdfDocument}
-              </PDFViewer>
-            </div>
-            
+      </div>
+
+      {/* PREVIEW */}
+      {showPDF && employee && (
+        <div className="bg-white rounded-lg shadow-lg p-4 mt-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold">PDF Preview</h3>
+
             <PDFDownloadLink
-              document={memoizedPdfDocument}
-              fileName={`appraisal_letter_${formData.employeeName.replace(/\s+/g, '_').toLowerCase()}.pdf`}
-              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              onClick={handleDownloadSuccess}
+              document={
+                <AppraisalLetterPDF
+                  employee={employee}
+                  currentCTC={currentCTC}
+                  percentIncrease={percentIncrease}
+                  revisedCTC={revisedCTC}
+                  effectiveDate={effectiveDate}
+                />
+              }
+              fileName={`Appraisal_${employee.name}.pdf`}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md"
             >
-              {({ loading }) => (
-                <>
-                  <FiDownload className="mr-2" />
-                  {loading ? 'Preparing document...' : 'Download PDF'}
-                </>
-              )}
+              Download PDF
             </PDFDownloadLink>
           </div>
-        )}
-      </div>
+
+          <div className="border rounded-lg" style={{ height: "80vh" }}>
+            <PDFViewer width="100%" height="100%">
+              <AppraisalLetterPDF
+                employee={employee}
+                currentCTC={currentCTC}
+                percentIncrease={percentIncrease}
+                revisedCTC={revisedCTC}
+                effectiveDate={effectiveDate}
+              />
+            </PDFViewer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
-export default AppraisalLetterV2;

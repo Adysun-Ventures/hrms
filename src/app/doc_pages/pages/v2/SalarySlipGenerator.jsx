@@ -6,505 +6,178 @@ import { FiArrowLeft, FiDownload } from 'react-icons/fi';
 import { PDFViewer, PDFDownloadLink, Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { CompanyHeader, FormattedDate, Paragraph, Signature, Footer, Watermark } from '@/components/pdf/PDFComponents';
-import { commonStyles } from '@/components/pdf/PDFStyles';
+import { CompanyHeader, Watermark } from '@/components/pdf/PDFComponents';
 import { formatIndianCurrency, numberToWords } from '@/components/pdf/SalaryUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
+import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
+import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
+import { Combobox } from "@headlessui/react";
 
 const DEFAULT_COMPANY_NAME = 'Adysun Ventures Pvt. Ltd.';
 
-// Define styles for the default Salary Slip layout
+// === DEFAULT LAYOUT STYLES ===
 const defaultSalarySlipStyles = StyleSheet.create({
-  title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-    fontFamily: 'Calibri',
-  },
-  subtitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    fontFamily: 'Calibri',
-  },
-  section: {
-    marginBottom: 10,
-  },
-  row: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderBottomStyle: 'solid',
-    paddingVertical: 5,
-  },
-  cell: {
-    flex: 1,
-    padding: 5,
-    fontSize: 10,
-    fontFamily: 'Calibri',
-  },
-  headerCell: {
-    flex: 1,
-    padding: 5,
-    fontSize: 11,
-    fontWeight: 'bold',
-    fontFamily: 'Calibri',
-    backgroundColor: '#f0f0f0',
-  },
-  bold: {
-    fontWeight: 'bold',
-  },
-  employeeInfoContainer: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#000',
-    marginVertical: 10,
-  },
-  employeeInfoSection: {
-    flex: 1,
-    padding: 8,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: 5,
-  },
-  infoLabel: {
-    flex: 1,
-    fontSize: 10,
-    fontWeight: 'bold',
-    fontFamily: 'Calibri',
-  },
-  infoValue: {
-    flex: 2,
-    fontSize: 10,
-    fontFamily: 'Calibri',
-  },
-  earningsDeductionsContainer: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#000',
-    marginTop: 15,
-  },
-  earningsSection: {
-    flex: 1,
-    borderRightWidth: 1,
-    borderRightColor: '#000',
-  },
-  deductionsSection: {
-    flex: 1,
-  },
-  columnHeader: {
-    backgroundColor: '#f0f0f0',
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    padding: 5,
-  },
-  columnHeaderText: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: 'bold',
-    fontFamily: 'Calibri',
-  },
-  amountColumnHeader: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: 'bold',
-    fontFamily: 'Calibri',
-    textAlign: 'right',
-  },
-  item: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    padding: 5,
-  },
-  itemName: {
-    flex: 1,
-    fontSize: 10,
-    fontFamily: 'Calibri',
-  },
-  itemAmount: {
-    flex: 1,
-    fontSize: 10,
-    fontFamily: 'Calibri',
-    textAlign: 'right',
-  },
-  totalRow: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: '#000',
-    padding: 5,
-    backgroundColor: '#f0f0f0',
-  },
-  totalLabel: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: 'bold',
-    fontFamily: 'Calibri',
-  },
-  totalAmount: {
-    flex: 1,
-    fontSize: 11,
-    fontWeight: 'bold',
-    fontFamily: 'Calibri',
-    textAlign: 'right',
-  },
-  netPayContainer: {
-    marginTop: 15,
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  netPayRow: {
-    flexDirection: 'row',
-    padding: 8,
-    backgroundColor: '#e6e6e6',
-  },
-  netPayLabel: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: 'bold',
-    fontFamily: 'Calibri',
-  },
-  netPayAmount: {
-    flex: 1,
-    fontSize: 12,
-    fontWeight: 'bold',
-    fontFamily: 'Calibri',
-    textAlign: 'right',
-  },
-  netPayWords: {
-    padding: 8,
-    fontSize: 11,
-    fontFamily: 'Calibri',
-    fontStyle: 'italic',
-  },
-  signature: {
-    marginTop: 50,
-    flexDirection: 'row',
-  },
-  signatureSection: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  signatureText: {
-    fontSize: 11,
-    fontFamily: 'Calibri',
-    marginTop: 20,
-  },
-  page: {
-    padding: 40,
-    paddingBottom: 60,
-    fontFamily: 'Calibri',
-    fontSize: 11,
-    backgroundColor: 'white',
-  },
+  title: { fontSize: 16, fontWeight: 'bold', marginBottom: 10, textAlign: 'center', fontFamily: 'Calibri' },
+  subtitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 8, fontFamily: 'Calibri' },
+  section: { marginBottom: 10 },
+  row: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderBottomStyle: 'solid', paddingVertical: 5 },
+  cell: { flex: 1, padding: 5, fontSize: 10, fontFamily: 'Calibri' },
+  headerCell: { flex: 1, padding: 5, fontSize: 11, fontWeight: 'bold', backgroundColor: '#f0f0f0', fontFamily: 'Calibri' },
+  bold: { fontWeight: 'bold' },
+  employeeInfoContainer: { flexDirection: 'row', borderWidth: 1, borderColor: '#000', marginVertical: 10 },
+  employeeInfoSection: { flex: 1, padding: 8 },
+  infoRow: { flexDirection: 'row', marginBottom: 5 },
+  infoLabel: { flex: 1, fontSize: 10, fontWeight: 'bold', fontFamily: 'Calibri' },
+  infoValue: { flex: 2, fontSize: 10, fontFamily: 'Calibri' },
+  earningsDeductionsContainer: { flexDirection: 'row', borderWidth: 1, borderColor: '#000', marginTop: 15 },
+  earningsSection: { flex: 1, borderRightWidth: 1, borderRightColor: '#000' },
+  deductionsSection: { flex: 1 },
+  columnHeader: { backgroundColor: '#f0f0f0', flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', padding: 5 },
+  columnHeaderText: { flex: 1, fontSize: 11, fontWeight: 'bold', fontFamily: 'Calibri' },
+  amountColumnHeader: { flex: 1, fontSize: 11, fontWeight: 'bold', textAlign: 'right', fontFamily: 'Calibri' },
+  item: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#ddd', padding: 5 },
+  itemName: { flex: 1, fontSize: 10, fontFamily: 'Calibri' },
+  itemAmount: { flex: 1, fontSize: 10, textAlign: 'right', fontFamily: 'Calibri' },
+  totalRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#000', padding: 5, backgroundColor: '#f0f0f0' },
+  totalLabel: { flex: 1, fontSize: 11, fontWeight: 'bold', fontFamily: 'Calibri' },
+  totalAmount: { flex: 1, fontSize: 11, fontWeight: 'bold', textAlign: 'right', fontFamily: 'Calibri' },
+  netPayContainer: { marginTop: 15, borderWidth: 1, borderColor: '#000' },
+  netPayRow: { flexDirection: 'row', padding: 8, backgroundColor: '#e6e6e6' },
+  netPayLabel: { flex: 1, fontSize: 12, fontWeight: 'bold', fontFamily: 'Calibri' },
+  netPayAmount: { flex: 1, fontSize: 12, fontWeight: 'bold', textAlign: 'right', fontFamily: 'Calibri' },
+  netPayWords: { padding: 8, fontSize: 11, fontFamily: 'Calibri', fontStyle: 'italic' },
+  signature: { marginTop: 50, flexDirection: 'row' },
+  signatureSection: { flex: 1, alignItems: 'center' },
+  signatureText: { fontSize: 11, marginTop: 20, fontFamily: 'Calibri' },
+  page: { padding: 40, paddingBottom: 60, fontFamily: 'Calibri', fontSize: 11, backgroundColor: 'white' },
 });
 
-// Adysun Ventures layout styles
+// === ADYSUN LAYOUT STYLES ===
 const adysunSalarySlipStyles = StyleSheet.create({
-  page: {
-    paddingTop: 24,
-    paddingBottom: 32,
-    paddingHorizontal: 32,
-    fontFamily: 'Calibri',
-    fontSize: 10,
-    backgroundColor: '#fff',
-    color: '#111',
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  logoWrapper: {
-    marginRight: 16,
-  },
-  logo: {
-    width: 66,
-    height: 66,
-  },
-  headerTextBlock: {
-    alignItems: 'center',
-  },
-  headerCompany: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  headerInfo: {
-    fontSize: 9,
-    color: '#333',
-  },
-  horizontalRule: {
-    marginTop: 8,
-    marginBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderBottomStyle: 'solid',
-  },
-  dateText: {
-    fontSize: 10,
-    marginBottom: 4,
-  },
-  slipTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  detailTable: {
-    borderWidth: 1,
-    borderColor: '#000',
-    borderStyle: 'solid',
-    marginBottom: 12,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderBottomStyle: 'solid',
-  },
-  detailLastRow: {
-    borderBottomWidth: 0,
-  },
-  detailCellLabel: {
-    width: '40%',
-    padding: 6,
-    fontWeight: 'bold',
-    borderRightWidth: 1,
-    borderRightColor: '#000',
-    borderRightStyle: 'solid',
-  },
-  detailCellValue: {
-    width: '60%',
-    padding: 6,
-  },
-  dualTable: {
-    flexDirection: 'row',
-    borderWidth: 1,
-    borderColor: '#000',
-    borderStyle: 'solid',
-    marginBottom: 8,
-  },
-  dualColumn: {
-    flex: 1,
-  },
-  dualColumnDivider: {
-    borderRightWidth: 1,
-    borderRightColor: '#000',
-    borderRightStyle: 'solid',
-  },
-  dualHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#f4f4f4',
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderBottomStyle: 'solid',
-  },
-  dualHeaderCell: {
-    flex: 1,
-    padding: 6,
-    fontWeight: 'bold',
-  },
-  dualRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#b5b5b5',
-    borderBottomStyle: 'solid',
-  },
-  dualRowLast: {
-    borderBottomWidth: 0,
-  },
-  dualCell: {
-    flex: 1,
-    padding: 6,
-  },
-  dualAmountCell: {
-    textAlign: 'right',
-  },
-  totalsRow: {
-    flexDirection: 'row',
-    backgroundColor: '#f4f4f4',
-    borderTopWidth: 1,
-    borderTopColor: '#000',
-    borderTopStyle: 'solid',
-  },
-  totalsLabel: {
-    flex: 1,
-    padding: 6,
-    fontWeight: 'bold',
-  },
-  totalsAmount: {
-    textAlign: 'right',
-  },
-  netTable: {
-    borderWidth: 1,
-    borderColor: '#000',
-    borderStyle: 'solid',
-    marginBottom: 6,
-  },
-  netRow: {
-    flexDirection: 'row',
-  },
-  netLabel: {
-    width: '40%',
-    padding: 6,
-    fontWeight: 'bold',
-    borderRightWidth: 1,
-    borderRightColor: '#000',
-    borderRightStyle: 'solid',
-  },
-  netValue: {
-    width: '60%',
-    padding: 6,
-    textAlign: 'right',
-  },
-  note: {
-    fontSize: 9,
-    textAlign: 'center',
-    marginVertical: 4,
-  },
-  footerSeparator: {
-    marginTop: 12,
-    marginBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    borderBottomStyle: 'solid',
-  },
-  footer: {
-    alignItems: 'center',
-  },
-  footerLine: {
-    fontSize: 9,
-    textAlign: 'center',
-  },
+  page: { paddingTop: 24, paddingBottom: 32, paddingHorizontal: 32, fontFamily: 'Calibri', fontSize: 10, backgroundColor: '#fff', color: '#111' },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  logoWrapper: { marginRight: 16 },
+  logo: { width: 66, height: 66 },
+  headerTextBlock: { alignItems: 'center' },
+  headerCompany: { fontSize: 16, fontWeight: 'bold' },
+  headerInfo: { fontSize: 9, color: '#333' },
+  horizontalRule: { marginTop: 8, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#000', borderBottomStyle: 'solid' },
+  dateText: { fontSize: 10, marginBottom: 4 },
+  slipTitle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
+  detailTable: { borderWidth: 1, borderColor: '#000', borderStyle: 'solid', marginBottom: 12 },
+  detailRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderBottomStyle: 'solid' },
+  detailLastRow: { borderBottomWidth: 0 },
+  detailCellLabel: { width: '40%', padding: 6, fontWeight: 'bold', borderRightWidth: 1, borderRightColor: '#000', borderRightStyle: 'solid' },
+  detailCellValue: { width: '60%', padding: 6 },
+  dualTable: { flexDirection: 'row', borderWidth: 1, borderColor: '#000', borderStyle: 'solid', marginBottom: 8 },
+  dualColumn: { flex: 1 },
+  dualColumnDivider: { borderRightWidth: 1, borderRightColor: '#000', borderRightStyle: 'solid' },
+  dualHeader: { flexDirection: 'row', backgroundColor: '#f4f4f4', borderBottomWidth: 1, borderBottomColor: '#000', borderBottomStyle: 'solid' },
+  dualHeaderCell: { flex: 1, padding: 6, fontWeight: 'bold' },
+  dualRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#b5b5b5', borderBottomStyle: 'solid' },
+  dualRowLast: { borderBottomWidth: 0 },
+  dualCell: { flex: 1, padding: 6 },
+  dualAmountCell: { textAlign: 'right' },
+  totalsRow: { flexDirection: 'row', backgroundColor: '#f4f4f4', borderTopWidth: 1, borderTopColor: '#000', borderTopStyle: 'solid' },
+  totalsLabel: { flex: 1, padding: 6, fontWeight: 'bold' },
+  totalsAmount: { textAlign: 'right' },
+  netTable: { borderWidth: 1, borderColor: '#000', borderStyle: 'solid', marginBottom: 6 },
+  netRow: { flexDirection: 'row' },
+  netLabel: { width: '40%', padding: 6, fontWeight: 'bold', borderRightWidth: 1, borderRightColor: '#000', borderRightStyle: 'solid' },
+  netValue: { width: '60%', padding: 6, textAlign: 'right' },
+  note: { fontSize: 9, textAlign: 'center', marginVertical: 4 },
+  footerSeparator: { marginTop: 12, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#000', borderBottomStyle: 'solid' },
+  footer: { alignItems: 'center' },
+  footerLine: { fontSize: 9, textAlign: 'center' },
 });
 
-const getEmployeeNameText = (employeeName, employeeNameText) => {
-  if (employeeNameText) return employeeNameText;
-  if (Array.isArray(employeeName)) {
-    if (employeeName.length === 0) return 'Employee Name';
-    return employeeName.join(', ');
-  }
-  return employeeName || 'Employee Name';
+// === HELPER FUNCTIONS ===
+const normalize = (v) => Array.isArray(v) ? v.filter(Boolean) : v ? [v] : [];
+const primaryName = (v) => {
+  const n = normalize(v);
+  return n.length === 0 ? '' : n[n.length - 1];
 };
 
-const formatDisplayDate = (dateString) => {
-  if (!dateString) return "";
-  try {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("en-GB", {
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    }).format(date);
-  } catch (e) {
-    return "";
-  }
+const getEmployeeNameText = (names, txt) => txt || normalize(names).join(', ') || 'Employee Name';
+const formatDisplayDate = (d) => new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
+const getSalarySlipMonthLabel = (d) => {
+  const date = new Date(d);
+  if (isNaN(date)) return "-";
+  return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 };
+const getSalarySlipMonthUpper = (d) => new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}).toUpperCase();
 
-const getSalarySlipMonthLabel = (dateString) => {
-  const payDate = dateString ? new Date(dateString) : new Date();
-  return new Intl.DateTimeFormat('en-GB', {
-    month: 'long',
-    year: 'numeric'
-  }).format(payDate);
-};
+const getTotalEarnings = (f) =>
+  (f.basicSalary||0)+(f.da||0)+(f.conveyanceAllowance||0)+(f.otherAllowance||0)+(f.medicalAllowance||0)+(f.cca||0);
 
-const getSalarySlipMonthUpper = (dateString) => {
-  const payDate = dateString ? new Date(dateString) : new Date();
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  }).format(payDate).toUpperCase();
-};
+const getTotalDeductions = (f) =>
+  (f.professionalTax||0)+(f.otherDeductions||0)+(f.pfEmployee||0)+(f.leavesDeduction||0);
 
-const getTotalEarnings = (formData) => {
-  return (
-    (formData.basicSalary || 0) +
-    (formData.da || 0) +
-    (formData.conveyanceAllowance || 0) +
-    (formData.otherAllowance || 0) +
-    (formData.medicalAllowance || 0) +
-    (formData.cca || 0)
-  );
-};
+const getNetSalary = (f)=>
+  getTotalEarnings(f)-getTotalDeductions(f);
 
-const getTotalDeductions = (formData) => {
-  return (formData.professionalTax || 0) + (formData.otherDeductions || 0);
-};
-
-const getNetSalary = (formData) => {
-  return getTotalEarnings(formData) - getTotalDeductions(formData);
-};
-
+// === SYSTEM PDF COMPONENTS (DEFAULT + ADYSUN) WILL COME IN CHUNK 2 ===
+// === DEFAULT PDF LAYOUT WITH PF CONDITIONAL ROW ===
 const DefaultSalarySlipLayout = ({ formData }) => {
-  const safeFormData = formData || {};
+  const f = formData || {};
 
   return (
     <Page size="A4" style={defaultSalarySlipStyles.page}>
-      <Watermark logoSrc={safeFormData.companyLogo} />
+      <Watermark logoSrc={f.companyLogo} />
       <CompanyHeader
-        companyName={safeFormData.companyName || 'COMPANY NAME'}
-        companyAddress={safeFormData.companyAddressLine1 || 'COMPANY ADDRESS'}
-        companyLogo={safeFormData.companyLogo}
-        companyPhone={safeFormData.companyPhone || 'PHONE NUMBER'}
-        companyWebsite={safeFormData.companyWebsite || 'WEBSITE'}
-        companyColor={safeFormData.companyColor || '#FF0000'}
+        companyName={f.companyName}
+        companyAddress={f.companyAddressLine1}
+        companyLogo={f.companyLogo}
+        companyPhone={f.companyPhone}
+        companyWebsite={f.companyWebsite}
+        companyColor={f.companyColor}
       />
 
       <Text style={defaultSalarySlipStyles.title}>
-        SALARY SLIP FOR THE MONTH OF {getSalarySlipMonthUpper(safeFormData.payDate)}
+        SALARY SLIP FOR THE MONTH OF {getSalarySlipMonthUpper(f.payDate)}
       </Text>
 
       <View style={defaultSalarySlipStyles.employeeInfoContainer}>
         <View style={{ ...defaultSalarySlipStyles.employeeInfoSection, flexDirection: 'column' }}>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>EMP Code</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{safeFormData.employeeId || 'EMP001'}</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{f.employeeId || '-'}</Text>
           </View>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>Name</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{getEmployeeNameText(safeFormData.employeeName, safeFormData.employeeNameText)}</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{getEmployeeNameText(f.employeeName, f.employeeNameText)}</Text>
           </View>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>Designation</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{safeFormData.designation || 'Designation'}</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{f.designation || '-'}</Text>
           </View>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>PAN</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{safeFormData.pan || 'XXXXXXXXXX'}</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{f.panNumber || '-'}</Text>
           </View>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>Location</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{safeFormData.location || 'Location'}</Text>
-          </View>
-          <View style={defaultSalarySlipStyles.infoRow}>
-            <Text style={defaultSalarySlipStyles.infoLabel}>DOJ</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{formatDisplayDate(safeFormData.payDate) || 'DD/MM/YYYY'}</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{f.location || '-'}</Text>
           </View>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>Department</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{safeFormData.department || 'Department'}</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{f.department || '-'}</Text>
           </View>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>Payable Days</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{safeFormData.payableDays || '30'}</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{f.payableDays || '-'}</Text>
           </View>
         </View>
 
         <View style={defaultSalarySlipStyles.employeeInfoSection}>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>Bank Name:</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{safeFormData.bankName || 'Bank Name'}</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{f.bankName || '-'}</Text>
           </View>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>Bank A/C No:</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{safeFormData.accountNumber || 'XXXXXXXXXXXX'}</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{f.accountNo || '-'}</Text>
           </View>
         </View>
       </View>
@@ -516,35 +189,26 @@ const DefaultSalarySlipLayout = ({ formData }) => {
             <Text style={defaultSalarySlipStyles.amountColumnHeader}>Amount (₹)</Text>
           </View>
 
-          <View style={defaultSalarySlipStyles.item}>
-            <Text style={defaultSalarySlipStyles.itemName}>Basic</Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(safeFormData.basicSalary || 0)}</Text>
-          </View>
-          <View style={defaultSalarySlipStyles.item}>
-            <Text style={defaultSalarySlipStyles.itemName}>DA</Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(safeFormData.da || 0)}</Text>
-          </View>
-          <View style={defaultSalarySlipStyles.item}>
-            <Text style={defaultSalarySlipStyles.itemName}>Conveyance Allowance</Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(safeFormData.conveyanceAllowance || 0)}</Text>
-          </View>
-          <View style={defaultSalarySlipStyles.item}>
-            <Text style={defaultSalarySlipStyles.itemName}>Other Allowance</Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(safeFormData.otherAllowance || 0)}</Text>
-          </View>
-          <View style={defaultSalarySlipStyles.item}>
-            <Text style={defaultSalarySlipStyles.itemName}>Medical Allowance</Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(safeFormData.medicalAllowance || 0)}</Text>
-          </View>
-          <View style={defaultSalarySlipStyles.item}>
-            <Text style={defaultSalarySlipStyles.itemName}>CCA</Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(safeFormData.cca || 0)}</Text>
-          </View>
+          {[
+            { label: "Basic", value: f.basicSalary },
+            { label: "HRA/DA", value: f.da },
+            { label: "Conveyance Allowance", value: f.conveyanceAllowance },
+            { label: "Other Allowance", value: f.otherAllowance },
+            { label: "Medical Allowance", value: f.medicalAllowance },
+            { label: "CCA", value: f.cca },
+          ].map(item => (
+            <View style={defaultSalarySlipStyles.item} key={item.label}>
+              <Text style={defaultSalarySlipStyles.itemName}>{item.label}</Text>
+              <Text style={defaultSalarySlipStyles.itemAmount}>
+                Rs. {formatIndianCurrency(item.value || 0)}
+              </Text>
+            </View>
+          ))}
 
           <View style={defaultSalarySlipStyles.totalRow}>
             <Text style={defaultSalarySlipStyles.totalLabel}>Gross Salary</Text>
             <Text style={defaultSalarySlipStyles.totalAmount}>
-              Rs. {formatIndianCurrency(getTotalEarnings(safeFormData))}
+              Rs. {formatIndianCurrency(getTotalEarnings(f))}
             </Text>
           </View>
         </View>
@@ -557,29 +221,33 @@ const DefaultSalarySlipLayout = ({ formData }) => {
 
           <View style={defaultSalarySlipStyles.item}>
             <Text style={defaultSalarySlipStyles.itemName}>Professional Tax</Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(safeFormData.professionalTax || 0)}</Text>
+            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(f.professionalTax || 0)}</Text>
           </View>
+
+          {f.enablePF && (
+            <View style={defaultSalarySlipStyles.item}>
+              <Text style={defaultSalarySlipStyles.itemName}>PF (Employee)</Text>
+              <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(f.pfEmployee || 0)}</Text>
+            </View>
+          )}
+
           <View style={defaultSalarySlipStyles.item}>
             <Text style={defaultSalarySlipStyles.itemName}>Other Deductions</Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(safeFormData.otherDeductions || 0)}</Text>
+            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(f.otherDeductions || 0)}</Text>
           </View>
+
           <View style={defaultSalarySlipStyles.item}>
-            <Text style={defaultSalarySlipStyles.itemName}></Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}></Text>
-          </View>
-          <View style={defaultSalarySlipStyles.item}>
-            <Text style={defaultSalarySlipStyles.itemName}></Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}></Text>
-          </View>
-          <View style={defaultSalarySlipStyles.item}>
-            <Text style={defaultSalarySlipStyles.itemName}></Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}></Text>
-          </View>
+  <Text style={defaultSalarySlipStyles.itemName}>Leave Deduction</Text>
+  <Text style={defaultSalarySlipStyles.itemAmount}>
+    Rs. {formatIndianCurrency(f.leavesDeduction || 0)}
+  </Text>
+</View>
+
 
           <View style={defaultSalarySlipStyles.totalRow}>
             <Text style={defaultSalarySlipStyles.totalLabel}>Total Deductions</Text>
             <Text style={defaultSalarySlipStyles.totalAmount}>
-              Rs. {formatIndianCurrency(getTotalDeductions(safeFormData))}
+              Rs. {formatIndianCurrency(getTotalDeductions(f))}
             </Text>
           </View>
         </View>
@@ -589,231 +257,364 @@ const DefaultSalarySlipLayout = ({ formData }) => {
         <View style={defaultSalarySlipStyles.netPayRow}>
           <Text style={defaultSalarySlipStyles.netPayLabel}>Net Pay</Text>
           <Text style={defaultSalarySlipStyles.netPayAmount}>
-            Rs. {formatIndianCurrency(getNetSalary(safeFormData))}
+            Rs. {formatIndianCurrency(getNetSalary(f))}
           </Text>
         </View>
         <Text style={defaultSalarySlipStyles.netPayWords}>
-          Amount in words: {safeFormData.amountInWords || 'Rupees only'}
+          Amount in words: {f.amountInWords || 'Rupees only'}
         </Text>
       </View>
 
-      <View style={defaultSalarySlipStyles.signature}>
-        <View style={defaultSalarySlipStyles.signatureSection}>
-          <Text style={defaultSalarySlipStyles.signatureText}>Employee Signature</Text>
-        </View>
-        <View style={defaultSalarySlipStyles.signatureSection}>
-          <Text style={defaultSalarySlipStyles.signatureText}>Authorised Signatory</Text>
-        </View>
-      </View>
-
-      <Text style={{ fontSize: 9, marginTop: 30, textAlign: 'center', fontFamily: 'Calibri' }}>
+      <Text style={{ fontSize: 9, marginTop: 20, textAlign: 'center' }}>
         This is a computer-generated Salary slip. No Signature is required.
       </Text>
-
-      <Footer
-        companyName={safeFormData.companyName || 'COMPANY NAME'}
-        companyAddress={safeFormData.companyAddressLine1 || 'COMPANY ADDRESS'}
-        companyPhone={safeFormData.companyPhone || 'PHONE NUMBER'}
-        companyWebsite={safeFormData.companyWebsite || 'WEBSITE'}
-        companyColor={safeFormData.companyColor || '#FF0000'}
-      />
     </Page>
   );
 };
 
+// === ADYSUN PDF LAYOUT ===
 const AdysunSalarySlipLayout = ({ formData }) => {
-  const safeFormData = formData || {};
+  const f = formData || {};
 
   const earningsData = [
-    { label: 'Basic', amount: safeFormData.basicSalary || 0 },
-    { label: 'HRA', amount: safeFormData.da || 0 },
-    { label: 'Conveyance Allowance', amount: safeFormData.conveyanceAllowance || 0 },
-    {
-      label: 'Other Allowance',
-      amount: (safeFormData.otherAllowance || 0) + (safeFormData.medicalAllowance || 0) + (safeFormData.cca || 0),
-    },
+    { label: 'Basic', amount: f.basicSalary || 0 },
+    { label: 'HRA', amount: f.da || 0 },
+    { label: 'Conveyance Allowance', amount: f.conveyanceAllowance || 0 },
+    { label: 'Other Allowance', amount: (f.otherAllowance||0)+(f.medicalAllowance||0)+(f.cca||0) },
   ];
 
   const deductionsData = [
-    { label: 'PT', amount: safeFormData.professionalTax || 0 },
-    { label: 'Other Deductions', amount: safeFormData.otherDeductions || 0 },
+    { label: 'PT', amount: f.professionalTax || 0 },
+
+    ...(f.enablePF ? [{ label: 'PF (Employee)', amount: f.pfEmployee || 0 }] : []),
+    { label: 'Leave Deduction', amount: f.leavesDeduction || 0 },
+    { label: 'Other Deductions', amount: f.otherDeductions || 0 },
   ];
 
   const footerLines = [
     'Adysun Ventures Pvt. Ltd.',
-    'Adysun Ventures, WorkPlex, S no 47, near Bhapkar petrol pump, Pune - Satara Rd, Taware Colony, Bibwewadi, Pune, Maharashtra 411009, Pune, Maharashtra 411009',
+    'Adysun Ventures, WorkPlex, S no 47, near Bhapkar petrol pump, Pune - Satara Rd, Taware Colony, Bibwewadi, Pune, Maharashtra 411009',
     'www.AdysunVentures.com  |  info@adysunventures.com  |  hr@adysunventures.com'
-  ].filter(Boolean);
-
-  const detailRows = [
-    { label: 'Employee Name', value: getEmployeeNameText(safeFormData.employeeName, safeFormData.employeeNameText) || 'Arnab Kumar Baishya' },
-    { label: 'Employee Code', value: safeFormData.employeeId || 'ADV061' },
-    { label: 'Designation', value: safeFormData.designation || 'Software Engineer' },
-    { label: 'Department', value: safeFormData.department || 'ADV-DEV' },
-    { label: 'Bank Name', value: safeFormData.bankName || 'State Bank of India (SBI)' },
-    { label: 'Bank Account No', value: safeFormData.accountNumber || '38609967034' },
-    { label: 'Pan No', value: safeFormData.pan || 'EHNPB1737H' },
-    { label: 'Leaves', value: safeFormData.leaves || '0' },
-    { label: 'Effective Work Days', value: `${safeFormData.payableDays || '23'} Days` },
   ];
 
-  return (
-    <Page size="A4" style={adysunSalarySlipStyles.page}>
-      <View style={adysunSalarySlipStyles.headerRow}>
-        <View style={adysunSalarySlipStyles.logoWrapper}>
-          {safeFormData.companyLogo ? (
-            <Image source={safeFormData.companyLogo} style={adysunSalarySlipStyles.logo} />
-          ) : (
-            <Image source="/assets/images/logos/logo.png" style={adysunSalarySlipStyles.logo} />
-          )}
-        </View>
-        <View style={adysunSalarySlipStyles.headerTextBlock}>
-          <Text style={adysunSalarySlipStyles.headerCompany}>Adysun Ventures Pvt. Ltd.</Text>
-          <Text style={adysunSalarySlipStyles.headerInfo}>
-            www.AdysunVentures.com | info@adysunventures.com | hr@adysunventures.com
-          </Text>
-        </View>
-      </View>
+  const detailRows = [
+    { label: 'Employee Name', value: getEmployeeNameText(f.employeeName, f.employeeNameText) },
+    { label: 'Employee Code', value: f.employeeId },
+    { label: 'Designation', value: f.designation },
+    { label: 'Department', value: f.department },
+    { label: 'Bank Name', value: f.bankName },
+    { label: 'Bank Account No', value: f.accountNo },
+    { label: 'IFSC Code', value: f.ifscCode },
+    { label: 'Pan No', value: f.panNumber },
+    { label: 'Leaves', value: f.leaves || 0},
+    { label: 'Effective Work Days', value: `${f.payableDays} Days` },
+  ];
+   const MONTH_NAMES = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
 
-      <View style={adysunSalarySlipStyles.horizontalRule} />
+return (
+  <Page
+    size="A4"
+    style={{
+      paddingTop: 18 * 2.83,
+      paddingBottom: 18 * 2.83,
+      paddingLeft: 10 * 2.83,
+      paddingRight: 10 * 2.83,
+      fontFamily: "Helvetica",
+      fontSize: 9,
+      display: "flex",
+      flexDirection: "column"
+    }}
+  >
 
-      <View>
-        <Text style={adysunSalarySlipStyles.dateText}>{formatDisplayDate(safeFormData.payDate)}</Text>
-        <Text style={adysunSalarySlipStyles.slipTitle}>
-          Salary Slip {getSalarySlipMonthLabel(safeFormData.payDate)}
+    {/* HEADER */}
+    {/* <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontSize: 18, fontWeight: "bold", color: "#d42626" }}>
+          Adysun Ventures Pvt. Ltd.
+        </Text>
+        <Text style={{ fontSize: 11, marginTop: 4 }}>
+          info@adysunventures.com | hr@adysunventures.com | www.AdysunVentures.com
+        </Text>
+        <Text style={{ fontSize: 11, marginTop: 4 }}>
+          Adysun Ventures, WorkPlex, S no 47, near Bhapkar petrol pump
+        </Text>
+        <Text style={{ fontSize: 11 }}>
+          Pune - Satara Rd, Bibwewadi, Pune, Maharashtra 411009
         </Text>
       </View>
 
-      <View style={adysunSalarySlipStyles.detailTable}>
-        {detailRows.map((row, index) => (
+      <Image
+        src={f.companyLogo}
+        style={{ width: 60, height: 60, marginLeft: 12 }}
+      />
+    </View> */}
+    <GlobalPDFHeader/>
+
+    {/* SEPARATOR */}
+    <View style={{ borderBottomWidth: 1, borderBottomColor: "#000", marginBottom: 10 }} />
+
+    {/* TITLE */}
+    <Text
+      style={{
+        fontSize: 10,
+        fontWeight: "bold",
+        textAlign: "center",
+        marginBottom: 8
+      }}
+    >
+      Salary Slip  {MONTH_NAMES[Number(f.month)]} {formData.year}
+
+    </Text>
+
+    {/* DETAIL TABLE */}
+    <View style={{ borderWidth: 0.75, borderColor: "#000", marginBottom: 10 }}>
+      {detailRows.map((row, idx) => {
+
+        // Bank + IFSC in one row
+        if (row.label === "Bank Name") {
+          return (
+            <View key="bank-ifsc" style={{ flexDirection: "row", borderBottomWidth: 0.6, borderBottomColor: "#000" }}>
+              <Text
+                style={{
+                  width: "38%",
+                  padding: 4,
+                  borderRightWidth: 0.6,
+                  borderRightColor: "#000",
+                  fontWeight: "bold"
+                }}
+              >
+                Bank Name
+              </Text>
+              <Text
+                style={{
+                  width: "25%",
+                  padding: 4,
+                  borderRightWidth: 0.6,
+                  borderRightColor: "#000"
+                }}
+              >
+                {f.bankName}
+              </Text>
+
+              <Text
+                style={{
+                  width: "19%",
+                  padding: 4,
+                  borderRightWidth: 0.6,
+                  borderRightColor: "#000",
+                  fontWeight: "bold"
+                }}
+              >
+                IFSC
+              </Text>
+              <Text style={{ width: "18%", padding: 4 }}>
+                {f.ifscCode}
+              </Text>
+            </View>
+          );
+        }
+
+        // Work Days + Leaves in one row
+        if (row.label === "Work Days") {
+          return (
+            <View
+              key="work-leaves"
+              style={{
+                flexDirection: "row",
+                borderBottomWidth: 0.6,
+                borderBottomColor: "#000"
+              }}
+            >
+              <Text
+                style={{
+                  width: "35%",
+                  padding: 4,
+                  borderRightWidth: 0.6,
+                  borderRightColor: "#000",
+                  fontWeight: "bold"
+                }}
+              >
+                Work Days
+              </Text>
+
+              <Text
+                style={{
+                  width: "15%",
+                  padding: 4,
+                  borderRightWidth: 0.6,
+                  borderRightColor: "#000"
+                }}
+              >
+                {f.payableDays}
+              </Text>
+
+              <Text
+                style={{
+                  width: "25%",
+                  padding: 4,
+                  borderRightWidth: 0.6,
+                  borderRightColor: "#000",
+                  fontWeight: "bold"
+                }}
+              >
+                Leaves
+              </Text>
+
+              <Text style={{ width: "25%", padding: 4 }}>
+                {f.leaves}
+              </Text>
+            </View>
+          );
+        }
+
+        // Default rows
+        return (
           <View
             key={row.label}
-            style={[
-              adysunSalarySlipStyles.detailRow,
-              index === detailRows.length - 1 && adysunSalarySlipStyles.detailLastRow
-            ]}
+            style={{
+              flexDirection: "row",
+              borderBottomWidth: idx === detailRows.length - 1 ? 0 : 0.6,
+              borderBottomColor: "#000"
+            }}
           >
-            <Text style={adysunSalarySlipStyles.detailCellLabel}>{row.label}</Text>
-            <Text style={adysunSalarySlipStyles.detailCellValue}>{row.value}</Text>
+            <Text
+              style={{
+                width: "38%",
+                padding: 4,
+                borderRightWidth: 0.6,
+                borderRightColor: "#000",
+                fontWeight: "bold"
+              }}
+            >
+              {row.label}
+            </Text>
+            <Text style={{ width: "62%", padding: 4 }}>{row.value || "-"}</Text>
+          </View>
+        );
+      })}
+    </View>
+
+    {/* EARNINGS & DEDUCTIONS */}
+    <View style={{ flexDirection: "row", borderWidth: 0.75, borderColor: "#000", marginBottom: 10 }}>
+
+      {/* Earnings */}
+      <View style={{ width: "50%", borderRightWidth: 0.75, borderRightColor: "#000" }}>
+        <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderBottomWidth: 0.75, borderBottomColor: "#000" }}>
+          <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Earnings (A)</Text>
+          <Text style={{ width: "40%", padding: 4, fontWeight: "bold", textAlign: "right" }}>Amount</Text>
+        </View>
+
+        {earningsData.map(item => (
+          <View key={item.label} style={{ flexDirection: "row", borderBottomWidth: 0.6, borderBottomColor: "#bfbfbf" }}>
+            <Text style={{ width: "60%", padding: 4 ,borderRightWidth: 0.6, borderRightColor: "#000" }}>{item.label}</Text>
+            <Text style={{ width: "40%", padding: 4, textAlign: "right" }}>
+              {formatIndianCurrency(item.amount)}
+            </Text>
           </View>
         ))}
-      </View>
 
-      <View style={adysunSalarySlipStyles.dualTable}>
-        <View style={[adysunSalarySlipStyles.dualColumn, adysunSalarySlipStyles.dualColumnDivider]}>
-          <View style={adysunSalarySlipStyles.dualHeader}>
-            <Text style={adysunSalarySlipStyles.dualHeaderCell}>Earnings (A)</Text>
-            <Text style={adysunSalarySlipStyles.dualHeaderCell}>Amount</Text>
-          </View>
-          {earningsData.map((item, index) => (
-            <View
-              key={item.label}
-              style={[
-                adysunSalarySlipStyles.dualRow,
-                index === earningsData.length - 1 && adysunSalarySlipStyles.dualRowLast
-              ]}
-            >
-              <Text style={adysunSalarySlipStyles.dualCell}>{item.label}</Text>
-              <Text style={[adysunSalarySlipStyles.dualCell, adysunSalarySlipStyles.dualAmountCell]}>
-                {formatIndianCurrency(item.amount)}
-              </Text>
-            </View>
-          ))}
-          <View style={adysunSalarySlipStyles.totalsRow}>
-            <Text style={adysunSalarySlipStyles.totalsLabel}>Gross Salary</Text>
-            <Text style={[adysunSalarySlipStyles.totalsLabel, adysunSalarySlipStyles.dualAmountCell]}>
-              {formatIndianCurrency(getTotalEarnings(safeFormData))}
-            </Text>
-          </View>
-        </View>
-
-        <View style={adysunSalarySlipStyles.dualColumn}>
-          <View style={adysunSalarySlipStyles.dualHeader}>
-            <Text style={adysunSalarySlipStyles.dualHeaderCell}>Deductions (B)</Text>
-            <Text style={adysunSalarySlipStyles.dualHeaderCell}>Amount</Text>
-          </View>
-          {deductionsData.map((item, index) => (
-            <View
-              key={item.label}
-              style={[
-                adysunSalarySlipStyles.dualRow,
-                index === deductionsData.length - 1 && adysunSalarySlipStyles.dualRowLast
-              ]}
-            >
-              <Text style={adysunSalarySlipStyles.dualCell}>{item.label}</Text>
-              <Text style={[adysunSalarySlipStyles.dualCell, adysunSalarySlipStyles.dualAmountCell]}>
-                {formatIndianCurrency(item.amount)}
-              </Text>
-            </View>
-          ))}
-          <View style={adysunSalarySlipStyles.totalsRow}>
-            <Text style={adysunSalarySlipStyles.totalsLabel}>Total</Text>
-            <Text style={[adysunSalarySlipStyles.totalsLabel, adysunSalarySlipStyles.dualAmountCell]}>
-              {formatIndianCurrency(getTotalDeductions(safeFormData))}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View style={adysunSalarySlipStyles.netTable}>
-        <View style={adysunSalarySlipStyles.netRow}>
-          <Text style={adysunSalarySlipStyles.netLabel}>Net Salary ( A - B )</Text>
-          <Text style={adysunSalarySlipStyles.netValue}>
-            {formatIndianCurrency(getNetSalary(safeFormData))}
+        <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderTopWidth: 0.75, borderTopColor: "#000" }}>
+          <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Gross Salary</Text>
+          <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
+            {formatIndianCurrency(getTotalEarnings(f))}
           </Text>
         </View>
       </View>
 
-      <Text style={adysunSalarySlipStyles.note}>
-        This is a system generated payslip and does not require signature.
-      </Text>
+      {/* Deductions */}
+      <View style={{ width: "50%" }}>
+        <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderBottomWidth: 0.75, borderBottomColor: "#000" }}>
+          <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Deductions (B)</Text>
+          <Text style={{ width: "40%", padding: 4, fontWeight: "bold", textAlign: "right" }}>Amount</Text>
+        </View>
 
-      <View style={adysunSalarySlipStyles.footerSeparator} />
-
-      <View style={adysunSalarySlipStyles.footer}>
-        {footerLines.map((line, idx) => (
-          <Text key={idx} style={adysunSalarySlipStyles.footerLine}>{line}</Text>
+        {deductionsData.map(item => (
+          <View key={item.label} style={{ flexDirection: "row", borderBottomWidth: 0.6, borderBottomColor: "#bfbfbf" }}>
+            <Text style={{ width: "60%", padding: 4, borderRightWidth: 0.6, borderRightColor: "#000" }}>{item.label}</Text>
+            <Text style={{ width: "40%", padding: 4, textAlign: "right" }}>
+              {formatIndianCurrency(item.amount)}
+            </Text>
+          </View>
         ))}
+
+        <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderTopWidth: 0.75, borderTopColor: "#000" }}>
+          <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Total Deductions</Text>
+          <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
+            {formatIndianCurrency(getTotalDeductions(f))}
+          </Text>
+        </View>
       </View>
-    </Page>
-  );
+    </View>
+
+    {/* NET SALARY */}
+    <View style={{ borderWidth: 0.75, borderColor: "#000", backgroundColor: "#e8e8e8" }}>
+      <View style={{ flexDirection: "row" }}>
+        <Text
+          style={{
+            width: "50%",
+            padding: 4,
+            fontWeight: "bold",
+            borderRightWidth: 0.75,
+            borderRightColor: "#000"
+          }}
+        >
+          Net Salary (A - B)
+        </Text>
+        <Text style={{ width: "50%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
+          {formatIndianCurrency(getNetSalary(f))}
+        </Text>
+      </View>
+    </View>
+
+    {/* DIGITAL NOTICE CENTERED */}
+    <Text style={{ fontSize: 10, textAlign: "center", marginTop: 10, fontWeight: "bold" }}>
+      This document is digitally generated and does not require signature.
+    </Text>
+
+    {/* PUSH FOOTER TO BOTTOM */}
+    <View style={{ flexGrow: 1 }} />
+
+    {/* FOOTER SEPARATOR */}
+    <View style={{ borderBottomWidth: 1, borderBottomColor: "#000", marginBottom: 8 }} />
+
+    {/* FOOTER */}
+    <GlobalPDFFooter/>
+
+  </Page>
+);
+
+
+
+
 };
 
-const layoutRegistry = {
-  default: DefaultSalarySlipLayout,
-  adysun: AdysunSalarySlipLayout,
+// === PDF REGISTRY ===
+const layoutRegistry = { default: DefaultSalarySlipLayout, adysun: AdysunSalarySlipLayout };
+
+const resolveSalarySlipLayout = (f) => {
+  const name = (f.companyName || '').toLowerCase();
+  return name.includes('adysun') ? 'adysun' : 'default';
 };
 
-const resolveSalarySlipLayout = (formData) => {
-  const companyName = (formData.companyName || '').toLowerCase();
-  if (companyName.includes('adysun')) {
-    return 'adysun';
-  }
-  return 'default';
-};
-
-// Salary Slip PDF Document Component
 const SalarySlipPDF = ({ formData }) => {
-  const safeFormData = formData || {};
-  const layoutKey = resolveSalarySlipLayout(safeFormData);
-  const LayoutComponent = layoutRegistry[layoutKey] || DefaultSalarySlipLayout;
-
-  return (
-    <Document>
-      <LayoutComponent formData={safeFormData} />
-    </Document>
-  );
+  const Layout = layoutRegistry[resolveSalarySlipLayout(formData)] || DefaultSalarySlipLayout;
+  return <Document><Layout formData={formData} /></Document>;
 };
 
-// Main Component
+// === MAIN COMPONENT START ===
 function SalarySlipGeneratorV2() {
-  const [companies, setCompanies] = useState([]);
   const [candidates, setCandidates] = useState([]);
   const [employments, setEmployments] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
   const [showPDF, setShowPDF] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [employee, setEmployee] = useState(null);
+  const [employment, setEmployment] = useState(null);
+
   const [formData, setFormData] = useState({
-    company: DEFAULT_COMPANY_NAME,
+    companyName: DEFAULT_COMPANY_NAME,
     employeeName: [],
     employeeNameText: '',
     employeeId: "",
@@ -824,7 +625,8 @@ function SalarySlipGeneratorV2() {
     payableDays: "30",
     leaves: "0",
     month: new Date().getMonth().toString(),
-    pan: "",
+    year: new Date().getFullYear().toString(),
+    panNumber: "",
     basicSalary: 0,
     da: 0,
     conveyanceAllowance: 0,
@@ -833,342 +635,198 @@ function SalarySlipGeneratorV2() {
     cca: 0,
     professionalTax: 0,
     otherDeductions: 0,
-    companyName: DEFAULT_COMPANY_NAME,
-    companyAddressLine1: "",
-    companyColor: "",
-    companyEmail: "",
-    companyPhone: "",
-    companyWebsite: "",
-    companyLogo: "",
-    companyHR: ""
+    pfEmployee: 0,
+    enablePF: false,
+    companyAddressLine1: "Adysun Ventures, WorkPlex, S no 47, near Bhapkar petrol pump, Pune - Satara Rd, Taware Colony, Bibwewadi, Pune",
+    companyPhone: "9579537523",
+    companyWebsite: "AdysunVentures.com",
+    companyLogo: "/assets/adysunventures_logo.png",
   });
 
-  const normalizeEmployeeNames = (value) => {
-    if (Array.isArray(value)) {
-      return value.filter(Boolean);
-    }
-    return value ? [value] : [];
+  const formatNames = (v) => {
+    const n = normalize(v);
+    return n.length === 0 ? 'Employee' : n.join('_');
   };
+  const MONTH_NAMES = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December"
+];
 
-  const getPrimaryEmployeeName = (value) => {
-    const names = normalizeEmployeeNames(value);
-    if (names.length === 0) return '';
-    return names[names.length - 1];
+
+  const getDaysInMonth = (m) => {
+    const year = new Date().getFullYear();
+    return new Date(year, Number(m) + 1, 0).getDate();
   };
+  const year = new Date().getFullYear();
 
-  const formatEmployeeNamesForFile = (value) => {
-    const names = normalizeEmployeeNames(value);
-    if (names.length === 0) return 'Employee';
-    return names.join('_');
-  };
-
-  // Use React.useMemo to memoize the PDF document to prevent unnecessary re-renders
-  const memoizedPdfDocument = React.useMemo(() => (
-    <SalarySlipPDF formData={formData} />
-  ), [formData]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        await fetchCompanies();
-        await fetchCandidates();
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        toast.error('Failed to load data');
-      }
-      setIsLoading(false);
-    };
-
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (companies.length === 0) return;
-
-    setFormData(prev => {
-      const desiredName = prev.company || DEFAULT_COMPANY_NAME;
-      const selectedCompany =
-        companies.find(company => company.name === desiredName) || companies[0];
-
-      if (!selectedCompany) return prev;
-
-      const alreadySynced =
-        prev.companyName === selectedCompany.name &&
-        prev.companyAddressLine1 === selectedCompany.address &&
-        prev.companyLogo === selectedCompany.logo;
-
-      if (alreadySynced) return prev;
-
-      return {
-        ...prev,
-        company: selectedCompany.name,
-        companyName: selectedCompany.name,
-        companyAddressLine1: selectedCompany.address || prev.companyAddressLine1,
-        companyColor: selectedCompany.serverColor || prev.companyColor,
-        companyEmail: selectedCompany.email || prev.companyEmail,
-        companyPhone: selectedCompany.mobile || prev.companyPhone,
-        companyWebsite: selectedCompany.website || prev.companyWebsite,
-        companyLogo: selectedCompany.logo || prev.companyLogo,
-        companyHR: selectedCompany.hrName || prev.companyHR
-      };
-    });
-  }, [companies]);
-
-  const fetchCompanies = async () => {
-    const querySnapshot = await getDocs(collection(db, "companies"));
-    const companyList = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    setCompanies(companyList);
-  };
-
+  // === FETCH EMPLOYEES & EMPLOYMENT ===
   const fetchCandidates = async () => {
     try {
-      // Try fetching from 'employees' collection
-      const querySnapshot = await getDocs(collection(db, 'employees'));
-      const employeesList = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      console.log("Fetched Employees:", employeesList);
-      setCandidates(employeesList);
+      const snap = await getDocs(collection(db, 'employees'));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setCandidates(list);
 
-      // Now fetch all employments for these employees
-      const employmentData = {};
-      for (const employee of employeesList) {
-        try {
-          // Query employments for this employee
-          const q = query(collection(db, 'employments'), where('employeeId', '==', employee.id));
-          const empSnapshot = await getDocs(q);
-
-          if (!empSnapshot.empty) {
-            // Get the most recent employment (usually there will be just one)
-            const employmentsList = empSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            // Sort by startDate (descending) to get the most recent employment first
-            const sortedEmployments = employmentsList.sort((a, b) => {
-              return new Date(b.startDate) - new Date(a.startDate);
-            });
-
-            employmentData[employee.id] = sortedEmployments[0];
-            console.log(`Found employment for ${employee.name}:`, sortedEmployments[0]);
-          } else {
-            console.log(`No employment found for employee: ${employee.name}`);
-          }
-        } catch (err) {
-          console.error(`Error fetching employment for employee ${employee.id}:`, err);
+      const empMap = {};
+      for (const emp of list) {
+        const q = query(collection(db, 'employments'), where('employeeId', '==', emp.id));
+        const eSnap = await getDocs(q);
+        if (!eSnap.empty) {
+          const rows = eSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+          rows.sort((a,b)=> new Date(b.startDate)-new Date(a.startDate));
+          empMap[emp.id] = rows[0];
         }
       }
-
-      setEmployments(employmentData);
-
-      if (employeesList.length === 0) {
-        console.warn("No employees found in the database. Please add employees in the admin dashboard first.");
-      }
-    } catch (error) {
-      console.error("Error fetching employees:", error);
+      setEmployments(empMap);
+    } catch (err) {
+      console.error(err);
+      toast.error("Error fetching employees");
     }
   };
 
-  // Add this function to calculate days in month
-  const getDaysInMonth = (month) => {
-    const year = new Date().getFullYear();
-    return new Date(year, month + 1, 0).getDate();
+  useEffect(()=>{ fetchCandidates(); },[]);
+
+  // === SALARY CALC WITH PF TICK LOGIC LIKE OFFERLETTER ===
+  const calculateSalary = (lpa, leaves = 0, month, enablePF = false) => {
+  const l = Number(lpa) || 0;
+  const lv = Number(leaves) || 0;
+  const m = Number(month) || new Date().getMonth();
+  const days = getDaysInMonth(m);
+
+  const annual = l * 100000;
+  const monthly = annual / 12;
+
+  // Basic unchanged by leaves
+  const basic = Math.round(monthly * 0.5);
+  const da = Math.round(basic * 0.2);
+  const convey = 1600;
+  const medical = 1250;
+  const cca = 500;
+
+  // Other allowance = remainder after fixed allowances
+  const other = Math.max(0, monthly - basic - da - convey - medical - cca);
+
+  // Leaves deduction calculation
+  const perDay = monthly / days;
+  const leavesDeduction = Math.round(perDay * lv);
+
+  const pt = 200;
+  const pf = enablePF ? Math.round(basic * 0.12) : 0;
+
+  const totalEarnings = basic + da + convey + other + medical + cca;
+  const totalDeductions = pt + pf + leavesDeduction;
+  const net = totalEarnings - totalDeductions;
+
+  return {
+    basicSalary: basic,
+    da,
+    conveyanceAllowance: convey,
+    otherAllowance: other,
+    medicalAllowance: medical,
+    cca,
+    professionalTax: pt,
+    pfEmployee: pf,
+    leavesDeduction,
+    otherDeductions: 0,
+    payableDays: days - lv,
+    amountInWords: `Rupees ${numberToWords(net)} Only`,
   };
+};
 
-  // Calculate salary components
-  const calculateSalary = (lpa, leaves = 0, selectedMonth) => {
-    // Convert inputs to numbers and provide defaults
-    const lpaNum = Number(lpa) || 0;
-    const leavesNum = Number(leaves) || 0;
-    const monthNum = Number(selectedMonth) || new Date().getMonth();
 
-    // Get total days in selected month
-    const daysInMonth = getDaysInMonth(monthNum);
-
-    // Calculate payable days
-    const payableDays = Math.max(0, daysInMonth - leavesNum);
-
-    // Calculate base annual salary
-    const annualSalary = lpaNum * 100000;
-
-    // Calculate per day salary
-    const perDaySalary = (annualSalary / 12) / daysInMonth;
-
-    // Calculate effective monthly salary after leave deductions
-    const effectiveSalary = Math.max(0, (annualSalary / 12) - (perDaySalary * leavesNum));
-
-    // Calculate components with null checks and Math.max to prevent negative values
-    const monthlyBasic = Math.max(0, Math.round(effectiveSalary * 0.5));
-    const da = Math.max(0, Math.round(monthlyBasic * 0.2));
-    const conveyanceAllowance = Math.max(0, Math.round(1600));
-    const medicalAllowance = Math.max(0, Math.round(1250));
-    const cca = Math.max(0, Math.round(500));
-    const otherAllowance = Math.max(0, Math.round(effectiveSalary - monthlyBasic - da - conveyanceAllowance - medicalAllowance - cca));
-
-    // Professional tax varies by state, using standard 200 for example
-    const professionalTax = 200;
-
-    // Calculate net amount
-    const totalEarnings = monthlyBasic + da + conveyanceAllowance + otherAllowance + medicalAllowance + cca;
-    const totalDeductions = professionalTax;
-    const netAmount = totalEarnings - totalDeductions;
-
-    // Convert to Indian words
-    const amountInWords = `Rupees ${numberToWords(netAmount)} Only`;
-
-    return {
-      basicSalary: monthlyBasic,
-      da,
-      conveyanceAllowance,
-      otherAllowance,
-      medicalAllowance,
-      cca,
-      professionalTax,
-      otherDeductions: 0,
-      amountInWords,
-      payableDays
-    };
-  };
-
+  // === HANDLE INPUT CHANGES ===
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
 
-    if (name === "company") {
-      const selectedCompany = companies.find(company => company.name === value);
-      if (selectedCompany) {
-        setFormData(prev => ({
-          ...prev,
-          company: selectedCompany.name,
-          companyName: selectedCompany.name,
-          companyAddressLine1: selectedCompany.address,
-          companyColor: selectedCompany.serverColor,
-          companyEmail: selectedCompany.email,
-          companyPhone: selectedCompany.mobile,
-          companyWebsite: selectedCompany.website,
-          companyLogo: selectedCompany.logo,
-          companyHR: selectedCompany.hrName
-        }));
+    if (name === "enablePF") {
+      const newVal = checked;
+      const p = primaryName(formData.employeeName);
+      const emp = candidates.find(x => x.name === p);
+
+      if (emp) {
+        const row = employments[emp.id];
+        const sal = row ? (row.salary || row.ctc || 0) : (emp.salary || 0);
+        const ctc = sal ? sal/100000 : 0;
+        const parts = calculateSalary(ctc, formData.leaves, formData.month, newVal);
+        setFormData(prev => ({ ...prev, enablePF: newVal, ...parts }));
       } else {
-        setFormData(prev => ({
-          ...prev,
-          company: value
-        }));
+        setFormData(prev => ({ ...prev, enablePF: newVal }));
       }
-    } else if (name === "employeeName") {
-      const selectedNames = normalizeEmployeeNames(value);
-      const primaryEmployeeName = getPrimaryEmployeeName(selectedNames);
-      const selectedEmployee = candidates.find(employee => employee.name === primaryEmployeeName);
-
-      if (selectedEmployee) {
-        console.log("Selected Employee:", selectedEmployee);
-
-        // Get the employment details for this employee
-        const employmentDetails = employments[selectedEmployee.id];
-        console.log("Employment details:", employmentDetails);
-
-        let employeeSalary;
-        let employeeDesignation;
-        let employeeDepartment;
-        let employeeLocation;
-        let employeePAN;
-
-        if (employmentDetails) {
-          // If we have employment details, use those
-          employeeSalary = employmentDetails.salary || employmentDetails.ctc || 0;
-          employeeDesignation = employmentDetails.jobTitle || employmentDetails.designation;
-          employeeDepartment = employmentDetails.department;
-          employeeLocation = employmentDetails.location;
-          employeePAN = selectedEmployee.pan; // Usually PAN is in employee record
-        } else {
-          // Fallback to employee record if no employment details
-          employeeSalary = selectedEmployee.salary || 0;
-          employeeDesignation = selectedEmployee.position || selectedEmployee.jobTitle;
-          employeeDepartment = selectedEmployee.department;
-          employeeLocation = selectedEmployee.location;
-          employeePAN = selectedEmployee.pan;
-        }
-
-        // Calculate CTC in LPA
-        const ctcValue = employeeSalary ? (employeeSalary / 100000) : 0;
-
-        // Get current month and leaves
-        const currentMonth = formData.month;
-        const leaves = formData.leaves;
-
-        // Calculate salary components
-        const salaryComponents = calculateSalary(ctcValue, leaves, currentMonth);
-
-        setFormData(prev => ({
-          ...prev,
-          employeeName: selectedNames,
-          employeeNameText: primaryEmployeeName || selectedNames.join(', '),
-          employeeId: selectedEmployee.employeeId || selectedEmployee.id,
-          designation: employeeDesignation || "",
-          department: employeeDepartment || "",
-          location: employeeLocation || "",
-          pan: employeePAN || "",
-          ...salaryComponents
-        }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          employeeName: selectedNames,
-          employeeNameText: selectedNames.join(', '),
-          employeeId: "",
-          designation: "",
-          department: "",
-          location: "",
-          pan: ""
-        }));
-      }
-    } else if (name === "leaves" || name === "month") {
-      // Recalculate salary when leaves or month changes
-      const updatedFormData = { ...formData, [name]: value };
-
-      // Find the selected employee to get LPA
-      const primaryEmployee = getPrimaryEmployeeName(formData.employeeName);
-      const selectedEmployee = candidates.find(employee => employee.name === primaryEmployee);
-      if (selectedEmployee) {
-        // Get the employment details
-        const employmentDetails = employments[selectedEmployee.id];
-        let employeeSalary;
-
-        if (employmentDetails) {
-          employeeSalary = employmentDetails.salary || employmentDetails.ctc || 0;
-        } else {
-          employeeSalary = selectedEmployee.salary || 0;
-        }
-
-        // Calculate CTC in LPA
-        const ctcValue = employeeSalary ? (employeeSalary / 100000) : 0;
-
-        // Calculate updated salary
-        const salaryComponents = calculateSalary(
-          ctcValue,
-          updatedFormData.leaves,
-          updatedFormData.month
-        );
-
-        setFormData({
-          ...updatedFormData,
-          ...salaryComponents
-        });
-      } else {
-        setFormData(updatedFormData);
-      }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+      return;
     }
+
+    if (name === "employeeName") {
+      const names = normalize(value);
+      const p = primaryName(names);
+      const emp = candidates.find(x => x.name === p);
+
+      if (emp) {
+        const row = employments[emp.id];
+        let sal=0,des="",dep="",loc="",pan="",bank="",acc="",ifsc="";
+
+        if (row) {
+          sal = row.salary||row.ctc||0;
+          des=row.jobTitle||row.designation||"";
+          dep=row.department||"";
+          loc=row.location||"";
+          pan=row.panNumber||"";
+          bank=row.bankName||"";
+          acc=row.accountNo||"";
+          ifsc=row.ifscCode||"";
+        }
+
+        const ctc = sal?sal/100000:0;
+        const parts = calculateSalary(ctc, formData.leaves, formData.month, formData.enablePF);
+
+        setFormData(prev=>({
+          ...prev,
+          employeeName:names,
+          employeeNameText:p,
+          employeeId: emp.employeeId||emp.id,
+          designation:des,
+          department:dep,
+          location:loc,
+          panNumber:pan,
+          bankName:bank,
+          accountNo:acc,
+          ifscCode:ifsc,
+          ...parts
+        }));
+      } else {
+        setFormData(prev=>({
+          ...prev,
+          employeeName:names,
+          employeeNameText:names.join(', ')
+        }));
+      }
+      return;
+    }
+
+    if (name === "leaves" || name === "month") {
+      const upd = { ...formData, [name]:value };
+      const p = primaryName(formData.employeeName);
+      const emp = candidates.find(x=>x.name===p);
+      if (emp) {
+        const row = employments[emp.id];
+        const sal = row?(row.salary||row.ctc||0):(emp.salary||0);
+        const ctc=sal?sal/100000:0;
+        const parts = calculateSalary(ctc, upd.leaves, upd.month, formData.enablePF);
+        setFormData({...upd,...parts});
+      } else setFormData(upd);
+      return;
+    }
+
+    setFormData(prev=>({...prev, [name]:value}));
   };
 
-  const handleGenerateSalarySlip = () => {
-    setShowPDF(true);
-  };
+  const memoPDF = React.useMemo(()=> <SalarySlipPDF formData={formData}/>, [formData]);
+  const handleGenerate = ()=> setShowPDF(true);
+return (
+  <div className="container mx-auto p-4">
+    <Toaster position="top-center" />
 
-  return (
-    <div className="container mx-auto p-4">
-      <Toaster position="top-center" />
-      <div className="mb-6 flex items-center justify-between">
+    <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6">
+      {/* Header */}
+      <div className="flex items-center gap-124 px-6 py-4 border-b border-gray-200">
         <Link
           href="/dashboard/documents"
           className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 transition-colors"
@@ -1176,153 +834,204 @@ function SalarySlipGeneratorV2() {
           <FiArrowLeft size={16} /> Back
         </Link>
 
-        {/* Form Section */}
-        <h2 className="text-2xl font-bold text-gray-800 flex-1 text-center">Salary Slip Generator</h2>
-
-        {/* Generate button in header */}
-        <button
-          onClick={handleGenerateSalarySlip}
-          disabled={normalizeEmployeeNames(formData.employeeName).length === 0}
-          className={`flex items-center px-6 py-3 rounded-lg shadow-lg hover:shadow-md transition-all duration-200 ${
-            normalizeEmployeeNames(formData.employeeName).length === 0
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800'
-          }`}
-        >
-          <FiDownload size={18} className="mr-2" />
-          <span>Generate</span>
-        </button>
+        <h2 className="text-xl font-bold text-gray-800">
+          Salary Slip Generator
+        </h2>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-        <div className="form-group md:col-span-6">
-          <label className="block mb-2 text-sm font-medium text-gray-700">Company</label>
-          <input
-            type="text"
-            value={formData.companyName || DEFAULT_COMPANY_NAME}
-            className="w-full p-3 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
-            readOnly
-          />
-        </div>
+      {/* Form Grid */}
+      <div className="px-6 py-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
 
-        <div className="form-group md:col-span-6">
-          <SearchableDropdown
-            label="Employee Name"
-            name="employeeName"
-            value={formData.employeeName}
-            onChange={handleInputChange}
-            options={candidates}
-            placeholder="Select Employee(s)"
-            searchFields={['name', 'employeeId', 'id']}
-            multiSelect={true}
-          />
-        </div>
+        {/* Employee Name */}
+{/* Employee Name */}
+<div>
+  <label className="block text-sm font-medium text-slate-800 mb-1">
+    Employee <span className="text-red-500">*</span>
+  </label>
 
-        <div className="form-group md:col-span-3">
-          <label className="block mb-2 text-sm font-medium text-gray-700">Month</label>
+  <Combobox
+    value={employee}
+    onChange={(emp) => {
+      setEmployee(emp || null);
+      setSearchTerm("");
+
+      if (!emp) return;
+
+      const row = employments[emp.id] || {};
+      const salary = row.salary || row.ctc || emp.salary || 0;
+      const ctcInLpa = salary ? salary / 100000 : 0;
+
+      const calc = calculateSalary(
+        ctcInLpa,
+        formData.leaves,
+        formData.month,
+        formData.enablePF
+      );
+
+      setFormData(prev => ({
+        ...prev,
+        employeeName: [emp.name],
+        employeeNameText: emp.name,
+        employeeId: emp.employeeId || emp.id,
+        designation: row.jobTitle || row.designation || "",
+        department: row.department || "",
+        location: row.location || "",
+        panNumber: row.panNumber || "",
+        bankName: row.bankName || "",
+        accountNo: row.accountNo || "",
+        ifscCode: row.ifscCode || "",
+        ...calc
+      }));
+    }}
+  >
+    <div className="relative">
+      <Combobox.Input
+        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        placeholder="Select or Search employee..."
+        displayValue={(emp) => emp?.name ?? ""}
+        onChange={(event) => setSearchTerm(event.target.value)}
+      />
+
+      <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
+        {candidates
+          .filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))
+          .map(emp => (
+            <Combobox.Option
+              key={emp.id}
+              value={emp}
+              className={({ active }) =>
+                `cursor-pointer px-3 py-2 ${
+                  active ? 'bg-blue-600 text-white' : 'bg-white'
+                }`
+              }
+            >
+              {emp.name}
+            </Combobox.Option>
+          ))}
+
+        {candidates.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+          <div className="px-3 py-2 text-gray-500 italic">
+            No results found
+          </div>
+        )}
+      </Combobox.Options>
+    </div>
+  </Combobox>
+</div>
+
+
+        {/* Month */}
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Month <span className="text-red-500">*</span>
+          </label>
           <select
             name="month"
             value={formData.month}
             onChange={handleInputChange}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full p-2.5 border border-gray-300 rounded-md"
           >
-            <option value="0">January</option>
-            <option value="1">February</option>
-            <option value="2">March</option>
-            <option value="3">April</option>
-            <option value="4">May</option>
-            <option value="5">June</option>
-            <option value="6">July</option>
-            <option value="7">August</option>
-            <option value="8">September</option>
-            <option value="9">October</option>
-            <option value="10">November</option>
-            <option value="11">December</option>
+            {[
+              "January","February","March","April","May","June",
+              "July","August","September","October","November","December",
+            ].map((m, i) => (
+              <option key={i} value={i}>{m}</option>
+            ))}
           </select>
         </div>
 
-        <div className="form-group md:col-span-3">
-          <label className="block mb-2 text-sm font-medium text-gray-700">Leaves</label>
+        {/* Leaves */}
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Leaves
+          </label>
           <input
             type="number"
             name="leaves"
             value={formData.leaves}
             onChange={handleInputChange}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             min="0"
             max={getDaysInMonth(Number(formData.month))}
+            className="w-full p-2.5 border border-gray-300 rounded-md"
           />
         </div>
 
-        <div className="form-group md:col-span-6">
-          <label className="block mb-2 text-sm font-medium text-gray-700">Payable Days</label>
+        {/* Payable Days */}
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Payable Days
+          </label>
           <input
-            type="text"
-            value={formData.payableDays || getDaysInMonth(Number(formData.month))}
-            className="w-full p-3 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
             readOnly
+            value={formData.payableDays}
+            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
           />
-
         </div>
 
-        <div className="form-group md:col-span-6">
-          <label className="block mb-2 text-sm font-medium text-gray-700">Pay Date</label>
+        {/* PF Checkbox */}
+        <div className="form-group flex items-center gap-2 pt-6">
           <input
-            type="date"
-            name="payDate"
-            value={formData.payDate}
+            type="checkbox"
+            name="enablePF"
+            checked={formData.enablePF}
             onChange={handleInputChange}
-            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="h-5 w-5"
           />
+          <label className="text-sm font-medium text-gray-700">
+            Apply PF Deduction
+          </label>
         </div>
+
       </div>
 
-      <div className="mt-6 flex justify-between">
+      {/* Footer Buttons */}
+      <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
         <button
           onClick={() => window.history.back()}
-          className="inline-flex items-center gap-2 px-6 py-3 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
         >
           Cancel
         </button>
 
         <button
-          onClick={handleGenerateSalarySlip}
-          disabled={normalizeEmployeeNames(formData.employeeName).length === 0}
-          className={`flex items-center px-6 py-3 rounded-lg shadow-lg hover:shadow-md transition-all duration-200 ${
-            normalizeEmployeeNames(formData.employeeName).length === 0
+          onClick={handleGenerate}
+          disabled={formData.employeeName.length === 0}
+          className={`flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 ${
+            formData.employeeName.length === 0
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800'
+              : 'bg-green-600 text-white hover:bg-green-700'
           }`}
         >
           <FiDownload size={18} className="mr-2" />
-          <span>Generate</span>
+          Generate
         </button>
       </div>
-
-      {/* PDF Preview Section - only show when Generate button is clicked */}
-      {showPDF && (
-        <div className="bg-white rounded-lg shadow-lg p-4 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
-
-            <PDFDownloadLink
-              document={memoizedPdfDocument}
-              fileName={`SalarySlip_${formatEmployeeNamesForFile(formData.employeeName)}_${formData.payDate}.pdf`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              {({ loading }) => (loading ? 'Loading document...' : 'Download PDF')}
-            </PDFDownloadLink>
-          </div>
-
-          <div className="border rounded-lg" style={{ height: '80vh' }}>
-            <PDFViewer width="100%" height="100%" className="rounded-lg">
-              {memoizedPdfDocument}
-            </PDFViewer>
-          </div>
-        </div>
-      )}
     </div>
-  );
+
+    {/* PDF SECTION */}
+    {showPDF && (
+      <div className="bg-white rounded-lg shadow-lg p-4 mb-8 mt-6">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
+          <PDFDownloadLink
+            document={memoPDF}
+            fileName={`SalarySlip_${formData.employeeNameText}_${formData.payDate}.pdf`}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            {({ loading }) => loading ? 'Loading...' : 'Download PDF'}
+          </PDFDownloadLink>
+        </div>
+        <div className="border rounded-lg" style={{ height: '80vh' }}>
+          <PDFViewer width="100%" height="100%">
+            {memoPDF}
+          </PDFViewer>
+        </div>
+      </div>
+    )}
+  </div>
+);
+
+
 }
 
 export default SalarySlipGeneratorV2;

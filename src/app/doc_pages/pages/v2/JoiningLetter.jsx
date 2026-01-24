@@ -1,0 +1,481 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { FiDownload } from "react-icons/fi";
+import TableHeader from "@/components/ui/TableHeader";
+
+import {
+  Document,
+  Page,
+  PDFDownloadLink,
+  PDFViewer,
+  Text,
+  View,
+  Image,
+  G
+} from "@react-pdf/renderer";
+
+import { db } from "@/firebase/config";
+import { collection, getDocs } from "firebase/firestore";
+import toast, { Toaster } from "react-hot-toast";
+import { offerLetterStyles } from "@/components/pdf/PDFStyles";
+import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
+import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
+import { Combobox } from "@headlessui/react";
+
+/* ---------------- COMPANY DATA ---------------- */
+const COMPANY_DATA = {
+  name: "ADYSUN VENTURES PVT. LTD.",
+  contact: "9579537523 | hr@adysunventures.com | AdysunVentures.com",
+  address:
+    "S no 47, Workplex, Pune-Satara Rd, Opp City Pride Theater, Near Bhapkar petrol pump, Pune, Maharashtra - 411009",
+  hrName: "Prachi Jadhav",
+  hrDesignation: "Head - HR Department",
+  hrEmail: "hr@adysunventures.com",
+  logo: "/assets/adysunventures_logo.png",
+  signature: "/assets/hr-sign.png"
+};
+
+/* ---------------- UTIL ---------------- */
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+const formatDate = (d) => {
+  if (!d) return "";
+  try {
+    return new Date(d).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric"
+    });
+  } catch (e) {
+    return d;
+  }
+};
+
+const Watermark = ({ logoSrc }) => (
+  <View style={offerLetterStyles.watermark}>
+    <Image src={logoSrc} style={offerLetterStyles.watermarkImage} />
+  </View>
+);
+
+/* ---------------- PDF TEMPLATE ---------------- */
+
+const JoiningLetterPDF = ({
+  employee,
+  designation,
+  department,
+  reportingManager,
+  workLocation,
+  joiningDate,
+  annualCTC,
+  probation,
+  workingHours,
+  signPlace
+}) => {
+  const employeeName = employee?.name || "";
+  const shortName = employeeName.split(" ")[0];
+  const issueDate = formatDate(todayISO());
+  const formattedJoiningDate = formatDate(joiningDate);
+  const formattedCTC = Number(annualCTC).toLocaleString("en-IN");
+
+  return (
+    <Document>
+      <Page
+        size="A4"
+        style={{ padding: 35, fontSize: 12, lineHeight: 1.45, position: "relative" }}
+      >
+        <Watermark logoSrc={COMPANY_DATA.logo} />
+
+        {/* HEADER */}
+        <GlobalPDFHeader />
+        
+
+        <View style={{ borderBottom: "1px solid #000", marginBottom: 16 }} />
+
+        {/* DATE + EMPLOYEE */}
+        <Text style={{ marginBottom: 12 }}>
+          <Text style={{ fontWeight: "bold" }}>Date:</Text> {issueDate}
+        </Text>
+
+        <Text style={{ fontWeight: "bold", marginBottom: 14 }}>{employeeName}</Text>
+
+        {/* TITLE */}
+        <Text
+          style={{
+            fontSize: 14,
+            fontWeight: "bold",
+            textDecoration: "underline",
+            textAlign: "center",
+            marginBottom: 14
+          }}
+        >
+          JOINING LETTER
+        </Text>
+
+        {/* BODY */}
+        <Text style={{ marginBottom: 10 }}>Dear {shortName},</Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          We are pleased to confirm your joining with{" "}
+          <Text style={{ fontWeight: "bold" }}>{COMPANY_DATA.name}</Text>. You will be joining us
+          as <Text style={{ fontWeight: "bold" }}>{designation}</Text>
+          {department ? <> in the <Text style={{ fontWeight: "bold" }}>{department}</Text> department</> : null}
+          {" "}effective from <Text style={{ fontWeight: "bold" }}>{formattedJoiningDate}</Text>.
+        </Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          Your place of posting shall be{" "}
+          <Text style={{ fontWeight: "bold" }}>{workLocation}</Text> and you will be reporting to{" "}
+          <Text style={{ fontWeight: "bold" }}>{reportingManager}</Text>.
+        </Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          Your annual Cost to Company (CTC) will be{" "}
+          <Text style={{ fontWeight: "bold" }}> {formattedCTC}</Text>.
+        </Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          You will be on probation for a period of{" "}
+          <Text style={{ fontWeight: "bold" }}>{probation}</Text>, during which your performance
+          will be assessed.
+        </Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          Your working hours will be{" "}
+          <Text style={{ fontWeight: "bold" }}>{workingHours}</Text>, Monday to Friday.
+        </Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          We warmly welcome you to our organization and look forward to your valuable
+          contribution.
+        </Text>
+
+        <Text style={{ marginBottom: 10 }}>
+          Kindly acknowledge and accept this letter.
+        </Text>
+
+        {/* SIGN SECTION */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 40 }}>
+          <View style={{ width: "45%" }}>
+            <Text style={{ marginBottom: 6 }}>
+              <Text style={{ fontWeight: "bold" }}>Place:</Text> {signPlace}
+            </Text>
+            <Text style={{ marginBottom: 40 }}>
+              <Text style={{ fontWeight: "bold" }}>Date:</Text> {issueDate}
+            </Text>
+            <Text style={{ fontWeight: "bold" }}>{employeeName}</Text>
+          </View>
+
+          <View style={{ width: "45%", alignItems: "flex-end" }}>
+            <Image
+              src={COMPANY_DATA.signature}
+              style={{ width: 120, height: 45, marginBottom: 4 }}
+            />
+            <Text style={{ fontWeight: "bold" }}>{COMPANY_DATA.hrName}</Text>
+            <Text>{COMPANY_DATA.hrDesignation}</Text>
+            <Text>{COMPANY_DATA.hrEmail}</Text>
+          </View>
+        </View>
+        <GlobalPDFFooter/>
+      </Page>
+    </Document>
+  );
+};
+
+/* ---------------- MAIN COMPONENT ---------------- */
+
+export default function JoiningLetterV2() {
+  const [candidates, setCandidates] = useState([]);
+  const [employee, setEmployee] = useState(null);
+
+  const [designation, setDesignation] = useState("");
+  const [department, setDepartment] = useState("");
+  const [reportingManager, setReportingManager] = useState("");
+  const [workLocation, setWorkLocation] = useState("");
+  const [joiningDate, setJoiningDate] = useState("");
+  const [annualCTC, setAnnualCTC] = useState("");
+  const [probation, setProbation] = useState("6 Months");
+  const [workingHours, setWorkingHours] = useState("9:30 AM - 6:30 PM");
+  const [signPlace, setSignPlace] = useState("Pune");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [employment, setEmployment] = useState({});
+  const [employments,setEmployments] = useState({});
+  
+
+  const [showPDF, setShowPDF] = useState(false);
+
+  useEffect(() => {
+    async function loadData() {
+      const qs = await getDocs(collection(db, "employees"));
+      setCandidates(qs.docs.map((d) => ({ id: d.id, ...d.data() })));
+    }
+    loadData();
+  }, []);
+
+  const validate = () => {
+    if (!employee) return toast.error("Select employee");
+    if (!designation) return toast.error("Enter designation");
+    if (!reportingManager) return toast.error("Enter reporting manager");
+    
+    if (!joiningDate) return toast.error("Select joining date");
+    if (!annualCTC) return toast.error("Enter annual CTC");
+    if (!probation) return toast.error("Enter probation");
+    if (!signPlace) return toast.error("Enter sign place");
+    return true;
+  };
+
+  const generate = () => {
+    if (!validate()) return;
+    setShowPDF(true);
+  };
+
+  return (
+    <div className="container mx-auto p-4">
+      <Toaster position="top-center" />
+
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <TableHeader
+          title="Generate Joining Letter"
+          backButton={{ href: "/dashboard/documents", label: "Back" }}
+          showStats={false}
+          showSearch={false}
+          showFilter={false}
+          headerClassName="px-6 py-6"
+        />
+
+        <div className="p-6 space-y-6">
+
+          {/* CARD */}
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
+              Joining Information
+            </h2>
+
+            <div className="bg-white p-4 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                    Employee <span className="text-red-500">*</span>
+                  </label>
+                
+                  <Combobox
+                  value={employee}
+                  onChange={(e) => {
+                    setEmployee(e || null);
+                    setEmployment(employments[e?.id] || null);
+                  }}
+                >
+                  <div className="relative">
+                
+                    <Combobox.Input
+                      className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      placeholder="Select or Search employee..."
+                      displayValue={(emp) => emp?.name ?? ""}
+                      onChange={(event) => setSearchTerm(event.target.value)}
+                    />
+                
+                    <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
+                      {candidates
+                        .filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                        .map(emp => (
+                          <Combobox.Option
+                            key={emp.id}
+                            value={emp}
+                            className={({ active }) =>
+                              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white'}`
+                            }
+                          >
+                            {emp.name}
+                          </Combobox.Option>
+                        ))}
+                
+                      {candidates.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                        <div className="px-3 py-2 text-gray-500 italic">
+                          No results found
+                        </div>
+                      )}
+                    </Combobox.Options>
+                  </div>
+                </Combobox>
+                
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    <span className="text-red-500">*</span> Designation
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-md"
+                    value={designation}
+                    onChange={(e) => setDesignation(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Department (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-md"
+                    value={department}
+                    onChange={(e) => setDepartment(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    <span className="text-red-500">*</span> Reporting Manager
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-md"
+                    value={reportingManager}
+                    onChange={(e) => setReportingManager(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    <span className="text-red-500">*</span> Joining Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full p-2 border rounded-md"
+                    value={joiningDate}
+                    onChange={(e) => setJoiningDate(e.target.value)}
+                  />
+                </div>
+
+                {/* <div>
+                  <label className="block text-sm font-medium mb-1">
+                    <span className="text-red-500">*</span> Work Location
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-md"
+                    value={workLocation}
+                    onChange={(e) => setWorkLocation(e.target.value)}
+                  />
+                </div> */}
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    <span className="text-red-500">*</span> Annual CTC
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full p-2 border rounded-md"
+                    value={annualCTC}
+                    onChange={(e) => setAnnualCTC(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    <span className="text-red-500">*</span> Probation Period
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-md"
+                    value={probation}
+                    onChange={(e) => setProbation(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Working Hours
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-md"
+                    value={workingHours}
+                    onChange={(e) => setWorkingHours(e.target.value)}
+                  />
+                </div>
+
+                <div>
+  <label className="block text-sm font-medium mb-1">
+    <span className="text-red-500">*</span> Place
+  </label>
+  <select
+    className="w-full p-3 border rounded-md"
+    value={signPlace}
+    onChange={(e) => setSignPlace(e.target.value)}
+  >
+    <option value="">Select Place</option>
+    <option value="Pune">Pune</option>
+    <option value="Mumbai">Mumbai</option>
+  </select>
+</div>
+
+
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              onClick={generate}
+              className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <FiDownload size={18} className="mr-2" />
+              <span>Generate Letter</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      {/* PREVIEW */}
+      {showPDF && employee && (
+        <div className="bg-white rounded-lg shadow-lg p-4 mt-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-xl font-bold">PDF Preview</h3>
+            <PDFDownloadLink
+              document={
+                <JoiningLetterPDF
+                  employee={employee}
+                  designation={designation}
+                  department={department}
+                  reportingManager={reportingManager}
+                  workLocation={workLocation}
+                  joiningDate={joiningDate}
+                  annualCTC={annualCTC}
+                  probation={probation}
+                  workingHours={workingHours}
+                  signPlace={signPlace}
+                />
+              }
+              fileName={`Joining_${employee.name}.pdf`}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md"
+            >
+              Download PDF
+            </PDFDownloadLink>
+          </div>
+
+          <div className="border rounded-lg" style={{ height: "80vh" }}>
+            <PDFViewer width="100%" height="100%" className="rounded-lg">
+              <JoiningLetterPDF
+                employee={employee}
+                designation={designation}
+                department={department}
+                reportingManager={reportingManager}
+                workLocation={workLocation}
+                joiningDate={joiningDate}
+                annualCTC={annualCTC}
+                probation={probation}
+                workingHours={workingHours}
+                signPlace={signPlace}
+              />
+            </PDFViewer>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

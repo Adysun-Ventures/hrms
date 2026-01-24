@@ -13,12 +13,12 @@ const documents = [
     path: '/dashboard/documents/v2/offer-letter',
     icon: <FiFileText size={24} />
   },
-  {
-    title: 'Appointment Letter',
-    description: 'Generate appointment letters for confirmed employees',
-    path: '/dashboard/documents/v2/appointment-letter',
-    icon: <FiFileText size={24} />
-  },
+  // {
+  //   title: 'Appointment Letter',
+  //   description: 'Generate appointment letters for confirmed employees',
+  //   path: '/dashboard/documents/v2/appointment-letter',
+  //   icon: <FiFileText size={24} />
+  // },
   {
     title: 'Salary Slip Generator',
     description: 'Generate monthly salary slips for employees',
@@ -32,17 +32,29 @@ const documents = [
     icon: <FiFileText size={24} />
   },
   {
-    title: 'Appraisal Letter',
-    description: 'Generate appraisal letters for promoted employees',
+    title: 'Increment Letter',
+    description: 'Generate increment letters for promoted employees',
     path: '/dashboard/documents/v2/appraisal-letter',
     icon: <FiClipboard size={24} />
   },
+  // {
+  //   title: 'Manage Company',
+  //   description: 'View and update company information details',
+  //   path: '/dashboard/documents/company-card',
+  //   icon: <FiBriefcase size={24} />
+  // },
   {
-    title: 'Manage Company',
-    description: 'View and update company information details',
-    path: '/dashboard/documents/company-card',
-    icon: <FiBriefcase size={24} />
+    title: 'Experience Letter',
+    description: 'Generate experience letters for employees',
+    path: '/dashboard/documents/v2/experience-letter',
+    icon: <FiFileText size={24} />
   },
+   {
+        title: 'Joining Letter',
+        description: 'Generate joining letters for employees',
+        path: '/dashboard/documents/v2/joining-letter',
+        icon: <FiFileText size={24} />
+      },
 ];
 
 export default function DocumentsPage() {

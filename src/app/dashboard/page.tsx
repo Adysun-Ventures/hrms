@@ -76,13 +76,7 @@ export default function DashboardPage() {
       link: '/employees',
       color: 'bg-blue-50'
     },
-    {
-      title: 'Enquiry',
-      count: attendanceCount,
-      icon: <FiMail className="w-8 h-8 text-green-500" />,
-      link: '/dashboard/enquiries/',
-      color: 'bg-green-50'
-    },
+    
   ];
 
   return (
@@ -164,13 +158,7 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-600 mt-1">Create a new employee record</p>
           </Link>
           
-          <Link
-            href="/enquiry"
-            className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
-          >
-            <h3 className="font-medium text-gray-800">Enquiry</h3>
-            <p className="text-sm text-gray-600 mt-1">View and manage enquiry records</p>
-          </Link>
+          
           
           <Link
             href="/dashboard/documents"

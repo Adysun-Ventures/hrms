@@ -32,8 +32,8 @@ const documents = [
     icon: <FiFileText size={24} /> 
   },
   { 
-    title: 'Appraisal Letter (v2)',
-    description: 'Generate selectable text appraisal letters',
+    title: 'Increment Letter (v2)',
+    description: 'Generate selectable text increment letters',
     path: '/dashboard/documents/v2/appraisal-letter', 
     icon: <FiClipboard size={24} /> 
   },
@@ -55,6 +55,13 @@ const documents = [
     path: '/dashboard/documents/company-card', 
     icon: <FiHome size={24} /> 
   },
+   {
+      title: 'Experience Letter',
+      description: 'Generate experience letters for employees',
+      path: '/dashboard/documents/v2/experience-letter',
+      icon: <FiFileText size={24} />
+    },
+    
 ];
 
 export default function DocumentsV2Page() {

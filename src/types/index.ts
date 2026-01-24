@@ -182,6 +182,7 @@ export interface Employment {
   accountNo?: string;
   ifscCode?: string;
   accountHolderName?: string;
+  panNumber?: string;
   
   // Job Details
   jobTitle?: string;

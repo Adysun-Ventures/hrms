@@ -35,6 +35,7 @@ Font.register({
   ]
 });
 
+
 // Common styles for all PDF documents
 export const commonStyles = StyleSheet.create({
   page: {

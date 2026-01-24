@@ -88,11 +88,11 @@ const Sidebar = () => {
 
   // Add Enquiries link for admins only
   if (currentAdmin) {
-    menuItems.push({
-      path: '/dashboard/enquiries',
-      name: 'Enquiries',
-      icon: <FiMail className="w-5 h-5" />
-    });
+    // menuItems.push({
+    //   path: '/dashboard/enquiries',
+    //   name: 'Enquiries',
+    //   icon: <FiMail className="w-5 h-5" />
+    // });
     
     // Add Documents below Enquiries
     menuItems.push({

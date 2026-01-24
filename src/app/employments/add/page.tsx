@@ -45,6 +45,13 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   reportingManager: string;
   employmentType: string;
   workSchedule: string;
+
+  //Bank details
+  bankName?: string;
+  accountNo?: string;
+  ifscCode?: string;
+  accountHolderName?: string;
+  panNumber?: string;
 }
 
 export default function AddEmploymentPage() {
@@ -67,6 +74,19 @@ export default function AddEmploymentPage() {
   });
 
   // Watch salary for calculations
+  const joiningCtc = watch('joiningCtc'); 
+
+   useEffect(() => {
+    if (joiningCtc && joiningCtc > 0) {
+      const annual = Number(joiningCtc);
+      const gross = Math.round(annual / 12);      // Monthly Gross
+      const basic = Math.round(gross * 0.40);     // Basic 40%
+      const pf = Math.round(basic * 0.12) *2;        // Employee PF 12%
+      const pt = 200;                             // Professional Tax Fixed
+      const inHand = (gross - pf - pt)  ;
+      setValue('inHandCtc', inHand);
+    }
+  }, [joiningCtc, setValue]);
   const salary = watch('salary');
 
   // Calculate salary breakdown when annual salary changes
@@ -895,6 +915,26 @@ export default function AddEmploymentPage() {
                     />
                     {errors.accountNo && (
                       <p className="mt-1 text-sm text-red-600">{errors.accountNo.message}</p>
+                    )}
+                  </div>
+                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <span className="text-red-500 mr-1">*</span> Pan Details.
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Enter pan number"
+                      {...register('panNumber', {
+                        required: 'Pan number is required',
+                        pattern: {
+                          value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+                          message: 'Please enter a valid pan number'
+                        }
+                      })}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    />
+                    {errors.panNumber && (
+                      <p className="mt-1 text-sm text-red-600">{errors.panNumber.message}</p>
                     )}
                   </div>
 

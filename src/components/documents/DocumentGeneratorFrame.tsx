@@ -4,6 +4,7 @@ import { FiArrowLeft } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import dynamic from 'next/dynamic';
 
+
 // Dynamically import v2 document components with no SSR for all documents
 const OfferLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/OfferLetter'), { ssr: false });
 const AppointmentLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/AppointmentLetter'), { ssr: false });
@@ -12,6 +13,8 @@ const AppraisalLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/Apprais
 const SalarySlipGeneratorV2 = dynamic(() => import('@/app/doc_pages/pages/v2/SalarySlipGenerator'), { ssr: false });
 const BankStatementV2 = dynamic(() => import('@/app/doc_pages/pages/v2/BankStatement'), { ssr: false });
 const ManageBankV2 = dynamic(() => import('@/app/doc_pages/pages/v2/ManageBank'), { ssr: false });
+const ExperienceLetterV2Page = dynamic(() => import('@/app/doc_pages/pages/v2/ExperienceLetter'), { ssr: false });
+const JoiningLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/JoiningLetter'), { ssr: false });
 
 // Legacy v1 components when needed
 const IncrementLetterV1 = dynamic(() => import('@/app/doc_pages/pages/IncrementLetter'), { ssr: false });
@@ -54,6 +57,10 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
           return <BankStatementV2 />;
         case 'v2/manage-bank':
           return <ManageBankV2 />;
+        case 'v2/experience-letter':
+          return <ExperienceLetterV2Page/>;
+        case 'v2/joining-letter':
+          return <JoiningLetterV2/>;
         default:
           return <div>V2 document type not found</div>;
       }

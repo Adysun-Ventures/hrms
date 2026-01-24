@@ -87,12 +87,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const adminData = localStorage.getItem('adminData');
         
         if (adminSessionId && adminData) {
-          console.log('🔍 Restoring admin session from localStorage');
+          // console.log('🔍 Restoring admin session from localStorage');
           const adminUser = JSON.parse(adminData);
           setCurrentAdmin(adminUser);
           setCurrentEmployee(null);
           setCurrentUserData(adminUser);
-          console.log('✅ Admin session restored');
+         
         }
         
         // Check for employee session
@@ -105,7 +105,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setCurrentEmployee(employeeUser);
           setCurrentAdmin(null);
           setCurrentUserData(employeeUser);
-          console.log('✅ Employee session restored');
+          
         }
       } catch (error) {
         console.error('Error restoring sessions:', error);

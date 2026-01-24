@@ -2388,36 +2388,8 @@ export const cancelEmployeeLeaveRequest = async (employeeId: string, leaveId: st
   }
 };
 
-// Enquiry Firestore utilities
-export const getEnquiries = async () => {
-  const q = query(collection(db, 'enquiries'), orderBy('createdAt', 'desc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-};
 
-export const getEnquiry = async (id: string) => {
-  const docSnap = await getDoc(doc(db, 'enquiries', id));
-  if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() };
-  }
-  return null;
-};
 
-export const addEnquiry = async (enquiryData: any) => {
-  const docRef = await addDoc(collection(db, 'enquiries'), {
-    ...enquiryData,
-    createdAt: enquiryData.createdAt || new Date(),
-  });
-  return docRef.id;
-};
-
-export const updateEnquiry = async (id: string, enquiryData: any) => {
-  await updateDoc(doc(db, 'enquiries', id), enquiryData);
-};
-
-export const deleteEnquiry = async (id: string) => {
-  await deleteDoc(doc(db, 'enquiries', id));
-}; 
 
 // PAN Card validation and uniqueness check functions
 export const validatePANFormat = (pan: string): boolean => {

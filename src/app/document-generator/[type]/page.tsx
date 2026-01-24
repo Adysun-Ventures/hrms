@@ -23,6 +23,7 @@ const AppraisalLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/Apprais
 const SalarySlipGeneratorV2 = dynamic(() => import('@/app/doc_pages/pages/v2/SalarySlipGenerator'), { ssr: false });
 const BankStatementV2 = dynamic(() => import('@/app/doc_pages/pages/v2/BankStatement'), { ssr: false });
 const ManageBankV2 = dynamic(() => import('@/app/doc_pages/pages/v2/ManageBank'), { ssr: false });
+const ExperienceLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/ExperienceLetter'), { ssr: false });
 
 // Document generator wrapper component
 const DocumentGeneratorPage = () => {
@@ -53,6 +54,9 @@ const DocumentGeneratorPage = () => {
           return <BankStatementV2 />;
         case 'manage-bank':
           return <ManageBankV2 />;
+        case 'experience-letter':
+          return <ExperienceLetterV2 />;
+        case 'home':
         default:
           return <Home />;
       }

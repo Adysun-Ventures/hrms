@@ -33,6 +33,28 @@ function OfferLetter() {
     gross: ""
   });
 
+  const compactStyles = {
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  paragraph: {
+    fontSize: 10,
+    lineHeight: 1.25,
+    marginBottom: 2,
+  },
+  bulletList: {
+    marginLeft: 16,
+    marginBottom: 4,
+  },
+  bullet: {
+    fontSize: 10,
+    lineHeight: 1.2,
+    marginBottom: 1,
+  }
+};
+
   // Convert number to words
   const numberToWords = (num) => {
     const single = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];

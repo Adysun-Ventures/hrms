@@ -16,7 +16,7 @@ const GlobalPDFFooter = () => {
         paddingTop: 6
       }}
     >
-      <Text>Adysun Ventures Pvt. Ltd.</Text>
+      <Text style={{ color: "#D85604", fontWeight: "bold" }}>Adysun Ventures Pvt. Ltd.</Text>
       <Text>S no 47, WorkPlex, Pune-Satara Road, Pune 411009</Text>
       <Text>www.adysunventures.com | hr@adysunventures.com</Text>
     </View>

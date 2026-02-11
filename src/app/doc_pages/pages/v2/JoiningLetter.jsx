@@ -45,12 +45,19 @@ const formatDate = (d) => {
   try {
     return new Date(d).toLocaleDateString("en-IN", {
       day: "2-digit",
-      month: "short",
+      month: "2-digit",
       year: "numeric"
     });
   } catch (e) {
     return d;
   }
+};
+const toTitleCase = (str) => {
+  return str
+    ?.toLowerCase()
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 };
 
 const Watermark = ({ logoSrc }) => (
@@ -78,6 +85,11 @@ const JoiningLetterPDF = ({
   const issueDate = formatDate(todayISO());
   const formattedJoiningDate = formatDate(joiningDate);
   const formattedCTC = Number(annualCTC).toLocaleString("en-IN");
+  const rawAddress = employee?.currentAddress || employee?.permanentAddress || "";
+  const fullAddress = rawAddress
+    ? rawAddress.split(/[,;\n]+/).map(v => v.trim()).filter(Boolean)
+    : [];
+  const shortAddress = fullAddress.slice(-2);
 
   return (
     <Document>
@@ -98,7 +110,14 @@ const JoiningLetterPDF = ({
           <Text style={{ fontWeight: "bold" }}>Date:</Text> {issueDate}
         </Text>
 
-        <Text style={{ fontWeight: "bold", marginBottom: 14 }}>{employeeName}</Text>
+        <View style={{ marginBottom: 14 }}>
+                  <Text style={{ fontWeight: "bold" }}></Text>
+                  <Text style={{ fontWeight: "bold" }}>{toTitleCase(employeeName)}</Text>
+                  {shortAddress.map((line, i) => (
+                    <Text key={i}>{line}</Text>
+                  ))}
+                </View>
+        
 
         {/* TITLE */}
         <Text
@@ -114,7 +133,7 @@ const JoiningLetterPDF = ({
         </Text>
 
         {/* BODY */}
-        <Text style={{ marginBottom: 10 }}>Dear {shortName},</Text>
+        <Text style={{ marginBottom: 10 }}>Dear {toTitleCase(shortName)},</Text>
 
         <Text style={{ marginBottom: 10 }}>
           We are pleased to confirm your joining with{" "}
@@ -126,8 +145,8 @@ const JoiningLetterPDF = ({
 
         <Text style={{ marginBottom: 10 }}>
           Your place of posting shall be{" "}
-          <Text style={{ fontWeight: "bold" }}>{workLocation}</Text> and you will be reporting to{" "}
-          <Text style={{ fontWeight: "bold" }}>{reportingManager}</Text>.
+          <Text style={{ fontWeight: "" }}>{workLocation}</Text> and you will be reporting to{" "}
+          <Text style={{ fontWeight: "" }}>{reportingManager}</Text>.
         </Text>
 
         <Text style={{ marginBottom: 10 }}>
@@ -164,7 +183,7 @@ const JoiningLetterPDF = ({
             <Text style={{ marginBottom: 40 }}>
               <Text style={{ fontWeight: "bold" }}>Date:</Text> {issueDate}
             </Text>
-            <Text style={{ fontWeight: "bold" }}>{employeeName}</Text>
+            <Text style={{ fontWeight: "bold" }}>{toTitleCase(employeeName)}</Text>
           </View>
 
           <View style={{ width: "45%", alignItems: "flex-end" }}>

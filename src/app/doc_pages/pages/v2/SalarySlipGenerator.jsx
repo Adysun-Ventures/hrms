@@ -296,15 +296,25 @@ const AdysunSalarySlipLayout = ({ formData }) => {
     'Adysun Ventures, WorkPlex, S no 47, near Bhapkar petrol pump, Pune - Satara Rd, Taware Colony, Bibwewadi, Pune, Maharashtra 411009',
     'www.AdysunVentures.com  |  info@adysunventures.com  |  hr@adysunventures.com'
   ];
+   const toTitleCase = (str) => {
+  return str
+    ?.toLowerCase()
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
   const detailRows = [
-    { label: 'Employee Name', value: getEmployeeNameText(f.employeeName, f.employeeNameText) },
+{ 
+  label: 'Employee Name', 
+  value: toTitleCase(getEmployeeNameText(f.employeeName, f.employeeNameText)) 
+},
     { label: 'Employee Code', value: f.employeeId },
-    { label: 'Designation', value: f.designation },
+    { label: 'Designation', value: toTitleCase(f.designation) },
     { label: 'Department', value: f.department },
     { label: 'Bank Name', value: f.bankName },
     { label: 'Bank Account No', value: f.accountNo },
-    { label: 'IFSC Code', value: f.ifscCode },
+    // { label: 'IFSC Code', value: f.ifscCode },
     { label: 'Pan No', value: f.panNumber },
     { label: 'Leaves', value: f.leaves || 0},
     { label: 'Effective Work Days', value: `${f.payableDays} Days` },
@@ -540,7 +550,8 @@ return (
           </View>
         ))}
 
-        <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderTopWidth: 0.75, borderTopColor: "#000" }}>
+        <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderTopWidth: 0.75, borderTopColor: "#000", marginTop: f.enablePF ? 0 : 18.5 }}>
+          
           <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Total Deductions</Text>
           <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
             {formatIndianCurrency(getTotalDeductions(f))}

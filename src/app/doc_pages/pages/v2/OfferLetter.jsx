@@ -151,7 +151,12 @@ const OfferLetterPDF = ({ employee, employment, enablePF }) => {
   const designation = employment?.jobTitle || employment?.designation || '';
   const joiningDate = employment?.joiningDate || employment?.startDate || '';
   const annualCTC = Number(employment?.salary || 0);
-  const letterDate = new Date().toLocaleDateString('en-IN');
+ const letterDate = new Date().toLocaleDateString('en-IN', {
+  day: '2-digit',
+  month: '2-digit',
+  year: 'numeric'
+});
+
 
   /* Salary Computation */
   const basic = Math.round(annualCTC * 0.5);
@@ -167,6 +172,14 @@ const OfferLetterPDF = ({ employee, employment, enablePF }) => {
   const pf = enablePF ? Math.round(basic * 0.12) : 0;
   const net = gross - (pt + pf);
   const monthly = n => Math.round(n / 12);
+  const toTitleCase = (str) => {
+  return str
+    ?.toLowerCase()
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+
 
  return (
   <Document>
@@ -191,7 +204,7 @@ const OfferLetterPDF = ({ employee, employment, enablePF }) => {
       </Text>
 
       <View style={{ marginBottom: 14 }}>
-        <Text style={{ fontWeight: "bold" }}>{name}</Text>
+        <Text style={{ fontWeight: "bold" }}>{toTitleCase(name)}</Text>
         {shortAddress.map((line, i) => (
           <Text key={i}>{line}</Text>
         ))}
@@ -210,34 +223,34 @@ const OfferLetterPDF = ({ employee, employment, enablePF }) => {
       </Text>
 
       <Text style={{ marginBottom: 12 }}>
-        Dear <Text style={{ fontWeight: "bold" }}>{firstName}</Text>,
+        Dear <Text style={{ fontWeight: "bold" }}>{toTitleCase(name)}</Text>,
       </Text>
 
       <Text style={{ marginBottom: 12 }}>
         We are pleased to extend an employment opportunity with{" "}
         <Text style={{ fontWeight: "bold" }}>{COMPANY_DATA.name}</Text>. This appointment
         signifies the beginning of a professional engagement rooted in{" "}
-        <Text style={{ fontWeight: "bold" }}>values, responsibility,
+        <Text >values, responsibility,
         and mutual growth</Text>. We take pride in fostering an environment that
-        encourages <Text style={{ fontWeight: "bold" }}>discipline, structured learning,
+        encourages <Text >discipline, structured learning,
         accountability</Text> and a{" "}
-        <Text style={{ fontWeight: "bold" }}>results-driven work ethic</Text>.
+        <Text >results-driven work ethic</Text>.
       </Text>
 
       <Text style={{ marginBottom: 12 }}>
         You are hereby appointed to the position of{" "}
         <Text style={{ fontWeight: "bold" }}>{designation}</Text> effective from{" "}
-        <Text style={{ fontWeight: "bold" }}>{joiningDate}</Text>. You are expected to
-        demonstrate <Text style={{ fontWeight: "bold" }}>professional conduct,
+        <Text >{joiningDate}</Text>. You are expected to
+        demonstrate <Text >professional conduct,
         punctuality</Text> and adhere to organizational policies at all times. This
-        appointment will be considered <Text style={{ fontWeight: "bold" }}>null and
+        appointment will be considered <Text >null and
         void</Text> should you fail to commence duties on or before the specified
         joining date.
       </Text>
 
       <Text>
         At <Text style={{ fontWeight: "bold" }}>{COMPANY_DATA.name}</Text>, we believe that{" "}
-        <Text style={{ fontWeight: "bold" }}>structured operations, ethical practices,
+        <Text >structured operations, ethical practices,
         and transparent communication</Text> contribute to a high-performance culture.
         Your role will require alignment with organizational objectives and a
         commitment to producing measurable outcomes.
@@ -334,7 +347,7 @@ const OfferLetterPDF = ({ employee, employment, enablePF }) => {
     >
       <Watermark logoSrc={COMPANY_DATA.logo} />
 
-      <Text style={[offerLetterStyles.sectionHeading, { fontSize: 14, fontWeight: "bold" }]}>
+      <Text style={[balancedStyles.sectionTitle, { fontSize: 14, fontWeight: "bold" }]}>
         CTC Breakdown (Annual & Monthly)
       </Text>
 
@@ -385,13 +398,13 @@ const OfferLetterPDF = ({ employee, employment, enablePF }) => {
 
         <View style={{ marginTop: 4 }}>
           <Text style={{ fontSize: 11, marginBottom: 4 }}>
-            Candidate Name: <Text style={{ fontWeight: "bold" }}>{name}</Text>
+            Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCase(name)}</Text>
           </Text>
           <Text style={{ fontSize: 11, marginBottom: 12 }}>
             Signature: ________________________________
           </Text>
           <Text style={{ fontSize: 11, marginBottom: 12 }}>
-            Date: ________________________________
+            Date: {letterDate}
           </Text>
         </View>
 

@@ -53,6 +53,25 @@ const Watermark = ({ logoSrc }) => {
     </View>
   );
 };
+const toTitleCase = (str) => {
+  return str
+    ?.toLowerCase()
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
+const formatDate = (d) => {
+  if (!d) return "";
+  try {
+    return new Date(d).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+  } catch (e) {
+    return d;
+  }
+};
 
 /* ---------------- PDF COMPONENT ---------------- */
 const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeSignPlace,todaysDate }) => {
@@ -76,13 +95,13 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
 
         {/* DATE + ADDRESS */}
         <Text style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: 'bold' }}>Date:</Text> {todaysDate}
+          <Text style={{ fontWeight: 'bold' }}>Date:</Text> {formatDate(todaysDate)}
         </Text>
 
-        <Text style={{ marginBottom: 14 }}>
+        {/* <Text style={{ marginBottom: 14 }}>
           To,{'\n'}
-          <Text style={{ fontWeight: 'bold' }}>{employeeName}</Text>{'\n'}
-        </Text>
+          <Text style={{ fontWeight: 'bold' }}>{toTitleCase(employeeName)}</Text>{'\n'}
+        </Text> */}
 
         {/* TITLE */}
         <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 16, textAlign: "center", textDecoration: "underline" }}>
@@ -91,11 +110,11 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
 
         {/* BODY */}
         <Text style={{ marginBottom: 10 }}>
-          Dear {shortName},
+          Dear {toTitleCase(shortName)},
         </Text>
 
         <Text style={{ marginBottom: 10 }}>
-          This is to certify that <Text style={{ fontWeight: 'bold' }}>{employeeName}</Text> was employed with <Text style={{ fontWeight: 'bold' }}>{COMPANY_DATA.name}</Text> as a <Text style={{ fontWeight: 'bold' }}>{designation}</Text> from <Text style={{ fontWeight: 'bold' }}>{joiningDate}</Text> to <Text style={{ fontWeight: 'bold' }}>{relievingDate || employeeSignDate}</Text>.
+          This is to certify that <Text style={{ fontWeight: 'bold' }}>{toTitleCase(employeeName)}</Text> was employed with <Text style={{ fontWeight: 'bold' }}>{COMPANY_DATA.name}</Text> as a <Text style={{ fontWeight: 'bold' }}>{designation}</Text> from <Text style={{ fontWeight: 'bold' }}>{formatDate(joiningDate)}</Text> to <Text style={{ fontWeight: 'bold' }}>{formatDate(relievingDate) || formatDate(employeeSignDate)}</Text>.
         </Text>
 
         <Text style={{ marginBottom: 10 }}>
@@ -114,7 +133,7 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
         <View style={{ marginTop: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
             <Text>Place: {employeeSignPlace}</Text>
-            <Text>Date: {employeeSignDate}</Text>
+            <Text>Date: {formatDate(employeeSignDate)}</Text>
           </View>
 
           <View style={{ width: '45%', textAlign: 'right' }}>

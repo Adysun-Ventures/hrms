@@ -16,19 +16,19 @@ const GlobalPDFHeader = () => {
     <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
       
       {/* LEFT TEXT BLOCK */}
-      <View style={{ flex: 1, paddingRight: 6 }}>
+      <View style={{ flex: 1, paddingRight: 10 }}>
         <Text style={{ fontSize: 18, fontWeight: "bold", color: "#D85604" }}>
           {COMPANY.name}
         </Text>
 
-        <Text style={{ fontSize: 11, marginTop: 4 }}>
+        <Text  wrap={false} style={{ fontSize: 10, marginTop: 4 }}>
           {COMPANY.contact}
         </Text>
 
-        <Text style={{ fontSize: 11, marginTop: 4 }}>
+        <Text style={{ fontSize: 10, marginTop: 4 }}>
           {COMPANY.addressLine1}
         </Text>
-        <Text style={{ fontSize: 11 }}>
+        <Text style={{ fontSize: 10 }}>
           {COMPANY.addressLine2}
         </Text>
       </View>

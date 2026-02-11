@@ -49,7 +49,7 @@ const formatDate = (d) => {
   try {
     return new Date(d).toLocaleDateString("en-IN", {
       day: "2-digit",
-      month: "short",
+      month: "2-digit",
       year: "numeric"
     });
   } catch (err) {
@@ -83,6 +83,13 @@ const RelievingLetterPDF = ({
     ? rawAddress.split(/[,;\n]+/).map(v => v.trim()).filter(Boolean)
     : [];
   const shortAddress = fullAddress.slice(-2);
+   const toTitleCase = (str) => {
+  return str
+    ?.toLowerCase()
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
   return (
     <Document>
@@ -122,8 +129,8 @@ const RelievingLetterPDF = ({
         </Text>
 
         <View style={{ marginBottom: 14 }}>
-          <Text style={{ fontWeight: "bold" }}>To,</Text>
-          <Text style={{ fontWeight: "bold" }}>{employeeName}</Text>
+          <Text style={{ fontWeight: "bold" }}></Text>
+          <Text style={{ fontWeight: "bold" }}>{toTitleCase(employeeName)}</Text>
           {shortAddress.map((line, i) => (
             <Text key={i}>{line}</Text>
           ))}
@@ -143,7 +150,7 @@ const RelievingLetterPDF = ({
         </Text>
 
         {/* BODY */}
-        <Text style={{ marginBottom: 10 }}>Dear {shortName},</Text>
+        <Text style={{ marginBottom: 10 }}>Dear {toTitleCase(shortName)},</Text>
 
         <Text style={{ marginBottom: 10 }}>
           This is with reference to your resignation dated{" "}
@@ -238,6 +245,7 @@ function RelievingLetterV2() {
     setEmployee(candidates.find(x => x.id === id) || null);
     setEmployment(employments[id] || null);
   };
+   
 
   return (
     <div className="container mx-auto p-4">

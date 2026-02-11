@@ -20,6 +20,7 @@ import toast, { Toaster } from "react-hot-toast";
 import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import { Combobox } from "@headlessui/react";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
+import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 
 /* ---------------- COMPANY DATA ---------------- */
 const COMPANY_DATA = {
@@ -43,9 +44,16 @@ const Watermark = ({ logoSrc }) => (
 const formatDate = (d) =>
   new Date(d).toLocaleDateString("en-IN", {
     day: "2-digit",
-    month: "short",
+    month: "2-digit",
     year: "numeric"
   });
+const toTitleCase = (str) => {
+  return str
+    ?.toLowerCase()
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
 /* ---------------- PDF COMPONENT ---------------- */
 const AppraisalLetterPDF = ({
@@ -61,6 +69,7 @@ const AppraisalLetterPDF = ({
   const formattedRevised = Number(revisedCTC).toLocaleString("en-IN");
   const formattedEffective = formatDate(effectiveDate);
   const today = formatDate(new Date());
+  
 
   return (
     <Document>
@@ -71,7 +80,7 @@ const AppraisalLetterPDF = ({
         <Watermark logoSrc={COMPANY_DATA.logo} />
 
         {/* HEADER */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
+        {/* <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 12 }}>
           <View>
             <Text style={{ fontSize: 18, fontWeight: "bold", color: "#d42626" }}>
               {COMPANY_DATA.name}
@@ -89,7 +98,8 @@ const AppraisalLetterPDF = ({
             })()}
           </View>
           <Image src={COMPANY_DATA.logo} style={{ width: 55, height: 55 }} />
-        </View>
+        </View> */}
+        <GlobalPDFHeader/>
 
         <View style={{ borderBottom: "1px solid #000", marginBottom: 16 }} />
 
@@ -98,7 +108,7 @@ const AppraisalLetterPDF = ({
           <Text style={{ fontWeight: "bold" }}>Date:</Text> {today}
         </Text>
 
-        <Text style={{ fontWeight: "bold", marginBottom: 14 }}>{employeeName}</Text>
+        <Text style={{ fontWeight: "bold", marginBottom: 14 }}>{toTitleCase(employeeName)}</Text>
 
         <Text
           style={{
@@ -113,7 +123,7 @@ const AppraisalLetterPDF = ({
         </Text>
 
         {/* BODY */}
-        <Text style={{ marginBottom: 10 }}>Dear {shortName},</Text>
+        <Text style={{ marginBottom: 10 }}>Dear {toTitleCase(shortName)},</Text>
 
         <Text style={{ marginBottom: 10 }}>
           I am pleased to inform you that due to your consistent outstanding performance and dedication to your role, we are providing you with a salary increment effective from <Text style={{ fontWeight: "bold" }}>{formattedEffective}</Text>.

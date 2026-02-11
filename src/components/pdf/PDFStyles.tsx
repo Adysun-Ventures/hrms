@@ -272,9 +272,9 @@ export const offerLetterStyles = StyleSheet.create({
     alignItems: 'center',
   },
   watermarkImage: {
-    width: '80%',
+    width: '72%',
     height: 'auto',
-    opacity: 0.15,
+    opacity: 0.10,
   },
 });
 

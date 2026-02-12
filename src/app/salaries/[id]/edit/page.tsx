@@ -65,6 +65,12 @@ export default function EditSalaryPage({ params }: PageParams) {
   const leavesCount = watch('leavesCount') || 0;
   const ptDeduct = watch('ptDeduct') || 200;
   const variablePay = watch('variablePay') || 0;
+  const formatINR = (num: number) => {
+  return new Intl.NumberFormat('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(num);
+};
 
   // Real-time calculation using useMemo - calculates on every render when inputs change
   const calculations: MonthlySalaryResult = useMemo(() => {
@@ -694,7 +700,7 @@ export default function EditSalaryPage({ params }: PageParams) {
                 Gross Salary (A)
               </label>
               <span className="text-lg font-bold text-blue-700">
-                ₹{grossSalary.toFixed(2)}
+                ₹{formatINR(grossSalary)}
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1">
@@ -775,7 +781,7 @@ export default function EditSalaryPage({ params }: PageParams) {
                 Net Salary (InHand)
               </label>
               <span className="text-lg font-bold text-green-700">
-                ₹{netSalary.toFixed(2)}
+                ₹{formatINR(netSalary)}
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-1">

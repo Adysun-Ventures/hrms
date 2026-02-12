@@ -18,6 +18,15 @@ import SimpleBreadcrumb from '@/components/ui/SimpleBreadcrumb';
 import { useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { FaRupeeSign } from "react-icons/fa";
+import { pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import GlobalPDFHeader from '@/components/components/docComponents/docHeader';
+import GlobalPDFFooter from '@/components/components/docComponents/docFooter';
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "@/firebase/config";
+
+
+
 
 
 // Component to handle employee name display with proper Firebase integration
@@ -42,6 +51,12 @@ const EmployeeNameDisplay = ({ employeeId }: { employeeId: string }) => {
 
   return <span>{employeeName}</span>;
 };
+const pdfStyles = StyleSheet.create({
+  page: { padding: 30, fontSize: 12 },
+  heading: { fontSize: 18, marginBottom: 20, fontWeight: 'bold' },
+  section: { marginBottom: 10 }
+});
+
 
 export default function SalariesPage() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -137,6 +152,229 @@ export default function SalariesPage() {
     console.error('Salary data error:', error);
     toast.error('Failed to load salary data');
   }
+const handleDownload = async (salary: Salary) => {
+  try {
+
+    // ===== 1️⃣ Fetch Employee =====
+    const empDoc = await getDoc(doc(db, "employees", salary.employeeId));
+    const employeeData = empDoc.exists() ? empDoc.data() : {};
+
+    // ===== 2️⃣ Fetch Employment =====
+    let employmentData: any = {};
+
+    const empQuery = query(
+      collection(db, "employments"),
+      where("employeeId", "==", salary.employeeId)
+    );
+
+    const empSnap = await getDocs(empQuery);
+
+    if (!empSnap.empty) {
+      const rows = empSnap.docs.map(d => d.data());
+
+      rows.sort(
+        (a, b) =>
+          new Date(b.startDate).getTime() -
+          new Date(a.startDate).getTime()
+      );
+
+      employmentData = rows[0]; // ✅ latest employment
+    }
+
+    // ===== 3️⃣ FINAL MERGED OBJECT =====
+    const f: any = {
+      ...salary,
+      ...employeeData,
+      ...employmentData
+    };
+
+    console.log(employeeData,employmentData )
+
+    // ===== 4️⃣ SAFE NAME RESOLVER =====
+    const employeeName =
+      f.employeeNameText ||
+      f.employeeName ||
+      employeeData?.name ||
+      employmentData?.employeeName ||
+      "Unknown Employee";
+
+    // ===== Earnings =====
+    const earningsData = [
+      { label: 'Basic', amount: f.basic || 0 },
+      { label: 'HRA', amount: f.hra || 0 },
+      { label: 'Conveyance Allowance', amount: f.conveyanceAllowance || 0 },
+      { label: 'Other Allowance', amount: f.otherAllowance || 0 },
+    ];
+
+    // ===== Deductions =====
+    const deductionsData = [
+      { label: 'PT', amount: f.ptDeduct || 0 },
+      { label: 'Leave Deduction', amount: f.leavesDeductAmt || 0 },
+      { label: 'Other Deduction', amount: f.otherDeductions || 0 },
+    ];
+    const tableBox = {
+  width: "100%",
+  borderWidth: 0.75,
+  borderColor: "#000",
+  marginBottom: 10
+};
+const safeName = employeeName.replace(/\s+/g, "_");
+const monthName = getMonthName(f.month);
+
+    // ===== PDF =====
+    const blob = await pdf(
+      <Document>
+        <Page size="A4" style={{
+          paddingTop: 18 * 2.83,
+          paddingBottom: 18 * 2.83,
+          paddingLeft: 10 * 2.83,
+          paddingRight: 10 * 2.83,
+          fontFamily: "Helvetica",
+          fontSize: 9,
+          display: "flex",
+          flexDirection: "column"
+        }}>
+
+          <GlobalPDFHeader />
+
+          <View style={{ borderBottomWidth: 1, marginBottom: 10 }} />
+
+          <Text style={{
+            fontSize: 10,
+            fontWeight: "bold",
+            textAlign: "center",
+            marginBottom: 8
+          }}>
+            Salary Slip {getMonthName(f.month)} {f.year}
+          </Text>
+
+          {/* ===== DETAILS ===== */}
+          <View style={ tableBox }>
+            {[
+              { label: "Employee Name", value: employeeName },
+              { label: "Employee ID", value: f.employeeId },
+              { label: "Designation", value: f.jobTitle || "-" },
+              { label: "Bank Name", value: f.bankName || "-" },
+              { label: "Account No", value: f.accountNo || "-" },
+              { label: "IFSC Code", value: f.ifscCode || "-" },
+              {label:"Pan Number", value: f.panNumber || "-"},
+              
+              { label: "Leaves", value: f.leavesCount },
+              { label: "Work Days", value: f.workDays },
+              
+            ].map((row, idx) => (
+              <View key={row.label} style={{
+                flexDirection: "row",
+                borderBottomWidth: 0.6
+
+              }}>
+                <Text style={{
+                  width: "60%",
+                  padding: 4,
+                  borderRightWidth: 0.6,
+                  fontWeight: "bold"
+                }}>
+                  {row.label}
+                </Text>
+
+                <Text style={{ width: "60%", padding: 4 }}>
+                  {row.value ?? "-"}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {/* ===== EARNINGS + DEDUCTIONS ===== */}
+          <View style={{ flexDirection: "row", borderWidth: 0.75, marginBottom: 10 }}>
+
+            {/* Earnings */}
+            <View style={{ width: "50%", borderRightWidth: 0.75 }}>
+              <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderBottomWidth: 0.75 }}>
+                <Text style={{ width: "60%", padding: 4, fontWeight: "bold", borderRightWidth: 0.75 }}>Earnings (A)</Text>
+                <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>Amount</Text>
+              </View>
+
+              {earningsData.map(item => (
+                <View key={item.label} style={{ flexDirection: "row", borderBottomWidth: 0.6,borderRightWidth: 0.75 }}>
+                  <Text style={{ width: "60%", padding: 4 ,borderRightWidth: 0.75}} wrap={false}>{item.label}</Text>
+                  <Text style={{ width: "40%", padding: 4, textAlign: "right" }}> {item.amount}</Text>
+                </View>
+              ))}
+
+              <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8" }}>
+                <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Gross Salary</Text>
+                <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
+                   {f.grossSalary || f.totalSalary || 0}
+                </Text>
+              </View>
+            </View>
+
+            {/* Deductions */}
+            <View style={{ width: "50%" }}>
+              <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderBottomWidth: 0.75 ,borderRightWidth: 0.75 }}>
+                <Text style={{ width: "60%", padding: 4, fontWeight: "bold",borderRightWidth: 0.75 }}>Deductions (B)</Text>
+                <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>Amount</Text>
+              </View>
+
+              {deductionsData.map(item => (
+                <View key={item.label} style={{ flexDirection: "row", borderBottomWidth: 0.6,borderRightWidth: 0.75 }}>
+                  <Text style={{ width: "60%", padding: 4 ,borderRightWidth: 0.75}} wrap={false}>{item.label}</Text>
+                  <Text style={{ width: "40%", padding: 4, textAlign: "right" }}> {item.amount}</Text>
+                </View>
+              ))}
+
+              <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8",marginTop:18.5 }}>
+                <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Total Deductions</Text>
+                <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
+                   {f.totalDeduction || 0}
+                </Text>
+              </View>
+            </View>
+
+          </View>
+
+          {/* Net */}
+          <View style={{ borderWidth: 0.75, backgroundColor: "#e8e8e8" }}>
+            <View style={{ flexDirection: "row" }}>
+              <Text style={{ width: "50%", padding: 4, fontWeight: "bold", borderRightWidth: 0.75 }}>
+                Net Salary (A - B)
+              </Text>
+              <Text style={{ width: "50%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
+                 {f.netSalary || f.inhandSalary || 0}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={{ textAlign: "center", marginTop: 10, fontWeight: "bold" }}>
+            This document is digitally generated and does not require signature.
+          </Text>
+
+          <View style={{ flexGrow: 1 }} />
+          <View style={{ borderBottomWidth: 1, marginBottom: 8 }} />
+
+          <GlobalPDFFooter />
+
+        </Page>
+      </Document>
+    ).toBlob();
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+   
+a.download = `Salary-${safeName}-${monthName}-${f.year}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast.success("PDF Downloaded");
+
+  } catch (error) {
+    console.error(error);
+    toast.error("PDF download failed");
+  }
+};
+
+
 
   const handleDeleteClick = (id: string) => {
     setDeleteConfirm(id);
@@ -349,12 +587,13 @@ export default function SalariesPage() {
                       </div>
                     ) : (
                       <div className="flex items-center space-x-3">
-                        {/* <ActionButton
+                        <ActionButton
                           icon={<FiDownload className="w-5 h-5" />}
                           title="Download Salary Details"
                           colorClass="bg-green-100 text-green-600 hover:text-green-900"
                           href={null as any}
-                        /> */}
+                          onClick={()=> handleDownload(salary)}
+                        />
                         <ActionButton
                           icon={<FiEye className="w-5 h-5" />}
                           title="View Salary Details"

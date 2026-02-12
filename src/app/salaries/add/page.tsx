@@ -555,8 +555,8 @@ export default function AddSalaryPage() {
 
   </div>
 
-  {errors.variablePay && (
-    <p className="mt-1 text-sm text-red-600">{errors.variablePay.message}</p>
+  {errors.fixedPay && (
+    <p className="mt-1 text-sm text-red-600">{errors.fixedPay.message}</p>
   )}
 </div>
 

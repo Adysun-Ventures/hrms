@@ -31,6 +31,7 @@ type SalaryFormData = {
   otherAllowance: number;
   ptDeduct: number;
   leavesDeductAmt: number;
+  variablePay: number;
 };
 
 type PageParams = {
@@ -63,6 +64,7 @@ export default function EditSalaryPage({ params }: PageParams) {
   const month = Number(watch('month')) || new Date().getMonth() + 1;
   const leavesCount = watch('leavesCount') || 0;
   const ptDeduct = watch('ptDeduct') || 200;
+  const variablePay = watch('variablePay') || 0;
 
   // Real-time calculation using useMemo - calculates on every render when inputs change
   const calculations: MonthlySalaryResult = useMemo(() => {
@@ -143,6 +145,17 @@ export default function EditSalaryPage({ params }: PageParams) {
       setValue('ptDeduct', calculations.ptDeduct, { shouldValidate: false, shouldDirty: false });
     }
   }, [calculations, setValue, ptDeduct]);
+  useEffect(()=>{
+      //Fixed pay results
+      const autoFixed = Number(ctc || 0) - Number(variablePay || 0);
+  
+      setValue(
+        'fixedPay',
+        autoFixed >= 0 ? autoFixed : 0,
+        { shouldValidate: false, shouldDirty: true }
+      );
+    }, [ctc, variablePay, setValue]);
+  
 
   // Watch for form changes
   const watchedValues = watch();
@@ -295,6 +308,10 @@ export default function EditSalaryPage({ params }: PageParams) {
                    'July', 'August', 'September', 'October', 'November', 'December'];
     return months[month - 1] || 'Unknown';
   };
+  const leaveOptions: number[] = Array.from(
+  { length: 16 }, // 0 → 15
+  (_, i) => i
+);
 
   if (isSalaryLoading) {
     return (
@@ -413,22 +430,27 @@ export default function EditSalaryPage({ params }: PageParams) {
             {/* Year */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="text-red-500 mr-1">*</span> Year
+               <span className="text-red-500 mr-1">*</span> Year 
               </label>
               <select
-                {...register('year', { required: 'Year is required' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Year</option>
-                {Array.from({ length: 10 }, (_, i) => {
-                  const year = new Date().getFullYear() - 2 + i;
-                  return (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  );
-                })}
-              </select>
+  {...register('year', { required: 'Year is required' })}
+  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+>
+  <option value="">Select Year</option>
+
+  {Array.from(
+    { length: (new Date().getFullYear() + 2) - 2020 + 1 },
+    (_, i) => {
+      const yr = 2020 + i;
+      return (
+        <option key={yr} value={yr}>
+          {yr}
+        </option>
+      );
+    }
+  )}
+</select>
+
               {errors.year && (
                 <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>
               )}
@@ -437,7 +459,7 @@ export default function EditSalaryPage({ params }: PageParams) {
             {/* Work Days - Auto-calculated */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Work Days <span className="text-xs text-gray-500">(Auto-calculated: {calculations.monthDays} days - {leavesCount} leaves)</span>
+                Work Days 
               </label>
               <input
                 type="number"
@@ -455,65 +477,47 @@ export default function EditSalaryPage({ params }: PageParams) {
               {errors.workDays && (
                 <p className="mt-1 text-sm text-red-600">{errors.workDays.message}</p>
               )}
+              <span className="text-xs text-gray-500">(Auto-calculated: {calculations.monthDays} days - {leavesCount} leaves)</span>
             </div>
 
             {/* Leaves Count */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="text-red-500 mr-1">*</span>Leave Count
-                <span className="text-xs text-gray-500 ml-2">(Max: {calculations.monthDays} days)</span>
-              </label>
-              <input
-                type="number"
-                {...register('leavesCount', { 
-                  required: 'Leaves count is required',
-                  min: { value: 0, message: 'Leaves count cannot be negative' },
-                  max: { 
-                    value: calculations.monthDays || 31, 
-                    message: `Leave count cannot exceed ${calculations.monthDays || 31} days (days in selected month)` 
-                  },
-                  valueAsNumber: true,
-                  validate: (value) => {
-                    const maxDays = calculations.monthDays || 31;
-                    if (value > maxDays) {
-                      return `Leave count cannot exceed ${maxDays} days in this month`;
-                    }
-                    return true;
-                  }
-                })}
-                onInput={(e) => {
-                  const input = e.target as HTMLInputElement;
-                  const rawValue = input.value;
-                  
-                  // Allow empty input while typing
-                  if (rawValue === '' || rawValue === '-') {
-                    return;
-                  }
-                  
-                  const value = parseFloat(rawValue);
-                  const maxDays = calculations.monthDays || 31;
-                  
-                  // Clamp value in real-time as user types - prevents exceeding max
-                  if (!isNaN(value) && value > maxDays) {
-                    input.value = maxDays.toString();
-                    setValue('leavesCount', maxDays, { shouldValidate: true });
-                    toast.error(`Leave count cannot exceed ${maxDays} days in this month`, { duration: 2000 });
-                  }
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter leaves count"
-                max={calculations.monthDays || 31}
-              />
-              {errors.leavesCount && (
-                <p className="mt-1 text-sm text-red-600">{errors.leavesCount.message}</p>
-              )}
-            </div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    <span className="text-red-500 mr-1">*</span>Leave Count
+    
+  </label>
+
+  <select
+  {...register('leavesCount', {
+    required: 'Leaves count is required',
+    valueAsNumber: true
+  })}
+  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+>
+  
+  {leaveOptions.map((val) => (
+    <option key={val} value={val}>
+      {val}
+    </option>
+  ))}
+</select>
+<span className="text-xs text-gray-500 ml-2">
+      (Max: {calculations.monthDays} days)
+    </span>
+
+
+  {errors.leavesCount && (
+    <p className="mt-1 text-sm text-red-600">
+      {errors.leavesCount.message}
+    </p>
+  )}
+</div>
           </div>
 
           {/* Salary Input Fields */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Salary Inputs</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* CTC */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -532,6 +536,27 @@ export default function EditSalaryPage({ params }: PageParams) {
                 />
                 {errors.ctc && (
                   <p className="mt-1 text-sm text-red-600">{errors.ctc.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <span className="text-red-500 mr-1">*</span>Variable Pay
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('variablePay', { 
+                    required: 'Pay is required',
+                    min: { value: 0, message: 'Pay cannot be negative' },
+                    valueAsNumber: true
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+                
+                {errors.variablePay && (
+                  <p className="mt-1 text-sm text-red-600">{errors.variablePay.message}</p>
                 )}
               </div>
 
@@ -558,24 +583,7 @@ export default function EditSalaryPage({ params }: PageParams) {
             </div>
           </div>
 
-          {/* Calculated Values Display */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Calculated Values</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="p-3 bg-gray-50 rounded-md">
-                <label className="block text-xs text-gray-500 mb-1">Month Days</label>
-                <span className="text-lg font-semibold text-gray-700">{calculations.monthDays}</span>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-md">
-                <label className="block text-xs text-gray-500 mb-1">Per Month</label>
-                <span className="text-lg font-semibold text-gray-700">₹{calculations.perMonth.toFixed(2)}</span>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-md">
-                <label className="block text-xs text-gray-500 mb-1">Per Day</label>
-                <span className="text-lg font-semibold text-gray-700">₹{calculations.perDay.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
+          
 
           {/* Salary Components Section - Auto-calculated */}
           <div className="mb-6">

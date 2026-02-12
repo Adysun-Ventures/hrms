@@ -240,7 +240,7 @@ const OfferLetterPDF = ({ employee, employment, enablePF }) => {
       <Text style={{ marginBottom: 12 }}>
         You are hereby appointed to the position of{" "}
         <Text style={{ fontWeight: "bold" }}>{designation}</Text> effective from{" "}
-        <Text >{joiningDate}</Text>. You are expected to
+        <Text  style={{ fontWeight: "bold" }}>{joiningDate}</Text>. You are expected to
         demonstrate <Text >professional conduct,
         punctuality</Text> and adhere to organizational policies at all times. This
         appointment will be considered <Text >null and

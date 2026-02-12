@@ -349,12 +349,12 @@ export default function SalariesPage() {
                       </div>
                     ) : (
                       <div className="flex items-center space-x-3">
-                        <ActionButton
+                        {/* <ActionButton
                           icon={<FiDownload className="w-5 h-5" />}
                           title="Download Salary Details"
                           colorClass="bg-green-100 text-green-600 hover:text-green-900"
                           href={null as any}
-                        />
+                        /> */}
                         <ActionButton
                           icon={<FiEye className="w-5 h-5" />}
                           title="View Salary Details"

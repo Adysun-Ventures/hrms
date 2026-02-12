@@ -73,9 +73,9 @@ export function validateSalaryInputs(inputs: MonthlySalaryInputs): void {
   if (inputs.leavesCount < 0) {
     throw new Error('Leave Count cannot be negative');
   }
-  if (inputs.fixedPay > inputs.ctc) {
-    throw new Error('Fixed Pay cannot be greater than CTC');
-  }
+  // if (inputs.fixedPay > inputs.ctc) {
+  //   throw new Error('Fixed Pay cannot be greater than CTC');
+  // }
   if (inputs.month < 1 || inputs.month > 12) {
     throw new Error('Month must be between 1 and 12');
   }

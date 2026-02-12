@@ -596,21 +596,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Resignation</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
-                <span
-                  className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${employment.contractType === 'full-time'
-                      ? 'bg-green-100 text-green-800'
-                      : employment.contractType === 'part-time'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}
-                >
-                  {employment.contractType ? employment.contractType.split('-').map(word =>
-                    word.charAt(0).toUpperCase() + word.slice(1)
-                  ).join(' ') : '-'}
-                </span>
-                <p className="text-sm text-gray-500 mt-2">Contract Type</p>
-              </div>
+              
             </div>
           </div>
 

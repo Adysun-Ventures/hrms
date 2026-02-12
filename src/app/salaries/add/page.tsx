@@ -42,7 +42,9 @@ type SalaryFormData = {
   month: number;
   year: number;
   ctc: number;
+  variablePay: number;
   fixedPay: number;
+  
   workDays: number;
   leavesCount: number;
   basic: number;
@@ -72,6 +74,7 @@ export default function AddSalaryPage() {
       employeeId: employeeId || '',
       ctc: 0,
       fixedPay: 0,
+      variablePay: 0,
       workDays: 0,
       leavesCount: 0,
       basic: 0,
@@ -90,6 +93,7 @@ export default function AddSalaryPage() {
   const month = Number(watch('month')) || new Date().getMonth() + 1;
   const leavesCount = watch('leavesCount') || 0;
   const ptDeduct = watch('ptDeduct') || 200;
+  const variablePay = watch('variablePay') || 0;
 
   // Real-time calculation using useMemo - calculates on every render when inputs change
   const calculations: MonthlySalaryResult = useMemo(() => {
@@ -171,6 +175,17 @@ export default function AddSalaryPage() {
     }
   }, [calculations, setValue, ptDeduct]);
 
+  useEffect(()=>{
+    //Fixed pay results
+    const autoFixed = Number(ctc || 0) - Number(variablePay || 0);
+
+    setValue(
+      'fixedPay',
+      autoFixed >= 0 ? autoFixed : 0,
+      { shouldValidate: false, shouldDirty: true }
+    );
+  }, [ctc, variablePay, setValue]);
+
   // Fetch employee name and employment ID when employeeId is available
   useEffect(() => {
     const fetchEmployeeData = async () => {
@@ -222,6 +237,17 @@ export default function AddSalaryPage() {
 
     fetchEmployeeData();
   }, [employeeId, setValue, router]);
+
+  useEffect(() => {
+  const autoFixed = Number(ctc || 0) - Number(variablePay || 0);
+
+  setValue(
+    'fixedPay',
+    autoFixed >= 0 ? autoFixed : 0,
+    { shouldValidate: false, shouldDirty: true }
+  );
+}, [ctc, variablePay, setValue]);
+
 
   const onSubmit = async (data: SalaryFormData) => {
     try {
@@ -311,6 +337,12 @@ export default function AddSalaryPage() {
     return months[month - 1] || 'Unknown';
   };
 
+  const leaveOptions: number[] = Array.from(
+  { length: 16 }, // 0 → 15
+  (_, i) => i
+);
+
+
   return (
     <DashboardLayout breadcrumbItems={[
       { label: 'Dashboard', href: '/dashboard' },
@@ -382,19 +414,24 @@ export default function AddSalaryPage() {
                <span className="text-red-500 mr-1">*</span> Year 
               </label>
               <select
-                {...register('year', { required: 'Year is required' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Year</option>
-                {Array.from({ length: 10 }, (_, i) => {
-                  const year = new Date().getFullYear() - 2 + i;
-                  return (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  );
-                })}
-              </select>
+  {...register('year', { required: 'Year is required' })}
+  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+>
+  <option value="">Select Year</option>
+
+  {Array.from(
+    { length: (new Date().getFullYear() + 2) - 2020 + 1 },
+    (_, i) => {
+      const yr = 2020 + i;
+      return (
+        <option key={yr} value={yr}>
+          {yr}
+        </option>
+      );
+    }
+  )}
+</select>
+
               {errors.year && (
                 <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>
               )}
@@ -403,7 +440,7 @@ export default function AddSalaryPage() {
             {/* Work Days - Auto-calculated */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Work Days <span className="text-xs text-gray-500">(Auto-calculated: {calculations.monthDays} days - {leavesCount} leaves)</span>
+                Work Days 
               </label>
               <input
                 type="number"
@@ -418,6 +455,7 @@ export default function AddSalaryPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
                 placeholder="Auto-calculated"
               />
+              <span className="text-xs text-gray-500">(Auto-calculated: {calculations.monthDays} days - {leavesCount} leaves)</span>
               {errors.workDays && (
                 <p className="mt-1 text-sm text-red-600">{errors.workDays.message}</p>
               )}
@@ -425,61 +463,43 @@ export default function AddSalaryPage() {
 
             {/* Leaves Count */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="text-red-500 mr-1">*</span>Leave Count 
-                <span className="text-xs text-gray-500 ml-2">(Max: {calculations.monthDays} days)</span>
-              </label>
-              <input
-                type="number"
-                {...register('leavesCount', { 
-                  required: 'Leaves count is required',
-                  min: { value: 0, message: 'Leaves count cannot be negative' },
-                  max: { 
-                    value: calculations.monthDays || 31, 
-                    message: `Leave count cannot exceed ${calculations.monthDays || 31} days (days in selected month)` 
-                  },
-                  valueAsNumber: true,
-                  validate: (value) => {
-                    const maxDays = calculations.monthDays || 31;
-                    if (value > maxDays) {
-                      return `Leave count cannot exceed ${maxDays} days in this month`;
-                    }
-                    return true;
-                  }
-                })}
-                onInput={(e) => {
-                  const input = e.target as HTMLInputElement;
-                  const rawValue = input.value;
-                  
-                  // Allow empty input while typing
-                  if (rawValue === '' || rawValue === '-') {
-                    return;
-                  }
-                  
-                  const value = parseFloat(rawValue);
-                  const maxDays = calculations.monthDays || 31;
-                  
-                  // Clamp value in real-time as user types - prevents exceeding max
-                  if (!isNaN(value) && value > maxDays) {
-                    input.value = maxDays.toString();
-                    setValue('leavesCount', maxDays, { shouldValidate: true });
-                    toast.error(`Leave count cannot exceed ${maxDays} days in this month`, { duration: 2000 });
-                  }
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter leaves count"
-                max={calculations.monthDays || 31}
-              />
-              {errors.leavesCount && (
-                <p className="mt-1 text-sm text-red-600">{errors.leavesCount.message}</p>
-              )}
-            </div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    <span className="text-red-500 mr-1">*</span>Leave Count
+    
+  </label>
+
+  <select
+  {...register('leavesCount', {
+    required: 'Leaves count is required',
+    valueAsNumber: true
+  })}
+  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+>
+  
+  {leaveOptions.map((val) => (
+    <option key={val} value={val}>
+      {val}
+    </option>
+  ))}
+</select>
+<span className="text-xs text-gray-500 ml-2">
+      (Max: {calculations.monthDays} days)
+    </span>
+
+
+  {errors.leavesCount && (
+    <p className="mt-1 text-sm text-red-600">
+      {errors.leavesCount.message}
+    </p>
+  )}
+</div>
+
           </div>
 
           {/* Salary Input Fields */}
-          <div className="mb-6">
+          <div className="mb-6 ">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Salary Inputs</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* CTC */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -500,48 +520,53 @@ export default function AddSalaryPage() {
                   <p className="mt-1 text-sm text-red-600">{errors.ctc.message}</p>
                 )}
               </div>
+              {/* variable Pay */}
 
-              {/* Fixed Pay */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <span className="text-red-500 mr-1">*</span>Fixed Pay
+                  <span className="text-red-500 mr-1">*</span>Variable Pay
                 </label>
                 <input
                   type="number"
                   step="0.01"
-                  {...register('fixedPay', { 
-                    required: 'Fixed Pay is required',
-                    min: { value: 0, message: 'Fixed Pay cannot be negative' },
+                  {...register('variablePay', { 
+                    required: 'Pay is required',
+                    min: { value: 0, message: 'Pay cannot be negative' },
                     valueAsNumber: true
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
-                {errors.fixedPay && (
-                  <p className="mt-1 text-sm text-red-600">{errors.fixedPay.message}</p>
+                
+                {errors.variablePay && (
+                  <p className="mt-1 text-sm text-red-600">{errors.variablePay.message}</p>
                 )}
               </div>
+              
+              {/* Fixed Pay - Auto-calculated based on CTC and Fixed Pay */}
+
+              <div className=''>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    <span className="text-red-500 mr-1">*</span>Fixed Pay
+  </label>
+
+  <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
+    {Number(fixedPay || 0).toFixed(2)}
+
+  </div>
+
+  {errors.variablePay && (
+    <p className="mt-1 text-sm text-red-600">{errors.variablePay.message}</p>
+  )}
+</div>
+
+
+              
             </div>
           </div>
 
-          {/* Calculated Values Display */}
-          <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Calculated Values</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="p-3 bg-gray-50 rounded-md">
-                <label className="block text-xs text-gray-500 mb-1">Month Days</label>
-                <span className="text-lg font-semibold text-gray-700">{calculations.monthDays}</span>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-md">
-                <label className="block text-xs text-gray-500 mb-1">Per Month</label>
-                <span className="text-lg font-semibold text-gray-700">₹{calculations.perMonth.toFixed(2)}</span>
-              </div>
-              <div className="p-3 bg-gray-50 rounded-md">
-                <label className="block text-xs text-gray-500 mb-1">Per Day</label>
-                <span className="text-lg font-semibold text-gray-700">₹{calculations.perDay.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
+         
+         
 
           {/* Salary Components Section - Auto-calculated */}
           <div className="mb-6">

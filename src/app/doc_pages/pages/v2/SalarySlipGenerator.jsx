@@ -303,6 +303,11 @@ const AdysunSalarySlipLayout = ({ formData }) => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
+const years = Array.from(
+  { length: (new Date().getFullYear() + 2) - 2020 + 1 },
+  (_, i) => 2020 + i
+);
+
 
   const detailRows = [
 { 
@@ -950,6 +955,33 @@ return (
             ))}
           </select>
         </div>
+
+        <div className="form-group">
+  <label className="block mb-2 text-sm font-medium text-gray-700">
+    Year <span className="text-red-500">*</span>
+  </label>
+
+  <select
+    name="year"
+    value={formData.year}
+    onChange={handleInputChange}
+    className="w-full p-2.5 border border-gray-300 rounded-md"
+  >
+    {Array.from(
+      { length: (new Date().getFullYear() + 2) - 2020 + 1 },
+      (_, i) => {
+        const year = 2020 + i;
+        return (
+          <option key={year} value={year}>
+            {year}
+          </option>
+        );
+      }
+    )}
+  </select>
+</div>
+
+        
 
         {/* Leaves */}
         <div className="form-group">

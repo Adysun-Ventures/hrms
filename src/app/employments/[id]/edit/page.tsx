@@ -326,7 +326,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   )}
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span>Contract Type
                   </label>
@@ -341,7 +341,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   {errors.contractType && (
                     <p className="mt-1 text-sm text-red-600">{errors.contractType.message}</p>
                   )}
-                </div>
+                </div> */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -387,7 +387,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   )}
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Payment Frequency
                   </label>
@@ -399,7 +399,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     <option value="bi-weekly">Bi-Weekly</option>
                     <option value="weekly">Weekly</option>
                   </select>
-                </div>
+                </div> */}
               </div>
             </div>
 

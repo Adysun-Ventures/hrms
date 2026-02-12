@@ -368,7 +368,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   />
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span>Salary
                   </label>
@@ -385,7 +385,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   {errors.salary && (
                     <p className="mt-1 text-sm text-red-600">{errors.salary.message}</p>
                   )}
-                </div>
+                </div> */}
 
                 {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

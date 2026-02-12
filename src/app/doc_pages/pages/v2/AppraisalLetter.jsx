@@ -108,7 +108,7 @@ const AppraisalLetterPDF = ({
           <Text style={{ fontWeight: "bold" }}>Date:</Text> {today}
         </Text>
 
-        <Text style={{ fontWeight: "bold", marginBottom: 14 }}>{toTitleCase(employeeName)}</Text>
+        
 
         <Text
           style={{

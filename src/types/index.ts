@@ -59,6 +59,7 @@ export interface Employee {
   ifscCode?: string;
   accountHolderName?: string;
   branchName?: string;
+  panNumber?: string;
   
   // Educational Details
   // Higher Education
@@ -119,6 +120,7 @@ export interface Employee {
   joinDate: string;
   status: 'active' | 'inactive';
   imageUrl?: string;
+  joiningDate?: string; // Moved to Employment.joiningDate for better separation of concerns
   
   // Resignation tracking
   employmentStatus?: 'working' | 'resigned'; // Working/Resigned dropdown value
@@ -321,11 +323,21 @@ export interface Salary {
   id: string;
   employeeId: string;
   employmentId: string;
+
   
   // Essential Salary Information Only
   basicSalary: number;
   inhandSalary: number;
   totalSalary: number;
+  fixedPay: number;
+  variablePay: number;
+  pf: number;
+  leavesCount: number;
+  leavesDeductAmt: number;
+
+totalDeduction: number;
+ptDeduct: number;
+
   
   // Period Information
   month: number;

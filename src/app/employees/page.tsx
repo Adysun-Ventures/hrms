@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FiEdit, FiTrash2, FiPlus, FiEye, FiBriefcase, FiDollarSign, FiUpload } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import toast, { Toaster } from 'react-hot-toast';
@@ -8,11 +8,13 @@ import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { ActionButton } from '@/components/ui/ActionButton';
 import TableHeader from '@/components/ui/TableHeader';
 import { useEmployees, useDeleteEmployee } from '@/hooks/useEmployees';
-import { useEmploymentsByEmployee } from '@/hooks/useEmployments';
+import { useEmployments, useEmploymentsByEmployee } from '@/hooks/useEmployments';
 import { useSalariesByEmployee } from '@/hooks/useSalaries';
 import Pagination from '@/components/ui/Pagination';
 import BulkUploadModal from '@/components/ui/BulkUploadModal';
 import { FaRupeeSign } from "react-icons/fa";
+import Link from 'next/link';
+
 
 
 // Component to display employee ID from employment record
@@ -22,12 +24,28 @@ const EmployeeIdDisplay = ({ employeeId }: { employeeId: string }) => {
   // Get the first (and only) employment
   const employment = employments[0];
 
-  if (!employment || !employment.employmentId) {
-    return <span className="text-gray-400">-</span>;
-  }
+ if (!employment || !employment.employmentId) {
+  return (
+    <Link href={`/employments/add?employeeId=${employeeId}`}>
+      <span className="text-gray-400">Add Employment</span>
+    </Link>
+  );
+}
+
 
   return <span>{employment.employmentId}</span>;
 };
+
+const formatDateIndia = (date: string | Date | null | undefined): string => {
+  if (!date) return '-';
+
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(new Date(date));
+};
+
 
 // Component to display joining date from employment record
 const JoiningDateDisplay = ({ employeeId }: { employeeId: string }) => {
@@ -37,11 +55,18 @@ const JoiningDateDisplay = ({ employeeId }: { employeeId: string }) => {
   const employment = employments[0];
 
   if (!employment || !employment.joiningDate) {
-    return <span className="text-gray-400">-</span>;
+    return (
+      <Link href={`/employments/add?employeeId=${employeeId}`}>
+        <span className="text-gray-400">Add Joining Date</span>
+      </Link>
+    );
   }
 
-  return <span>{formatDateToDayMonYear(employment.joiningDate)}</span>;
+  return <span>{formatDateIndia(employment.joiningDate)}</span>;
+   // Debug log to check joining date value
+  
 };
+
 
 // Component to display current package (CTC) from employment record
 const CurrentPackageDisplay = ({ employeeId }: { employeeId: string }) => {
@@ -77,28 +102,54 @@ const CurrentPackageDisplay = ({ employeeId }: { employeeId: string }) => {
 const TotalSalaryCreditsDisplay = ({ employeeId }: { employeeId: string }) => {
   const { data: salaries = [] } = useSalariesByEmployee(employeeId);
 
-  if (!salaries || salaries.length === 0) {
-    return <span className="text-gray-400">-</span>;
-  }
+  return salaries.length
 
-  // Sum up all totalSalary values from salary records
-  const totalCredits = salaries.reduce((total, salary) => {
-    return total + (salary.totalSalary || 0);
-  }, 0);
+  // if (!salaries || salaries.length === 0) {
+  //   return <span className="text-gray-400">-</span>;
+  // }
 
-  if (totalCredits === 0) {
-    return <span className="text-gray-400">-</span>;
-  }
+  // // Sum up all totalSalary values from salary records
+  // const totalCredits = salaries.reduce((total, salary) => {
+  //   return total + (salary.totalSalary || 0);
+  // }, 0);
+
+  // if (totalCredits === 0) {
+  //   return <span className="text-gray-400">-</span>;
+  // }
+
+  // return (
+  //   <span>
+  //     {new Intl.NumberFormat('en-IN', {
+  //       style: 'currency',
+  //       currency: 'INR'
+  //     }).format(totalCredits)}
+  //   </span>
+  // );
+};
+interface SalaryActionButtonProps {
+  employeeId: string;
+}
+
+const SalaryActionButton = ({ employeeId }: SalaryActionButtonProps) => {
+  const { data: salaries = [] } = useSalariesByEmployee(employeeId);
+
+  const hasSalary = salaries.length > 0;
 
   return (
-    <span>
-      {new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR'
-      }).format(totalCredits)}
-    </span>
+    <ActionButton
+      icon={<FaRupeeSign className="w-5 h-5" />}
+      title="View Salaries"
+      colorClass={
+        hasSalary
+          ? "bg-purple-100 text-purple-600 hover:text-purple-900"
+          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+      }
+      href={hasSalary ? `/salaries?employeeId=${employeeId}` : "#"}
+    />
   );
 };
+
+
 
 // Component to handle employment navigation
 const EmploymentActionButton = ({ employeeId }: { employeeId: string }) => {
@@ -133,6 +184,16 @@ export default function EmployeesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{
+  key: 'name' | 'joiningDate';
+  direction: 'asc' | 'desc';
+}>({
+  key: 'name',
+  direction: 'asc'
+});
+const [joiningDateMap, setJoiningDateMap] = useState<Record<string, number>>({});
+
+
 
   // Use Tanstack Query for employee data
   const {
@@ -188,6 +249,28 @@ export default function EmployeesPage() {
   const cancelDelete = () => {
     setDeleteConfirm(null);
   };
+ const handleSort = (key: 'name' | 'joiningDate') => {
+  setSortConfig(prev => ({
+    key,
+    direction:
+      prev.key === key && prev.direction === 'asc'
+        ? 'desc'
+        : 'asc'
+  }));
+};
+
+const { data: employments = [] } = useEmployments(); // all employments
+
+useEffect(() => {
+  const map: Record<string, number> = {};
+
+  employments.forEach(emp => {
+    map[emp.employeeId] = new Date(emp.joiningDate || 0).getTime();
+  });
+
+  setJoiningDateMap(map);
+}, [employments]);
+
 
   const filteredEmployees = employees
     .filter(employee => {
@@ -209,13 +292,26 @@ export default function EmployeesPage() {
       return matchesSearch && matchesStatusFilter && matchesEmploymentStatusFilter;
     })
     .sort((a, b) => {
-      // Sort by createdAt (newest first), fallback to updatedAt, then joinDate
-      const dateA = a.createdAt || a.updatedAt || a.joinDate || '';
-      const dateB = b.createdAt || b.updatedAt || b.joinDate || '';
-      
-      // Compare dates in descending order (newest first)
-      return dateB.localeCompare(dateA);
-    });
+  if (sortConfig.key === 'name') {
+    const nameA = a.name?.toLowerCase() || '';
+    const nameB = b.name?.toLowerCase() || '';
+
+    return sortConfig.direction === 'asc'
+      ? nameA.localeCompare(nameB)
+      : nameB.localeCompare(nameA);
+  }
+
+ if (sortConfig.key === 'joiningDate') {
+  const dateA = joiningDateMap[a.id] || 0;
+  const dateB = joiningDateMap[b.id] || 0;
+
+  return sortConfig.direction === 'asc'
+    ? dateA - dateB
+    : dateB - dateA;
+}
+  return 0;
+});
+
 
   const total = filteredEmployees.length;
   const active = filteredEmployees.filter(e => e.status === 'active').length;
@@ -226,6 +322,10 @@ export default function EmployeesPage() {
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
+  
+
+  
+
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -399,14 +499,42 @@ export default function EmployeesPage() {
               <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm after:absolute after:h-px after:w-full after:bottom-0 after:left-0 after:bg-gray-300">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
-                    Name
-                  </th>
+  <div
+  role="button"
+  tabIndex={0}
+  onClick={() => handleSort('name')}
+  className="flex items-center gap-1 cursor-pointer select-none"
+>
+  Name
+  {sortConfig.key === 'name' && (
+    <span className="text-xs">
+      {sortConfig.direction === 'asc' ? '▲' : '▼'}
+    </span>
+  )}
+</div>
+</th>
+
+
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                     Emp ID
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
-                    Date of Joining
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+  <div
+    role="button"
+    tabIndex={0}
+    onClick={() => handleSort('joiningDate')}
+    className="flex items-center gap-1 cursor-pointer select-none"
+  >
+    Date of Joining
+    {sortConfig.key === 'joiningDate' && (
+      <span className="text-xs">
+        {sortConfig.direction === 'asc' ? '▲' : '▼'}
+      </span>
+    )}
+  </div>
+</th>
+
+
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
                     Curr. Package
                   </th>
@@ -447,7 +575,7 @@ export default function EmployeesPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        <CurrentPackageDisplay employeeId={employee.id} />
+                        <CurrentPackageDisplay employeeId={employee.id} /> LPA
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -522,12 +650,9 @@ export default function EmployeesPage() {
                             href={`/employees/${employee.id}`}
                           />
                           <EmploymentActionButton employeeId={employee.id} />
-                          <ActionButton
-                            icon={<FaRupeeSign className="w-5 h-5" />}
-                            title="View Salaries"
-                            colorClass="bg-purple-100 text-purple-600 hover:text-purple-900"
-                            href={`/salaries?employeeId=${employee.id}`}
-                          />
+                          <SalaryActionButton employeeId={employee.id} />
+
+
                           <ActionButton
                             icon={<FiEdit className="w-5 h-5" />}
                             title="Edit"

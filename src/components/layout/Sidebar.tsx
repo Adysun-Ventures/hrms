@@ -145,7 +145,7 @@ const Sidebar = () => {
           </button>
         )}
         <div className="p-5 flex flex-col h-full">
-          <h2 className="text-2xl font-bold mb-6">Admin Dashboard</h2>
+          <h2 className="text-2xl font-bold mb-6">Admin</h2>
           <nav className="flex-grow">
             <ul className="space-y-2">
               {menuItems.map((item) => (

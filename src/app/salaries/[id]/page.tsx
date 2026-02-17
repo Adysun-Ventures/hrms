@@ -96,10 +96,12 @@ export default function SalaryViewPage({ params }: PageParams) {
           >
             <FiArrowLeft size={16} /> Back to {employeeId ? `${employeeName}'s Salaries` : 'Salaries'}
           </Link>
-        </div>
+        </div>  
       </DashboardLayout>
     );
   }
+  console.log('Salary Data:', salary); // Debug log to check salary data structure
+              
 
   return (
     <DashboardLayout breadcrumbItems={[
@@ -154,11 +156,50 @@ export default function SalaryViewPage({ params }: PageParams) {
                 <p className="text-lg font-medium text-gray-900">{getMonthName(salary?.month || 1)} {salary?.year}</p>
                 <p className="text-sm text-gray-500">Period</p>
               </div>
+
+              <div className="bg-white rounded-lg shadow p-3">
+                <p className="text-lg font-medium text-gray-900">₹{salary?.leavesCount?.toLocaleString() || '0'}</p>
+                <p className="text-sm text-gray-500">Leaves Count</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-3">
+                <p className="text-lg font-medium text-gray-900">₹{salary?.leavesDeductAmt?.toLocaleString() || '0'}</p>
+                <p className="text-sm text-gray-500">Leaves Deduct Amount</p>
+              </div>
+
+
+
+              
               
               <div className="bg-white rounded-lg shadow p-3">
                 <p className="text-lg font-medium text-gray-900">₹{salary?.basicSalary?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">Basic Salary</p>
               </div>
+
+              <div className="bg-white rounded-lg shadow p-3">
+                <p className="text-lg font-medium text-gray-900">₹{salary?.fixedPay?.toLocaleString() || '0'}</p>
+                <p className="text-sm text-gray-500">Fixed Pay</p>
+              </div>
+
+              
+
+              <div className="bg-white rounded-lg shadow p-3">
+                <p className="text-lg font-medium text-gray-900">₹{salary?.variablePay?.toLocaleString() || '0'}</p>
+                <p className="text-sm text-gray-500">Variable Pay</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-3">
+                <p className="text-lg font-medium text-gray-900">₹{salary?.ptDeduct?.toLocaleString() || '0'}</p>
+                <p className="text-sm text-gray-500">PT Deduct</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-3">
+                <p className="text-lg font-medium text-gray-900">₹{salary?.totalDeduction?.toLocaleString() || '0'}</p>
+                <p className="text-sm text-gray-500">Total Deduction</p>
+              </div>
+
+
+
               
               <div className="bg-white rounded-lg shadow p-3">
                 <p className="text-lg font-medium text-gray-900">₹{salary?.inhandSalary?.toLocaleString() || '0'}</p>

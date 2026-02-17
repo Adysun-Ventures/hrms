@@ -49,11 +49,11 @@ const EmployeeSidebar = () => {
       name: 'Attendance',
       icon: <FiClock className="w-5 h-5" />
     }] : []),
-    {
-      path: '/employee/leaves',
-      name: 'Leaves',
-      icon: <FiCalendar className="w-5 h-5" />
-    },
+    // {
+    //   path: '/employee/leaves',
+    //   name: 'Leaves',
+    //   icon: <FiCalendar className="w-5 h-5" />
+    // },
     {
       path: '/employee/documents',
       name: 'Documents',
@@ -103,7 +103,7 @@ const EmployeeSidebar = () => {
           </button>
         )}
         <div className="p-5 flex flex-col h-full">
-          <h2 className="text-2xl font-bold mb-6">Employee Portal</h2>
+          <h2 className="text-2xl font-bold mb-6">Employee </h2>
           <nav className="flex-grow">
             <ul className="space-y-2">
               {menuItems.map((item) => (

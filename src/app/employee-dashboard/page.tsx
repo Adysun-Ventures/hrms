@@ -110,21 +110,8 @@ export default function EmployeeDashboardPage() {
   const hasEmployment = !employmentLoading && employmentData.length > 0;
 
   const cards = [
-    // Only show Attendance card if employee has employment
-    ...(hasEmployment ? [{
-      title: 'Attendance',
-      description: 'View your attendance records',
-      icon: <FiCalendar className="w-8 h-8 text-purple-500" />,
-      link: '/employee/attendance',
-      color: 'bg-purple-50'
-    }] : []),
-    {
-      title: 'Leaves',
-      description: 'Manage your leave requests',
-      icon: <FiCalendar className="w-8 h-8 text-green-500" />,
-      link: '/employee/leaves',
-      color: 'bg-green-50'
-    },
+    
+   
     {
       title: 'Documents',
       description: 'Access your HR documents',
@@ -288,113 +275,8 @@ export default function EmployeeDashboardPage() {
           </div>
         )}
 
-        {/* Attendance Card */}
-        {!employmentLoading && currentEmployment && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Today's Attendance</h2>
-            {todayAttendanceLoading ? (
-              <div className="text-center py-4">
-                <p className="text-gray-500">Loading attendance...</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Status Display */}
-                {todayAttendance && (
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    {todayAttendance.checkInTime && (
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {todayAttendance.checkInTime}
-                        </p>
-                        <p className="text-sm text-gray-600 mb-1">Check In</p>
-                      </div>
-                    )}
-
-                    {todayAttendance.checkOutTime && (
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {todayAttendance.checkOutTime}
-                        </p>
-                        <p className="text-sm text-gray-600 mb-1">Check Out</p>
-                      </div>
-                    )}
-
-                    {(todayAttendance.checkInTime || todayAttendance.checkOutTime) && (
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {calculateTodayHours().toFixed(2)} hrs
-                        </p>
-                        <p className="text-sm text-gray-600 mb-1">Total Hours</p>
-                      </div>
-                    )}
-
-                    {todayAttendance.status && (
-                      <div>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${todayAttendance.status === 'present'
-                          ? 'bg-green-100 text-green-800'
-                          : todayAttendance.status === 'late'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : todayAttendance.status === 'half-day'
-                              ? 'bg-orange-100 text-orange-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                          {todayAttendance.status.toUpperCase()}
-                        </span>
-                        <p className="text-sm text-gray-600 mb-1">Status</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  {!todayAttendance?.isCheckedIn ? (
-                    <button
-                      onClick={handleCheckIn}
-                      disabled={checkInMutation.isPending || !employmentId}
-                      className="flex-1 px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors font-medium"
-                    >
-                      <FiLogIn className="w-5 h-5" />
-                      {checkInMutation.isPending ? 'Checking In...' : 'Check In'}
-                    </button>
-                  ) : (
-                    <>
-                      <div className="flex-1 px-4 py-3 bg-green-100 text-green-800 rounded-md flex items-center justify-center gap-2 font-medium">
-                        <FiCheck className="w-5 h-5" />
-                        Checked In
-                      </div>
-                      {!todayAttendance?.checkOutTime ? (
-                        <button
-                          onClick={handleCheckOut}
-                          disabled={checkOutMutation.isPending}
-                          className="flex-1 px-4 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors font-medium"
-                        >
-                          <FiLogOut className="w-5 h-5" />
-                          {checkOutMutation.isPending ? 'Checking Out...' : 'Check Out'}
-                        </button>
-                      ) : (
-                        <div className="flex-1 px-4 py-3 bg-red-100 text-red-800 rounded-md flex items-center justify-center gap-2 font-medium">
-                          <FiCheck className="w-5 h-5" />
-                          Checked Out
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-
-                {/* Real-time hours indicator */}
-                {todayAttendance?.isCheckedIn && !todayAttendance?.checkOutTime && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-                      <FiClock className="w-4 h-4" />
-                      <span>Working hours: <span className="font-semibold text-gray-900">{calculateTodayHours().toFixed(2)} hrs</span></span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        
+        
       </div>
     </EmployeeLayout>
   );

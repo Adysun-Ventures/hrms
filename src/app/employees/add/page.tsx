@@ -309,25 +309,7 @@ export default function AddEmployeePage() {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employee ID <span className="text-gray-500 text-xs">(Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="(e.g., EMP001)"
-                    {...register('employeeId' as any, {
-                      pattern: {
-                        value: /^[A-Z0-9-]{3,15}$/i,
-                        message: 'Please enter a valid employee ID (alphanumeric, 3-15 characters)'
-                      }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                  {(errors as any).employeeId && (
-                    <p className="mt-1 text-sm text-red-600">{(errors as any).employeeId.message}</p>
-                  )}
-                </div>
+                
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -414,29 +396,9 @@ export default function AddEmployeePage() {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Position
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter position/designation"
-                    {...register('position')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                </div>
+                
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter department"
-                    {...register('department')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                </div>
+                
 
                 <div className="md:col-span-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -548,7 +510,7 @@ export default function AddEmployeePage() {
                   )}
                 </div>
 
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     PAN Card
                   </label>
@@ -566,7 +528,7 @@ export default function AddEmployeePage() {
                   {errors.panCard && (
                     <p className="mt-1 text-sm text-red-600">{errors.panCard.message}</p>
                   )}
-                </div>
+                </div> */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

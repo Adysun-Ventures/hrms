@@ -180,6 +180,32 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
     }
   };
 
+  const getHeaderEmployee = ()=>{
+    if (variant === 'public') {
+      return isScrolled 
+        ? 'bg-orange-500/10 backdrop-blur-md border-b border-white/20 shadow-lg' 
+        : 'bg-transparent';
+    } else {
+      // Protected variant
+      return 'bg-orange-500/10 border-b border-gray-200 shadow-sm';
+    }
+  }
+  const getDynamicHeaderBg = () => {
+  // Admin always white (highest priority)
+  if (currentAdmin) {
+    return 'bg-white border-b border-gray-200 shadow-sm';
+  }
+
+  // Only employee (not admin)
+  if (currentEmployee) {
+    return 'bg-orange-100 border-b border-orange-200 shadow-sm';
+  }
+
+  // Default fallback
+  return 'bg-white border-b border-gray-200 shadow-sm';
+};
+
+
   // Determine text styling based on variant
   const getTextStyles = () => {
     if (variant === 'public') {
@@ -203,11 +229,13 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
   };
 
   return (
-    <header className={`h-16 fixed top-0 right-0 left-0 lg:left-64 z-10 transition-all duration-300 ${getHeaderStyles()}`}>
+    
+    
+    <header className={`h-16 fixed top-0 right-0 left-0 lg:left-64 z-10 transition-all duration-300 ${getDynamicHeaderBg()}`}>
       <div className="flex items-center justify-between h-full px-4">
         {/* Mobile title - centered on mobile, hidden on desktop */}
         <h1 className={`text-xl font-semibold lg:hidden flex-1 text-center transition-colors duration-300 ${getTextStyles()}`}>
-          {currentAdmin ? 'Admin Dashboard' : 'Employee Portal'}
+          {currentAdmin ? 'Admin ' : 'Employee'}  
         </h1>
         
         {/* Center logo and company name - hidden on mobile, visible on desktop */}

@@ -167,6 +167,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         additionalAllowance: Number(data.additionalAllowance),
         specialAllowance: Number(data.specialAllowance),
         benefits: benefitsArray,
+        panNumber: data.panNumber ? data.panNumber.trim() : undefined,
       };
 
       // Only include optional fields if they have values (not empty strings or undefined)
@@ -357,16 +358,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    End Date (Optional)
-                  </label>
-                  <input
-                    type="date"
-                    {...register('endDate')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                
 
                 {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -420,16 +412,29 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <input
-                    type="text"
-                    {...register('department')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="E.g., Engineering, HR"
-                  />
-                </div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Department
+  </label>
+
+  <select
+    {...register('department')}
+    
+    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+  >
+    <option value="">Select Department</option>
+    <option value="Engineering">Engineering</option>
+    <option value="Human Resources">Human Resources</option>
+    <option value="Finance">Finance</option>
+    <option value="Sales">Sales</option>
+    <option value="Marketing">Marketing</option>
+    <option value="Operations">Operations</option>
+    <option value="Customer Support">Customer Support</option>
+    <option value="IT">IT</option>
+    <option value="Admin">Admin</option>
+    <option value="Legal">Legal</option>
+  </select>
+</div>
+
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -440,18 +445,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     {...register('location')}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Work location"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Reporting Manager
-                  </label>
-                  <input
-                    type="text"
-                    {...register('reportingManager')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Manager name"
                   />
                 </div>
 
@@ -468,29 +461,20 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Work Shift
+                  <label className="block text-sm font-medium text-gray-700 mb-1" >
+                    Work Mode
                   </label>
-                  <select
+                  <select value="workSchedule"
                     {...register('workSchedule')}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Mon-Fri 10 AM to 7 PM">Mon-Fri 10 AM to 7 PM</option>
+                    <option value="Office">Office</option>
+                    <option value="Remote">Remote</option>
+                    <option value="Hybrid">Hybrid</option>
                   </select>
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Benefits (comma separated)
-                  </label>
-                  <textarea
-                    {...register('benefits')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="E.g., Health Insurance, Paid Leave, Retirement Plan"
-                    rows={3}
-                  ></textarea>
-                  <p className="mt-1 text-xs text-gray-500">Enter benefits separated by commas</p>
-                </div>
+                
               </div>
             </div>
 
@@ -551,50 +535,16 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Relieving CTC
-                  </label>
-                  <input
-                    type="number"
-                    {...register('relievingCtc')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Relieving CTC"
-                  />
-                </div>
+                
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Resignation
-                  </label>
-                  <div className="flex items-center space-x-4">
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        value="true"
-                        {...register('isResignation')}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <span className="ml-2">Yes</span>
-                    </label>
-                    <label className="inline-flex items-center">
-                      <input
-                        type="radio"
-                        value="false"
-                        {...register('isResignation')}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <span className="ml-2">No</span>
-                    </label>
-                  </div>
-                </div>
+                
               </div>
             </div>
 
             {/* Career Progression/Increment Details (CTP) */}
             <div className="bg-gray-50 p-4 rounded-lg mb-6">
               <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">
-                Career Progression / Increment Details
+                Increment Details
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -802,60 +752,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </div>
                 )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Medical Allowance (₹)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Medical Allowance"
-                    {...register('medicalAllowance', {
-                      min: { value: 0, message: 'Amount must be positive' }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Fixed ₹1,250</p>
-                  {errors.medicalAllowance && (
-                    <p className="mt-1 text-sm text-red-600">{errors.medicalAllowance.message}</p>
-                  )}
-                </div>
+                
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Transport (₹)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Transport Allowance"
-                    {...register('transport', {
-                      min: { value: 0, message: 'Amount must be positive' }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Fixed ₹1,600</p>
-                  {errors.transport && (
-                    <p className="mt-1 text-sm text-red-600">{errors.transport.message}</p>
-                  )}
-                </div>
+                
 
-                {includePF && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Gratuity (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Gratuity"
-                      {...register('gratuity', {
-                        min: { value: 0, message: 'Amount must be positive' }
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
-                    {errors.gratuity && (
-                      <p className="mt-1 text-sm text-red-600">{errors.gratuity.message}</p>
-                    )}
-                  </div>
-                )}
+                
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1007,7 +908,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   {errors.ifscCode && (
                     <p className="mt-1 text-sm text-red-600">{errors.ifscCode.message}</p>
                   )}
-                  <p className="mt-1 text-xs text-gray-500">
+                  {/* <p className="mt-1 text-xs text-gray-500">
                     Format: BANK0BRANCH (e.g., HDFC0000001, SBIN0001234).
                     <a
                       href="https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=2009"
@@ -1017,18 +918,22 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     >
                       Find IFSC Code
                     </a>
-                  </p>
+                  </p> */}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Account Holder Name
+                    <span className="text-red-500 mr-1">*</span> Pan Card No.
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter account holder name"
-                    {...register('accountHolderName', {
-                      required: 'Account holder name is required'
+                    placeholder="Enter PAN number"
+                    {...register('panNumber', {
+                      required: 'PAN number is required',
+                      pattern: {
+                        value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+                        message: 'Invalid PAN format. Must be 10 characters: 5 letters + 4 digits + 1 letter'
+                      }
                     })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />

@@ -517,9 +517,9 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
          {/* Bank Details Section - SAME STYLE AS OTHER CARDS */}
 <div className="mb-6">
-  <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">
-    Salary Account and Bank Details
-  </h2>
+  <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <FaRupeeSign className="mr-2" /> Salary Account Details
+            </h2>
 
   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 

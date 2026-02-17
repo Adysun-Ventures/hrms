@@ -8,10 +8,16 @@ import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { useAuth } from '@/context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import { updateUserProfile, validateProfileData } from '@/utils/profileUtils';
-import { updateEmployeeSelf, getEmployeeSelf, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere } from '@/utils/firebaseUtils';
-import { Employee } from '@/types';
+import { updateEmployeeSelf, getEmployeeSelf, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere, getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
+import { Employee, Employment } from '@/types';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
+
+
+interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relievingCtc'> {
+  
+}
+
 
 export default function EditEmployeeProfilePage() {
     const { currentUserData, currentEmployee } = useAuth();
@@ -20,15 +26,26 @@ export default function EditEmployeeProfilePage() {
     const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [employeeData, setEmployeeData] = useState<Employee[]>([]);
+    const [employmentData, setEmploymentData] = useState<Employment[]>([]);
+
     const [educationEntries, setEducationEntries] = useState<Array<{
         id: string;
         type: '12th' | 'diploma';
     }>>([
         { id: crypto.randomUUID(), type: '12th' }
     ]);
+    const employmentForm = useForm<EmploymentFormData>();
 
     const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<Omit<Employee, 'id'> & { confirmPassword?: string }>();
     const currentAddressValue = watch('currentAddress');
+    const {
+  register: employmentRegister,
+  handleSubmit: employmentHandleSubmit,
+  formState: { errors: employmentErrors },
+  reset: employmentReset
+} = useForm<EmploymentFormData>();
+
 
     // Redirect if not authenticated or not an employee
     useEffect(() => {
@@ -36,6 +53,38 @@ export default function EditEmployeeProfilePage() {
             router.push('/login');
         }
     }, [currentUserData, router]);
+
+    useEffect(() => {
+      const fetchData = async () => {
+        if (!currentUserData?.id) return;
+    
+        try {
+          const [employee, employment] = await Promise.all([
+            getEmployeeSelf(currentUserData.id),
+            getEmployeeSelfEmployment(currentUserData.id)
+          ]);
+    
+          
+          
+          setEmploymentData(employment);
+    
+        } catch (err) {
+          console.error(err);
+        }
+      };
+      console.log(employmentData)
+    
+      fetchData();
+    }, [currentUserData?.id]);
+
+    
+
+    useEffect(() => {
+  if (employmentData?.length > 0) {
+    employmentReset(employmentData[0]);
+  }
+}, [employmentData, employmentReset]);
+
 
     // Helper functions for managing education entries
     const canAddEntry = () => {
@@ -101,7 +150,7 @@ export default function EditEmployeeProfilePage() {
                     const emp = await getEmployeeSelf(currentUserData.id);
             const currentAddr = emp.currentAddress || '';
             const permanentAddr = emp.permanentAddress || '';
-            const addressesMatch = currentAddr && currentAddr === permanentAddr;
+            const addressesMatch = currentAddr === permanentAddr;
 
                     // Initialize education entries from employee data
                     if (emp.secondaryEducation && emp.secondaryEducation.length > 0) {
@@ -148,6 +197,9 @@ export default function EditEmployeeProfilePage() {
             setValue('permanentAddress', currentAddressValue || '');
         }
     }, [sameAsCurrentAddress, currentAddressValue, setValue]);
+
+    
+
 
     const handleSameAsCurrentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const checked = e.target.checked;
@@ -340,9 +392,9 @@ export default function EditEmployeeProfilePage() {
 
                 <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
                     {/* Personal Details Section */}
-                    <div className="bg-gray-100 p-4 mb-4 rounded-lg">
-                        <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Personal Details</h2>
-                        <div className="bg-white p-4 rounded-lg mb-4">
+                    {/* <div className="bg-gray-100 p-4 mb-4 rounded-lg"> */}
+                        
+                        <div className="p-4 rounded-lg mb-4 bg-gray-50">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Basic Information</h3>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
@@ -414,7 +466,7 @@ export default function EditEmployeeProfilePage() {
                             </div>
 
                         {/* Contact Information */}
-                        <div className="bg-white p-4 rounded-lg mb-4">
+                        <div className="bg-gray-50 p-4 rounded-lg mb-4">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Contact Information</h3>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
@@ -450,28 +502,8 @@ export default function EditEmployeeProfilePage() {
                                         <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
                                     )}
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Position
-                                </label>
-                                <input
-                                    type="text"
-                                        placeholder="Enter position/designation"
-                                        {...register('position')}
-                                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                                />
-                            </div>
-                            <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Department
-                                    </label>
-                                    <input
-                                        type="text"
-                                        placeholder="Enter department"
-                                        {...register('department')}
-                                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                                    />
-                                </div>
+                            
+                            
                                 <div className="md:col-span-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Current Address
@@ -510,7 +542,7 @@ export default function EditEmployeeProfilePage() {
                         </div>
 
                         {/* Password Section */}
-                        <div className="bg-white p-4 rounded-lg mb-4">
+                        <div className="bg-gray-50 p-4 rounded-lg mb-4">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Login Credentials</h3>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
@@ -631,10 +663,10 @@ export default function EditEmployeeProfilePage() {
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    
 
                     {/* Educational Details Section */}
-                    <div className="bg-gray-100 p-4 mb-4 rounded-lg">
+                    <div className="bg-gray-50 p-4 mb-4 rounded-lg">
                         <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Educational Details</h2>
                         {/* Higher Education */}
                         <div className="bg-white p-4 rounded-lg mb-4">
@@ -1081,6 +1113,99 @@ export default function EditEmployeeProfilePage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Salary Account and Bank Details</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <span className="text-red-500 mr-1">*</span> Bank Name
+                  </label>
+                  <input
+                    type="text"
+                   defaultValue={employmentData?.[0]?.bankName || ''}
+                    placeholder="Enter bank name"
+                    {...employmentRegister('bankName', {
+                      required: 'Bank name is required'
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                  {errors.bankName && (
+                    <p className="mt-1 text-sm text-red-600">{errors.bankName.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <span className="text-red-500 mr-1">*</span> Account No.
+                  </label>
+                  <input
+                    type="text"
+                    defaultValue={employmentData?.[0]?.accountNo || ''}
+                    placeholder="Enter account number"
+                    {...employmentRegister('accountNo', {
+                      required: 'Account number is required',
+                      pattern: {
+                        value: /^\d{9,18}$/,
+                        message: 'Please enter a valid account number'
+                      }
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                  {errors.accountNo && (
+                    <p className="mt-1 text-sm text-red-600">{errors.accountNo.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <span className="text-red-500 mr-1">*</span> IFSC Code
+                  </label>
+                  <input
+                    type="text"
+                    defaultValue={employmentData?.[0]?.ifscCode || ''}
+                    placeholder="e.g., HDFC0000001 (11 characters)"
+                    maxLength={11}
+                    {...employmentRegister('ifscCode', {
+                      required: 'IFSC code is required',
+                      pattern: {
+                        value: /^[A-Z]{4}0[A-Z0-9]{6}$/,
+                        message: 'Invalid IFSC format. Must be 11 characters: 4 letters + 0 + 6 alphanumeric (e.g., HDFC0000001)'
+                      }
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black uppercase"
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                  {errors.ifscCode && (
+                    <p className="mt-1 text-sm text-red-600">{errors.ifscCode.message}</p>
+                  )}
+                  
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <span className="text-red-500 mr-1">*</span> Pan Card No.
+                  </label>
+                  <input
+                    type="text"
+                    
+                    placeholder="Enter PAN number"
+                    {...employmentRegister('panNumber', {
+                      required: 'PAN number is required',
+                      pattern: {
+                        value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
+                        message: 'Invalid PAN format. Must be 10 characters: 5 letters + 4 digits + 1 letter'
+                      }
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                  {employmentErrors.panNumber && (
+                    <p className="mt-1 text-sm text-red-600">{employmentErrors.panNumber.message}</p>
+                  )}
+                </div>
+              </div>
+            </div> */}
 
                     {/* Action Buttons */}
                     <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">

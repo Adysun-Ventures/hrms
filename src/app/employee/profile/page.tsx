@@ -8,9 +8,10 @@ import { useAuth } from '@/context/AuthContext';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
-import { getAdminNameById, getEmployeeNameById, getEmployeeSelf } from '@/utils/firebaseUtils';
+import { getAdminNameById, getEmployeeNameById, getEmployeeSelf,getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { FaRupeeSign } from "react-icons/fa";
 import { Employee } from '@/types';
+
 
 
 export default function EmployeeProfilePage() {
@@ -19,6 +20,7 @@ export default function EmployeeProfilePage() {
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [createdByName, setCreatedByName] = useState<string>('-');
   const [updatedByName, setUpdatedByName] = useState<string>('-');
+  const [employmentData, setEmploymentData] = useState<any>(null);
 
   // Redirect if not authenticated or not an employee
   useEffect(() => {
@@ -45,6 +47,31 @@ export default function EmployeeProfilePage() {
 
     fetchFullEmployeeData();
   }, [currentUserData, currentEmployee]);
+
+  
+  useEffect(() => {
+  const fetchData = async () => {
+    if (!currentUserData?.id) return;
+
+    try {
+      const [employee, employment] = await Promise.all([
+        getEmployeeSelf(currentUserData.id),
+        getEmployeeSelfEmployment(currentUserData.id)
+      ]);
+
+      setEmployeeData(employee);
+      setEmploymentData(employment);
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  fetchData();
+}, [currentUserData?.id]);
+console.log('Employee Data:', employmentData);
+console.log(employmentData?.[0]?.bankName);
+
 
   // Fetch created by and updated by names
   useEffect(() => {
@@ -111,6 +138,8 @@ export default function EmployeeProfilePage() {
 
   // Use employeeData if available, otherwise fall back to currentEmployee
   const displayEmployee = employeeData || currentEmployee;
+  const displayEmployment = employmentData;
+  
 
   const getUserStatus = () => {
     return displayEmployee?.status === 'active' ? 'Active' : 'Inactive';
@@ -245,12 +274,12 @@ export default function EmployeeProfilePage() {
               </div>
 
               <div className="bg-white rounded-lg shadow p-3">
-                <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.position || '-'}</p>
+                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.jobTitle || '-'}</p>
                 <p className="text-sm text-gray-500">Position</p>
               </div>
 
               <div className="bg-white rounded-lg shadow p-3">
-                <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.department || '-'}</p>
+                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.department|| '-'}</p>
                 <p className="text-sm text-gray-500">Department</p>
               </div>
 
@@ -321,10 +350,7 @@ export default function EmployeeProfilePage() {
                 <p className="text-sm text-gray-500">Driving License</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
-                <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.panCard || '-'}</p>
-                <p className="text-sm text-gray-500">PAN Card</p>
-              </div>
+              
 
               <div className="bg-white rounded-lg shadow p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.voterID || '-'}</p>
@@ -499,11 +525,8 @@ export default function EmployeeProfilePage() {
               <FiBriefcase className="mr-2" /> Employment Information
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-lg shadow p-3">
-                <p className="text-lg font-medium text-gray-900">-</p>
-                <p className="text-sm text-gray-500">Join Date</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              
 
               <div className="bg-white rounded-lg shadow p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.homeTown || '-'}</p>
@@ -515,6 +538,32 @@ export default function EmployeeProfilePage() {
                   {displayEmployee?.status === 'active' ? 'Yes' : 'No'}
                 </p>
                 <p className="text-sm text-gray-500">Is Active</p>
+              </div>
+            </div>
+          </div>
+{/* //Bank information */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <FiMapPin className="mr-2" /> Bank Details
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg shadow p-3">
+                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.bankName|| '-'}</p>
+                <p className="text-sm text-gray-500">Bank Name</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-3">
+                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.accountNo || '-'}</p>
+                <p className="text-sm text-gray-500">Account Number</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-3">
+                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.ifscCode || '-'}</p>
+                <p className="text-sm text-gray-500">IFSC Code</p>
+              </div>
+              <div className="bg-white rounded-lg shadow p-3">
+                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.panNumber || '-'}</p>
+                <p className="text-sm text-gray-500">Pan No</p>
               </div>
             </div>
           </div>
@@ -559,16 +608,7 @@ export default function EmployeeProfilePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-              <h3 className="font-medium text-green-900 mb-2">My Attendance</h3>
-              <p className="text-sm text-green-700 mb-3">Track your attendance and working hours</p>
-              <button
-                onClick={() => router.push('/employee/attendance')}
-                className="text-green-600 hover:text-green-800 text-sm font-medium flex items-center gap-1"
-              >
-                View Attendance <FiArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+           
 
             <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
               <h3 className="font-medium text-purple-900 mb-2">My Documents</h3>

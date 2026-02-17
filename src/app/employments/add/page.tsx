@@ -348,16 +348,23 @@ export default function AddEmploymentPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Department
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Engineering"
-                      {...register('department')}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
-                  </div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Department
+  </label>
+
+  <select
+    {...register('department')}
+    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+  >
+    <option value="">Select department</option>
+    <option value="Engineering">Engineering</option>
+    <option value="Sales">Sales</option>
+    <option value="Marketing">Marketing</option>
+    <option value="HR">HR</option>
+    <option value="Finance">Finance</option>
+  </select>
+</div>
+
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -371,17 +378,7 @@ export default function AddEmploymentPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Reporting Manager
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Manager's name"
-                      {...register('reportingManager')}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
-                  </div>
+                  
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -403,13 +400,16 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Work Shift
+                      Work Mode
                     </label>
+                    
                     <select
                       {...register('workSchedule')}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     >
-                      <option value="Mon-Fri 10 AM to 7 PM">Mon-Fri 10 AM to 7 PM</option>
+                      <option value="Mon-Fri 10 AM to 7 PM">Office</option>
+                      <option value="Mon-Fri 10 AM to 7 PM">Remote</option>
+                      <option value="Mon-Fri 10 AM to 7 PM">Hybrid</option>
                     </select>
                   </div>
                 </div>
@@ -430,7 +430,7 @@ export default function AddEmploymentPage() {
                       {...register('employmentId', {
                         required: 'Employment ID is required',
                         pattern: {
-                          value: /^ADV[A-Z0-9-]*$/i,
+                          value:  /^ADV[A-Z0-9-]*$/i,
                           message: 'Employment ID must start with ADV followed by numbers/letters'
                         }
                       })}
@@ -494,7 +494,7 @@ export default function AddEmploymentPage() {
                     )}
                   </div>
 
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Relieving CTC (₹)
                     </label>
@@ -504,9 +504,9 @@ export default function AddEmploymentPage() {
                       {...register('relievingCtc')}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
-                  </div>
+                  </div> */}
 
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Resignation
                     </label>
@@ -517,14 +517,14 @@ export default function AddEmploymentPage() {
                       <option value="false">No</option>
                       <option value="true">Yes</option>
                     </select>
-                  </div>
+                  </div> */}
                 </div>
               </div>
 
               {/* Career Progression/Increment Details (CTP) */}
               <div className="bg-gray-50 p-4 rounded-lg mb-6">
                 <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">
-                  Career Progression / Increment Details
+                 Increment Details
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -734,61 +734,11 @@ export default function AddEmploymentPage() {
                     </div>
                   )}
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Medical Allowance (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Medical Allowance"
-                      {...register('medicalAllowance', {
-                        min: { value: 0, message: 'Amount must be positive' }
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Fixed ₹1,250</p>
-                    {errors.medicalAllowance && (
-                      <p className="mt-1 text-sm text-red-600">{errors.medicalAllowance.message}</p>
-                    )}
-                  </div>
+                  
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Transport (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Transport Allowance"
-                      {...register('transport', {
-                        min: { value: 0, message: 'Amount must be positive' }
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Fixed ₹1,600</p>
-                    {errors.transport && (
-                      <p className="mt-1 text-sm text-red-600">{errors.transport.message}</p>
-                    )}
-                  </div>
+                  
 
-                  {includePF && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Gratuity (₹)
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="Gratuity"
-                        {...register('gratuity', {
-                          min: { value: 0, message: 'Amount must be positive' }
-                        })}
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                      {errors.gratuity && (
-                        <p className="mt-1 text-sm text-red-600">{errors.gratuity.message}</p>
-                      )}
-                    </div>
-                  )}
-
+                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Total Leaves
@@ -959,7 +909,7 @@ export default function AddEmploymentPage() {
                     {errors.ifscCode && (
                       <p className="mt-1 text-sm text-red-600">{errors.ifscCode.message}</p>
                     )}
-                    <p className="mt-1 text-xs text-gray-500">
+                    {/* <p className="mt-1 text-xs text-gray-500">
                       Format: BANK0BRANCH (e.g., HDFC0000001, SBIN0001234).
                       <a
                         href="https://www.rbi.org.in/Scripts/bs_viewcontent.aspx?Id=2009"
@@ -969,25 +919,10 @@ export default function AddEmploymentPage() {
                       >
                         Find IFSC Code
                       </a>
-                    </p>
+                    </p> */}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Account Holder Name
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="Enter account holder name"
-                      {...register('accountHolderName', {
-                        required: 'Account holder name is required'
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
-                    {errors.accountHolderName && (
-                      <p className="mt-1 text-sm text-red-600">{errors.accountHolderName.message}</p>
-                    )}
-                  </div>
+                  
                 </div>
               </div>
 

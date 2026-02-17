@@ -324,25 +324,7 @@ export default function EditEmployeePage({ params }: PageParams) {
                     <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>
                   )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employee ID
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter employee ID (e.g., EMP001)"
-                    {...register('employeeId' as any, {
-                      pattern: {
-                        value: /^[A-Z0-9-]{3,15}$/i,
-                        message: 'Please enter a valid employee ID (alphanumeric, 3-15 characters)'
-                      }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                  {(errors as any).employeeId && (
-                    <p className="mt-1 text-sm text-red-600">{(errors as any).employeeId.message}</p>
-                  )}
-                </div>
+               
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
                   <select {...register('status')} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black">
@@ -441,18 +423,8 @@ export default function EditEmployeePage({ params }: PageParams) {
                   <input type="email" placeholder="Enter email address" {...register('email', { pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' } })} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
                   {errors.email && (<p className="mt-1 text-sm text-red-600">{errors.email.message}</p>)}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Position
-                  </label>
-                  <input type="text" placeholder="Enter position/designation" {...register('position')} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Department
-                  </label>
-                  <input type="text" placeholder="Enter department" {...register('department')} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
-                </div>
+                
+                
                 <div className="md:col-span-4">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Current Address
@@ -571,13 +543,13 @@ export default function EditEmployeePage({ params }: PageParams) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Driving License</label>
                   <input type="text" placeholder="Enter driving license number" {...register('drivingLicense')} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
                 </div>
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     PAN Card
                   </label>
                   <input type="text" placeholder="Enter PAN number" {...register('panCard', { pattern: { value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, message: 'Please enter a valid PAN number (e.g., ABCDE1234F)' } })} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
                   {errors.panCard && (<p className="mt-1 text-sm text-red-600">{errors.panCard.message}</p>)}
-                </div>
+                </div> */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

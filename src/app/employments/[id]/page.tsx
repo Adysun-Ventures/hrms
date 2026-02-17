@@ -300,7 +300,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             ...(hasSalaries ? [{
               label: 'View Salaries',
               icon: <FaRupeeSign />,
-              variant: 'warning' as const,
+              variant: 'orange' as const,
               href: `/salaries?employeeId=${employment?.employeeId}`
             }] : []),
             {
@@ -353,104 +353,9 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 </div>
               </Link>
 
-              {/* Attendance Card */}
-              <Link
-                href={`/employments/${id}/attendance`}
-                className="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200 cursor-pointer block"
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                    <FiCalendar className="mr-2" /> Attendance
-                  </h2>
-                  <div className="text-blue-600 flex items-center gap-1">
-                    <FiCalendar size={16} /> View Details
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">{attendanceStats.attendanceRate}%</div>
-                  <p className="text-sm text-gray-600">
-                    Present Days: {attendanceStats.presentDays}/{attendanceStats.totalDays}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {currentMonthStats.currentMonthPresent}/{currentMonthStats.currentMonthDays} This Month
-                  </p>
-                  {attendanceStats.totalDays > 0 && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Avg: {attendanceStats.averageHours.toFixed(1)} hrs/day
-                    </p>
-                  )}
-                </div>
-              </Link>
-
-              {/* Leaves Card */}
-              <Link
-                href={`/employments/${id}/leaves`}
-                className="bg-white p-4 rounded-lg border border-gray-200 relative overflow-visible hover:shadow-md transition-shadow duration-200 cursor-pointer block"
-              >
-                {leaveStats.pendingLeaves > 0 && (
-                  <div className="absolute -top-1.5 -left-1.5 w-4 h-4 bg-red-500 rounded-full border-2 border-white"></div>
-                )}
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                    <FiCalendar className="mr-2" /> Leaves
-                  </h2>
-                  <div className="text-green-600 flex items-center gap-1">
-                    <FiCalendar size={16} /> View Details
-                  </div>
-                </div>
-
-                <div className="text-center">
-                  <div className="text-3xl font-bold text-green-600 mb-2">
-                    {leaveStats.remainingLeaves}
-                  </div>
-                  <p className="text-sm text-gray-600">Days Remaining</p>
-                  <p className="text-sm text-gray-500">
-                    {leaveStats.usedLeaves}/{employment?.totalLeaves || 0} Used
-                  </p>
-                  {leaveStats.pendingLeaves > 0 && (
-                    <p className="text-xs text-yellow-600 mt-1">
-                      {leaveStats.pendingLeaves} pending
-                    </p>
-                  )}
-                </div>
-              </Link>
             </div>
 
-            {/* Detailed Attendance Summary */}
-            {attendanceStats.totalDays > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <FiCalendar className="mr-2" /> Attendance Summary
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                  <div className="bg-white rounded-lg shadow p-4">
-                    <p className="text-2xl font-bold text-blue-600">{attendanceStats.totalDays}</p>
-                    <p className="text-sm text-gray-500">Total Days</p>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-4">
-                    <p className="text-2xl font-bold text-green-600">{attendanceStats.presentDays}</p>
-                    <p className="text-sm text-gray-500">Present</p>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-4">
-                    <p className="text-2xl font-bold text-yellow-600">{attendanceStats.lateDays}</p>
-                    <p className="text-sm text-gray-500">Late</p>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-4">
-                    <p className="text-2xl font-bold text-orange-600">{attendanceStats.halfDayDays}</p>
-                    <p className="text-sm text-gray-500">Half Day</p>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-4">
-                    <p className="text-2xl font-bold text-red-600">{attendanceStats.absentDays}</p>
-                    <p className="text-sm text-gray-500">Absent</p>
-                  </div>
-                  <div className="bg-white rounded-lg shadow p-4">
-                    <p className="text-2xl font-bold text-purple-600">{attendanceStats.totalHours.toFixed(1)}</p>
-                    <p className="text-sm text-gray-500">Total Hours</p>
-                  </div>
-                </div>
-              </div>
-            )}
+           
           </div>
         )}
 
@@ -477,10 +382,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Location</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
-                <p className="text-lg font-medium text-gray-900">{employment.reportingManager || '-'}</p>
-                <p className="text-sm text-gray-500">Reporting Manager</p>
-              </div>
+              
 
               <div className="bg-white rounded-lg shadow p-5">
                 <p className="text-lg font-medium text-gray-900 capitalize">
@@ -503,7 +405,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
               <div className="bg-white rounded-lg shadow p-5">
                 <p className="text-lg font-medium text-gray-900">{employment.workSchedule || '-'}</p>
-                <p className="text-sm text-gray-500">Work Shift</p>
+                <p className="text-sm text-gray-500">Work Mode</p>
               </div>
 
               <div className="bg-white rounded-lg shadow p-5">
@@ -517,34 +419,10 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Start Date</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
-                <p className="text-lg font-medium text-gray-900">
-                  {employment.endDate ? formatDateToDayMonYear(employment.endDate) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">End Date</p>
-              </div>
+              
             </div>
 
-            {/* Benefits */}
-            <div className="mt-6">
-              <h3 className="text-md font-medium text-gray-700 mb-4">Benefits</h3>
-              <div className="bg-white rounded-lg shadow p-5">
-                {employment.benefits?.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {employment.benefits.map((benefit, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800"
-                      >
-                        {benefit}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500">No benefits listed</p>
-                )}
-              </div>
-            </div>
+            
           </div>
 
           {/* Employment Information Section */}
@@ -586,7 +464,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">In-hand CTC</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              {/* <div className="bg-white rounded-lg shadow p-5">
                 <p className="text-lg font-medium text-gray-900">{employment.relievingCtc ? formatCurrency(employment.relievingCtc) : '-'}</p>
                 <p className="text-sm text-gray-500">Relieving CTC</p>
               </div>
@@ -594,7 +472,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               <div className="bg-white rounded-lg shadow p-5">
                 <p className="text-lg font-medium text-gray-900">{employment.isResignation ? 'Yes' : 'No'}</p>
                 <p className="text-sm text-gray-500">Resignation</p>
-              </div>
+              </div> */}
 
               
             </div>
@@ -603,7 +481,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           {/* Career Progression/Increment Details (CTP) */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FiTrendingUp className="mr-2" /> Career Progression / Increment Details
+              <FiTrendingUp className="mr-2" />Increment Details
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -636,6 +514,50 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
           </div>
+
+         {/* Bank Details Section - SAME STYLE AS OTHER CARDS */}
+<div className="mb-6">
+  <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">
+    Salary Account and Bank Details
+  </h2>
+
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+    {/* Bank Name */}
+    <div className="bg-white rounded-lg shadow p-5">
+      <p className="text-lg font-medium text-gray-900">
+        {employment.bankName || '-'}
+      </p>
+      <p className="text-sm text-gray-500">Bank Name</p>
+    </div>
+
+    {/* Account Number */}
+    <div className="bg-white rounded-lg shadow p-5">
+      <p className="text-lg font-medium text-gray-900">
+        {employment.accountNo || '-'}
+      </p>
+      <p className="text-sm text-gray-500">Account Number</p>
+    </div>
+
+    {/* IFSC */}
+    <div className="bg-white rounded-lg shadow p-5">
+      <p className="text-lg font-medium text-gray-900">
+        {employment.ifscCode || '-'}
+      </p>
+      <p className="text-sm text-gray-500">IFSC Code</p>
+    </div>
+
+    {/* PAN */}
+    <div className="bg-white rounded-lg shadow p-5">
+      <p className="text-lg font-medium text-gray-900">
+        {employment.panNumber || '-'}
+      </p>
+      <p className="text-sm text-gray-500">PAN Number</p>
+    </div>
+
+  </div>
+</div>
+
 
           {/* Salary Information */}
           <div className="mb-6">
@@ -683,22 +605,14 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 </div>
               )}
 
-              <div className="bg-white rounded-lg shadow p-5">
+              {/* <div className="bg-white rounded-lg shadow p-5">
                 <p className="text-lg font-medium text-gray-900">{employment.medicalAllowance ? formatCurrency(employment.medicalAllowance) : '-'}</p>
                 <p className="text-sm text-gray-500">Medical Allowance</p>
-              </div>
+              </div> */}
 
-              <div className="bg-white rounded-lg shadow p-5">
-                <p className="text-lg font-medium text-gray-900">{employment.transport ? formatCurrency(employment.transport) : '-'}</p>
-                <p className="text-sm text-gray-500">Transport</p>
-              </div>
+              
 
-              {(employment.gratuity && employment.gratuity > 0) && (
-                <div className="bg-white rounded-lg shadow p-5">
-                  <p className="text-lg font-medium text-gray-900">{formatCurrency(employment.gratuity)}</p>
-                  <p className="text-sm text-gray-500">Gratuity</p>
-                </div>
-              )}
+              
 
               <div className="bg-white rounded-lg shadow p-5">
                 <p className="text-lg font-medium text-gray-900">{employment.totalLeaves || '-'} {employment.totalLeaves ? 'days/year' : ''}</p>
@@ -730,7 +644,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Special Allowance</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              {/* <div className="bg-white rounded-lg shadow p-5">
                 <p className="text-lg font-medium text-gray-900 capitalize">
                   {employment.paymentFrequency ? (
                     employment.paymentFrequency.includes('-') ?
@@ -741,7 +655,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   ) : '-'}
                 </p>
                 <p className="text-sm text-gray-500">Payment Frequency</p>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

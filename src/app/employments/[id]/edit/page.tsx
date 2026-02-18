@@ -24,6 +24,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [includePF, setIncludePF] = useState(true); // Default: With PF
   const [originalEmployment, setOriginalEmployment] = useState<Employment | null>(null);
+  useForm({
+  defaultValues: {
+    isResignation: false
+  }
+});
+
 
   const router = useRouter();
   const { id } = use(params);
@@ -168,6 +174,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         specialAllowance: Number(data.specialAllowance),
         benefits: benefitsArray,
         panNumber: data.panNumber ? data.panNumber.trim() : undefined,
+
       };
 
       // Only include optional fields if they have values (not empty strings or undefined)
@@ -218,6 +225,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       setIsSubmitting(false);
     }
   };
+  console.log(watch('isResignation'))
 
   if (loading) {
     return (
@@ -394,7 +402,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 </div> */}
               </div>
             </div>
+            
 
+            
             {/* Job Details - MOVED TO TOP */}
             <div className="bg-gray-50 p-4 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Job Details</h2>
@@ -478,7 +488,101 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {/* Employment Information */}
+            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Resignation Details</h2>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
+                <div>
+  <label className="block text-sm font-medium text-gray-700 mb-2">
+    Is Resignation?
+  </label>
+
+  <div className="flex gap-4">
+    <button
+      type="button"
+      onClick={() => setValue('isResignation', true)}
+      className={`px-4 py-2 rounded-md border transition
+        ${watch('isResignation')
+          ? 'bg-blue-500 text-white border-blue-500'
+          : 'bg-white text-gray-700 border-gray-300'}
+      `}
+    >
+      Yes
+    </button>
+
+    <button
+      type="button"
+      onClick={() => setValue('isResignation', false)}
+      className={`px-4 py-2 rounded-md border transition
+        ${watch('isResignation') === false
+          ? 'bg-blue-500 text-white border-blue-500'
+          : 'bg-white text-gray-700 border-gray-300'}
+      `}
+    >
+      No
+    </button>
+  </div>
+</div>
+
+
+                <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Resignation Date
+  </label>
+  <input
+    type="date"
+    {...register('resignationDate')}
+    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  />
+</div>
+
+
+                <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Last Working Date
+  </label>
+
+  <input
+    type="date"
+    {...register('lastWorkingDate')}
+    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+  />
+</div>
+
+
+
+                <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Last Drawn Salary
+  </label>
+
+  <input
+    type="number"
+    {...register('lastDrawnSalary', {
+      min: { value: 0, message: 'Salary must be positive' }
+    })}
+    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+    placeholder="Enter last drawn salary"
+  />
+</div>
+
+
+               <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Last Salary Date
+  </label>
+
+  <input
+    type="date"
+    {...register('lastSalaryDate')}
+    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+  />
+</div>
+                
+              </div>
+            </div>
+
+            {/* Joining Information */}
             <div className="bg-gray-50 p-4 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Employment Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

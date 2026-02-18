@@ -17,12 +17,63 @@ import Link from 'next/link';
 
 
 
+const EmploymentWorkingStatusBadge = ({ employeeId }: { employeeId: string }) => {
+  const { data: employments = [] } = useEmploymentsByEmployee(employeeId);
+  const employment = employments[0];
+
+  if (!employment) {
+    return <span className="text-gray-400">-</span>;
+  }
+
+  const isResigned = employment.isResignation === true;
+
+  return (
+    <span
+      className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+        isResigned
+          ? 'bg-red-100 text-red-800'
+          : 'bg-green-100 text-green-800'
+      }`}
+    >
+      {isResigned ? 'Resigned' : 'Working'}
+    </span>
+  );
+};
+
+
+
+const EmploymentStatusBadge = ({ employeeId }: { employeeId: string }) => {
+  const { data: employments = [] } = useEmploymentsByEmployee(employeeId);
+
+  const employment = employments[0];
+
+  if (!employment) {
+    return <span className="text-gray-400">-</span>;
+  }
+
+  const isResigned = employment.isResignation === true;
+
+  return (
+    <span
+      className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+        isResigned
+          ? 'bg-red-100 text-red-800'
+          : 'bg-green-100 text-green-800'
+      }`}
+    >
+      {isResigned ? 'Resigned' : 'Active'}
+    </span>
+  );
+};
+
+
 // Component to display employee ID from employment record
 const EmployeeIdDisplay = ({ employeeId }: { employeeId: string }) => {
   const { data: employments = [] } = useEmploymentsByEmployee(employeeId);
 
   // Get the first (and only) employment
   const employment = employments[0];
+  console.log(employment)
 
  if (!employment || !employment.employmentId) {
   return (
@@ -583,17 +634,10 @@ useEffect(() => {
                         <TotalSalaryCreditsDisplay employeeId={employee.id} />
                       </div>
                     </td>
-                    <td className='px-6 py-4 whitespace-nowrap text-center'>{employee.status && (
-                              <span
-                                className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                  employee.status === 'active'
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-red-100 text-red-800'
-                                }`}
-                              >
-                                {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
-                              </span>
-                            )}</td>
+                   <td className="px-6 py-4 whitespace-nowrap text-center">
+  <EmploymentStatusBadge employeeId={employee.id} />
+</td>
+
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span
                         className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -606,23 +650,9 @@ useEffect(() => {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
-                      {employee.employmentStatus ? (
-                        <span
-                          className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            employee.employmentStatus === 'working'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {(() => {
-                            const status = employee.employmentStatus;
-                            return status ? status.charAt(0).toUpperCase() + status.slice(1) : '-';
-                          })()}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
+  <EmploymentWorkingStatusBadge employeeId={employee.id} />
+</td>
+
                     <td className="px-6 py-4 whitespace-nowrap">
                       {deleteConfirm === employee.id ? (
                         <div className="flex items-center justify-center space-x-2">

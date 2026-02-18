@@ -1,373 +1,538 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import EmployeeLayout from '@/components/layout/EmployeeLayout';
-import { useAuth } from '@/context/AuthContext';
-import { getEmployeeSelf, getEmployeeSalaries } from '@/utils/firebaseUtils';
-import { useEffect } from 'react';
-import { Employee, Salary } from '@/types';
-import toast, { Toaster } from 'react-hot-toast';
-import { FiDownload, FiCalendar, FiDollarSign } from 'react-icons/fi';
-import TableHeader from '@/components/ui/TableHeader';
+import React, { useState, useEffect, useMemo } from "react";
+import { Toaster, toast } from "react-hot-toast";
+import EmployeeLayout from "@/components/layout/EmployeeLayout";
+import { useAuth } from "@/context/AuthContext";
+import { getEmployeeSelf, getEmployeeSelfEmployment } from "@/utils/firebaseUtils";
+import {
+  Document,
+  Page,
+  PDFDownloadLink,
+  PDFViewer,
+  Text,
+  View
+} from "@react-pdf/renderer";
+import { formatIndianCurrency, numberToWords } from "@/components/pdf/SalaryUtils";
+import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
+import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
+import { useRouter } from "next/navigation";
+import { FiArrowLeft } from "react-icons/fi";
 
-interface SalarySlip {
+/* ================= TYPES ================= */
+
+interface Employee {
   id: string;
-  employeeId: string;
-  basicSalary: number;
-  allowances: number;
-  deductions: number;
-  netSalary: number;
-  month: string;
-  year: number;
-  status: 'pending' | 'paid' | 'cancelled';
-  issueDate?: string;
-  documentUrl?: string;
+  name: string;
+  employeeId?: string;
 }
 
-export default function EmployeeSalarySlipsPage() {
-  const { currentUserData, currentEmployee } = useAuth();
-  const [employee, setEmployee] = useState<Employee | null>(null);
-  const [salarySlips, setSalarySlips] = useState<SalarySlip[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedMonth, setSelectedMonth] = useState<string>('');
+interface Employment {
+  salary?: number;
+  jobTitle?: string;
+  department?: string;
+  location?: string;
+  bankName?: string;
+  accountNo?: string;
+  ifscCode?: string;
+  panNumber?: string;
+}
 
-  // Get the current employee ID from the authentication hook
-  const getCurrentEmployeeId = () => {
-    // Priority: currentEmployee.id > currentUserData.id
-    return currentEmployee?.id || currentUserData?.id;
+interface FormDataType {
+  employeeName: string;
+  employeeId: string;
+  designation: string;
+  department: string;
+  location: string;
+  month: number;
+  year: number;
+  leaves: number;
+  payableDays: number;
+  enablePF: boolean;
+  bankName: string;
+  accountNo: string;
+  ifscCode: string;
+  panNumber: string;
+  basicSalary: number;
+  da: number;
+  conveyanceAllowance: number;
+  otherAllowance: number;
+  professionalTax: number;
+  pfEmployee: number;
+  leavesDeduction: number;
+}
+
+/* ================= HELPERS ================= */
+
+const getDaysInMonth = (month: number, year: number) =>
+  new Date(year, month + 1, 0).getDate();
+
+const getTotalEarnings = (f: FormDataType) =>
+  f.basicSalary + f.da + f.conveyanceAllowance + f.otherAllowance;
+
+const getTotalDeductions = (f: FormDataType) =>
+  f.professionalTax + f.pfEmployee + f.leavesDeduction;
+
+const getNetSalary = (f: FormDataType) =>
+  getTotalEarnings(f) - getTotalDeductions(f);
+
+/* ================= SALARY CALC ================= */
+
+const calculateSalary = (
+  annualCTC: number,
+  leaves: number,
+  month: number,
+  year: number,
+  enablePF: boolean
+): Partial<FormDataType> => {
+
+  const monthly = annualCTC / 12;
+  const days = getDaysInMonth(month, year);
+
+  const basic = Math.round(monthly * 0.5);
+  const da = Math.round(basic * 0.2);
+  const convey = 1600;
+  const other = Math.max(0, monthly - basic - da - convey);
+
+  const perDay = monthly / days;
+  const leavesDeduction = Math.round(perDay * leaves);
+
+  const pt = 200;
+  const pf = enablePF ? Math.round(basic * 0.12) : 0;
+
+  return {
+    basicSalary: basic,
+    da,
+    conveyanceAllowance: convey,
+    otherAllowance: other,
+    professionalTax: pt,
+    pfEmployee: pf,
+    leavesDeduction,
+    payableDays: days - leaves,
   };
+};
 
-  useEffect(() => {
-    const fetchEmployeeData = async () => {
-      const employeeId = getCurrentEmployeeId();
-      
-      console.log('🔍 Current employee ID:', employeeId);
-      console.log('🔍 Current user data:', currentUserData);
-      console.log('🔍 Current employee data:', currentEmployee);
-      
-      // Debug localStorage data
-      const employeeSessionId = localStorage.getItem('employeeSessionId');
-      const employeeData = localStorage.getItem('employeeData');
-      console.log('🔍 localStorage employeeSessionId:', employeeSessionId);
-      console.log('🔍 localStorage employeeData:', employeeData);
-      
-      if (!employeeId) {
-        console.error('No employee ID found in authentication context');
-        console.error('This means the employee is not properly logged in');
-        toast.error('Employee authentication required');
-        return;
-      }
-      
-      try {
-        setIsLoading(true);
-        
-        // Fetch employee data using employee self-access function
-        const employeeData = await getEmployeeSelf(employeeId);
-        setEmployee(employeeData);
-        
-        // Fetch salary records for the current employee from salaries collection
-        const salaryData = await getEmployeeSalaries(employeeId);
-        
-        console.log('📊 Raw salary data received:', salaryData);
-        
-        // Transform salary data to salary slip format
-        const transformedSalarySlips: SalarySlip[] = salaryData.map((salary: any) => {
-          console.log('🔄 Processing salary record:', salary);
-          
-          // Extract month and year from various possible fields
-          let month = '';
-          let year = new Date().getFullYear();
-          
-          // Try different date fields that might exist in the salary data
-          if (salary.issueDate) {
-            const date = new Date(salary.issueDate);
-            month = date.toISOString().slice(0, 7);
-            year = date.getFullYear();
-          } else if (salary.month && salary.year) {
-            // If month and year are separate fields
-            const monthNum = parseInt(salary.month);
-            year = parseInt(salary.year);
-            const date = new Date(year, monthNum - 1, 1); // month is 0-indexed
-            month = date.toISOString().slice(0, 7);
-          } else if (salary.createdAt) {
-            // Use creation date as fallback
-            const date = new Date(salary.createdAt);
-            month = date.toISOString().slice(0, 7);
-            year = date.getFullYear();
-          } else {
-            // Default to current month if no date info
-            const now = new Date();
-            month = now.toISOString().slice(0, 7);
-            year = now.getFullYear();
-          }
-          
-          console.log('📅 Extracted month/year:', { month, year, originalData: { issueDate: salary.issueDate, month: salary.month, year: salary.year, createdAt: salary.createdAt } });
-          
-          const transformed = {
-            id: salary.id,
-            employeeId: salary.employeeId,
-            basicSalary: parseFloat(salary.basicSalary) || 0,
-            allowances: (parseFloat(salary.da) || 0) + (parseFloat(salary.hra) || 0) + (parseFloat(salary.lta) || 0) + (parseFloat(salary.educationAllowance) || 0) + (parseFloat(salary.additionalAllowance) || 0),
-            deductions: (parseFloat(salary.employerPF) || 0) + (parseFloat(salary.gratuity) || 0) + (parseFloat(salary.healthInsurance) || 0) + (parseFloat(salary.lossOfPay) || 0),
-            netSalary: parseFloat(salary.basicSalary) || 0,
-            month: month,
-            year: year,
-            status: salary.status || 'paid',
-            issueDate: salary.issueDate,
-            documentUrl: salary.documentUrl
-          };
-          
-          console.log('✅ Transformed salary slip:', transformed);
-          return transformed;
-        });
-        
-        console.log('📋 Final transformed salary slips:', transformedSalarySlips);
-        setSalarySlips(transformedSalarySlips);
-        
-      } catch (error) {
-        console.error('Error fetching employee data:', error);
-        toast.error('Failed to load employee data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    fetchEmployeeData();
-  }, [currentUserData, currentEmployee]);
 
-  // Generate last 12 months for salary slips
-  const generateMonths = () => {
-    const months = [];
-    const currentDate = new Date();
-    
-    for (let i = 0; i < 12; i++) {
-      const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-      const monthYear = date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'long' 
-      });
-      const value = date.toISOString().slice(0, 7); // YYYY-MM format
-      
-      months.push({
-        label: monthYear,
-        value: value
-      });
-    }
-    
-    return months;
-  };
+/* ================= PDF ================= */
 
-  const months = generateMonths();
+const SalarySlipPDF: React.FC<{ formData: FormDataType }> = ({ formData }) => {
 
-  // Debug: Show what months are being generated
-  console.log('📅 Generated months for display:', months.map(m => ({ label: m.label, value: m.value })));
-  console.log('💰 Available salary slips:', salarySlips.map(s => ({ id: s.id, month: s.month, year: s.year })));
+  const totalEarnings = getTotalEarnings(formData);
+  const totalDeductions = getTotalDeductions(formData);
+  const net = getNetSalary(formData);
 
-  const handleDownload = (month: string) => {
-    // Find the salary slip for the selected month
-    const salarySlip = salarySlips.find(slip => slip.month === month);
-    
-    if (salarySlip) {
-      // If we have actual salary slip data, use it
-      const monthLabel = months.find(m => m.value === month)?.label || month;
-      toast.success(`Downloading salary slip for ${monthLabel}`);
-      
-      // Simulate download with actual data
-      setTimeout(() => {
-        const link = document.createElement('a');
-        link.href = '#';
-        link.download = `salary-slip-${month}-${getCurrentEmployeeId()}.pdf`;
-        link.click();
-      }, 1000);
-    } else {
-      // Fallback for months without salary slips
-      const monthLabel = months.find(m => m.value === month)?.label || month;
-      toast.success(`Downloading salary slip for ${monthLabel}`);
-      
-      // Simulate download
-      setTimeout(() => {
-        const link = document.createElement('a');
-        link.href = '#';
-        link.download = `salary-slip-${month}.pdf`;
-        link.click();
-      }, 1000);
-    }
-  };
-
-  const getSalaryDetails = (month: string) => {
-    const salarySlip = salarySlips.find(slip => slip.month === month);
-    console.log('🔍 Looking for salary slip for month:', month);
-    console.log('🔍 Available salary slip months:', salarySlips.map(s => s.month));
-    console.log('🔍 Found salary slip:', salarySlip);
-    return salarySlip;
-  };
-
-  if (isLoading) {
-    return (
-      <EmployeeLayout
-        breadcrumbItems={[
-          { label: 'Dashboard', href: '/employee-dashboard' },
-          { label: 'Documents', href: '/employee/documents' },
-          { label: 'Salary Slips', isCurrent: true }
-        ]}
-      >
-        <div className="flex justify-center items-center h-64">
-          <p>Loading salary slips...</p>
-        </div>
-      </EmployeeLayout>
-    );
-  }
-
-  if (!employee) {
-    return (
-      <EmployeeLayout
-        breadcrumbItems={[
-          { label: 'Dashboard', href: '/employee-dashboard' },
-          { label: 'Documents', href: '/employee/documents' },
-          { label: 'Salary Slips', isCurrent: true }
-        ]}
-      >
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-800">Salary Slips</h1>
-            <p className="text-gray-600 mt-2">Download your monthly salary slips</p>
-          </div>
-          
-          <div className="p-6">
-            <div className="text-center py-12">
-              <div className="mx-auto h-16 w-16 text-gray-400 mb-4">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Salary Slips Available</h3>
-              <p className="text-gray-500 mb-4">
-                Your salary slips are not available at the moment. This could be because:
-              </p>
-              <ul className="text-sm text-gray-500 space-y-1 mb-6">
-                <li>• Your employment details are still being processed</li>
-                <li>• No salary slips have been generated yet</li>
-                <li>• Your profile information needs to be updated</li>
-              </ul>
-              <div className="flex justify-center space-x-4">
-                <button
-                  onClick={() => window.history.back()}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Go Back
-                </button>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </EmployeeLayout>
-    );
-  }
+  const MONTH_NAMES = [
+    "January","February","March","April","May","June",
+    "July","August","September","October","November","December"
+  ];
 
   return (
-    <EmployeeLayout
-      breadcrumbItems={[
-        { label: 'Dashboard', href: '/employee-dashboard' },
-        { label: 'Documents', href: '/employee/documents' },
-        { label: 'Salary Slips', isCurrent: true }
-      ]}
-    >
-      <Toaster position="top-center" />
-      
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <TableHeader
-          title="Salary Slips"
-          searchValue=""
-          onSearchChange={() => {}}
-          showSearch={false}
-          showStats={true}
-          backButton={{ href: '/employee/documents', label: 'Back' }}
-          headerClassName="px-6 pt-6 pb-4"
-        />
+    <Document>
+      <Page size="A4" style={{ padding: 35, fontSize: 10 }}>
 
-        <div className="p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Employee Information</h2>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Name</p>
-                  <p className="font-medium text-gray-900">{employee.name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Employee ID</p>
-                  <p className="font-medium text-gray-900">{employee?.employeeId || 'Not Assigned'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Department</p>
-                  <p className="font-medium text-gray-900">{employee.department || 'General'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
+        <GlobalPDFHeader />
+        <View style={{ borderBottomWidth: 1, marginBottom: 10 }} />
 
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Available Salary Slips</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {months.map((month, index) => {
-                // Check if we have actual salary slip data for this month
-                const salaryDetails = getSalaryDetails(month.value);
-                const hasSalarySlip = !!salaryDetails;
-                
-                return (
-                  <div key={month.value} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center">
-                        <FiCalendar className="text-gray-500 mr-2" />
-                        <span className="font-medium text-gray-800">{month.label}</span>
-                      </div>
-                      <button
-                        onClick={() => handleDownload(month.value)}
-                        className={`flex items-center px-3 py-1 text-sm rounded-md transition-colors ${
-                          hasSalarySlip 
-                            ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                            : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                        }`}
-                        disabled={!hasSalarySlip}
-                      >
-                        <FiDownload className="mr-1" size={14} />
-                        {hasSalarySlip ? 'Download' : 'Not Available'}
-                      </button>
-                    </div>
-                    
-                    {hasSalarySlip && salaryDetails && (
-                      <div className="space-y-2">
-                        <div className="flex text-gray-600 justify-between text-sm">
-                          <span className="">Basic Salary:</span>
-                          <span className="font-medium">₹{salaryDetails.basicSalary.toLocaleString()}</span>
-                        </div>
-                        <div className="border-t pt-2">
-                          <div className="flex text-blue-600 justify-between text-sm font-semibold">
-                            <span>Net Salary:</span>
-                            <span className="">₹{salaryDetails.netSalary.toLocaleString()}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {!hasSalarySlip && (
-                      <div className="text-xs text-gray-500">
-                        No salary data available for this month
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+        <Text style={{ textAlign: "center", fontWeight: "bold", fontSize: 12, marginBottom: 8 }}>
+          Salary Slip - {MONTH_NAMES[formData.month]} {formData.year}
+        </Text>
+
+        {/* EMPLOYEE DETAILS TABLE */}
+        <View style={{ borderWidth: 1, marginBottom: 10 }}>
+          {[
+            { label: "Employee Name", value: formData.employeeName },
+            { label: "Employee Code", value: formData.employeeId },
+            { label: "Designation", value: formData.designation },
+            { label: "Department", value: formData.department },
+            { label: "Location", value: formData.location },
+            { label: "PAN Number", value: formData.panNumber },
+            { label: "Bank Name", value: formData.bankName },
+            { label: "Account Number", value: formData.accountNo },
+            { label: "IFSC Code", value: formData.ifscCode },
+            { label: "Payable Days", value: formData.payableDays },
+          ].map((row, i, arr) => (
+            <View
+              key={row.label}
+              style={{
+                flexDirection: "row",
+                borderBottomWidth: i === arr.length - 1 ? 0 : 0.5
+              }}
+            >
+              <Text style={{ width: "40%", padding: 4, borderRightWidth: 0.5, fontWeight: "bold" }}>
+                {row.label}
+              </Text>
+              <Text style={{ width: "60%", padding: 4 }}>
+                {row.value || "-"}
+              </Text>
+            </View>
+          ))}
+        </View>
+
+        {/* EARNINGS & DEDUCTIONS */}
+        <View style={{ flexDirection: "row", borderWidth: 1 }}>
+
+          {/* Earnings */}
+          <View style={{ width: "50%", borderRightWidth: 0.5 }}>
+            <View style={{ flexDirection: "row", backgroundColor: "#eee", borderBottomWidth: 0.5 }}>
+              <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Earnings (A)</Text>
+              <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>Amount</Text>
+            </View>
+
+            {[
+              { label: "Basic", value: formData.basicSalary },
+              { label: "DA", value: formData.da },
+              { label: "Conveyance", value: formData.conveyanceAllowance },
+              { label: "Other Allowance", value: formData.otherAllowance },
+            ].map(item => (
+              <View key={item.label} style={{ flexDirection: "row", borderBottomWidth: 0.5 }}>
+                <Text style={{ width: "60%", padding: 4 }}>{item.label}</Text>
+                <Text style={{ width: "40%", padding: 4, textAlign: "right" }}>
+                  {formatIndianCurrency(item.value)}
+                </Text>
+              </View>
+            ))}
+
+            <View style={{ flexDirection: "row", backgroundColor: "#eee" }}>
+              <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Gross Salary</Text>
+              <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
+                {formatIndianCurrency(totalEarnings)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Deductions */}
+          <View style={{ width: "50%" }}>
+            <View style={{ flexDirection: "row", backgroundColor: "#eee", borderBottomWidth: 0.5 }}>
+              <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Deductions (B)</Text>
+              <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>Amount</Text>
+            </View>
+
+            {[
+              { label: "Professional Tax", value: formData.professionalTax },
+              ...(formData.enablePF
+                ? [{ label: "PF (Employee)", value: formData.pfEmployee }]
+                : []),
+              { label: "Leave Deduction", value: formData.leavesDeduction },
+            ].map(item => (
+              <View key={item.label} style={{ flexDirection: "row", borderBottomWidth: 0.5 }}>
+                <Text style={{ width: "60%", padding: 4 }}>{item.label}</Text>
+                <Text style={{ width: "40%", padding: 4, textAlign: "right" }}>
+                  {formatIndianCurrency(item.value)}
+                </Text>
+              </View>
+            ))}
+
+            <View style={{ flexDirection: "row", backgroundColor: "#eee" }}>
+              <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Total Deductions</Text>
+              <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
+                {formatIndianCurrency(totalDeductions)}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={{ borderWidth: 1, marginTop: 8, backgroundColor: "#eee" }}>
+          <View style={{ flexDirection: "row" }}>
+            <Text style={{ width: "50%", padding: 5, fontWeight: "bold", borderRightWidth: 0.5 }}>
+              Net Salary (A - B)
+            </Text>
+            <Text style={{ width: "50%", padding: 5, textAlign: "right", fontWeight: "bold" }}>
+               {formatIndianCurrency(net)}
+            </Text>
+          </View>
+        </View>
+
+        
+
+        <Text style={{ marginTop: 12, textAlign: "center", fontSize: 8 }}>
+          This is a system generated salary slip and does not require signature.
+        </Text>
+
+        <GlobalPDFFooter />
+      </Page>
+    </Document>
+  );
+};
+
+/* ================= MAIN ================= */
+
+const EmployeeSalarySlip: React.FC = () => {
+
+  const { currentUserData } = useAuth();
+  const [employment, setEmployment] = useState<Employment | null>(null);
+  const [showPDF, setShowPDF] = useState(false);
+
+  const currentYear = new Date().getFullYear();
+
+  const [formData, setFormData] = useState<FormDataType>({
+    employeeName: "",
+    employeeId: "",
+    designation: "",
+    department: "",
+    location: "",
+    month: new Date().getMonth(),
+    year: currentYear,
+    leaves: 0,
+    payableDays: 30,
+    enablePF: false,
+    bankName: "",
+    accountNo: "",
+    ifscCode: "",
+    panNumber: "",
+    basicSalary: 0,
+    da: 0,
+    conveyanceAllowance: 0,
+    otherAllowance: 0,
+    professionalTax: 0,
+    pfEmployee: 0,
+    leavesDeduction: 0,
+  });
+
+  useEffect(() => {
+    if (!currentUserData?.id) return;
+
+    (async () => {
+      try {
+        const emp = await getEmployeeSelf(currentUserData.id);
+        const empm = await getEmployeeSelfEmployment(currentUserData.id);
+
+        if (!emp || !empm?.[0]) return;
+
+        setEmployment(empm[0]);
+
+        const parts = calculateSalary(
+          empm[0].salary || 0,
+          0,
+          formData.month,
+          formData.year,
+          false
+        );
+
+        setFormData(prev => ({
+          ...prev,
+          employeeName: emp.name,
+          employeeId: String(emp.employeeId || emp.id),
+          designation: empm[0].jobTitle || "",
+          department: empm[0].department || "",
+          location: empm[0].location || "",
+          bankName: empm[0].bankName || "",
+          accountNo: empm[0].accountNo || "",
+          ifscCode: empm[0].ifscCode || "",
+          panNumber: empm[0].panNumber || "",
+          ...parts
+        }));
+
+      } catch {
+        toast.error("Failed to load employee data");
+      }
+    })();
+  }, [currentUserData]);
+
+  useEffect(() => {
+    if (!employment?.salary) return;
+
+    const parts = calculateSalary(
+      employment.salary,
+      formData.leaves,
+      formData.month,
+      formData.year,
+      formData.enablePF
+    );
+
+    setFormData(prev => ({ ...prev, ...parts }));
+
+  }, [formData.leaves, formData.month, formData.enablePF]);
+
+  const memoPDF = useMemo(
+    () => <SalarySlipPDF formData={formData} />,
+    [formData]
+  );
+
+return (
+  <EmployeeLayout
+    breadcrumbItems={[
+      { label: "Dashboard", href: "/employee-dashboard" },
+      { label: "Documents", href: "/employee/documents" },
+      { label: "Salary Slip", isCurrent: true }
+    ]}
+  >
+    <Toaster position="top-center" />
+
+    {/* ================= MAIN CARD ================= */}
+    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+
+      {/* HEADER */}
+      <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Salary Slip
+          </h1>
+          <p className="text-gray-600 mt-2">
+            Generate and download your salary slip
+          </p>
+        </div>
+
+        {/* Back Button on Right */}
+        <button
+          onClick={() => window.history.back()}
+          className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition"
+        >
+          ← Back
+        </button>
+      </div>
+
+      {/* FORM BODY */}
+      <div className="p-8 space-y-8">
+
+        {/* ================= DETAILS CARD ================= */}
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+
+          <h3 className="text-lg font-semibold text-gray-800 mb-6 border-l-4 border-blue-600 pl-3">
+            Salary Slip Details
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+
+            {/* Employee Name */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Employee Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                readOnly
+                value={formData.employeeName}
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-700"
+              />
             </div>
+
+            {/* Month */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Month <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.month}
+                onChange={(e) =>
+                  setFormData(p => ({ ...p, month: Number(e.target.value) }))
+                }
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {Array.from({ length: 12 }, (_, i) => (
+                  <option key={i} value={i}>
+                    {new Date(0, i).toLocaleString("en", { month: "long" })}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Year */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Year <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.year}
+                onChange={(e) =>
+                  setFormData(p => ({ ...p, year: Number(e.target.value) }))
+                }
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {Array.from(
+                  { length: (currentYear + 2) - 2020 + 1 },
+                  (_, i) => 2020 + i
+                ).map(year => (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Leaves */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Leaves <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={formData.leaves}
+                onChange={(e) =>
+                  setFormData(p => ({ ...p, leaves: Number(e.target.value) }))
+                }
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {Array.from({ length: 16 }, (_, i) => (
+                  <option key={i} value={i}>{i}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* PF Toggle */}
+            <div className="flex items-center gap-3 mt-8">
+              <input
+                type="checkbox"
+                checked={formData.enablePF}
+                onChange={(e) =>
+                  setFormData(p => ({ ...p, enablePF: e.target.checked }))
+                }
+                className="h-5 w-5 text-blue-600 rounded border-gray-300"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Apply PF Deduction
+              </span>
+            </div>
+
           </div>
         </div>
+
+        {/* ================= ACTION BUTTON ================= */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowPDF(true)}
+            className="bg-green-600 hover:bg-green-700 transition-all duration-200 text-white px-8 py-3 rounded-xl shadow-md font-medium"
+          >
+            Generate Salary Slip
+          </button>
+        </div>
+
       </div>
-    </EmployeeLayout>
-  );
-} 
+    </div>
+
+    {/* ================= PDF CARD ================= */}
+    {showPDF && (
+      <div className="mt-10 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+
+        {/* PDF HEADER */}
+        <div className="flex justify-between items-center px-8 py-5 border-b bg-gray-50">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Salary Slip Preview
+          </h3>
+
+          <PDFDownloadLink
+            document={memoPDF}
+            fileName={`SalarySlip_${formData.employeeName}_${formData.month + 1}.pdf`}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
+          >
+            Download PDF
+          </PDFDownloadLink>
+        </div>
+
+        {/* PDF VIEWER */}
+        <div className="h-[80vh] p-6 bg-gray-100">
+          <div className="bg-white rounded-xl shadow-md overflow-hidden h-full">
+            <PDFViewer width="100%" height="100%">
+              {memoPDF}
+            </PDFViewer>
+          </div>
+        </div>
+
+      </div>
+    )}
+
+  </EmployeeLayout>
+);
+
+
+};
+
+export default EmployeeSalarySlip;

@@ -179,6 +179,7 @@ export interface Employment {
   employerPF?: number;
   paymentFrequency: 'monthly' | 'bi-weekly' | 'weekly';
   
+  
   // Bank Details (for salary account)
   bankName?: string;
   accountNo?: string;
@@ -204,6 +205,9 @@ export interface Employment {
   lastWorkingDate?: string;
   reasonForLeaving?: string;
   exitInterviewDate?: string;
+  lastSalaryDate?: string;
+  lastSalaryAmount?: number;
+  lastDrawnSalary?: number;
   
   // Appraisal Details
   appraisalDate?: string;

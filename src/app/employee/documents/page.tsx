@@ -13,17 +13,35 @@ const documents = [
     path: '/employee/documents/offer-letter', 
     icon: <FiFileText size={24} /> 
   },
-  // { 
-  //   title: 'Increment Letter', 
-  //   description: 'View and download your increment letter',
-  //   path: '/employee/documents/increment-letter', 
-  //   icon: <FiFileText size={24} /> 
-  // },
+  { 
+    title: 'Increment Letter', 
+    description: 'View and download your increment letter',
+    path: '/employee/documents/increment-letter', 
+    icon: <FiFileText size={24} /> 
+  },
   { 
     title: 'Salary Slips', 
     description: 'View and download monthly salary slips',
     path: '/employee/documents/salary-slips', 
     icon: <FiDownload size={24} /> 
+  },
+  { 
+    title: 'Experience Letter', 
+    description: 'View and download your experience letter',
+    path: '/employee/documents/experience-letter', 
+    icon: <FiFileText size={24} /> 
+  },
+  { 
+    title: 'Relieving Letter', 
+    description: 'View and download your relieving letter',
+    path: '/employee/documents/relieving-letter', 
+    icon: <FiFileText size={24} /> 
+  },
+  { 
+    title: 'Joining Letter', 
+    description: 'View and download your joining letter',
+    path: '/employee/documents/joining-letter', 
+    icon: <FiFileText size={24} /> 
   },
 ];
 

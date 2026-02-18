@@ -54,6 +54,8 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
       };
     }
 
+    console.log(employment)
+
     const attendance = employment.attendance;
     const totalDays = attendance.length;
     const presentDays = attendance.filter((record: any) => record.status === 'present').length;
@@ -477,6 +479,54 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               
             </div>
           </div>
+          
+
+          
+  <div className="mb-6">
+    <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+      <FiBriefcase className="mr-2" /> Resignation Information
+    </h2>
+
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-white rounded-lg shadow p-5">
+        <p className="text-lg font-medium text-gray-900">
+          {employment.resignationDate
+            ? formatDateToDayMonYear(employment.resignationDate)
+            : '-'}
+        </p>
+        <p className="text-sm text-gray-500">Resignation Date</p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-5">
+        <p className="text-lg font-medium text-gray-900">
+          {employment.lastSalaryDate
+            ? formatDateToDayMonYear(employment.lastSalaryDate)
+            : '-'}
+        </p>
+        <p className="text-sm text-gray-500">Last Salary Date</p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-5">
+        <p className="text-lg font-medium text-gray-900">
+          {employment.lastDrawnSalary
+            ? formatCurrency(employment.lastDrawnSalary)
+            : '-'}
+        </p>
+        <p className="text-sm text-gray-500">Last Drawn Salary</p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-5">
+        <p className="text-lg font-medium text-gray-900">
+          {employment.lastWorkingDate
+            ? formatDateToDayMonYear(employment.lastWorkingDate)
+            : '-'}
+        </p>
+        <p className="text-sm text-gray-500">Last Working Date</p>
+      </div>
+    </div>
+  </div>
+
+
 
           {/* Career Progression/Increment Details (CTP) */}
           <div className="mb-6">

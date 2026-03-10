@@ -74,27 +74,34 @@ export default function LoginPage() {
       <Toaster position="top-center" />
       <div className="max-w-md w-full space-y-6 sm:space-y-8 p-4 sm:p-8 bg-white rounded-lg shadow-md">
         <div className="text-center">
-          {/* Logo and Company Name */}
-          <a 
-            href="https://adysunventures.com" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center justify-center mb-3 sm:mb-4 transition-colors cursor-pointer hover:opacity-80"
-          >
-            <Image
-              src="/adysun-logo.png"
-              alt="Adysun Ventures Logo"
-              width={40}
-              height={40}
-              className="object-contain mr-2 sm:mr-3 sm:w-[50px] sm:h-[50px]"
-              priority
-            />
-            <span className="text-2xl sm:text-3xl font-bold text-gray-900">
-              Adysun Ventures
-            </span>
-          </a>
+          {/* Logo, Company Name and Slogan */}
+          <div className="flex items-center justify-center mb-3 sm:mb-4">
+            <a 
+              href="https://adysunventures.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center transition-colors cursor-pointer hover:opacity-80"
+            >
+              <Image
+                src="/adysun-logo.png"
+                alt="Adysun Ventures Logo"
+                width={40}
+                height={40}
+                className="object-contain mr-2 sm:mr-3 sm:w-[50px] sm:h-[50px]"
+                priority
+              />
+              <div className="flex flex-col items-start">
+                <span className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+                  ADYSUN VENTURES
+                </span>
+                <span className="text-sm sm:text-base text-gray-700 font-medium">
+                  Inspire. Imagine. Implement.
+                </span>
+              </div>
+            </a>
+          </div>
           <hr className="border-gray-300 my-3 sm:my-4" />
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">Login Portal</h2>
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">HRMS Portal</h2>
           <p className="mt-2 text-sm sm:text-base text-gray-600">
             Enter your credentials to continue
           </p>
@@ -112,7 +119,7 @@ export default function LoginPage() {
         >
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-              Phone Number
+              Mobile
             </label>
             <input
               id="phone"
@@ -141,7 +148,7 @@ export default function LoginPage() {
                 }
               })}
               className="py-2.5 sm:py-3 px-3 sm:px-4 block w-full rounded-md border-gray-300 focus:ring-blue-500 focus:border-blue-500 text-black text-base"
-              placeholder="Enter mobile number"
+              placeholder="Enter mobile"
             />
             {errors.phone && (
               <p className="mt-2 text-sm text-red-600">{errors.phone.message}</p>

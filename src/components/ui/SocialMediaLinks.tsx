@@ -10,7 +10,7 @@ interface SocialMediaLinksProps {
 const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMediaLinksProps) => {
   const socialLinks = [
     {
-      href : '/',
+      href: 'https://adysunventures.com/',
       title: 'Website',
       icon: (
         <Image
@@ -81,9 +81,9 @@ const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMed
             <a
               key={link.href}
               href={link.href}
-              {...(link.title !== 'Website' && {
-                target: "_blank",
-                rel: "noopener noreferrer"
+              {...(link.href.startsWith('http') && {
+                target: '_blank',
+                rel: 'noopener noreferrer',
               })}
               title={link.title}
               className="flex justify-center items-center w-10 h-10 border-2 border-orange-500 hover:border-orange-600 text-orange-500 hover:text-orange-600 rounded-full transition-colors"
@@ -112,9 +112,9 @@ const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMed
             <li key={link.href}>
               <a
                 href={link.href}
-                {...(link.href !== 'https://adysunventures.com' && {
-                  target: "_blank",
-                  rel: "noopener noreferrer"
+                {...(link.href.startsWith('http') && {
+                  target: '_blank',
+                  rel: 'noopener noreferrer',
                 })}
                 title={link.title}
                 className="flex justify-center items-center w-10 h-10 border-2 border-orange-500 hover:border-orange-600 text-orange-500 hover:text-orange-600 rounded-full transition-colors"

@@ -254,9 +254,14 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
               className="object-contain mr-2"
               priority
             />
-            <span className={`text-xl font-semibold transition-colors duration-300 ${getTextStyles()}`}>
-              Adysun Ventures
-            </span>
+            <div className="flex flex-col items-start leading-tight">
+              <span className={`text-xl font-semibold transition-colors duration-300 ${getTextStyles()}`}>
+                ADYSUN VENTURES
+              </span>
+              <span className="text-xs text-gray-600">
+                Inspire. Imagine. Implement.
+              </span>
+            </div>
           </a>
         </div>
         

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { FiEdit, FiTrash2, FiPlus, FiEye, FiBriefcase, FiDollarSign, FiUpload } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiPlus, FiEye, FiBriefcase, FiDollarSign } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import toast, { Toaster } from 'react-hot-toast';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
@@ -11,7 +11,6 @@ import { useEmployees, useDeleteEmployee } from '@/hooks/useEmployees';
 import { useEmployments, useEmploymentsByEmployee } from '@/hooks/useEmployments';
 import { useSalariesByEmployee } from '@/hooks/useSalaries';
 import Pagination from '@/components/ui/Pagination';
-import BulkUploadModal from '@/components/ui/BulkUploadModal';
 import { FaRupeeSign } from "react-icons/fa";
 import Link from 'next/link';
 
@@ -234,7 +233,6 @@ export default function EmployeesPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [sortConfig, setSortConfig] = useState<{
   key: 'name' | 'joiningDate';
   direction: 'asc' | 'desc';
@@ -267,12 +265,6 @@ const [joiningDateMap, setJoiningDateMap] = useState<Record<string, number>>({})
       console.error('Error refreshing employees:', error);
       toast.error('Failed to refresh data');
     }
-  };
-
-  const handleBulkUploadSuccess = async () => {
-    // Refresh the employees list after successful bulk upload
-    await refetch();
-    setShowBulkUploadModal(false);
   };
 
   // Handle error state
@@ -505,12 +497,6 @@ useEffect(() => {
           backButton={{ href: '/dashboard' }}
           actionButtons={[
             {
-              label: 'Bulk Upload',
-              icon: <FiUpload />,
-              variant: 'primary' as const,
-              onClick: () => setShowBulkUploadModal(true)
-            },
-            {
               label: 'Create',
               href: '/employees/add',
               icon: <FiPlus />,
@@ -717,13 +703,6 @@ useEffect(() => {
           />
         )}
       </div>
-
-      {/* Bulk Upload Modal */}
-      <BulkUploadModal
-        isOpen={showBulkUploadModal}
-        onClose={() => setShowBulkUploadModal(false)}
-        onSuccess={handleBulkUploadSuccess}
-      />
     </DashboardLayout>
   );
 } 

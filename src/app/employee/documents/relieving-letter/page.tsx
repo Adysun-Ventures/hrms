@@ -11,6 +11,7 @@ import { getEmployeeSelfEmployment } from "@/utils/firebaseUtils";
 import { getEmployee } from "@/utils/documentFunctions";
 import { useAuth } from "@/context/AuthContext";
 import { offerLetterStyles } from "@/components/pdf/PDFStyles";
+import { formatDateToDayMonYear } from "@/utils/documentUtils";
 
 /* ---------------- TYPES ---------------- */
 interface Employee {
@@ -47,12 +48,8 @@ const COMPANY_DATA = {
 
 /* ---------------- HELPERS ---------------- */
 const formatDate = (d?: string): string => {
-  if (!d) return "";
-  return new Date(d).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  });
+  const formatted = formatDateToDayMonYear(d ?? null);
+  return formatted === "-" ? "" : formatted;
 };
 
 const toTitleCase = (str?: string): string =>

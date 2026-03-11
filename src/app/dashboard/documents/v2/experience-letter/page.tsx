@@ -11,6 +11,11 @@ export default function ExperienceLetterV2Page() {
       description="Generate and customize Experience letters with selectable text"
       backPath="/dashboard/documents/v2"
       backLabel="Back to Documents"
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Documents', href: '/dashboard/documents' },
+        { label: 'Experience Letter', isCurrent: true }
+      ]}
     />
   );
 } 

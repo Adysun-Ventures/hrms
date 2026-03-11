@@ -11,6 +11,11 @@ export default function OfferLetterPage() {
       description="Generate and customize offer letters for new employees"
       backPath="/dashboard/documents"
       backLabel="Back to Documents"
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Documents', href: '/dashboard/documents' },
+        { label: 'Offer Letter', isCurrent: true }
+      ]}
     />
   );
 } 

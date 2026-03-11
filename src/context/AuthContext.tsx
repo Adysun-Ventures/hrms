@@ -80,7 +80,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Restore sessions from localStorage on component mount
   useEffect(() => {
-    const restoreSessions = () => {
+    const restoreSessions = async () => {
       try {
         // Check for admin session
         const adminSessionId = localStorage.getItem('adminSessionId');
@@ -102,10 +102,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (employeeSessionId && employeeData) {
           console.log('🔍 Restoring employee session from localStorage');
           const employeeUser = JSON.parse(employeeData);
-          setCurrentEmployee(employeeUser);
-          setCurrentAdmin(null);
-          setCurrentUserData(employeeUser);
-          
+
+          // Security: if employee is inactive/resigned, do not restore session
+          // (status might have changed after last login)
+          try {
+            const latest = await checkUserByPhone(employeeUser.phone);
+            if (!latest || latest.userType !== 'employee' || latest.status !== 'active' || latest.is_resigned) {
+              localStorage.removeItem('employeeSessionId');
+              localStorage.removeItem('employeeData');
+              document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+            } else {
+              setCurrentEmployee(latest);
+              setCurrentAdmin(null);
+              setCurrentUserData(latest);
+            }
+          } catch (e) {
+            // If validation fails, clear session for safety
+            localStorage.removeItem('employeeSessionId');
+            localStorage.removeItem('employeeData');
+            document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          }
         }
       } catch (error) {
         console.error('Error restoring sessions:', error);

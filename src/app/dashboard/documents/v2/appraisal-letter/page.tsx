@@ -11,6 +11,11 @@ export default function AppraisalLetterV2Page() {
       description="Generate and customize appraisal letters with selectable text"
       backPath="/dashboard/documents/v2"
       backLabel="Back to Documents"
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Documents', href: '/dashboard/documents' },
+        { label: 'Increment Letter', isCurrent: true }
+      ]}
     />
   );
 } 

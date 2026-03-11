@@ -11,6 +11,7 @@ import { Employee, Employment } from '@/types';
 import { useAttendanceMarking } from '@/hooks/useAttendanceMarking';
 import { getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { toTitleCase } from '@/utils/stringUtils';
+import { formatDateToDayMonYear } from '@/utils/documentUtils';
 
 export default function EmployeeDashboardPage() {
   const { currentEmployee, currentUserData, logout } = useAuth();
@@ -239,7 +240,7 @@ export default function EmployeeDashboardPage() {
 
               {currentEmployment.joiningDate && (
                 <div>
-                  <p className="font-medium text-gray-900">{new Date(currentEmployment.joiningDate).toLocaleDateString()}</p>
+                  <p className="font-medium text-gray-900">{formatDateToDayMonYear(currentEmployment.joiningDate)}</p>
                   <p className="text-sm text-gray-600">Joining Date</p>
                 </div>
               )}

@@ -186,7 +186,7 @@ const [searchTerm, setSearchTerm] = useState("");
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="w-full p-4">
       <Toaster position="top-center" />
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">

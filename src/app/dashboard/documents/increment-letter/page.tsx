@@ -11,6 +11,11 @@ export default function IncrementLetterPage() {
       description="Generate and customize increment letters for salary revisions"
       backPath="/dashboard/documents"
       backLabel="Back to Documents"
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Documents', href: '/dashboard/documents' },
+        { label: 'Increment Letter', isCurrent: true }
+      ]}
     />
   );
 } 

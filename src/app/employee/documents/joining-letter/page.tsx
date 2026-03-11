@@ -7,6 +7,7 @@ import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import { getEmployeeSelf, getEmployeeSelfEmployment } from "@/utils/firebaseUtils";
 import { useAuth } from "@/context/AuthContext";
+import { formatDateToDayMonYear } from "@/utils/documentUtils";
 
 import {
   Document,
@@ -48,14 +49,10 @@ const COMPANY_DATA = {
 
 /* ---------------- HELPERS ---------------- */
 
-const formatDate = (d?: string) =>
-  d
-    ? new Date(d).toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric"
-      })
-    : "";
+const formatDate = (d?: string) => {
+  const formatted = formatDateToDayMonYear(d ?? null);
+  return formatted === "-" ? "" : formatted;
+};
 
     const Watermark = ({ logoSrc }: { logoSrc?: string }) => {
       if (!logoSrc) return null;

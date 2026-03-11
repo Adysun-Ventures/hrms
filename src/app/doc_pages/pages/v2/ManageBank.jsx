@@ -94,7 +94,7 @@ function ManageBankV2() {
   };
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="w-full p-4">
       <div className="mb-4">
         <Link href="/dashboard/documents" className="text-blue-600 hover:underline flex items-center gap-1">
           <FiArrowLeft size={16} /> Back to Documents

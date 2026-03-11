@@ -1278,7 +1278,7 @@ const BankStatement = () => {
   );
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="w-full p-4">
       <Toaster position="top-center" />
       <div className="mb-4">
         <Link href="/dashboard/documents" className="text-blue-600 hover:underline flex items-center gap-1">

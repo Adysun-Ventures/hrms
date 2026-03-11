@@ -11,6 +11,11 @@ export default function JoiningLetterV2() {
       description="Generate and customize Joining letters with selectable text"
       backPath="/dashboard/documents/v2"
       backLabel="Back to Documents"
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Documents', href: '/dashboard/documents' },
+        { label: 'Joining Letter', isCurrent: true }
+      ]}
     />
   );
 } 

@@ -11,6 +11,11 @@ export default function OfferLetterV2Page() {
       description="Generate and customize offer letters with selectable text"
       backPath="/dashboard/documents/v2"
       backLabel="Back to Documents"
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Documents', href: '/dashboard/documents' },
+        { label: 'Offer Letter', isCurrent: true }
+      ]}
     />
   );
 } 

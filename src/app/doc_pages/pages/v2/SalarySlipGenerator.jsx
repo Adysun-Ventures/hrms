@@ -4,6 +4,20 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { FiArrowLeft, FiDownload } from 'react-icons/fi';
 import { PDFViewer, PDFDownloadLink, Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
+import {
+  AlignmentType,
+  Document as DocxDocument,
+  BorderStyle,
+  ImageRun,
+  Packer,
+  Paragraph,
+  Table,
+  TableCell,
+  TableRow,
+  TextRun,
+  WidthType,
+} from 'docx';
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { CompanyHeader, Watermark } from '@/components/pdf/PDFComponents';
@@ -625,6 +639,7 @@ function SalarySlipGeneratorV2() {
   const [candidates, setCandidates] = useState([]);
   const [employments, setEmployments] = useState({});
   const [showPDF, setShowPDF] = useState(false);
+  const [showDocPreview, setShowDocPreview] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [employee, setEmployee] = useState(null);
   const [employment, setEmployment] = useState(null);
@@ -835,9 +850,315 @@ function SalarySlipGeneratorV2() {
   };
 
   const memoPDF = React.useMemo(()=> <SalarySlipPDF formData={formData}/>, [formData]);
-  const handleGenerate = ()=> setShowPDF(true);
+  const handleGenerate = ()=> {
+    setShowPDF(true);
+    setShowDocPreview(true);
+  };
+
+  const formatMoney2 = (n) => {
+    const num = Number(n || 0);
+    return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const fetchLogoArrayBuffer = async (src) => {
+    if (!src) return null;
+    try {
+      const res = await fetch(src);
+      if (!res.ok) return null;
+      return await res.arrayBuffer();
+    } catch {
+      return null;
+    }
+  };
+
+  const buildSalarySlipDocx = async (f) => {
+    const safe = (v) => (v === null || v === undefined || v === '' ? '-' : String(v));
+
+    const monthLabel = MONTH_NAMES[Number(f.month)] || '';
+    const title = `Salary Slip  ${monthLabel} ${safe(f.year)}`.trim();
+
+    const companyLine1 = safe(f.companyName) || DEFAULT_COMPANY_NAME;
+    const companyLine2 = `info@adysunventures.com | hr@adysunventures.com | www.AdysunVentures.com`;
+    const companyLine3 = `Adysun Ventures, WorkPlex, S no 47, near Bhapkar petrol pump`;
+    const companyLine4 = `Pune - Satara Rd, Bibwewadi, Pune, Maharashtra 411009`;
+
+    const logoBuf = await fetchLogoArrayBuffer(f.companyLogo);
+
+    const employeeName = safe(getEmployeeNameText(f.employeeName, f.employeeNameText));
+    const empCode = safe(f.employeeId);
+    const designation = safe(f.designation);
+    const department = safe(f.department);
+    const bankName = safe(f.bankName);
+    const ifsc = safe(f.ifscCode);
+    const accountNo = safe(f.accountNo);
+    const panNo = safe(f.panNumber);
+    const leaves = safe(f.leaves || 0);
+    const effectiveDays = `${safe(f.payableDays)} Days`;
+
+    const earningsRows = [
+      ['Basic', formatMoney2(f.basicSalary)],
+      ['HRA', formatMoney2(f.da)],
+      ['Conveyance Allowance', formatMoney2(f.conveyanceAllowance)],
+      ['Other Allowance', formatMoney2(f.otherAllowance)],
+    ];
+
+    const deductionsRows = [
+      ['PT', formatMoney2(f.professionalTax)],
+      ...(f.enablePF ? [['PF (Employee)', formatMoney2(f.pfEmployee)]] : []),
+      ['Leave Deduction', formatMoney2(f.leavesDeduction)],
+      ['Other Deductions', formatMoney2(f.otherDeductions)],
+    ];
+
+    const bordersBlack = {
+      top: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
+      bottom: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
+      left: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
+      right: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
+      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: '7A7A7A' },
+      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: '7A7A7A' },
+    };
+
+    const cellLabel = (text, opts = {}) =>
+      new TableCell({
+        ...opts,
+        children: [new Paragraph({ children: [new TextRun({ text, bold: true })] })],
+      });
+
+    const cellValue = (text, opts = {}) =>
+      new TableCell({
+        ...opts,
+        children: [new Paragraph(String(text))],
+      });
+
+    const makeDetailsTable = () => {
+      const rows = [];
+
+      const rowSpanValue = (label, value) =>
+        new TableRow({
+          children: [
+            cellLabel(label),
+            cellValue(value, { columnSpan: 3 }),
+          ],
+        });
+
+      rows.push(rowSpanValue('Employee Name', employeeName));
+      rows.push(rowSpanValue('Employee Code', empCode));
+      rows.push(rowSpanValue('Designation', designation));
+      rows.push(rowSpanValue('Department', department));
+      rows.push(
+        new TableRow({
+          children: [
+            cellLabel('Bank Name'),
+            cellValue(bankName),
+            cellLabel('IFSC'),
+            cellValue(ifsc),
+          ],
+        })
+      );
+      rows.push(rowSpanValue('Bank Account No', accountNo));
+      rows.push(rowSpanValue('Pan No', panNo));
+      rows.push(rowSpanValue('Leaves', leaves));
+      rows.push(rowSpanValue('Effective Work Days', effectiveDays));
+
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: bordersBlack,
+        rows,
+      });
+    };
+
+    const headerCell = (text, align = AlignmentType.LEFT) =>
+      new TableCell({
+        shading: { fill: 'EDEDED' },
+        children: [
+          new Paragraph({
+            alignment: align,
+            children: [new TextRun({ text, bold: true })],
+          }),
+        ],
+      });
+
+    const amountCell = (text, bold = false) =>
+      new TableCell({
+        children: [
+          new Paragraph({
+            alignment: AlignmentType.RIGHT,
+            children: [new TextRun({ text: String(text), bold })],
+          }),
+        ],
+      });
+
+    const textCell = (text, bold = false) =>
+      new TableCell({
+        children: [new Paragraph({ children: [new TextRun({ text: String(text), bold })] })],
+      });
+
+    const makeEarningsDeductionsTable = () => {
+      const max = Math.max(earningsRows.length, deductionsRows.length);
+      const rows = [];
+
+      rows.push(
+        new TableRow({
+          children: [
+            headerCell('Earnings (A)'),
+            headerCell('Amount', AlignmentType.RIGHT),
+            headerCell('Deductions (B)'),
+            headerCell('Amount', AlignmentType.RIGHT),
+          ],
+        })
+      );
+
+      for (let i = 0; i < max; i++) {
+        const e = earningsRows[i] || ['', ''];
+        const d = deductionsRows[i] || ['', ''];
+        rows.push(
+          new TableRow({
+            children: [
+              textCell(e[0]),
+              amountCell(e[1]),
+              textCell(d[0]),
+              amountCell(d[1]),
+            ],
+          })
+        );
+      }
+
+      rows.push(
+        new TableRow({
+          children: [
+            textCell('Gross Salary', true),
+            amountCell(formatMoney2(getTotalEarnings(f)), true),
+            textCell('Total Deductions', true),
+            amountCell(formatMoney2(getTotalDeductions(f)), true),
+          ],
+        })
+      );
+
+      return new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: bordersBlack,
+        rows,
+      });
+    };
+
+    const makeNetSalaryRow = () =>
+      new Table({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        borders: bordersBlack,
+        rows: [
+          new TableRow({
+            children: [
+              new TableCell({
+                shading: { fill: 'EDEDED' },
+                children: [new Paragraph({ children: [new TextRun({ text: 'Net Salary (A - B)', bold: true })] })],
+              }),
+              new TableCell({
+                shading: { fill: 'EDEDED' },
+                children: [
+                  new Paragraph({
+                    alignment: AlignmentType.RIGHT,
+                    children: [new TextRun({ text: formatMoney2(getNetSalary(f)), bold: true })],
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      });
+
+    return new DocxDocument({
+      sections: [
+        {
+          children: [
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              borders: {
+                top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+                bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+                left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+                right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+                insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+                insideVertical: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
+              },
+              rows: [
+                new TableRow({
+                  children: [
+                    new TableCell({
+                      width: { size: 75, type: WidthType.PERCENTAGE },
+                      children: [
+                        new Paragraph({
+                          children: [new TextRun({ text: companyLine1, bold: true })],
+                        }),
+                        new Paragraph(companyLine2),
+                        new Paragraph(companyLine3),
+                        new Paragraph(companyLine4),
+                      ],
+                    }),
+                    new TableCell({
+                      width: { size: 25, type: WidthType.PERCENTAGE },
+                      children: [
+                        new Paragraph({
+                          alignment: AlignmentType.RIGHT,
+                          children: logoBuf
+                            ? [
+                                new ImageRun({
+                                  data: logoBuf,
+                                  transformation: { width: 72, height: 72 },
+                                }),
+                              ]
+                            : [],
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: ' ', })],
+            }),
+            new Paragraph({
+              children: [new TextRun({ text: '________________________________________________________________________________', })],
+            }),
+            new Paragraph({ text: '' }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [new TextRun({ text: title, bold: true })],
+            }),
+            new Paragraph({ text: '' }),
+            makeDetailsTable(),
+            new Paragraph({ text: '' }),
+            makeEarningsDeductionsTable(),
+            new Paragraph({ text: '' }),
+            makeNetSalaryRow(),
+            new Paragraph({ text: '' }),
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({
+                  text: 'This document is digitally generated and does not require signature.',
+                  bold: true,
+                }),
+              ],
+            }),
+          ],
+        },
+      ],
+    });
+  };
+
+  const handleDownloadDocx = async () => {
+    try {
+      const doc = await buildSalarySlipDocx(formData);
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `SalarySlip_${formData.employeeNameText}_${formData.payDate}.docx`);
+    } catch (err) {
+      console.error('DOCX download error:', err);
+      toast.error('Failed to generate DOCX');
+    }
+  };
 return (
-  <div className="container mx-auto p-4">
+  <div className="w-full p-4">
     <Toaster position="top-center" />
 
     <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6">
@@ -1056,18 +1377,177 @@ return (
       <div className="bg-white rounded-lg shadow-lg p-4 mb-8 mt-6">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
-          <PDFDownloadLink
-            document={memoPDF}
-            fileName={`SalarySlip_${formData.employeeNameText}_${formData.payDate}.pdf`}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-          >
-            {({ loading }) => loading ? 'Loading...' : 'Download PDF'}
-          </PDFDownloadLink>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleDownloadDocx}
+              className="px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-800"
+            >
+              Download DOCX
+            </button>
+            <PDFDownloadLink
+              document={memoPDF}
+              fileName={`SalarySlip_${formData.employeeNameText}_${formData.payDate}.pdf`}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              {({ loading }) => loading ? 'Loading...' : 'Download PDF'}
+            </PDFDownloadLink>
+          </div>
         </div>
         <div className="border rounded-lg" style={{ height: '80vh' }}>
           <PDFViewer width="100%" height="100%">
             {memoPDF}
           </PDFViewer>
+        </div>
+      </div>
+    )}
+
+    {/* DOCX PREVIEW (HTML) */}
+    {showDocPreview && (
+      <div className="bg-white rounded-lg shadow-lg p-4 mb-8">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-gray-800">DOCX Preview</h3>
+          <button
+            type="button"
+            onClick={handleDownloadDocx}
+            className="px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-800"
+          >
+            Download DOCX
+          </button>
+        </div>
+
+        <div className="border rounded-lg p-6">
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="text-orange-600 text-2xl font-bold">ADYSUN VENTURES PVT. LTD.</div>
+              <div className="text-sm mt-1">info@adysunventures.com | hr@adysunventures.com | www.AdysunVentures.com</div>
+              <div className="text-sm">Adysun Ventures, WorkPlex, S no 47, near Bhapkar petrol pump</div>
+              <div className="text-sm">Pune - Satara Rd, Bibwewadi, Pune, Maharashtra 411009</div>
+            </div>
+            <div className="shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={formData.companyLogo} alt="Logo" className="w-20 h-20 object-contain" />
+            </div>
+          </div>
+
+          <div className="mt-4 border-t border-black" />
+
+          <div className="mt-4 text-center font-semibold">
+            Salary Slip&nbsp;&nbsp;{MONTH_NAMES[Number(formData.month)]} {formData.year}
+          </div>
+
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full border border-black text-sm">
+              <tbody>
+                <tr className="border-b border-black">
+                  <td className="w-[35%] font-semibold p-2 border-r border-black">Employee Name</td>
+                  <td className="p-2" colSpan={3}>{getEmployeeNameText(formData.employeeName, formData.employeeNameText) || '-'}</td>
+                </tr>
+                <tr className="border-b border-black">
+                  <td className="font-semibold p-2 border-r border-black">Employee Code</td>
+                  <td className="p-2" colSpan={3}>{formData.employeeId || '-'}</td>
+                </tr>
+                <tr className="border-b border-black">
+                  <td className="font-semibold p-2 border-r border-black">Designation</td>
+                  <td className="p-2" colSpan={3}>{formData.designation || '-'}</td>
+                </tr>
+                <tr className="border-b border-black">
+                  <td className="font-semibold p-2 border-r border-black">Department</td>
+                  <td className="p-2" colSpan={3}>{formData.department || '-'}</td>
+                </tr>
+                <tr className="border-b border-black">
+                  <td className="font-semibold p-2 border-r border-black">Bank Name</td>
+                  <td className="p-2">{formData.bankName || '-'}</td>
+                  <td className="font-semibold p-2 border-x border-black">IFSC</td>
+                  <td className="p-2">{formData.ifscCode || '-'}</td>
+                </tr>
+                <tr className="border-b border-black">
+                  <td className="font-semibold p-2 border-r border-black">Bank Account No</td>
+                  <td className="p-2" colSpan={3}>{formData.accountNo || '-'}</td>
+                </tr>
+                <tr className="border-b border-black">
+                  <td className="font-semibold p-2 border-r border-black">Pan No</td>
+                  <td className="p-2" colSpan={3}>{formData.panNumber || '-'}</td>
+                </tr>
+                <tr className="border-b border-black">
+                  <td className="font-semibold p-2 border-r border-black">Leaves</td>
+                  <td className="p-2" colSpan={3}>{formData.leaves || 0}</td>
+                </tr>
+                <tr>
+                  <td className="font-semibold p-2 border-r border-black">Effective Work Days</td>
+                  <td className="p-2" colSpan={3}>{formData.payableDays ? `${formData.payableDays} Days` : '-'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full border border-black text-sm">
+              <thead className="bg-gray-100">
+                <tr className="border-b border-black">
+                  <th className="p-2 text-left border-r border-black">Earnings</th>
+                  <th className="p-2 text-right border-r border-black">Amount (₹)</th>
+                  <th className="p-2 text-left border-r border-black">Deductions</th>
+                  <th className="p-2 text-right">Amount (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  const earn = [
+                    ['Basic', formatMoney2(formData.basicSalary || 0)],
+                    ['HRA', formatMoney2(formData.da || 0)],
+                    ['Conveyance Allowance', formatMoney2(formData.conveyanceAllowance || 0)],
+                    ['Other Allowance', formatMoney2(formData.otherAllowance || 0)],
+                  ];
+
+                  const ded = [
+                    ['PT', formatMoney2(formData.professionalTax || 0)],
+                    ...(formData.enablePF ? [['PF (Employee)', formatMoney2(formData.pfEmployee || 0)]] : []),
+                    ['Leave Deduction', formatMoney2(formData.leavesDeduction || 0)],
+                    ['Other Deductions', formatMoney2(formData.otherDeductions || 0)],
+                  ];
+
+                  const max = Math.max(earn.length, ded.length);
+                  const rows = [];
+                  for (let i = 0; i < max; i++) {
+                    const e = earn[i] || ['', ''];
+                    const d = ded[i] || ['', ''];
+                    rows.push(
+                      <tr key={i} className="border-b border-gray-300 last:border-b-0">
+                        <td className="p-2 border-r border-gray-300">{e[0]}</td>
+                        <td className="p-2 text-right border-r border-gray-300">{e[1]}</td>
+                        <td className="p-2 border-r border-gray-300">{d[0]}</td>
+                        <td className="p-2 text-right">{d[1]}</td>
+                      </tr>
+                    );
+                  }
+                  return rows;
+                })()}
+
+                <tr className="bg-gray-100 border-t border-black">
+                  <td className="p-2 font-semibold border-r border-black">Gross Salary</td>
+                  <td className="p-2 text-right font-semibold border-r border-black">{formatMoney2(getTotalEarnings(formData))}</td>
+                  <td className="p-2 font-semibold border-r border-black">Total Deductions</td>
+                  <td className="p-2 text-right font-semibold">{formatMoney2(getTotalDeductions(formData))}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full border border-black text-sm bg-gray-100">
+              <tbody>
+                <tr>
+                  <td className="p-2 font-semibold border-r border-black">Net Salary (A - B)</td>
+                  <td className="p-2 text-right font-semibold">{formatMoney2(getNetSalary(formData))}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-6 text-center font-semibold">
+            This document is digitally generated and does not require signature.
+          </div>
         </div>
       </div>
     )}

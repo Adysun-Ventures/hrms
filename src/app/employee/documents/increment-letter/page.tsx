@@ -24,6 +24,7 @@ import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import CommonIncrementLetterPDF from "@/components/components/docComponents/incrementLetter";
+import { formatDateToDayMonYear } from "@/utils/documentUtils";
 /* ---------------- TYPES ---------------- */
 interface Employee {
   id: string;
@@ -45,12 +46,10 @@ interface LetterData {
 }
 
 /* ---------------- HELPERS ---------------- */
-const formatDate = (d: string | Date) =>
-  new Date(d).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  });
+const formatDate = (d: string | Date) => {
+  const formatted = formatDateToDayMonYear(d ?? null);
+  return formatted === "-" ? "" : formatted;
+};
 const COMPANY_DATA = {
   name: 'ADYSUN VENTURES PVT. LTD.',
   logo: '/assets/adysunventures_logo.png',

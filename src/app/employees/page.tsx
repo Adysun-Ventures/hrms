@@ -7,7 +7,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { ActionButton } from '@/components/ui/ActionButton';
 import TableHeader from '@/components/ui/TableHeader';
-import { useEmployees, useDeleteEmployee } from '@/hooks/useEmployees';
+import { useEmployees, useDeleteEmployee, useUpdateEmployee } from '@/hooks/useEmployees';
 import { useEmployments, useEmploymentsByEmployee } from '@/hooks/useEmployments';
 import { useSalariesByEmployee } from '@/hooks/useSalaries';
 import Pagination from '@/components/ui/Pagination';
@@ -19,12 +19,7 @@ import Link from 'next/link';
 const EmploymentWorkingStatusBadge = ({ employeeId }: { employeeId: string }) => {
   const { data: employments = [] } = useEmploymentsByEmployee(employeeId);
   const employment = employments[0];
-
-  if (!employment) {
-    return <span className="text-gray-400">-</span>;
-  }
-
-  const isResigned = employment.isResignation === true;
+  const isResigned = employment?.isResignation === true;
 
   return (
     <span
@@ -86,17 +81,6 @@ const EmployeeIdDisplay = ({ employeeId }: { employeeId: string }) => {
   return <span>{employment.employmentId}</span>;
 };
 
-const formatDateIndia = (date: string | Date | null | undefined): string => {
-  if (!date) return '-';
-
-  return new Intl.DateTimeFormat('en-IN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  }).format(new Date(date));
-};
-
-
 // Component to display joining date from employment record
 const JoiningDateDisplay = ({ employeeId }: { employeeId: string }) => {
   const { data: employments = [] } = useEmploymentsByEmployee(employeeId);
@@ -112,7 +96,7 @@ const JoiningDateDisplay = ({ employeeId }: { employeeId: string }) => {
     );
   }
 
-  return <span>{formatDateIndia(employment.joiningDate)}</span>;
+  return <span>{formatDateToDayMonYear(employment.joiningDate)}</span>;
    // Debug log to check joining date value
   
 };
@@ -138,12 +122,20 @@ const CurrentPackageDisplay = ({ employeeId }: { employeeId: string }) => {
     return <span className="text-gray-400">-</span>;
   }
 
+  const lpa = Number(currentPackage) / 100000;
+  const lpaText = Number.isFinite(lpa)
+    ? (Number.isInteger(lpa) ? lpa.toFixed(0) : lpa.toFixed(1))
+    : '-';
+
   return (
     <span>
-      {new Intl.NumberFormat('en-IN', {
-        style: 'currency',
-        currency: 'INR'
-      }).format(currentPackage)}
+      {lpaText !== '-' ? (
+        <>
+          {lpaText} <span className="text-gray-500">LPA</span>
+        </>
+      ) : (
+        <span className="text-gray-400">-</span>
+      )}
     </span>
   );
 };
@@ -152,7 +144,12 @@ const CurrentPackageDisplay = ({ employeeId }: { employeeId: string }) => {
 const TotalSalaryCreditsDisplay = ({ employeeId }: { employeeId: string }) => {
   const { data: salaries = [] } = useSalariesByEmployee(employeeId);
 
-  return salaries.length
+  if (!salaries || salaries.length === 0) {
+    return <span className="text-gray-400">-</span>;
+  }
+
+  // Display total salary credits count for now
+  return <span>{salaries.length}</span>;
 
   // if (!salaries || salaries.length === 0) {
   //   return <span className="text-gray-400">-</span>;
@@ -226,10 +223,44 @@ const EmploymentActionButton = ({ employeeId }: { employeeId: string }) => {
   );
 };
 
+const EmployeeStatusToggle = ({
+  employeeId,
+  status,
+  onToggle,
+  isToggling,
+}: {
+  employeeId: string;
+  status?: string;
+  onToggle: (employeeId: string, nextStatus: 'active' | 'inactive') => void;
+  isToggling: boolean;
+}) => {
+  const normalized: 'active' | 'inactive' = status === 'inactive' ? 'inactive' : 'active';
+  const next: 'active' | 'inactive' = normalized === 'active' ? 'inactive' : 'active';
+
+  return (
+    <button
+      type="button"
+      onClick={() => onToggle(employeeId, next)}
+      disabled={isToggling}
+      className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full transition-opacity ${
+        isToggling ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90'
+      } ${
+        normalized === 'active'
+          ? 'bg-green-100 text-green-800'
+          : 'bg-gray-200 text-gray-800'
+      }`}
+      title={`Click to set ${next}`}
+    >
+      {normalized === 'active' ? 'Active' : 'Inactive'}
+    </button>
+  );
+};
+
 export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterValue, setFilterValue] = useState('all');
   const [employmentStatusFilter, setEmploymentStatusFilter] = useState('all');
+  const [employeeTypeFilter, setEmployeeTypeFilter] = useState<'all' | 'internal' | 'external'>('all');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -241,6 +272,7 @@ export default function EmployeesPage() {
   direction: 'asc'
 });
 const [joiningDateMap, setJoiningDateMap] = useState<Record<string, number>>({});
+const [employmentByEmployeeId, setEmploymentByEmployeeId] = useState<Record<string, any>>({});
 
 
 
@@ -255,6 +287,7 @@ const [joiningDateMap, setJoiningDateMap] = useState<Record<string, number>>({})
 
   // Use mutation for delete operation
   const deleteEmployeeMutation = useDeleteEmployee();
+  const updateEmployeeMutation = useUpdateEmployee();
 
   // Handle refresh with toast feedback
   const handleRefresh = async () => {
@@ -289,6 +322,17 @@ const [joiningDateMap, setJoiningDateMap] = useState<Record<string, number>>({})
     }
   };
 
+  const handleToggleStatus = async (employeeId: string, nextStatus: 'active' | 'inactive') => {
+    try {
+      toast.loading('Updating status...', { id: `status-${employeeId}` });
+      await updateEmployeeMutation.mutateAsync({ id: employeeId, data: { status: nextStatus } as any });
+      toast.success(`Status set to ${nextStatus}`, { id: `status-${employeeId}` });
+    } catch (error) {
+      console.error('Error updating employee status:', error);
+      toast.error('Failed to update status', { id: `status-${employeeId}` });
+    }
+  };
+
   const cancelDelete = () => {
     setDeleteConfirm(null);
   };
@@ -306,21 +350,62 @@ const { data: employments = [] } = useEmployments(); // all employments
 
 useEffect(() => {
   const map: Record<string, number> = {};
+  const byEmployee: Record<string, any> = {};
 
   employments.forEach(emp => {
     map[emp.employeeId] = new Date(emp.joiningDate || 0).getTime();
+    // keep latest record per employee (best-effort)
+    if (!byEmployee[emp.employeeId]) {
+      byEmployee[emp.employeeId] = emp;
+      return;
+    }
+    const prev = byEmployee[emp.employeeId];
+    const prevTs = new Date(prev.joiningDate || prev.startDate || 0).getTime();
+    const nextTs = new Date(emp.joiningDate || emp.startDate || 0).getTime();
+    if (nextTs >= prevTs) byEmployee[emp.employeeId] = emp;
   });
 
   setJoiningDateMap(map);
+  setEmploymentByEmployeeId(byEmployee);
 }, [employments]);
 
 
   const filteredEmployees = employees
     .filter(employee => {
-      const matchesSearch = 
-      employee.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.phone?.includes(searchTerm);
+      const q = searchTerm.trim().toLowerCase();
+      const emp = employmentByEmployeeId[employee.id];
+
+      const searchable = [
+        // employee core
+        employee.id,
+        employee.name,
+        employee.email,
+        employee.phone,
+        employee.status,
+        employee.employeeType,
+        employee.employmentStatus,
+        // employment related
+        emp?.employmentId,
+        emp?.joiningDate,
+        emp?.startDate,
+        emp?.jobTitle,
+        emp?.designation,
+        emp?.department,
+        emp?.location,
+        emp?.panNumber,
+        emp?.bankName,
+        emp?.accountNo,
+        emp?.ifscCode,
+        emp?.salary,
+        emp?.ctc,
+        emp?.incrementedCtc,
+        emp?.joiningCtc,
+      ]
+        .filter((v) => v !== null && v !== undefined && v !== '')
+        .join(' ')
+        .toLowerCase();
+
+      const matchesSearch = q.length === 0 ? true : searchable.includes(q);
       
       const matchesStatusFilter = 
         filterValue === 'all' || 
@@ -331,8 +416,12 @@ useEffect(() => {
         employmentStatusFilter === 'all' ||
         (employmentStatusFilter === 'working' && employee.employmentStatus === 'working') ||
         (employmentStatusFilter === 'resigned' && employee.employmentStatus === 'resigned');
+
+      const normalizedEmployeeType = (employee.employeeType || 'internal').toLowerCase();
+      const matchesEmployeeTypeFilter =
+        employeeTypeFilter === 'all' || normalizedEmployeeType === employeeTypeFilter;
       
-      return matchesSearch && matchesStatusFilter && matchesEmploymentStatusFilter;
+      return matchesSearch && matchesStatusFilter && matchesEmploymentStatusFilter && matchesEmployeeTypeFilter;
     })
     .sort((a, b) => {
   if (sortConfig.key === 'name') {
@@ -477,6 +566,7 @@ useEffect(() => {
           searchAriaLabel="Search employees"
           onRefresh={handleRefresh}
           isRefreshing={false} // Tanstack Query handles refreshing state
+          showSearch={true}
           showFilter={true}
           filterValue={filterValue}
           onFilterChange={setFilterValue}
@@ -494,6 +584,14 @@ useEffect(() => {
             { value: 'resigned', label: 'Resigned' }
           ]}
           secondFilterLabel="Employment Status"
+          showCustomFilters={true}
+          technologyFilterValue={employeeTypeFilter}
+          onTechnologyFilterChange={(v) => setEmployeeTypeFilter(v as any)}
+          technologyFilterOptions={[
+            { value: 'all', label: 'All Types' },
+            { value: 'internal', label: 'Internal' },
+            { value: 'external', label: 'External' }
+          ]}
           backButton={{ href: '/dashboard' }}
           actionButtons={[
             {
@@ -612,7 +710,7 @@ useEffect(() => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        <CurrentPackageDisplay employeeId={employee.id} /> LPA
+                        <CurrentPackageDisplay employeeId={employee.id} />
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -621,8 +719,13 @@ useEffect(() => {
                       </div>
                     </td>
                    <td className="px-6 py-4 whitespace-nowrap text-center">
-  <EmploymentStatusBadge employeeId={employee.id} />
-</td>
+                      <EmployeeStatusToggle
+                        employeeId={employee.id}
+                        status={(employee as any).status}
+                        onToggle={handleToggleStatus}
+                        isToggling={updateEmployeeMutation.isPending}
+                      />
+                    </td>
 
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <span

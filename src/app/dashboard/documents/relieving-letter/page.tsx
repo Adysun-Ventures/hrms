@@ -11,6 +11,11 @@ export default function RelievingLetterPage() {
       description="Generate and customize relieving letters for exiting employees"
       backPath="/dashboard/documents"
       backLabel="Back to Documents"
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Documents', href: '/dashboard/documents' },
+        { label: 'Relieving Letter', isCurrent: true }
+      ]}
     />
   );
 } 

@@ -22,6 +22,7 @@ import { offerLetterStyles } from '@/components/pdf/PDFStyles';
 import GlobalPDFHeader from '@/components/components/docComponents/docHeader';
 import GlobalPDFFooter from '@/components/components/docComponents/docFooter';
 import  {Style } from '@react-pdf/types';
+import { formatDateToDayMonYear } from '@/utils/documentUtils';
 
 /* ===================== TYPES ===================== */
 interface Employee {
@@ -113,14 +114,8 @@ const Watermark = ({ logoSrc }: { logoSrc?: string }) => {
 };
 
 const formatDate = (date?: string | number | Date): string => {
-  if (!date) return '';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
+  const formatted = formatDateToDayMonYear(date ?? null);
+  return formatted === '-' ? '' : formatted;
 };
 
 const monthly = (n: number): number => Math.round(n / 12);

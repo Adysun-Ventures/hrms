@@ -160,7 +160,7 @@ export default function SalaryViewPage({ params }: PageParams) {
               </div>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">₹{salary?.leavesCount?.toLocaleString() || '0'}</p>
+                <p className="text-lg font-medium text-gray-900">{salary?.leavesCount?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">Leaves Count</p>
               </div>
 

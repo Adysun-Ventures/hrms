@@ -128,7 +128,7 @@ export default function DashboardPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-8 gap-2">
           {cards.map((card) => (
             <Link
               href={card.link}
@@ -149,7 +149,7 @@ export default function DashboardPage() {
 
       <div className="mt-12">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           <Link
             href="/employees/add"
             className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"

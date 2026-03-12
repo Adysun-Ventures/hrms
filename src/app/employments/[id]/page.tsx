@@ -315,6 +315,28 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
         />
 
         <div className="px-6 pb-6">
+          {/* Basic Information */}
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-lg font-medium text-gray-900">{employee?.name || '-'}</p>
+                <p className="text-sm text-gray-500">Employee Name</p>
+              </div>
+              <div>
+                <p className="text-lg font-medium text-gray-900">
+                  {employment.joiningDate
+                    ? formatDateToDayMonYear(employment.joiningDate)
+                    : employment.startDate
+                      ? formatDateToDayMonYear(employment.startDate)
+                      : '-'}
+                </p>
+                <p className="text-sm text-gray-500">Start Date</p>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-gray-200 my-2" />
+
           {/* Job Details - MOVED TO TOP */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -379,6 +401,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
             
           </div>
+          <div className="border-t border-gray-200 my-2" />
 
           {/* Employment Information Section */}
           <div className="mb-6">
@@ -432,6 +455,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               
             </div>
           </div>
+          <div className="border-t border-gray-200 my-2" />
           
 
           
@@ -478,6 +502,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
       </div>
     </div>
   </div>
+  <div className="border-t border-gray-200 my-2" />
 
 
 
@@ -552,7 +577,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               );
             })()}
           </div>
-
+          <div className="border-t border-gray-200 my-2" />
          {/* Bank Details Section - SAME STYLE AS OTHER CARDS */}
 <div className="mb-6">
   <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -595,7 +620,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
   </div>
 </div>
-
+<div className="border-t border-gray-200 my-2" />
 
           {/* Salary Information */}
           <div className="mb-6">

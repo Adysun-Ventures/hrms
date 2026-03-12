@@ -297,36 +297,19 @@ export default function EmployeeViewPage({ params }: PageParams) {
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <FiUser className="mr-2" /> Personal Details
             </h2>
-        
+
+            {/* 1. Basic Information */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Basic Information */}
               <div>
                 <p className="text-lg font-medium text-gray-900">{employee.name || '-'}</p>
                 <p className="text-sm text-gray-500">Full Name</p>
               </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employee.employeeId || '-'}</p>
-                <p className="text-sm text-gray-500">Employee ID</p>
-              </div>
-              
+
               <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employee.dateOfBirth ? formatDateToDayMonYear(employee.dateOfBirth) : '-'}
                 </p>
                 <p className="text-sm text-gray-500">Date of Birth</p>
-              </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">
-                  {employee.joinDate ? formatDateToDayMonYear(employee.joinDate) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Join Date</p>
-              </div>
-
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employee.homeTown || '-'}</p>
-                <p className="text-sm text-gray-500">Home Town</p>
               </div>
 
               <div>
@@ -341,9 +324,12 @@ export default function EmployeeViewPage({ params }: PageParams) {
                 </span>
                 <p className="text-sm text-gray-500 mt-2">Status</p>
               </div>
-              
-              
-              
+
+              <div>
+                <p className="text-lg font-medium text-gray-900">{employee.homeTown || '-'}</p>
+                <p className="text-sm text-gray-500">Home Town</p>
+              </div>
+
               <div>
                 <span
                   className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -356,7 +342,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
                 </span>
                 <p className="text-sm text-gray-500 mt-2">Employee Type</p>
               </div>
-              
+
               <div>
                 {employee.employmentStatus ? (
                   <span
@@ -373,62 +359,61 @@ export default function EmployeeViewPage({ params }: PageParams) {
                 )}
                 <p className="text-sm text-gray-500 mt-2">Employment Status</p>
               </div>
-              
-              {employee.employmentStatus === 'resigned' && employee.resignedDate && (
-                <div>
-                  <p className="text-lg font-medium text-gray-900">
-                    {formatDateToDayMonYear(employee.resignedDate)}
-                  </p>
-                  <p className="text-sm text-gray-500">Resigned Date</p>
-                </div>
-              )}
-              
-              {employee.employmentStatus === 'resigned' && employee.lastWorkingDay && (
-                <div>
-                  <p className="text-lg font-medium text-gray-900">
-                    {formatDateToDayMonYear(employee.lastWorkingDay)}
-                  </p>
-                  <p className="text-sm text-gray-500">Last Working Day</p>
-                </div>
-              )}
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employee.email || '-'}</p>
-                <p className="text-sm text-gray-500">Email</p>
-              </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employee.phone || '-'}</p>
-                <p className="text-sm text-gray-500">Phone</p>
-              </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employee.position || '-'}</p>
-                <p className="text-sm text-gray-500">Position</p>
-              </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employee.department || '-'}</p>
-                <p className="text-sm text-gray-500">Department</p>
-              </div>
             </div>
           </div>
+          {/* Gray divider after Basic Information */}
+          <div className="border-t border-gray-200 my-2" />
 
-          {/* Contact Information Section */}
+          {/* 2. Contact Information Section */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
+                <p className="text-lg font-medium text-gray-900">{employee.phone || '-'}</p>
+                <p className="text-sm text-gray-500">Mobile No.</p>
+              </div>
+
+              <div>
+                <p className="text-lg font-medium text-gray-900">{employee.email || '-'}</p>
+                <p className="text-sm text-gray-500">Email</p>
+              </div>
+
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employee.currentAddress || '-'}</p>
                 <p className="text-sm text-gray-500">Current Address</p>
               </div>
-              
+
               <div>
                 <p className="text-lg font-medium text-gray-900">{employee.permanentAddress || '-'}</p>
                 <p className="text-sm text-gray-500">Permanent Address</p>
               </div>
             </div>
           </div>
+          {/* Gray divider after Contact Information */}
+          <div className="border-t border-gray-200 my-2" />
+
+          {/* 3. Identification Document Section */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4">Identification Documents</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <p className="text-lg font-medium text-gray-900">{employee.aadharCard || '-'}</p>
+                <p className="text-sm text-gray-500">Aadhar Card</p>
+              </div>
+
+              <div>
+                <p className="text-lg font-medium text-gray-900">{employee.drivingLicense || '-'}</p>
+                <p className="text-sm text-gray-500">Driving License</p>
+              </div>
+
+              <div>
+                <p className="text-lg font-medium text-gray-900">{(employee as any).voterID || '-'}</p>
+                <p className="text-sm text-gray-500">Voter ID</p>
+              </div>
+            </div>
+          </div>
+          {/* Gray divider after Identification Documents */}
+          <div className="border-t border-gray-200 my-2" />
 
           {/* Educational Details Section */}
           <div className="mb-6">
@@ -489,7 +474,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
             {employee.secondaryEducation && employee.secondaryEducation.length > 0 ? (
               <div className="space-y-4">
                 {employee.secondaryEducation.map((entry, index) => (
-                  <div key={entry.id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={entry.id}>
                     {/* Type Badge */}
                     <div className="flex items-center gap-2 mb-3">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -645,6 +630,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
               </div>
             )}
           </div>
+          <div className="border-t border-gray-200 my-2" />
 
           {/* Audit Trail Section */}
           <div className="mb-6">

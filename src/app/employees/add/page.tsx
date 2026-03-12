@@ -201,7 +201,13 @@ export default function AddEmployeePage() {
   }, [sameAsCurrentAddress, currentAddressValue, setValue]);
 
   return (
-    <DashboardLayout>
+    <DashboardLayout
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Employees', href: '/employees' },
+        { label: 'Add Employee', isCurrent: true },
+      ]}
+    >
       <Toaster position="top-center" />
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -348,14 +354,46 @@ export default function AddEmployeePage() {
                     <p className="mt-1 text-sm text-red-600">{errors.employeeType.message}</p>
                   )}
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Employee Status
+                  </label>
+                  <select
+                    {...register('employmentStatus')}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  >
+                    <option value="">Select status</option>
+                    <option value="working">Working</option>
+                    <option value="resigned">Resigned</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    {...register('status')}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  >
+                    <option value="">Select status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
               </div>
             </div>
 
             {/* Contact Information */}
             <div className="bg-white p-4 rounded-lg mb-4">
-              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Contact Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-3">
+              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">
+                Contact Information
+              </h3>
+
+              {/* Row 1: Phone & Email - 3-column grid on desktop */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span> Mobile No.
                   </label>
@@ -371,12 +409,10 @@ export default function AddEmployeePage() {
                     })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
-                  {errors.phone && (
-                    <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-                  )}
+                  {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
                 </div>
 
-                <div className="md:col-span-3">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email ID
                   </label>
@@ -391,16 +427,13 @@ export default function AddEmployeePage() {
                     })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                  )}
+                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
                 </div>
+              </div>
 
-                
-
-                
-
-                <div className="md:col-span-6">
+              {/* Row 2: Addresses - leave as 2 columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Current Address
                   </label>
@@ -415,7 +448,7 @@ export default function AddEmployeePage() {
                   )}
                 </div>
 
-                <div className="md:col-span-6">
+                <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-sm font-medium text-gray-700">
                       Permanent Address
@@ -441,7 +474,9 @@ export default function AddEmployeePage() {
                     type="text"
                     placeholder="Enter permanent address (if different from current)"
                     {...register('permanentAddress')}
-                    className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black ${sameAsCurrentAddress ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black ${
+                      sameAsCurrentAddress ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
                     readOnly={sameAsCurrentAddress}
                     disabled={sameAsCurrentAddress}
                   />

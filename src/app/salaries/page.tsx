@@ -24,6 +24,19 @@ import GlobalPDFHeader from '@/components/components/docComponents/docHeader';
 import GlobalPDFFooter from '@/components/components/docComponents/docFooter';
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/firebase/config";
+import { saveAs } from "file-saver";
+import {
+  Document as DocxDocument,
+  Packer as DocxPacker,
+  Paragraph as DocxParagraph,
+  TextRun as DocxTextRun,
+  Table as DocxTable,
+  TableRow as DocxTableRow,
+  TableCell as DocxTableCell,
+  AlignmentType as DocxAlignmentType,
+  WidthType as DocxWidthType,
+  BorderStyle as DocxBorderStyle,
+} from "docx";
 
 
 
@@ -362,12 +375,249 @@ const monthName = getMonthName(f.month);
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-   
-a.download = `Salary-${safeName}-${monthName}-${f.year}.pdf`;
+    a.download = `Salary-${safeName}-${monthName}-${f.year}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
 
     toast.success("PDF Downloaded");
+
+    // ===== DOCX (Salary Slip) =====
+    try {
+      const docxSections: DocxParagraph[] | (DocxParagraph | DocxTable)[] = [
+        new DocxParagraph({
+          children: [
+            new DocxTextRun({
+              text: `Salary Slip - ${monthName} ${f.year}`,
+              bold: true,
+            }),
+          ],
+        }),
+        new DocxParagraph({}),
+        new DocxTable({
+          width: { size: 100, type: DocxWidthType.PERCENTAGE },
+          borders: {
+            top: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            bottom: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            left: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            right: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            insideHorizontal: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
+            insideVertical: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
+          },
+          rows: [
+            ...[
+              ["Employee Name", employeeName],
+              ["Employee ID", f.employeeId],
+              ["Designation", f.jobTitle || "-"],
+              ["Bank Name", f.bankName || "-"],
+              ["Account No", f.accountNo || "-"],
+              ["IFSC Code", f.ifscCode || "-"],
+              ["Pan Number", f.panNumber || "-"],
+              ["Leaves", String(f.leavesCount ?? 0)],
+              ["Work Days", String(f.workDays ?? 0)],
+            ].map(
+              ([label, value]) =>
+                new DocxTableRow({
+                  children: [
+                    new DocxTableCell({
+                      children: [new DocxParagraph({ children: [new DocxTextRun({ text: label, bold: true })] })],
+                    }),
+                    new DocxTableCell({
+                      children: [new DocxParagraph({ text: value || "-" })],
+                    }),
+                  ],
+                })
+            ),
+          ],
+        }),
+        new DocxParagraph({}),
+        new DocxTable({
+          width: { size: 100, type: DocxWidthType.PERCENTAGE },
+          borders: {
+            top: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            bottom: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            left: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            right: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            insideHorizontal: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
+            insideVertical: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
+          },
+          rows: [
+            new DocxTableRow({
+              children: [
+                new DocxTableCell({
+                  children: [new DocxParagraph({ children: [new DocxTextRun({ text: "Earnings (A)", bold: true })] })],
+                }),
+                new DocxTableCell({
+                  children: [
+                    new DocxParagraph({
+                      alignment: DocxAlignmentType.RIGHT,
+                      children: [new DocxTextRun({ text: "Amount", bold: true })],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            ...earningsData.map(
+              (e) =>
+                new DocxTableRow({
+                  children: [
+                    new DocxTableCell({
+                      children: [new DocxParagraph({ text: e.label })],
+                    }),
+                    new DocxTableCell({
+                      children: [
+                        new DocxParagraph({
+                          alignment: DocxAlignmentType.RIGHT,
+                          text: String(e.amount ?? 0),
+                        }),
+                      ],
+                    }),
+                  ],
+                })
+            ),
+            new DocxTableRow({
+              children: [
+                new DocxTableCell({
+                  children: [new DocxParagraph({ children: [new DocxTextRun({ text: "Gross Salary", bold: true })] })],
+                }),
+                new DocxTableCell({
+                  children: [
+                    new DocxParagraph({
+                      alignment: DocxAlignmentType.RIGHT,
+                      children: [
+                        new DocxTextRun({
+                          text: String(f.grossSalary || f.totalSalary || 0),
+                          bold: true,
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+        new DocxParagraph({}),
+        new DocxTable({
+          width: { size: 100, type: DocxWidthType.PERCENTAGE },
+          borders: {
+            top: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            bottom: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            left: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            right: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            insideHorizontal: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
+            insideVertical: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
+          },
+          rows: [
+            new DocxTableRow({
+              children: [
+                new DocxTableCell({
+                  children: [new DocxParagraph({ children: [new DocxTextRun({ text: "Deductions (B)", bold: true })] })],
+                }),
+                new DocxTableCell({
+                  children: [
+                    new DocxParagraph({
+                      alignment: DocxAlignmentType.RIGHT,
+                      children: [new DocxTextRun({ text: "Amount", bold: true })],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+            ...deductionsData.map(
+              (d) =>
+                new DocxTableRow({
+                  children: [
+                    new DocxTableCell({
+                      children: [new DocxParagraph({ text: d.label })],
+                    }),
+                    new DocxTableCell({
+                      children: [
+                        new DocxParagraph({
+                          alignment: DocxAlignmentType.RIGHT,
+                          text: String(d.amount ?? 0),
+                        }),
+                      ],
+                    }),
+                  ],
+                })
+            ),
+            new DocxTableRow({
+              children: [
+                new DocxTableCell({
+                  children: [
+                    new DocxParagraph({ children: [new DocxTextRun({ text: "Total Deductions", bold: true })] }),
+                  ],
+                }),
+                new DocxTableCell({
+                  children: [
+                    new DocxParagraph({
+                      alignment: DocxAlignmentType.RIGHT,
+                      children: [
+                        new DocxTextRun({
+                          text: String(f.totalDeduction || 0),
+                          bold: true,
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+        new DocxParagraph({}),
+        new DocxTable({
+          width: { size: 100, type: DocxWidthType.PERCENTAGE },
+          borders: {
+            top: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            bottom: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            left: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            right: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
+            insideHorizontal: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
+            insideVertical: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
+          },
+          rows: [
+            new DocxTableRow({
+              children: [
+                new DocxTableCell({
+                  children: [
+                    new DocxParagraph({ children: [new DocxTextRun({ text: "Net Salary (A - B)", bold: true })] }),
+                  ],
+                }),
+                new DocxTableCell({
+                  children: [
+                    new DocxParagraph({
+                      alignment: DocxAlignmentType.RIGHT,
+                      children: [
+                        new DocxTextRun({
+                          text: String(f.netSalary || f.inhandSalary || 0),
+                          bold: true,
+                        }),
+                      ],
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+      ];
+
+      const docx = new DocxDocument({
+        sections: [
+          {
+            properties: {},
+            children: docxSections,
+          },
+        ],
+      });
+
+      const docxBlob = await DocxPacker.toBlob(docx);
+      saveAs(docxBlob, `Salary-${safeName}-${monthName}-${f.year}.docx`);
+      toast.success("DOCX Downloaded");
+    } catch (e) {
+      console.error("DOCX generation failed:", e);
+    }
 
   } catch (error) {
     console.error(error);

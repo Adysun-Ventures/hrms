@@ -271,7 +271,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Employees', href: '/employees' },
           { label: employee.name, href: `/employees/${employment.employeeId}` },
-          { label: employment.jobTitle || 'Employment Details', isCurrent: true }
+          { label: 'Employment', isCurrent: true }
         ] : [
           { label: 'Dashboard', href: '/dashboard' },
           { label: 'Employments', href: '/employments' },
@@ -302,64 +302,17 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             ...(hasSalaries ? [{
               label: 'View Salaries',
               icon: <FaRupeeSign />,
-              variant: 'orange' as const,
-              href: `/salaries?employeeId=${employment?.employeeId}`
+              variant: 'purple' as const,
+              href: `/salaries?employeeId=${employment?.employeeId}&from=employment`
             }] : []),
             {
-              label: 'Edit',
+              label: 'Edit Employment',
               icon: <FiEdit />,
               variant: 'orange' as const,
               href: `/employments/${id}/edit`
             }
           ]}
         />
-
-        {employee && (
-          <div className="px-6 pb-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {/* Employee Information Card */}
-              <Link
-                href={`/employees/${employment.employeeId}`}
-                className="bg-white p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow duration-200 cursor-pointer block"
-              >
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-lg font-semibold text-gray-800 flex items-center">
-                    <FiUser className="mr-2" /> Employee Information
-                  </h2>
-                </div>
-
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 mr-4">
-                    {employee.imageUrl ? (
-                      <img
-                        src={employee.imageUrl}
-                        alt={employee.name}
-                        className="h-16 w-16 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center hidden sm:flex">
-                        <span className="text-xl font-medium text-gray-600">
-                          {employee.name.charAt(0)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-medium text-gray-900">{employee.name}</h3>
-                    <p className="text-sm text-gray-600">{employee.email}</p>
-                    <p className="text-sm text-gray-600">{employee.phone}</p>
-                    <p className="text-sm text-gray-600">{employment.jobTitle || employee.position}</p>
-                    <p className="text-sm text-gray-600">{employment.department || employee.department}</p>
-                  </div>
-                </div>
-              </Link>
-
-            </div>
-
-           
-          </div>
-        )}
 
         <div className="px-6 pb-6">
           {/* Job Details - MOVED TO TOP */}
@@ -369,24 +322,24 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.jobTitle || '-'}</p>
                 <p className="text-sm text-gray-500">Job Title</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.department || '-'}</p>
                 <p className="text-sm text-gray-500">Department</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.location || '-'}</p>
                 <p className="text-sm text-gray-500">Location</p>
               </div>
 
               
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900 capitalize">
                   {employment.employmentType ? (
                     employment.employmentType.includes('-') ?
@@ -405,12 +358,12 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Employment Type</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.workSchedule || '-'}</p>
                 <p className="text-sm text-gray-500">Work Mode</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employment.joiningDate
                     ? formatDateToDayMonYear(employment.joiningDate)
@@ -434,12 +387,12 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.employmentId || '-'}</p>
                 <p className="text-sm text-gray-500">Employment ID</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employment.joiningDate
                     ? formatDateToDayMonYear(employment.joiningDate)
@@ -450,7 +403,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Joining Date</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employment.joiningCtc
                     ? formatCurrency(employment.joiningCtc)
@@ -461,7 +414,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Joining CTC</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.inHandCtc ? formatCurrency(employment.inHandCtc) : '-'}</p>
                 <p className="text-sm text-gray-500">In-hand CTC</p>
               </div>
@@ -488,7 +441,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
     </h2>
 
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div className="bg-white rounded-lg shadow p-5">
+      <div>
         <p className="text-lg font-medium text-gray-900">
           {employment.resignationDate
             ? formatDateToDayMonYear(employment.resignationDate)
@@ -497,7 +450,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
         <p className="text-sm text-gray-500">Resignation Date</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-5">
+      <div>
         <p className="text-lg font-medium text-gray-900">
           {employment.lastSalaryDate
             ? formatDateToDayMonYear(employment.lastSalaryDate)
@@ -506,7 +459,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
         <p className="text-sm text-gray-500">Last Salary Date</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-5">
+      <div>
         <p className="text-lg font-medium text-gray-900">
           {employment.lastDrawnSalary
             ? formatCurrency(employment.lastDrawnSalary)
@@ -515,7 +468,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
         <p className="text-sm text-gray-500">Last Drawn Salary</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-5">
+      <div>
         <p className="text-lg font-medium text-gray-900">
           {employment.lastWorkingDate
             ? formatDateToDayMonYear(employment.lastWorkingDate)
@@ -534,35 +487,70 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               <FiTrendingUp className="mr-2" />Increment Details
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-5">
-                <p className="text-lg font-medium text-gray-900">
-                  {employment.incrementDate ? formatDateToDayMonYear(employment.incrementDate) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Increment Date</p>
-              </div>
+            {(() => {
+              const increments =
+                employment.increments && employment.increments.length > 0
+                  ? employment.increments
+                  : (employment.incrementDate ||
+                     employment.newSalary ||
+                     employment.incrementedCtc ||
+                     employment.incrementedInHandCtc)
+                  ? [
+                      {
+                        incrementDate: employment.incrementDate,
+                        newSalary: employment.newSalary,
+                        incrementedCtc: employment.incrementedCtc,
+                        incrementedInHandCtc: employment.incrementedInHandCtc,
+                      },
+                    ]
+                  : [];
 
-              <div className="bg-white rounded-lg shadow p-5">
-                <p className="text-lg font-medium text-gray-900">
-                  {employment.newSalary ? formatCurrency(employment.newSalary) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Incremented Salary</p>
-              </div>
+              if (increments.length === 0) {
+                return (
+                  <div>
+                    <p className="text-sm text-gray-500">No increment records available.</p>
+                  </div>
+                );
+              }
 
-              <div className="bg-white rounded-lg shadow p-5">
-                <p className="text-lg font-medium text-gray-900">
-                  {employment.incrementedCtc ? formatCurrency(employment.incrementedCtc) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Incremented CTC</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-5">
-                <p className="text-lg font-medium text-gray-900">
-                  {employment.incrementedInHandCtc ? formatCurrency(employment.incrementedInHandCtc) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Incremented In-hand CTC</p>
-              </div>
-            </div>
+              return (
+                <div className="space-y-4">
+                  {increments.map((inc, index) => (
+                    <div key={inc.id || index}>
+                      <p className="text-sm font-semibold text-gray-500 mb-2">
+                        Increment {index + 1}
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Increment Date</p>
+                          <p className="text-base font-medium text-gray-900">
+                            {inc.incrementDate ? formatDateToDayMonYear(inc.incrementDate) : '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Incremented Salary</p>
+                          <p className="text-base font-medium text-gray-900">
+                            {inc.newSalary ? formatCurrency(inc.newSalary) : '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Incremented CTC</p>
+                          <p className="text-base font-medium text-gray-900">
+                            {inc.incrementedCtc ? formatCurrency(inc.incrementedCtc) : '-'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-500 mb-1">Incremented In-hand CTC</p>
+                          <p className="text-base font-medium text-gray-900">
+                            {inc.incrementedInHandCtc ? formatCurrency(inc.incrementedInHandCtc) : '-'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
          {/* Bank Details Section - SAME STYLE AS OTHER CARDS */}
@@ -574,7 +562,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
     {/* Bank Name */}
-    <div className="bg-white rounded-lg shadow p-5">
+    <div>
       <p className="text-lg font-medium text-gray-900">
         {employment.bankName || '-'}
       </p>
@@ -582,7 +570,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
     </div>
 
     {/* Account Number */}
-    <div className="bg-white rounded-lg shadow p-5">
+    <div>
       <p className="text-lg font-medium text-gray-900">
         {employment.accountNo || '-'}
       </p>
@@ -590,7 +578,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
     </div>
 
     {/* IFSC */}
-    <div className="bg-white rounded-lg shadow p-5">
+    <div>
       <p className="text-lg font-medium text-gray-900">
         {employment.ifscCode || '-'}
       </p>
@@ -598,7 +586,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
     </div>
 
     {/* PAN */}
-    <div className="bg-white rounded-lg shadow p-5">
+    <div>
       <p className="text-lg font-medium text-gray-900">
         {employment.panNumber || '-'}
       </p>
@@ -617,12 +605,12 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.salary ? formatCurrency(employment.salary) : '-'}</p>
                 <p className="text-sm text-gray-500">Salary per annum</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employment.salaryPerMonth
                     ? formatCurrency(employment.salaryPerMonth)
@@ -633,23 +621,23 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Salary per month</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.basic ? formatCurrency(employment.basic) : '-'}</p>
                 <p className="text-sm text-gray-500">Basic</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.da ? formatCurrency(employment.da) : '-'}</p>
                 <p className="text-sm text-gray-500">DA (Dearness Allowance)</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.hra ? formatCurrency(employment.hra) : '-'}</p>
                 <p className="text-sm text-gray-500">HRA (House Rent Allowance)</p>
               </div>
 
               {(employment.pf && employment.pf > 0) && (
-                <div className="bg-white rounded-lg shadow p-5">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{formatCurrency(employment.pf)}</p>
                   <p className="text-sm text-gray-500">PF (Provident Fund)</p>
                 </div>
@@ -664,32 +652,32 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
               
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.totalLeaves || '-'} {employment.totalLeaves ? 'days/year' : ''}</p>
                 <p className="text-sm text-gray-500">Total Leaves</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.salaryCreditDate || '-'}</p>
                 <p className="text-sm text-gray-500">Salary Credit Date</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.payableDays || '-'}</p>
                 <p className="text-sm text-gray-500">Payable Days</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900 capitalize">{employment.paymentMode || '-'}</p>
                 <p className="text-sm text-gray-500">Payment Mode</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.additionalAllowance ? formatCurrency(employment.additionalAllowance) : '-'}</p>
                 <p className="text-sm text-gray-500">Additional Allowance</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-5">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.specialAllowance ? formatCurrency(employment.specialAllowance) : '-'}</p>
                 <p className="text-sm text-gray-500">Special Allowance</p>
               </div>

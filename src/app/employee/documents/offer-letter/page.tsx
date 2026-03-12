@@ -17,6 +17,18 @@ import {
   PDFViewer,
   PDFDownloadLink
 } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
+import {
+  Document as DocxDocument,
+  Packer,
+  Paragraph,
+  TextRun,
+  Table,
+  TableRow,
+  TableCell,
+  AlignmentType,
+  WidthType,
+} from 'docx';
 
 import { offerLetterStyles } from '@/components/pdf/PDFStyles';
 import GlobalPDFHeader from '@/components/components/docComponents/docHeader';
@@ -128,6 +140,79 @@ const toTitleCase = (str?: string): string => {
     .map(w => w.charAt(0).toUpperCase() + w.slice(1))
     .join(' ');
 };
+
+/* Build DOCX for offer letter */
+async function buildOfferLetterDocx(emp: Employee | null, empJob: Employment | null, enablePF: boolean) {
+  if (!emp || !empJob) return new DocxDocument({ sections: [{ properties: {}, children: [new Paragraph({ text: 'No data' })] }] });
+  const name = emp?.name || '';
+  const rawAddress = emp?.currentAddress || emp?.permanentAddress || '';
+  const fullAddress = rawAddress ? rawAddress.split(/[,;\n]+/).map(v => v.trim()).filter(Boolean) : [];
+  const shortAddress = fullAddress.slice(-2).join(', ') || '';
+  const designation = empJob?.jobTitle || empJob?.designation || '';
+  const joiningDate = empJob?.joiningDate || (empJob as { startDate?: string })?.startDate || '';
+  const letterDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const annualCTC = Number(empJob?.salary || 0);
+  const basic = Math.round(annualCTC * 0.5);
+  const hra = Math.round(basic * 0.5);
+  const medical = 13200;
+  const convey = 15000;
+  const other = 3000;
+  const sumFixed = basic + hra + medical + convey + other;
+  const epi = Math.max(annualCTC - sumFixed, 0);
+  const gross = sumFixed + epi;
+  const pt = 2500;
+  const pf = enablePF ? Math.round(basic * 0.12) : 0;
+  const net = gross - (pt + pf);
+  const monthly = (n: number) => Math.round(n / 12);
+  const fmt = (n: number) => n.toLocaleString('en-IN');
+  const tableRow = (label: string, m: number, a: number, bold = false) =>
+    new TableRow({
+      children: [
+        new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: label, bold })] })] }),
+        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: fmt(m), bold })] })] }),
+        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: fmt(a), bold })] })] }),
+      ],
+    });
+  const children = [
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: letterDate }),
+    new Paragraph({ children: [new TextRun({ text: toTitleCase(name), bold: true })] }),
+    new Paragraph({ text: shortAddress }),
+    new Paragraph({ children: [new TextRun({ text: 'LETTER OF APPOINTMENT', bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(name)},` })] }),
+    new Paragraph({ children: [new TextRun({ text: `We are pleased to extend an employment opportunity with ${COMPANY_DATA.name}. You are hereby appointed to the position of ` }), new TextRun({ text: designation, bold: true }), new TextRun({ text: ` effective from ${joiningDate}.` })] }),
+    new Paragraph({ children: [new TextRun({ text: 'CTC Breakdown (Annual & Monthly)', bold: true, underline: {} })] }),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ children: [new TextRun({ text: 'Component', bold: true })] })] }),
+            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'Monthly (₹)', bold: true })] })] }),
+            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'Annual (₹)', bold: true })] })] }),
+          ],
+        }),
+        tableRow('Basic', monthly(basic), basic),
+        tableRow('HRA', monthly(hra), hra),
+        tableRow('Medical Allowance', monthly(medical), medical),
+        tableRow('Conveyance', monthly(convey), convey),
+        tableRow('Other Allowances', monthly(other), other),
+        tableRow('EPI Allowance', monthly(epi), epi),
+        tableRow('Gross Salary (A)', monthly(gross), gross, true),
+        tableRow('Professional Tax (PT)', monthly(pt), pt),
+        ...(enablePF ? [tableRow('Employee PF (12% Basic)', monthly(pf), pf)] : []),
+        tableRow('Net Salary', monthly(net), net, true),
+        tableRow('Total CTC', monthly(annualCTC), annualCTC, true),
+      ],
+    }),
+    new Paragraph({ children: [new TextRun({ text: 'Acknowledgement and Acceptance', bold: true, underline: {} })] }),
+    new Paragraph({ text: 'I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter.' }),
+    new Paragraph({ children: [new TextRun({ text: 'Candidate Name: ' }), new TextRun({ text: toTitleCase(name), bold: true })] }),
+    new Paragraph({ text: 'Signature: ________________________________' }),
+    new Paragraph({ children: [new TextRun({ text: 'Date: ' }), new TextRun({ text: letterDate })] }),
+  ];
+  return new DocxDocument({ sections: [{ properties: {}, children }] });
+}
 
 /* ===================== TABLE ROWS ===================== */
 const Row = ({ label, m, a }: { label: string; m: number; a: number }) => (
@@ -534,7 +619,7 @@ export default function EmployeeOfferLetterPage() {
       </div>
 
       {/* DOWNLOAD SECTION */}
-      <div className="p-6 flex justify-end">
+      <div className="p-6 flex justify-end gap-3">
         <PDFDownloadLink
           document={
             <OfferLetterPDF
@@ -547,8 +632,26 @@ export default function EmployeeOfferLetterPage() {
           className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
         >
           <FiDownload className="mr-2" size={18} />
-          Download Offer Letter
+          Download PDF
         </PDFDownloadLink>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              const doc = await buildOfferLetterDocx(employee ?? null, employment ?? null, enablePF);
+              const blob = await Packer.toBlob(doc);
+              saveAs(blob, `OfferLetter_${(employee?.name || 'OfferLetter').replace(/\s+/g, '_')}.docx`);
+              toast.success('DOCX downloaded');
+            } catch (err) {
+              console.error('DOCX download error:', err);
+              toast.error('Failed to generate DOCX');
+            }
+          }}
+          className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
+        >
+          <FiDownload className="mr-2" size={18} />
+          Download DOCX
+        </button>
       </div>
     </div>
 

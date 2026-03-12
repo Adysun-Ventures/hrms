@@ -324,7 +324,7 @@ export default function LeavesPage({
                 href: `/employees/${employment.employeeId}`,
               },
               {
-                label: employment.jobTitle || "Employment Details",
+                label: "Employment",
                 href: `/employments/${id}`,
               },
               { label: "Leaves", isCurrent: true },

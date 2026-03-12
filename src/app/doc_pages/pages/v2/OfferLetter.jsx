@@ -13,6 +13,18 @@ import {
   View,
   Image
 } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
+import {
+  Packer,
+  Paragraph,
+  TextRun,
+  Table,
+  TableRow,
+  TableCell,
+  AlignmentType,
+  WidthType,
+} from 'docx';
+import { createAdysunDocx } from '@/utils/docxAdysun';
 
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -426,6 +438,104 @@ const OfferLetterPDF = ({ employee, employment, enablePF }) => {
 
 };
 
+/* ---------------- DOCX BUILDER ---------------- */
+const toTitleCaseDocx = (str) => {
+  return str?.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || '';
+};
+
+async function buildOfferLetterDocx(employee, employment, enablePF) {
+  const name = employee?.name || '';
+  const rawAddress = employee?.currentAddress || employee?.permanentAddress || '';
+  const fullAddress = rawAddress ? rawAddress.split(/[,;\n]+/).map(v => v.trim()).filter(Boolean) : [];
+  const shortAddress = fullAddress.slice(-2).join(', ') || '';
+  const designation = employment?.jobTitle || employment?.designation || '';
+  const joiningDate = employment?.joiningDate || employment?.startDate || '';
+  const letterDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const annualCTC = Number(employment?.salary || 0);
+
+  const basic = Math.round(annualCTC * 0.5);
+  const hra = Math.round(basic * 0.5);
+  const medical = 13200;
+  const convey = 15000;
+  const other = 3000;
+  const sumFixed = basic + hra + medical + convey + other;
+  const epi = Math.max(annualCTC - sumFixed, 0);
+  const gross = sumFixed + epi;
+  const pt = 2500;
+  const pf = enablePF ? Math.round(basic * 0.12) : 0;
+  const net = gross - (pt + pf);
+  const monthly = (n) => Math.round(n / 12);
+  const fmt = (n) => n.toLocaleString('en-IN');
+
+  const tableRow = (label, m, a, bold = false) =>
+    new TableRow({
+      children: [
+        new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: label, bold })] })] }),
+        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: fmt(m), bold })] })] }),
+        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: fmt(a), bold })] })] }),
+      ],
+    });
+
+  const children = [
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: COMPANY_DATA.address, alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: COMPANY_DATA.contact, alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: '' }),
+    new Paragraph({ children: [new TextRun({ text: 'Date: ', bold: true }), new TextRun({ text: letterDate })] }),
+    new Paragraph({ text: '' }),
+    new Paragraph({ children: [new TextRun({ text: toTitleCaseDocx(name), bold: true })] }),
+    new Paragraph({ text: shortAddress }),
+    new Paragraph({ text: '' }),
+    new Paragraph({ children: [new TextRun({ text: 'LETTER OF APPOINTMENT', bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: '' }),
+    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCaseDocx(name)},` })] }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: 'We are pleased to extend an employment opportunity with ' }),
+        new TextRun({ text: COMPANY_DATA.name, bold: true }),
+        new TextRun({ text: '. You are hereby appointed to the position of ' }),
+        new TextRun({ text: designation, bold: true }),
+        new TextRun({ text: ` effective from ${joiningDate}.` }),
+      ],
+    }),
+    new Paragraph({ text: '' }),
+    new Paragraph({ children: [new TextRun({ text: 'CTC Breakdown (Annual & Monthly)', bold: true, underline: {} })] }),
+    new Paragraph({ text: '' }),
+    new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      rows: [
+        new TableRow({
+          children: [
+            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ children: [new TextRun({ text: 'Component', bold: true })] })] }),
+            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'Monthly (₹)', bold: true })] })] }),
+            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'Annual (₹)', bold: true })] })] }),
+          ],
+        }),
+        tableRow('Basic', monthly(basic), basic),
+        tableRow('HRA', monthly(hra), hra),
+        tableRow('Medical Allowance', monthly(medical), medical),
+        tableRow('Conveyance', monthly(convey), convey),
+        tableRow('Other Allowances', monthly(other), other),
+        tableRow('EPI Allowance', monthly(epi), epi),
+        tableRow('Gross Salary (A)', monthly(gross), gross, true),
+        tableRow('Professional Tax (PT)', monthly(pt), pt),
+        ...(enablePF ? [tableRow('Employee PF (12% Basic)', monthly(pf), pf)] : []),
+        tableRow('Net Salary', monthly(net), net, true),
+        tableRow('Total CTC', monthly(annualCTC), annualCTC, true),
+      ],
+    }),
+    new Paragraph({ text: '' }),
+    new Paragraph({ children: [new TextRun({ text: 'Acknowledgement and Acceptance', bold: true, underline: {} })] }),
+    new Paragraph({ text: 'I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.' }),
+    new Paragraph({ text: '' }),
+    new Paragraph({ children: [new TextRun({ text: 'Candidate Name: ' }), new TextRun({ text: toTitleCaseDocx(name), bold: true })] }),
+    new Paragraph({ text: 'Signature: ________________________________' }),
+    new Paragraph({ children: [new TextRun({ text: 'Date: ' }), new TextRun({ text: letterDate })] }),
+  ];
+
+  return await createAdysunDocx({ children });
+}
+
 /* ---------------- MAIN COMPONENT ---------------- */
 function OfferLetterV2() {
   const [candidates, setCandidates] = useState([]);
@@ -469,7 +579,7 @@ function OfferLetterV2() {
   useEffect(() => { setPdfKey(k => k + 1); }, [enablePF]);
 
   return (
-    <div className="w-full p-4">
+    <div className="w-full pt-6">
       <Toaster position="top-center" />
 
       <div className="bg-white rounded-lg shadow-lg mb-8">
@@ -574,20 +684,39 @@ function OfferLetterV2() {
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
 
-            <PDFDownloadLink
-              key={Date.now()}
-              document={
-                <OfferLetterPDF
-                  employee={employee}
-                  employment={employment}
-                  enablePF={enablePF}
-                />
-              }
-              fileName={`OfferLetter_${employee.name}.pdf`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              Download PDF
-            </PDFDownloadLink>
+            <div className="flex items-center gap-2">
+              <PDFDownloadLink
+                key={Date.now()}
+                document={
+                  <OfferLetterPDF
+                    employee={employee}
+                    employment={employment}
+                    enablePF={enablePF}
+                  />
+                }
+                fileName={`OfferLetter_${employee.name}.pdf`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Download PDF
+              </PDFDownloadLink>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const doc = await buildOfferLetterDocx(employee, employment, enablePF);
+                    const blob = await Packer.toBlob(doc);
+                    saveAs(blob, `OfferLetter_${employee.name?.replace(/\s+/g, '_') || 'OfferLetter'}.docx`);
+                    toast.success('DOCX downloaded');
+                  } catch (err) {
+                    console.error('DOCX download error:', err);
+                    toast.error('Failed to generate DOCX');
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+              >
+                Download DOCX
+              </button>
+            </div>
           </div>
 
           <div className="border rounded-lg" style={{ height: '80vh' }}>

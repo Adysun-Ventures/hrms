@@ -380,7 +380,7 @@ export default function EmploymentsPage() {
                           />
                           <ActionButton
                             icon={<FiEdit className="w-5 h-5" />}
-                            title="Edit"
+                            title="Edit Employment"
                             colorClass="bg-amber-100 text-amber-600 hover:text-amber-900"
                             href={`/employments/${employment.id}/edit`}
                           />

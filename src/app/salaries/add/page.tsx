@@ -62,6 +62,7 @@ export default function AddSalaryPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const employeeId = searchParams?.get('employeeId');
+  const from = searchParams?.get('from');
   
   const createSalaryMutation = useCreateSalary();
   const queryClient = useQueryClient();
@@ -326,7 +327,11 @@ export default function AddSalaryPage() {
       
       // Navigate back to the appropriate page
       if (employeeId) {
-        router.push(`/salaries?employeeId=${employeeId}`);
+        if (from === 'employment') {
+          router.push(`/salaries?employeeId=${employeeId}&from=employment`);
+        } else {
+          router.push(`/salaries?employeeId=${employeeId}`);
+        }
       } else {
         router.push('/salaries');
       }
@@ -351,12 +356,33 @@ export default function AddSalaryPage() {
 
 
   return (
-    <DashboardLayout breadcrumbItems={[
-      { label: 'Dashboard', href: '/dashboard' },
-      { label: 'Salaries', href: '/salaries' },
-      ...(employeeId ? [{ label: employeeName || 'Loading...', href: `/salaries?employeeId=${employeeId}` }] : []),
-      { label: 'Add Salary', isCurrent: true }
-    ]}>
+    <DashboardLayout
+      breadcrumbItems={
+        employeeId
+          ? [
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Employees', href: '/employees' },
+              {
+                label: employeeName || 'Loading...',
+                href: `/employees/${employeeId}`,
+              },
+              {
+                label: 'Employment',
+                href: `/employments?employeeId=${employeeId}`,
+              },
+              {
+                label: 'Salaries',
+                href: `/salaries?employeeId=${employeeId}`,
+              },
+              { label: 'Add Salary', isCurrent: true },
+            ]
+          : [
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Salaries', href: '/salaries' },
+              { label: 'Add Salary', isCurrent: true },
+            ]
+      }
+    >
       <Toaster position="top-center" />
       
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -696,9 +722,9 @@ export default function AddSalaryPage() {
           {/* Deductions Section */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Deductions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               {/* PT (DEDUCT) */}
-              <div>
+              <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <span className="text-red-500 mr-1">*</span>PT (DEDUCT) 
                 </label>
@@ -719,7 +745,7 @@ export default function AddSalaryPage() {
               </div>
 
               {/* Leaves Deduct Amt - Auto-calculated */}
-              <div>
+              <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Leaves Deduct Amt <span className="text-xs text-gray-500">(Auto-calculated)</span>
                 </label>

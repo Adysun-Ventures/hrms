@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { FiSave } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { getEmployment, updateEmployment, getEmployees, checkEmploymentIdUnique } from '@/utils/firebaseUtils';
@@ -34,10 +34,24 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const router = useRouter();
   const { id } = use(params);
 
-  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<EmploymentFormData>();
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<EmploymentFormData>();
+  const breadcrumbEmployeeId = watch('employeeId') || originalEmployment?.employeeId || '';
+  const breadcrumbEmployeeName =
+    employees.find((e) => e.id === breadcrumbEmployeeId)?.name || '';
 
-  // Watch salary for calculations
+  // Dynamic increments field array
+  const {
+    fields: incrementFields,
+    append: appendIncrement,
+    remove: removeIncrement,
+  } = useFieldArray({
+    control,
+    name: 'increments',
+  });
+
+  // Watch salary and resignation state for calculations / UI
   const salary = watch('salary');
+  const isResignation = watch('isResignation');
 
   // Calculate salary breakdown when annual salary changes
   useEffect(() => {
@@ -110,10 +124,28 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         // Suppress unused variable warnings for destructured audit fields
         void _id; void _createdAt; void _createdBy; void _updatedAt; void _updatedBy;
 
+        const increments =
+          employmentData.increments && employmentData.increments.length > 0
+            ? employmentData.increments
+            : (employmentData.incrementDate ||
+               employmentData.newSalary ||
+               employmentData.incrementedCtc ||
+               employmentData.incrementedInHandCtc)
+            ? [
+                {
+                  incrementDate: employmentData.incrementDate || '',
+                  newSalary: employmentData.newSalary,
+                  incrementedCtc: employmentData.incrementedCtc,
+                  incrementedInHandCtc: employmentData.incrementedInHandCtc,
+                },
+              ]
+            : [];
+
         reset({
           ...rest,
           relievingCtc: relievingCtc ? relievingCtc.toString() : '',
           benefits: employmentData.benefits?.join(', ') || '',
+          increments,
         });
 
         // Initialize includePF based on existing PF value
@@ -187,9 +219,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       if (data.joiningDate && data.joiningDate.trim()) {
         formattedData.joiningDate = data.joiningDate;
       }
-      if (data.incrementDate && data.incrementDate.trim()) {
-        formattedData.incrementDate = data.incrementDate;
-      }
       if (data.salaryCreditDate && data.salaryCreditDate.trim()) {
         formattedData.salaryCreditDate = data.salaryCreditDate;
       }
@@ -215,6 +244,31 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         formattedData.workSchedule = data.workSchedule;
       }
 
+      // Handle increments array and keep latest values in scalar fields for backward compatibility
+      if (data.increments && data.increments.length > 0) {
+        formattedData.increments = data.increments.map((inc) => ({
+          ...inc,
+          newSalary: inc.newSalary != null ? Number(inc.newSalary) : undefined,
+          incrementedCtc: inc.incrementedCtc != null ? Number(inc.incrementedCtc) : undefined,
+          incrementedInHandCtc:
+            inc.incrementedInHandCtc != null ? Number(inc.incrementedInHandCtc) : undefined,
+        }));
+
+        const latest = data.increments[data.increments.length - 1];
+        if (latest.incrementDate) {
+          formattedData.incrementDate = latest.incrementDate;
+        }
+        if (latest.newSalary != null) {
+          formattedData.newSalary = Number(latest.newSalary);
+        }
+        if (latest.incrementedCtc != null) {
+          formattedData.incrementedCtc = Number(latest.incrementedCtc);
+        }
+        if (latest.incrementedInHandCtc != null) {
+          formattedData.incrementedInHandCtc = Number(latest.incrementedInHandCtc);
+        }
+      }
+
       await updateEmployment(id, formattedData);
       toast.success('Employment updated successfully!', { id: 'updateEmployment' });
       router.push(`/employments/${id}`);
@@ -225,11 +279,16 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       setIsSubmitting(false);
     }
   };
-  console.log(watch('isResignation'))
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout
+        breadcrumbItems={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Employees', href: '/employees' },
+          { label: 'Loading...', isCurrent: true },
+        ]}
+      >
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Skeleton for TableHeader */}
           <div className="space-y-6">
@@ -271,7 +330,22 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Employees', href: '/employees' },
+        ...(breadcrumbEmployeeId
+          ? [
+              {
+                label: breadcrumbEmployeeName || 'Employee',
+                href: `/employees/${breadcrumbEmployeeId}`,
+              },
+              { label: 'Employment', href: `/employments/${id}` },
+            ]
+          : [{ label: 'Employments', href: '/employments' }]),
+        { label: 'Edit Employment', isCurrent: true },
+      ]}
+    >
       <Toaster position="top-center" />
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -493,92 +567,81 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
                 <div>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    Is Resignation?
-  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Is Resigned?
+                  </label>
 
-  <div className="flex gap-4">
-    <button
-      type="button"
-      onClick={() => setValue('isResignation', true)}
-      className={`px-4 py-2 rounded-md border transition
-        ${watch('isResignation')
-          ? 'bg-blue-500 text-white border-blue-500'
-          : 'bg-white text-gray-700 border-gray-300'}
-      `}
-    >
-      Yes
-    </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setValue('isResignation', !isResignation)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition
+                        ${isResignation ? 'bg-green-500' : 'bg-gray-300'}
+                      `}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition
+                          ${isResignation ? 'translate-x-5' : 'translate-x-1'}
+                        `}
+                      />
+                    </button>
+                    <span className="text-sm text-gray-700">
+                      {isResignation ? 'On' : 'Off'}
+                    </span>
+                  </div>
+                </div>
 
-    <button
-      type="button"
-      onClick={() => setValue('isResignation', false)}
-      className={`px-4 py-2 rounded-md border transition
-        ${watch('isResignation') === false
-          ? 'bg-blue-500 text-white border-blue-500'
-          : 'bg-white text-gray-700 border-gray-300'}
-      `}
-    >
-      No
-    </button>
-  </div>
-</div>
+                {isResignation && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Resignation Date
+                      </label>
+                      <input
+                        type="date"
+                        {...register('resignationDate')}
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Last Working Date
+                      </label>
+                      <input
+                        type="date"
+                        {...register('lastWorkingDate')}
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                      />
+                    </div>
 
-                <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Resignation Date
-  </label>
-  <input
-    type="date"
-    {...register('resignationDate')}
-    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-  />
-</div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Last Drawn Salary
+                      </label>
+                      <input
+                        type="number"
+                        {...register('lastDrawnSalary', {
+                          min: { value: 0, message: 'Salary must be positive' }
+                        })}
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter last drawn salary"
+                      />
+                    </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Last Salary Date
+                      </label>
+                      <input
+                        type="date"
+                        {...register('lastSalaryDate')}
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </>
+                )}
 
-                <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Last Working Date
-  </label>
-
-  <input
-    type="date"
-    {...register('lastWorkingDate')}
-    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-  />
-</div>
-
-
-
-                <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Last Drawn Salary
-  </label>
-
-  <input
-    type="number"
-    {...register('lastDrawnSalary', {
-      min: { value: 0, message: 'Salary must be positive' }
-    })}
-    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-    placeholder="Enter last drawn salary"
-  />
-</div>
-
-
-               <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Last Salary Date
-  </label>
-
-  <input
-    type="date"
-    {...register('lastSalaryDate')}
-    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-  />
-</div>
-                
               </div>
             </div>
 
@@ -647,66 +710,125 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
             {/* Career Progression/Increment Details (CTP) */}
             <div className="bg-gray-50 p-4 rounded-lg mb-6">
-              <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">
-                Increment Details
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium text-gray-800 border-l-4 border-purple-500 pl-2">
+                  Increment Details
+                </h2>
+                <button
+                  type="button"
+                  onClick={() =>
+                    appendIncrement({
+                      incrementDate: '',
+                      newSalary: undefined,
+                      incrementedCtc: undefined,
+                      incrementedInHandCtc: undefined,
+                      notes: '',
+                    })
+                  }
+                  className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
+                >
+                  Add Increment
+                </button>
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Increment Date
-                  </label>
-                  <input
-                    type="date"
-                    {...register('incrementDate')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+              {incrementFields.length === 0 && (
+                <p className="text-sm text-gray-500 mb-2">
+                  No increments added yet. Click &quot;Add Increment&quot; to add the first increment.
+                </p>
+              )}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Incremented Salary (₹)
-                  </label>
-                  <input
-                    type="number"
-                    {...register('newSalary', {
-                      min: { value: 0, message: 'Amount must be positive' },
-                      valueAsNumber: true
-                    })}
-                    placeholder="Incremented salary amount"
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+              <div className="space-y-4">
+                {incrementFields.map((field, index) => (
+                  <div
+                    key={field.id}
+                    className="border border-gray-200 rounded-lg p-4 bg-white"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-gray-800">
+                        Increment {index + 1}
+                      </h3>
+                      {incrementFields.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeIncrement(index)}
+                          className="text-xs text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Incremented CTC (₹)
-                  </label>
-                  <input
-                    type="number"
-                    {...register('incrementedCtc', {
-                      min: { value: 0, message: 'Amount must be positive' },
-                      valueAsNumber: true
-                    })}
-                    placeholder="Incremented CTC amount"
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Increment Date
+                        </label>
+                        <input
+                          type="date"
+                          {...register(`increments.${index}.incrementDate` as const)}
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Incremented In-hand CTC (₹)
-                  </label>
-                  <input
-                    type="number"
-                    {...register('incrementedInHandCtc', {
-                      min: { value: 0, message: 'Amount must be positive' },
-                      valueAsNumber: true
-                    })}
-                    placeholder="Incremented in-hand CTC"
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Incremented Salary (₹)
+                        </label>
+                        <input
+                          type="number"
+                          {...register(`increments.${index}.newSalary` as const, {
+                            min: { value: 0, message: 'Amount must be positive' },
+                            valueAsNumber: true,
+                          })}
+                          placeholder="Incremented salary amount"
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Incremented CTC (₹)
+                        </label>
+                        <input
+                          type="number"
+                          {...register(`increments.${index}.incrementedCtc` as const, {
+                            min: { value: 0, message: 'Amount must be positive' },
+                            valueAsNumber: true,
+                          })}
+                          placeholder="Incremented CTC amount"
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Incremented In-hand CTC (₹)
+                        </label>
+                        <input
+                          type="number"
+                          {...register(`increments.${index}.incrementedInHandCtc` as const, {
+                            min: { value: 0, message: 'Amount must be positive' },
+                            valueAsNumber: true,
+                          })}
+                          placeholder="Incremented in-hand CTC"
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div className="md:col-span-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Notes (optional)
+                        </label>
+                        <input
+                          type="text"
+                          {...register(`increments.${index}.notes` as const)}
+                          placeholder="E.g., Promotion to Senior Developer"
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

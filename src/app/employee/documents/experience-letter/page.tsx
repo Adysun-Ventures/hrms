@@ -20,6 +20,14 @@ import {
   View,
   Image
 } from "@react-pdf/renderer";
+import { saveAs } from "file-saver";
+import {
+  Document as DocxDocument,
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+} from "docx";
 
 /* ---------------- TYPES ---------------- */
 interface Employee {
@@ -62,6 +70,45 @@ const toTitleCase = (str?: string): string =>
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ") || "";
+
+async function buildExperienceLetterDocx(emp: Employee | null, empJob: Employment | null, todaysDate: string, employeeSignDate: string, employeeSignPlace: string) {
+  if (!emp || !empJob) return new DocxDocument({ sections: [{ properties: {}, children: [new Paragraph({ text: "No data" })] }] });
+  const employeeName = emp?.name || "";
+  const designation = empJob?.jobTitle || "";
+  const joiningDate = empJob?.joiningDate || "";
+  const relievingDate = empJob?.lastWorkingDate || "";
+  const shortName = employeeName.split(" ")[0] || employeeName;
+  const children = [
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: formatDate(todaysDate) })] }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "EXPERIENCE LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "This is to certify that " }),
+        new TextRun({ text: toTitleCase(employeeName), bold: true }),
+        new TextRun({ text: " was employed with " }),
+        new TextRun({ text: COMPANY_DATA.name, bold: true }),
+        new TextRun({ text: " as a " }),
+        new TextRun({ text: designation, bold: true }),
+        new TextRun({ text: ` from ${formatDate(joiningDate)} to ${formatDate(relievingDate) || formatDate(employeeSignDate)}.` }),
+      ],
+    }),
+    new Paragraph({ text: `During the tenure, ${shortName} performed duties with dedication and professionalism.` }),
+    new Paragraph({ text: `We found ${shortName} to be sincere, reliable, and responsible.` }),
+    new Paragraph({ text: `We wish ${shortName} all the best for future career opportunities.` }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: employeeSignPlace || "" })] }),
+    new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: formatDate(employeeSignDate) })] }),
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
+    new Paragraph({ text: COMPANY_DATA.hrDesignation }),
+    new Paragraph({ text: COMPANY_DATA.hrEmail }),
+  ];
+  return new DocxDocument({ sections: [{ properties: {}, children }] });
+}
 
 /* ---------------- PDF COMPONENT ---------------- */
 const EmployeeExperiencePDF: React.FC<PDFProps> = ({
@@ -290,21 +337,40 @@ return (
             PDF Preview
           </h3>
 
-          <PDFDownloadLink
-            document={
-              <EmployeeExperiencePDF
-                employee={employee}
-                employment={employment}
-                todaysDate={todaysDate}
-                employeeSignDate={employeeSignDate}
-                employeeSignPlace={employeeSignPlace}
-              />
-            }
-            fileName={`Experience_${employee.name}.pdf`}
-            className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
-          >
-            Download PDF
-          </PDFDownloadLink>
+          <div className="flex items-center gap-2">
+            <PDFDownloadLink
+              document={
+                <EmployeeExperiencePDF
+                  employee={employee}
+                  employment={employment}
+                  todaysDate={todaysDate}
+                  employeeSignDate={employeeSignDate}
+                  employeeSignPlace={employeeSignPlace}
+                />
+              }
+              fileName={`Experience_${employee.name}.pdf`}
+              className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+            >
+              Download PDF
+            </PDFDownloadLink>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const doc = await buildExperienceLetterDocx(employee, employment, todaysDate, employeeSignDate, employeeSignPlace);
+                  const blob = await Packer.toBlob(doc);
+                  saveAs(blob, `ExperienceLetter_${(employee?.name || "").replace(/\s+/g, "_")}.docx`);
+                  toast.success("DOCX downloaded");
+                } catch (err) {
+                  console.error("DOCX download error:", err);
+                  toast.error("Failed to generate DOCX");
+                }
+              }}
+              className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
+            >
+              Download DOCX
+            </button>
+          </div>
         </div>
 
         <div className="border rounded-lg overflow-hidden" style={{ height: "80vh" }}>

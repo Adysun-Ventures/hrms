@@ -354,8 +354,8 @@ export default function AddEmployeePage() {
             {/* Contact Information */}
             <div className="bg-white p-4 rounded-lg mb-4">
               <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Contact Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span> Mobile No.
                   </label>
@@ -376,7 +376,7 @@ export default function AddEmployeePage() {
                   )}
                 </div>
 
-                <div>
+                <div className="md:col-span-3">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email ID
                   </label>
@@ -400,7 +400,7 @@ export default function AddEmployeePage() {
 
                 
 
-                <div className="md:col-span-4">
+                <div className="md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Current Address
                   </label>
@@ -415,7 +415,7 @@ export default function AddEmployeePage() {
                   )}
                 </div>
 
-                <div className="md:col-span-4">
+                <div className="md:col-span-6">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-sm font-medium text-gray-700">
                       Permanent Address

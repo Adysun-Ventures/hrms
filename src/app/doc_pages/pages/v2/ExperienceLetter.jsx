@@ -13,6 +13,14 @@ import {
   View,
   Image
 } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
+import {
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+} from 'docx';
+import { createAdysunDocx } from '@/utils/docxAdysun';
 
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -72,6 +80,45 @@ const formatDate = (d) => {
     return d;
   }
 };
+
+/* ---------------- DOCX BUILDER ---------------- */
+async function buildExperienceLetterDocx(employee, employment, employeeSignDate, employeeSignPlace, todaysDate) {
+  const employeeName = employee?.name || "";
+  const designation = employment?.jobTitle || "";
+  const joiningDate = employment?.joiningDate || "";
+  const relievingDate = employment?.lastWorkingDate || "";
+  const shortName = employeeName.split(" ")[0] || employeeName;
+  const children = [
+    new Paragraph({ children: [new TextRun({ text: 'ADYSUN VENTURES PVT. LTD.', bold: true })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: formatDate(todaysDate) })] }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "EXPERIENCE LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "This is to certify that " }),
+        new TextRun({ text: toTitleCase(employeeName), bold: true }),
+        new TextRun({ text: " was employed with " }),
+        new TextRun({ text: COMPANY_DATA.name, bold: true }),
+        new TextRun({ text: " as a " }),
+        new TextRun({ text: designation, bold: true }),
+        new TextRun({ text: ` from ${formatDate(joiningDate)} to ${formatDate(relievingDate) || formatDate(employeeSignDate)}.` }),
+      ],
+    }),
+    new Paragraph({ text: `During the tenure, ${shortName} performed duties with dedication and professionalism.` }),
+    new Paragraph({ text: `Based on overall performance, we found ${shortName} to be sincere, reliable, and responsible.` }),
+    new Paragraph({ text: `We wish ${shortName} all the best for future career opportunities.` }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: employeeSignPlace || "" })] }),
+    new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: formatDate(employeeSignDate) })] }),
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
+    new Paragraph({ text: COMPANY_DATA.hrDesignation }),
+    new Paragraph({ text: COMPANY_DATA.hrEmail }),
+  ];
+  return await createAdysunDocx({ children });
+}
 
 /* ---------------- PDF COMPONENT ---------------- */
 const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeSignPlace,todaysDate }) => {
@@ -186,7 +233,7 @@ const [searchTerm, setSearchTerm] = useState("");
   };
 
   return (
-    <div className="w-full p-4">
+    <div className="w-full pt-6">
       <Toaster position="top-center" />
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
@@ -327,22 +374,47 @@ const [searchTerm, setSearchTerm] = useState("");
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
 
-            <PDFDownloadLink
-              document={
-                <ExperienceLetterPDF
-                  employee={employee}
-                  employment={employment}
-                  employeeSignDate={employeeSignDate}
-                  employeeSignPlace={employeeSignPlace}
-                  todaysDate={todaysDate}
-                />
-              }
-              fileName={`Experience_${employee.name}.pdf`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              key={Date.now()}
-            >
-              Download PDF
-            </PDFDownloadLink>
+            <div className="flex items-center gap-2">
+              <PDFDownloadLink
+                document={
+                  <ExperienceLetterPDF
+                    employee={employee}
+                    employment={employment}
+                    employeeSignDate={employeeSignDate}
+                    employeeSignPlace={employeeSignPlace}
+                    todaysDate={todaysDate}
+                  />
+                }
+                fileName={`Experience_${employee.name}.pdf`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                key={Date.now()}
+              >
+                Download PDF
+              </PDFDownloadLink>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const doc = await buildExperienceLetterDocx(
+                      employee,
+                      employment,
+                      employeeSignDate,
+                      employeeSignPlace,
+                      todaysDate
+                    );
+                    const blob = await Packer.toBlob(doc);
+                    saveAs(blob, `ExperienceLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
+                    toast.success("DOCX downloaded");
+                  } catch (err) {
+                    console.error("DOCX download error:", err);
+                    toast.error("Failed to generate DOCX");
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Download DOCX
+              </button>
+            </div>
           </div>
 
           <div className="border rounded-lg" style={{ height: "80vh" }}>

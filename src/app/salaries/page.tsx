@@ -71,6 +71,7 @@ export default function SalariesPage() {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const employeeId = searchParams?.get('employeeId') || null;
+  const from = searchParams?.get('from') || null;
 
   // Use appropriate query based on whether we have an employeeId
   const {
@@ -463,20 +464,23 @@ a.download = `Salary-${safeName}-${monthName}-${f.year}.pdf`;
     <DashboardLayout
       breadcrumbItems={[
         { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Employee', href: '/employees' },
-        ...(employeeId ? [
-          { label: employeeName || 'Loading...', href: `/employees/${employeeId}` },
-          { label: 'Salaries', href: `/salaries?employeeId=${employeeId}`, isCurrent: true }
-        ] : [
-          { label: 'Salaries', href: '/salaries', isCurrent: true }
-        ])
+        { label: 'Employees', href: '/employees' },
+        ...(employeeId
+          ? [
+              { label: employeeName || 'Loading...', href: `/employees/${employeeId}` },
+              { label: 'Employment', href: `/employments?employeeId=${employeeId}` },
+              { label: 'Salary', href: `/salaries?employeeId=${employeeId}&from=employment`, isCurrent: true },
+            ]
+          : [
+              { label: 'Salary', href: '/salaries', isCurrent: true },
+            ])
       ]}
     >
       <Toaster position="top-center" />
       
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <TableHeader
-          title="Salary Management"
+          title="Salary"
           total={filteredSalaries.length}
           searchValue={searchTerm}
           onSearchChange={(e) => setSearchTerm(e.target.value)}
@@ -512,7 +516,9 @@ a.download = `Salary-${safeName}-${monthName}-${f.year}.pdf`;
               label: 'Add Salary', 
               icon: <FiPlus />, 
               variant: 'success' as const, 
-              href: employeeId ? `/salaries/add?employeeId=${employeeId}` : '/salaries/add'
+              href: employeeId
+                ? `/salaries/add?employeeId=${employeeId}${from === 'employment' ? '&from=employment' : ''}`
+                : '/salaries/add'
             }
           ]}
           backButton={{ onClick: () => employeeId ? router.push(`/employees/${employeeId}`) : router.push('/employees') }}
@@ -603,7 +609,7 @@ a.download = `Salary-${safeName}-${monthName}-${f.year}.pdf`;
                         <ActionButton
                           icon={<FiEdit className="w-5 h-5" />}
                           title="Edit Salary"
-                          colorClass="bg-amber-100 text-amber-600 hover:text-amber-900"
+                          colorClass="bg-orange-100 text-orange-600 hover:text-orange-900"
                           href={`/salaries/${salary.id}/edit${employeeId ? `?employeeId=${employeeId}` : ''}`}
                         />
                         <ActionButton

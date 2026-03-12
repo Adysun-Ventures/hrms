@@ -13,6 +13,14 @@ import {
   View,
   Image
 } from "@react-pdf/renderer";
+import { saveAs } from "file-saver";
+import {
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+} from "docx";
+import { createAdysunDocx } from "@/utils/docxAdysun";
 
 import { db } from "@/firebase/config";
 import { collection, getDocs } from "firebase/firestore";
@@ -56,6 +64,42 @@ const formatDate = (d) => {
     return d;
   }
 };
+
+const toTitleCaseRelief = (str) =>
+  str?.toLowerCase().split(" ").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") || "";
+
+/* ---------------- DOCX BUILDER ---------------- */
+async function buildRelievingLetterDocx(employee, employment, employeeSignDate, employeeSignPlace, employeeRelievingDate, employeeResignDate) {
+  const employeeName = employee?.name || "";
+  const designation = employment?.jobTitle || employment?.designation || "";
+  const joiningDate = employment?.joiningDate || employment?.startDate || "";
+  const shortName = employeeName.split(" ")[0] || employeeName;
+  const resignDate = formatDate(employeeResignDate);
+  const relievingDate = formatDate(employeeRelievingDate);
+  const signDate = formatDate(employeeSignDate);
+  const joinDate = formatDate(joiningDate);
+  const children = [
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: signDate })] }),
+    new Paragraph({ children: [new TextRun({ text: toTitleCaseRelief(employeeName), bold: true })] }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "RELIEVING LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCaseRelief(shortName)},` })] }),
+    new Paragraph({ children: [new TextRun({ text: "This is with reference to your resignation dated " }), new TextRun({ text: resignDate, bold: true }), new TextRun({ text: "." })] }),
+    new Paragraph({ text: "During your tenure with the company, you performed your duties responsibly and professionally, and maintained a positive attitude towards work and colleagues." }),
+    new Paragraph({ children: [new TextRun({ text: "We hereby confirm that you have been formally relieved from your services effective end of day " }), new TextRun({ text: relievingDate, bold: true }), new TextRun({ text: "." })] }),
+    new Paragraph({ text: "Further, you have completed all required exit formalities including handover of company assets, documentation, access rights and clearance." }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: employeeSignPlace || "" })] }),
+    new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: signDate })] }),
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
+    new Paragraph({ text: COMPANY_DATA.hrDesignation }),
+    new Paragraph({ text: COMPANY_DATA.hrEmail }),
+  ];
+  return await createAdysunDocx({ children });
+}
 
 /* ---------------- RELIEVING PDF ---------------- */
 const RelievingLetterPDF = ({
@@ -248,7 +292,7 @@ function RelievingLetterV2() {
    
 
   return (
-    <div className="w-full p-4">
+    <div className="w-full pt-6">
       <Toaster position="top-center" />
 
       <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
@@ -403,23 +447,49 @@ function RelievingLetterV2() {
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
 
-            <PDFDownloadLink
-              document={
-                <RelievingLetterPDF
-                  employee={employee}
-                  employment={employment}
-                  employeeSignDate={employeeSignDate}
-                  employeeSignPlace={employeeSignPlace}
-                  employeeRelievingDate={employeeRelievingDate}
-                  employeeResignDate={employeeResignDate}
-                />
-              }
-              fileName={`Relieving_${employee.name}.pdf`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md"
-              key={Date.now()}
-            >
-              Download PDF
-            </PDFDownloadLink>
+            <div className="flex items-center gap-2">
+              <PDFDownloadLink
+                document={
+                  <RelievingLetterPDF
+                    employee={employee}
+                    employment={employment}
+                    employeeSignDate={employeeSignDate}
+                    employeeSignPlace={employeeSignPlace}
+                    employeeRelievingDate={employeeRelievingDate}
+                    employeeResignDate={employeeResignDate}
+                  />
+                }
+                fileName={`Relieving_${employee.name}.pdf`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md"
+                key={Date.now()}
+              >
+                Download PDF
+              </PDFDownloadLink>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const doc = await buildRelievingLetterDocx(
+                      employee,
+                      employment,
+                      employeeSignDate,
+                      employeeSignPlace,
+                      employeeRelievingDate,
+                      employeeResignDate
+                    );
+                    const blob = await Packer.toBlob(doc);
+                    saveAs(blob, `RelievingLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
+                    toast.success("DOCX downloaded");
+                  } catch (err) {
+                    console.error("DOCX download error:", err);
+                    toast.error("Failed to generate DOCX");
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Download DOCX
+              </button>
+            </div>
           </div>
 
           <div className="border rounded-lg" style={{ height: "80vh" }}>

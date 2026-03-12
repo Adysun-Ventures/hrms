@@ -139,6 +139,15 @@ export interface Employee {
 }
 
 // Employment type
+export interface EmploymentIncrement {
+  id?: string;
+  incrementDate?: string;
+  newSalary?: number;
+  incrementedCtc?: number;
+  incrementedInHandCtc?: number;
+  notes?: string;
+}
+
 export interface Employment {
   id: string;
   employeeId: string;
@@ -218,6 +227,7 @@ export interface Employment {
   percentageIncrease?: number;
   performanceRating?: string;
   effectiveDate?: string;
+  increments?: EmploymentIncrement[];
   
   // NEW: Attendance Array
   attendance?: AttendanceRecord[];

@@ -7,9 +7,7 @@ import { PDFViewer, PDFDownloadLink, Document, Page, Text, View, Image, StyleShe
 import { saveAs } from 'file-saver';
 import {
   AlignmentType,
-  Document as DocxDocument,
   BorderStyle,
-  ImageRun,
   Packer,
   Paragraph,
   Table,
@@ -18,6 +16,7 @@ import {
   TextRun,
   WidthType,
 } from 'docx';
+import { createAdysunDocx } from '@/utils/docxAdysun';
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { CompanyHeader, Watermark } from '@/components/pdf/PDFComponents';
@@ -860,29 +859,11 @@ function SalarySlipGeneratorV2() {
     return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const fetchLogoArrayBuffer = async (src) => {
-    if (!src) return null;
-    try {
-      const res = await fetch(src);
-      if (!res.ok) return null;
-      return await res.arrayBuffer();
-    } catch {
-      return null;
-    }
-  };
-
   const buildSalarySlipDocx = async (f) => {
     const safe = (v) => (v === null || v === undefined || v === '' ? '-' : String(v));
 
     const monthLabel = MONTH_NAMES[Number(f.month)] || '';
     const title = `Salary Slip  ${monthLabel} ${safe(f.year)}`.trim();
-
-    const companyLine1 = safe(f.companyName) || DEFAULT_COMPANY_NAME;
-    const companyLine2 = `info@adysunventures.com | hr@adysunventures.com | www.AdysunVentures.com`;
-    const companyLine3 = `Adysun Ventures, WorkPlex, S no 47, near Bhapkar petrol pump`;
-    const companyLine4 = `Pune - Satara Rd, Bibwewadi, Pune, Maharashtra 411009`;
-
-    const logoBuf = await fetchLogoArrayBuffer(f.companyLogo);
 
     const employeeName = safe(getEmployeeNameText(f.employeeName, f.employeeNameText));
     const empCode = safe(f.employeeId);
@@ -1066,83 +1047,29 @@ function SalarySlipGeneratorV2() {
         ],
       });
 
-    return new DocxDocument({
-      sections: [
-        {
+    return await createAdysunDocx({
+      children: [
+        new Paragraph({ text: "" }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [new TextRun({ text: title, bold: true })],
+        }),
+        new Paragraph({ text: "" }),
+        makeDetailsTable(),
+        new Paragraph({ text: "" }),
+        makeEarningsDeductionsTable(),
+        new Paragraph({ text: "" }),
+        makeNetSalaryRow(),
+        new Paragraph({ text: "" }),
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
           children: [
-            new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
-              borders: {
-                top: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-                bottom: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-                left: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-                right: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-                insideHorizontal: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-                insideVertical: { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' },
-              },
-              rows: [
-                new TableRow({
-                  children: [
-                    new TableCell({
-                      width: { size: 75, type: WidthType.PERCENTAGE },
-                      children: [
-                        new Paragraph({
-                          children: [new TextRun({ text: companyLine1, bold: true })],
-                        }),
-                        new Paragraph(companyLine2),
-                        new Paragraph(companyLine3),
-                        new Paragraph(companyLine4),
-                      ],
-                    }),
-                    new TableCell({
-                      width: { size: 25, type: WidthType.PERCENTAGE },
-                      children: [
-                        new Paragraph({
-                          alignment: AlignmentType.RIGHT,
-                          children: logoBuf
-                            ? [
-                                new ImageRun({
-                                  data: logoBuf,
-                                  transformation: { width: 72, height: 72 },
-                                }),
-                              ]
-                            : [],
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: ' ', })],
-            }),
-            new Paragraph({
-              children: [new TextRun({ text: '________________________________________________________________________________', })],
-            }),
-            new Paragraph({ text: '' }),
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [new TextRun({ text: title, bold: true })],
-            }),
-            new Paragraph({ text: '' }),
-            makeDetailsTable(),
-            new Paragraph({ text: '' }),
-            makeEarningsDeductionsTable(),
-            new Paragraph({ text: '' }),
-            makeNetSalaryRow(),
-            new Paragraph({ text: '' }),
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new TextRun({
-                  text: 'This document is digitally generated and does not require signature.',
-                  bold: true,
-                }),
-              ],
+            new TextRun({
+              text: "This document is digitally generated and does not require signature.",
+              bold: true,
             }),
           ],
-        },
+        }),
       ],
     });
   };
@@ -1158,7 +1085,7 @@ function SalarySlipGeneratorV2() {
     }
   };
 return (
-  <div className="w-full p-4">
+  <div className="w-full pt-6">
     <Toaster position="top-center" />
 
     <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6">

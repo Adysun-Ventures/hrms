@@ -12,8 +12,15 @@ import {
   Text,
   View,
   Image,
-  G
 } from "@react-pdf/renderer";
+import { saveAs } from "file-saver";
+import {
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+} from "docx";
+import { createAdysunDocx } from "@/utils/docxAdysun";
 
 import { db } from "@/firebase/config";
 import { collection, getDocs } from "firebase/firestore";
@@ -65,6 +72,46 @@ const Watermark = ({ logoSrc }) => (
     <Image src={logoSrc} style={offerLetterStyles.watermarkImage} />
   </View>
 );
+
+/* ---------------- DOCX BUILDER ---------------- */
+async function buildJoiningLetterDocx(employee, designation, department, reportingManager, workLocation, joiningDate, annualCTC, probation, workingHours, signPlace) {
+  const name = employee?.name || "";
+  const shortName = name.split(" ")[0] || name;
+  const issueDate = formatDate(todayISO());
+  const formattedJoiningDate = formatDate(joiningDate);
+  const formattedCTC = Number(annualCTC).toLocaleString("en-IN");
+  const children = [
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: issueDate })] }),
+    new Paragraph({ children: [new TextRun({ text: toTitleCase(name), bold: true })] }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "JOINING LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "We are pleased to confirm your joining with " }),
+        new TextRun({ text: COMPANY_DATA.name, bold: true }),
+        new TextRun({ text: ". You will be joining us as " }),
+        new TextRun({ text: designation || "", bold: true }),
+        ...(department ? [new TextRun({ text: ` in the ${department} department` })] : []),
+        new TextRun({ text: ` effective from ${formattedJoiningDate}.` }),
+      ],
+    }),
+    new Paragraph({ children: [new TextRun({ text: `Your place of posting shall be ${workLocation || ""} and you will be reporting to ${reportingManager || ""}.` })] }),
+    new Paragraph({ children: [new TextRun({ text: "Your annual Cost to Company (CTC) will be " }), new TextRun({ text: formattedCTC, bold: true }), new TextRun({ text: "." })] }),
+    new Paragraph({ children: [new TextRun({ text: `You will be on probation for a period of ${probation || ""}, during which your performance will be assessed.` })] }),
+    new Paragraph({ children: [new TextRun({ text: `Your working hours will be ${workingHours || ""}, Monday to Friday.` })] }),
+    new Paragraph({ text: "We warmly welcome you to our organization and look forward to your valuable contribution." }),
+    new Paragraph({ text: "Kindly acknowledge and accept this letter." }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: signPlace || "" })] }),
+    new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: issueDate })] }),
+    new Paragraph({ children: [new TextRun({ text: toTitleCase(name), bold: true })] }),
+  ];
+  return await createAdysunDocx({ children });
+}
 
 /* ---------------- PDF TEMPLATE ---------------- */
 
@@ -250,7 +297,7 @@ export default function JoiningLetterV2() {
   };
 
   return (
-    <div className="w-full p-4">
+    <div className="w-full pt-6">
       <Toaster position="top-center" />
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -455,26 +502,56 @@ export default function JoiningLetterV2() {
         <div className="bg-white rounded-lg shadow-lg p-4 mt-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold">PDF Preview</h3>
-            <PDFDownloadLink
-              document={
-                <JoiningLetterPDF
-                  employee={employee}
-                  designation={designation}
-                  department={department}
-                  reportingManager={reportingManager}
-                  workLocation={workLocation}
-                  joiningDate={joiningDate}
-                  annualCTC={annualCTC}
-                  probation={probation}
-                  workingHours={workingHours}
-                  signPlace={signPlace}
-                />
-              }
-              fileName={`Joining_${employee.name}.pdf`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md"
-            >
-              Download PDF
-            </PDFDownloadLink>
+            <div className="flex items-center gap-2">
+              <PDFDownloadLink
+                document={
+                  <JoiningLetterPDF
+                    employee={employee}
+                    designation={designation}
+                    department={department}
+                    reportingManager={reportingManager}
+                    workLocation={workLocation}
+                    joiningDate={joiningDate}
+                    annualCTC={annualCTC}
+                    probation={probation}
+                    workingHours={workingHours}
+                    signPlace={signPlace}
+                  />
+                }
+                fileName={`Joining_${employee.name}.pdf`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md"
+              >
+                Download PDF
+              </PDFDownloadLink>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const doc = await buildJoiningLetterDocx(
+                      employee,
+                      designation,
+                      department,
+                      reportingManager,
+                      workLocation,
+                      joiningDate,
+                      annualCTC,
+                      probation,
+                      workingHours,
+                      signPlace
+                    );
+                    const blob = await Packer.toBlob(doc);
+                    saveAs(blob, `JoiningLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
+                    toast.success("DOCX downloaded");
+                  } catch (err) {
+                    console.error("DOCX download error:", err);
+                    toast.error("Failed to generate DOCX");
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Download DOCX
+              </button>
+            </div>
           </div>
 
           <div className="border rounded-lg" style={{ height: "80vh" }}>

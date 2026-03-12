@@ -412,10 +412,11 @@ useEffect(() => {
         (filterValue === 'active' && employee.status === 'active') ||
         (filterValue === 'inactive' && employee.status === 'inactive');
       
+      const isResigned = emp?.isResignation === true;
       const matchesEmploymentStatusFilter =
         employmentStatusFilter === 'all' ||
-        (employmentStatusFilter === 'working' && employee.employmentStatus === 'working') ||
-        (employmentStatusFilter === 'resigned' && employee.employmentStatus === 'resigned');
+        (employmentStatusFilter === 'working' && !isResigned) ||
+        (employmentStatusFilter === 'resigned' && isResigned);
 
       const normalizedEmployeeType = (employee.employeeType || 'internal').toLowerCase();
       const matchesEmployeeTypeFilter =
@@ -629,11 +630,11 @@ useEffect(() => {
             {!searchTerm && filterValue !== 'all' && employmentStatusFilter !== 'all' && 'No employees match the selected filters'}
           </div>
         ) : (
-          <div className="overflow-x-auto relative max-h-[60vh] overflow-y-auto">
+          <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 table-fixed border-collapse">
               <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm after:absolute after:h-px after:w-full after:bottom-0 after:left-0 after:bg-gray-300">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
   <div
   role="button"
   tabIndex={0}
@@ -650,10 +651,10 @@ useEffect(() => {
 </th>
 
 
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                     Emp ID
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
   <div
     role="button"
     tabIndex={0}
@@ -670,22 +671,22 @@ useEffect(() => {
 </th>
 
 
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
                     Curr. Package
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
                     Total Sal. Cr.
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                     Employee Type
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                     Employment Status
                   </th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[11%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[11%]">
                     Actions
                   </th>
                 </tr>
@@ -693,32 +694,32 @@ useEffect(() => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedEmployees.map((employee) => (
                   <tr key={employee.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap">
                       <div className="flex items-center">
                           <div className="text-sm font-medium text-gray-900">{employee.name}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         <EmployeeIdDisplay employeeId={employee.id} />
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         <JoiningDateDisplay employeeId={employee.id} />
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         <CurrentPackageDisplay employeeId={employee.id} />
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         <TotalSalaryCreditsDisplay employeeId={employee.id} />
                       </div>
                     </td>
-                   <td className="px-6 py-4 whitespace-nowrap text-center">
+                   <td className="px-6 py-2 whitespace-nowrap text-center">
                       <EmployeeStatusToggle
                         employeeId={employee.id}
                         status={(employee as any).status}
@@ -727,7 +728,7 @@ useEffect(() => {
                       />
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="px-6 py-2 whitespace-nowrap text-center">
                       <span
                         className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           (employee.employeeType || 'internal') === 'internal'
@@ -738,11 +739,11 @@ useEffect(() => {
                         {(employee.employeeType || 'internal').charAt(0).toUpperCase() + (employee.employeeType || 'internal').slice(1)}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <td className="px-6 py-2 whitespace-nowrap text-center">
   <EmploymentWorkingStatusBadge employeeId={employee.id} />
 </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap">
                       {deleteConfirm === employee.id ? (
                         <div className="flex items-center justify-center space-x-2">
                           <button

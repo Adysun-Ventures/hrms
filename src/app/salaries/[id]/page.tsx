@@ -62,7 +62,7 @@ export default function SalaryViewPage({ params }: PageParams) {
     return (
       <DashboardLayout breadcrumbItems={[
         { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Employee', href: '/employees' },
+        { label: 'Employees', href: '/employees' },
         { label: 'Loading...', isCurrent: true }
       ]}>
         <div className="bg-white rounded-lg shadow-sm p-6">
@@ -83,8 +83,8 @@ export default function SalaryViewPage({ params }: PageParams) {
     return (
       <DashboardLayout breadcrumbItems={[
         { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Employee', href: '/employees' },
-        { label: 'Salaries', href: '/salaries', isCurrent: true }
+        { label: 'Employees', href: '/employees' },
+        { label: 'Salary', href: '/salaries', isCurrent: true }
       ]}>
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-4">
           <p>Failed to load salary data. Please try refreshing the page.</p>
@@ -106,9 +106,11 @@ export default function SalaryViewPage({ params }: PageParams) {
   return (
     <DashboardLayout breadcrumbItems={[
       { label: 'Dashboard', href: '/dashboard' },
-      { label: 'Salaries', href: '/salaries' },
-      { label: employeeName, employeeId: salary?.employeeId, href: `/salaries?employeeId=${salary?.employeeId}` },
-      { label: `${getMonthShort(salary?.month || 1)} - ${salary?.year || ''}`, isCurrent: true }
+      { label: 'Employees', href: '/employees' },
+      { label: employeeName, href: salary?.employeeId ? `/employees/${salary.employeeId}` : undefined },
+      { label: 'Employment', href: salary?.employeeId ? `/employments?employeeId=${salary.employeeId}` : '/employments' },
+      { label: 'Salary', href: salary?.employeeId ? `/salaries?employeeId=${salary.employeeId}&from=employment` : '/salaries' },
+      { label: 'View', isCurrent: true }
     ]}>
       <Toaster position="top-center" />
       
@@ -131,9 +133,9 @@ export default function SalaryViewPage({ params }: PageParams) {
           }}
           actionButtons={[
             { 
-              label: 'Edit', 
+              label: 'Edit Salary', 
               icon: <FiEdit />, 
-              variant: 'primary' as const, 
+              variant: 'orange' as const, 
               href: `/salaries/${id}/edit?employeeId=${salary?.employeeId}` 
             }
           ]}
@@ -147,66 +149,57 @@ export default function SalaryViewPage({ params }: PageParams) {
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employeeName}</p>
                 <p className="text-sm text-gray-500">Employee</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{getMonthName(salary?.month || 1)} {salary?.year}</p>
                 <p className="text-sm text-gray-500">Period</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">₹{salary?.leavesCount?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">Leaves Count</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">₹{salary?.leavesDeductAmt?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">Leaves Deduct Amount</p>
               </div>
 
-
-
-              
-              
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">₹{salary?.basicSalary?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">Basic Salary</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">₹{salary?.fixedPay?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">Fixed Pay</p>
               </div>
 
-              
-
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">₹{salary?.variablePay?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">Variable Pay</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">₹{salary?.ptDeduct?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">PT Deduct</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">₹{salary?.totalDeduction?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">Total Deduction</p>
               </div>
 
-
-
-              
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">₹{salary?.inhandSalary?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">Inhand Salary</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">₹{salary?.totalSalary?.toLocaleString() || '0'}</p>
                 <p className="text-sm text-gray-500">Total Salary</p>
               </div>

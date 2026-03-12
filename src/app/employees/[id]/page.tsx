@@ -280,9 +280,9 @@ export default function EmployeeViewPage({ params }: PageParams) {
                 href: `/salaries/add?employeeId=${id}` 
               }
             ]),
-            { label: 'Edit', icon: <FiEdit />, variant: 'orange' as const, href: `/employees/${id}/edit` },
+            { label: 'Edit Employee', icon: <FiEdit />, variant: 'orange' as const, href: `/employees/${id}/edit` },
             { 
-              label: 'Delete', 
+              label: 'Delete Employee', 
               icon: <FiTrash2 />, 
               variant: 'danger' as const, 
               onClick: handleDeleteClick,
@@ -299,37 +299,37 @@ export default function EmployeeViewPage({ params }: PageParams) {
             </h2>
         
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Basic Information Card */}
-              <div className="bg-white rounded-lg shadow p-3">
+              {/* Basic Information */}
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employee.name || '-'}</p>
                 <p className="text-sm text-gray-500">Full Name</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employee.employeeId || '-'}</p>
                 <p className="text-sm text-gray-500">Employee ID</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employee.dateOfBirth ? formatDateToDayMonYear(employee.dateOfBirth) : '-'}
                 </p>
                 <p className="text-sm text-gray-500">Date of Birth</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employee.joinDate ? formatDateToDayMonYear(employee.joinDate) : '-'}
                 </p>
                 <p className="text-sm text-gray-500">Join Date</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employee.homeTown || '-'}</p>
                 <p className="text-sm text-gray-500">Home Town</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <span
                   className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     employee.status === 'active'
@@ -344,7 +344,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
               
               
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <span
                   className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     (employee.employeeType || 'internal') === 'internal'
@@ -357,7 +357,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
                 <p className="text-sm text-gray-500 mt-2">Employee Type</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 {employee.employmentStatus ? (
                   <span
                     className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -375,7 +375,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
               </div>
               
               {employee.employmentStatus === 'resigned' && employee.resignedDate && (
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">
                     {formatDateToDayMonYear(employee.resignedDate)}
                   </p>
@@ -384,7 +384,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
               )}
               
               {employee.employmentStatus === 'resigned' && employee.lastWorkingDay && (
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">
                     {formatDateToDayMonYear(employee.lastWorkingDay)}
                   </p>
@@ -392,22 +392,22 @@ export default function EmployeeViewPage({ params }: PageParams) {
                 </div>
               )}
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employee.email || '-'}</p>
                 <p className="text-sm text-gray-500">Email</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employee.phone || '-'}</p>
                 <p className="text-sm text-gray-500">Phone</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employee.position || '-'}</p>
                 <p className="text-sm text-gray-500">Position</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employee.department || '-'}</p>
                 <p className="text-sm text-gray-500">Department</p>
               </div>
@@ -418,12 +418,12 @@ export default function EmployeeViewPage({ params }: PageParams) {
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employee.currentAddress || '-'}</p>
                 <p className="text-sm text-gray-500">Current Address</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{employee.permanentAddress || '-'}</p>
                 <p className="text-sm text-gray-500">Permanent Address</p>
               </div>
@@ -440,17 +440,17 @@ export default function EmployeeViewPage({ params }: PageParams) {
             <h3 className="text-md font-medium text-gray-700 mt-6 mb-4">Graduation</h3>
             {employee.graduation ? (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{employee.graduation.degree || '-'}</p>
                   <p className="text-sm text-gray-500">Degree</p>
                 </div>
                 
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{employee.graduation.branch || '-'}</p>
                   <p className="text-sm text-gray-500">Branch</p>
                 </div>
                 
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">
                     {employee.graduation.month ? `${employee.graduation.month} ` : ''}
                     {employee.graduation.passingYear || '-'}
@@ -458,28 +458,28 @@ export default function EmployeeViewPage({ params }: PageParams) {
                   <p className="text-sm text-gray-500">Passing Year</p>
                 </div>
                 
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{employee.graduation.collegeName || '-'}</p>
                   <p className="text-sm text-gray-500">College Name</p>
                 </div>
                 
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{employee.graduation.universityName || '-'}</p>
                   <p className="text-sm text-gray-500">University</p>
                 </div>
                 
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{employee.graduation.marks || '-'}</p>
                   <p className="text-sm text-gray-500">Marks</p>
                 </div>
                 
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{employee.graduation.grade || '-'}</p>
                   <p className="text-sm text-gray-500">Grade</p>
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow p-3 mb-4">
+              <div className="mb-4">
                 <p className="text-gray-500 italic">No graduation details available</p>
               </div>
             )}
@@ -506,95 +506,95 @@ export default function EmployeeViewPage({ params }: PageParams) {
                     
                     {/* Display Fields */}
                     {entry.type === '12th' && entry.twelthData && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {entry.twelthData.branch && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.twelthData.branch}</p>
-                  <p className="text-sm text-gray-500">Branch</p>
-                </div>
+                            <p className="text-sm text-gray-500">Branch</p>
+                          </div>
                         )}
                         {(entry.twelthData.month || entry.twelthData.passingYear) && (
-                <div className="bg-white rounded-lg shadow p-3">
-                  <p className="text-lg font-medium text-gray-900">
+                          <div>
+                            <p className="text-lg font-medium text-gray-900">
                               {entry.twelthData.month ? `${entry.twelthData.month} ` : ''}
                               {entry.twelthData.passingYear || '-'}
-                  </p>
-                  <p className="text-sm text-gray-500">Passing Year</p>
-                </div>
+                            </p>
+                            <p className="text-sm text-gray-500">Passing Year</p>
+                          </div>
                         )}
                         {entry.twelthData.schoolName && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.twelthData.schoolName}</p>
-                  <p className="text-sm text-gray-500">School</p>
-                </div>
+                            <p className="text-sm text-gray-500">School</p>
+                          </div>
                         )}
                         {entry.twelthData.board && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.twelthData.board}</p>
-                  <p className="text-sm text-gray-500">Board</p>
-                </div>
+                            <p className="text-sm text-gray-500">Board</p>
+                          </div>
                         )}
                         {entry.twelthData.marks && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.twelthData.marks}</p>
-                  <p className="text-sm text-gray-500">Marks</p>
-                </div>
+                            <p className="text-sm text-gray-500">Marks</p>
+                          </div>
                         )}
                         {entry.twelthData.grade && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.twelthData.grade}</p>
-                  <p className="text-sm text-gray-500">Grade</p>
-                </div>
+                            <p className="text-sm text-gray-500">Grade</p>
+                          </div>
                         )}
-              </div>
-            )}
-            
+                      </div>
+                    )}
+                    
                     {entry.type === 'diploma' && entry.diplomaData && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         {entry.diplomaData.name && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.diplomaData.name}</p>
                             <p className="text-sm text-gray-500">Diploma Name</p>
-                </div>
+                          </div>
                         )}
                         {entry.diplomaData.branch && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.diplomaData.branch}</p>
-                  <p className="text-sm text-gray-500">Branch</p>
-                </div>
+                            <p className="text-sm text-gray-500">Branch</p>
+                          </div>
                         )}
                         {(entry.diplomaData.month || entry.diplomaData.passingYear) && (
-                <div className="bg-white rounded-lg shadow p-3">
-                  <p className="text-lg font-medium text-gray-900">
+                          <div>
+                            <p className="text-lg font-medium text-gray-900">
                               {entry.diplomaData.month ? `${entry.diplomaData.month} ` : ''}
                               {entry.diplomaData.passingYear || '-'}
-                  </p>
-                  <p className="text-sm text-gray-500">Passing Year</p>
-                </div>
+                            </p>
+                            <p className="text-sm text-gray-500">Passing Year</p>
+                          </div>
                         )}
                         {entry.diplomaData.collegeName && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.diplomaData.collegeName}</p>
-                  <p className="text-sm text-gray-500">College Name</p>
-                </div>
+                            <p className="text-sm text-gray-500">College Name</p>
+                          </div>
                         )}
                         {entry.diplomaData.institute && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.diplomaData.institute}</p>
-                  <p className="text-sm text-gray-500">Institute</p>
-                </div>
+                            <p className="text-sm text-gray-500">Institute</p>
+                          </div>
                         )}
                         {entry.diplomaData.marks && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.diplomaData.marks}</p>
-                  <p className="text-sm text-gray-500">Marks</p>
-                </div>
+                            <p className="text-sm text-gray-500">Marks</p>
+                          </div>
                         )}
                         {entry.diplomaData.grade && (
-                <div className="bg-white rounded-lg shadow p-3">
+                          <div>
                             <p className="text-lg font-medium text-gray-900">{entry.diplomaData.grade}</p>
-                  <p className="text-sm text-gray-500">Grade</p>
-                </div>
+                            <p className="text-sm text-gray-500">Grade</p>
+                          </div>
                         )}
                       </div>
                     )}
@@ -602,7 +602,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow p-3 mb-4">
+              <div className="mb-4">
                 <p className="text-gray-500 italic">No 12th standard or diploma details available</p>
               </div>
             )}
@@ -611,12 +611,12 @@ export default function EmployeeViewPage({ params }: PageParams) {
             <h3 className="text-md font-medium text-gray-700 mt-6 mb-4">10th Standard</h3>
             {employee.tenthStandard ? (
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{employee.tenthStandard.schoolName || employee.tenthStandard.school || '-'}</p>
                   <p className="text-sm text-gray-500">School</p>
                 </div>
                 
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">
                     {employee.tenthStandard.month ? `${employee.tenthStandard.month} ` : ''}
                     {employee.tenthStandard.passingYear || '-'}
@@ -624,23 +624,23 @@ export default function EmployeeViewPage({ params }: PageParams) {
                   <p className="text-sm text-gray-500">Passing Year</p>
                 </div>
                 
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{employee.tenthStandard.board || '-'}</p>
                   <p className="text-sm text-gray-500">Board</p>
                 </div>
                 
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{employee.tenthStandard.marks || '-'}</p>
                   <p className="text-sm text-gray-500">Marks</p>
                 </div>
                 
-                <div className="bg-white rounded-lg shadow p-3">
+                <div>
                   <p className="text-lg font-medium text-gray-900">{employee.tenthStandard.grade || '-'}</p>
                   <p className="text-sm text-gray-500">Grade</p>
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow p-3 mb-4">
+              <div className="mb-4">
                 <p className="text-gray-500 italic">No 10th standard details available</p>
               </div>
             )}
@@ -652,24 +652,24 @@ export default function EmployeeViewPage({ params }: PageParams) {
               <FiBook className="mr-2" /> Audit Trail
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{createdByAdmin || 'Unknown'}</p>
                 <p className="text-sm text-gray-500">Created By</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employee.createdAt ? formatDateToDayMonYear(employee.createdAt) : '-'}
                 </p>
                 <p className="text-sm text-gray-500">Created At</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">{updatedByAdmin || 'Unknown'}</p>
                 <p className="text-sm text-gray-500">Updated By</p>
               </div>
               
-              <div className="bg-white rounded-lg shadow p-3">
+              <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employee.updatedAt ? formatDateToDayMonYear(employee.updatedAt) : '-'}
                 </p>

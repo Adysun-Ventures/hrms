@@ -13,6 +13,14 @@ import {
   View,
   Image
 } from "@react-pdf/renderer";
+import { saveAs } from "file-saver";
+import {
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+} from "docx";
+import { createAdysunDocx } from "@/utils/docxAdysun";
 
 import { db } from "@/firebase/config";
 import { collection, getDocs } from "firebase/firestore";
@@ -54,6 +62,48 @@ const toTitleCase = (str) => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
+
+/* ---------------- DOCX BUILDER ---------------- */
+async function buildAppraisalLetterDocx(employee, currentCTC, percentIncrease, revisedCTC, effectiveDate) {
+  const employeeName = employee?.name || "";
+  const shortName = employeeName.split(" ")[0] || employeeName;
+  const formattedCurrent = Number(currentCTC).toLocaleString("en-IN");
+  const formattedRevised = Number(revisedCTC).toLocaleString("en-IN");
+  const formattedEffective = formatDate(effectiveDate);
+  const today = formatDate(new Date());
+  const children = [
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: today })] }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "INCREMENT LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "I am pleased to inform you that due to your consistent outstanding performance and dedication to your role, we are providing you with a salary increment effective from " }),
+        new TextRun({ text: formattedEffective, bold: true }),
+        new TextRun({ text: "." }),
+      ],
+    }),
+    new Paragraph({
+      children: [
+        new TextRun({ text: "Your new annual CTC will be " }),
+        new TextRun({ text: formattedRevised, bold: true }),
+        new TextRun({ text: " which is an increase from your previous annual CTC of " }),
+        new TextRun({ text: formattedCurrent, bold: true }),
+        new TextRun({ text: "." }),
+      ],
+    }),
+    new Paragraph({ text: "We appreciate your continuous hard work and commitment and we believe you will continue to excel and contribute towards the company's success." }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Effective: " }), new TextRun({ text: formattedEffective })] }),
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
+    new Paragraph({ text: COMPANY_DATA.hrDesignation }),
+    new Paragraph({ text: COMPANY_DATA.hrEmail }),
+  ];
+  return await createAdysunDocx({ children });
+}
 
 /* ---------------- PDF COMPONENT ---------------- */
 const AppraisalLetterPDF = ({
@@ -219,7 +269,7 @@ export default function AppraisalLetterV2() {
   };
 
   return (
-    <div className="w-full p-4">
+    <div className="w-full pt-6">
       <Toaster position="top-center" />
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -361,21 +411,46 @@ export default function AppraisalLetterV2() {
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold">PDF Preview</h3>
 
-            <PDFDownloadLink
-              document={
-                <AppraisalLetterPDF
-                  employee={employee}
-                  currentCTC={currentCTC}
-                  percentIncrease={percentIncrease}
-                  revisedCTC={revisedCTC}
-                  effectiveDate={effectiveDate}
-                />
-              }
-              fileName={`Appraisal_${employee.name}.pdf`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md"
-            >
-              Download PDF
-            </PDFDownloadLink>
+            <div className="flex items-center gap-2">
+              <PDFDownloadLink
+                document={
+                  <AppraisalLetterPDF
+                    employee={employee}
+                    currentCTC={currentCTC}
+                    percentIncrease={percentIncrease}
+                    revisedCTC={revisedCTC}
+                    effectiveDate={effectiveDate}
+                  />
+                }
+                fileName={`Appraisal_${employee.name}.pdf`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md"
+              >
+                Download PDF
+              </PDFDownloadLink>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const doc = await buildAppraisalLetterDocx(
+                      employee,
+                      currentCTC,
+                      percentIncrease,
+                      revisedCTC,
+                      effectiveDate
+                    );
+                    const blob = await Packer.toBlob(doc);
+                    saveAs(blob, `IncrementLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
+                    toast.success("DOCX downloaded");
+                  } catch (err) {
+                    console.error("DOCX download error:", err);
+                    toast.error("Failed to generate DOCX");
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Download DOCX
+              </button>
+            </div>
           </div>
 
           <div className="border rounded-lg" style={{ height: "80vh" }}>

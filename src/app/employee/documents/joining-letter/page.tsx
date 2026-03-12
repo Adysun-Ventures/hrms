@@ -18,6 +18,14 @@ import {
   View,
   Image
 } from "@react-pdf/renderer";
+import { saveAs } from "file-saver";
+import {
+  Document as DocxDocument,
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+} from "docx";
 import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 
 /* ---------------- TYPES ---------------- */
@@ -62,6 +70,37 @@ const formatDate = (d?: string) => {
         </View>
       );
     };
+
+const toTitleCase = (s?: string) => s?.toLowerCase().split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") || "";
+
+async function buildJoiningLetterDocx(emp: Employee | null, designation: string, department: string, joiningDate: string, workLocation: string, reportingManager: string, annualCTC: string, probation: string, workingHours: string, issueDate: string, signPlace: string) {
+  if (!emp) return new DocxDocument({ sections: [{ properties: {}, children: [new Paragraph({ text: "No data" })] }] });
+  const name = emp.name || "";
+  const shortName = name.split(" ")[0] || name;
+  const formattedJoining = formatDate(joiningDate);
+  const formattedCTC = annualCTC ? Number(annualCTC).toLocaleString("en-IN") : "";
+  const children = [
+    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: issueDate })] }),
+    new Paragraph({ children: [new TextRun({ text: toTitleCase(name), bold: true })] }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "JOINING LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
+    new Paragraph({ children: [new TextRun({ text: `We are pleased to confirm your joining with ${COMPANY_DATA.name}. You will be joining us as ` }), new TextRun({ text: designation || "", bold: true }), new TextRun({ text: department ? ` in the ${department} department` : "" }), new TextRun({ text: ` effective from ${formattedJoining}.` })] }),
+    new Paragraph({ text: `Your place of posting shall be ${workLocation || ""} and you will be reporting to ${reportingManager || ""}.` }),
+    new Paragraph({ children: [new TextRun({ text: "Your annual Cost to Company (CTC) will be " }), new TextRun({ text: formattedCTC, bold: true }), new TextRun({ text: "." })] }),
+    new Paragraph({ text: `You will be on probation for a period of ${probation || ""}, during which your performance will be assessed.` }),
+    new Paragraph({ text: `Your working hours will be ${workingHours || ""}, Monday to Friday.` }),
+    new Paragraph({ text: "We warmly welcome you to our organization and look forward to your valuable contribution." }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: signPlace || "" })] }),
+    new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: issueDate })] }),
+    new Paragraph({ children: [new TextRun({ text: toTitleCase(name), bold: true })] }),
+  ];
+  return new DocxDocument({ sections: [{ properties: {}, children }] });
+}
 
 /* ---------------- PDF ---------------- */
 
@@ -457,27 +496,46 @@ return (
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
 
-            <PDFDownloadLink
-              document={
-                <JoiningLetterPDF
-                  employee={employee}
-                  designation={designation}
-                  department={department}
-                  joiningDate={joiningDate}
-                  workLocation={workLocation}
-                  reportingManager={reportingManager}
-                  salary={annualCTC}
-                  probation={probation}
-                  workingHours={workingHours}
-                  issueDate={issueDate}
-                  signPlace={signPlace}
-                />
-              }
-              fileName={`Joining_${employee.name}.pdf`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-            >
-              Download PDF
-            </PDFDownloadLink>
+            <div className="flex items-center gap-2">
+              <PDFDownloadLink
+                document={
+                  <JoiningLetterPDF
+                    employee={employee}
+                    designation={designation}
+                    department={department}
+                    joiningDate={joiningDate}
+                    workLocation={workLocation}
+                    reportingManager={reportingManager}
+                    salary={annualCTC}
+                    probation={probation}
+                    workingHours={workingHours}
+                    issueDate={issueDate}
+                    signPlace={signPlace}
+                  />
+                }
+                fileName={`Joining_${employee.name}.pdf`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Download PDF
+              </PDFDownloadLink>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const doc = await buildJoiningLetterDocx(employee, designation, department, joiningDate, workLocation, reportingManager, annualCTC, probation, workingHours, issueDate, signPlace);
+                    const blob = await Packer.toBlob(doc);
+                    saveAs(blob, `JoiningLetter_${(employee?.name || "").replace(/\s+/g, "_")}.docx`);
+                    toast.success("DOCX downloaded");
+                  } catch (err) {
+                    console.error("DOCX download error:", err);
+                    toast.error("Failed to generate DOCX");
+                  }
+                }}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+              >
+                Download DOCX
+              </button>
+            </div>
           </div>
 
           <div className="border rounded-lg" style={{ height: "80vh" }}>

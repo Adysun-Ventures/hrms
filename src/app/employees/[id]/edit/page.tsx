@@ -35,6 +35,7 @@ export default function EditEmployeePage({ params }: PageParams) {
   const { id } = use(params);
 
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<Omit<Employee, 'id'> & { confirmPassword?: string }>();
+  const employeeName = watch('name');
   const currentAddressValue = watch('currentAddress');
   const employmentStatus = watch('employmentStatus');
 
@@ -232,7 +233,13 @@ export default function EditEmployeePage({ params }: PageParams) {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout
+        breadcrumbItems={[
+          { label: 'Dashboard', href: '/dashboard' },
+          { label: 'Employees', href: '/employees' },
+          { label: 'Loading...', isCurrent: true },
+        ]}
+      >
         <div className="flex justify-center items-center h-64">
           <p>Loading employee data...</p>
         </div>
@@ -241,7 +248,14 @@ export default function EditEmployeePage({ params }: PageParams) {
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Employees', href: '/employees' },
+        ...(employeeName ? [{ label: employeeName, href: `/employees/${id}` }] : []),
+        { label: 'Edit Employee', isCurrent: true },
+      ]}
+    >
       <Toaster />
 
 

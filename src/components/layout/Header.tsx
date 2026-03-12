@@ -249,13 +249,13 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
             <Image
               src="/adysun-logo.png"
               alt="Adysun Ventures Logo"
-              width={30}
-              height={30}
-              className="object-contain mr-2"
+              width={44}
+              height={44}
+              className="object-contain mr-3"
               priority
             />
             <div className="flex flex-col items-start leading-tight">
-              <span className={`text-xl font-semibold transition-colors duration-300 ${getTextStyles()}`}>
+              <span className={`text-xl font-bold transition-colors duration-300 ${getTextStyles()}`}>
                 ADYSUN VENTURES
               </span>
               <span className="text-xs text-gray-600">

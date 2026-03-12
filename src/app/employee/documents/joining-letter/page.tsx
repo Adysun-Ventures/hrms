@@ -305,7 +305,7 @@ return (
   >
     <Toaster position="top-center" />
 
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto pt-6">
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
 

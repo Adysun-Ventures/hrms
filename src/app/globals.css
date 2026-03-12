@@ -36,9 +36,10 @@ select:focus {
   outline-offset: 2px;
 }
 
-/* Smooth scrolling */
+/* Smooth scrolling + global scale (make 100% look like current 90%) */
 html {
   scroll-behavior: smooth;
+  font-size: 90%;
 }
 
 /* Better text rendering */

@@ -17,33 +17,38 @@ export default function AuthGuard({
 }: AuthGuardProps) {
   const { currentUserData, loading } = useAuth();
   const router = useRouter();
-  const [isChecking, setIsChecking] = useState(true);
+  const [hasInitialCheckCompleted, setHasInitialCheckCompleted] = useState(false);
 
   useEffect(() => {
-    if (!loading) {
-      if (!currentUserData) {
-        router.push(redirectTo);
-        return;
-      }
+    // Only show the blocking loader on the very first auth check.
+    if (loading) return;
 
-      const isAllowedUserType = allowedUserTypes.includes(currentUserData.userType);
-      
-      if (!isAllowedUserType) {
-        if (currentUserData.userType === 'admin') {
-          router.push('/dashboard');
-        } else if (currentUserData.userType === 'employee') {
-          router.push('/employee-dashboard');
-        } else {
-          router.push(redirectTo);
-        }
-        return;
-      }
-
-      setIsChecking(false);
+    if (!currentUserData) {
+      router.push(redirectTo);
+      return;
     }
-  }, [currentUserData, loading, allowedUserTypes, redirectTo, router]);
 
-  if (loading || isChecking) {
+    const isAllowedUserType = allowedUserTypes.includes(currentUserData.userType);
+
+    if (!isAllowedUserType) {
+      if (currentUserData.userType === 'admin') {
+        router.push('/dashboard');
+      } else if (currentUserData.userType === 'employee') {
+        router.push('/employee-dashboard');
+      } else {
+        router.push(redirectTo);
+      }
+      return;
+    }
+
+    // At this point user is valid and first check is done.
+    if (!hasInitialCheckCompleted) {
+      setHasInitialCheckCompleted(true);
+    }
+  }, [currentUserData, loading, allowedUserTypes, redirectTo, router, hasInitialCheckCompleted]);
+
+  // Block the UI only during the very first auth check to avoid page blink on every route change.
+  if (!hasInitialCheckCompleted) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">

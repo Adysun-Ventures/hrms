@@ -31,7 +31,6 @@ import EmployeeLayout from "@/components/layout/EmployeeLayout";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import { offerLetterStyles } from "@/components/pdf/PDFStyles";
-import CommonIncrementLetterPDF from "@/components/components/docComponents/incrementLetter";
 import { formatDateToDayMonYear } from "@/utils/documentUtils";
 /* ---------------- TYPES ---------------- */
 interface Employee {
@@ -309,9 +308,9 @@ return (
       { label: "Increment Letter", isCurrent: true }
     ]}
   >
-    <div className="container mx-auto pt-6">
+    <div className="mx-auto pt-6">
 
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div>
 
         {/* Header */}
         <div className="px-6 py-6 border-b border-gray-200 flex justify-between items-center">
@@ -337,12 +336,12 @@ return (
           {employment ? (
             <>
               {/* Section Card */}
-              <div className="bg-gray-100 p-4 rounded-lg">
+              <div>
                 <h2 className="text-lg font-semibold text-gray-800 mb-3 border-l-4 border-blue-500 pl-2">
                   Increment Details
                 </h2>
 
-                <div className="bg-white p-4 rounded-lg">
+                <div>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
                     {/* Current CTC */}

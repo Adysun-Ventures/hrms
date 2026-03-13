@@ -1090,7 +1090,7 @@ return (
 
     <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6">
       {/* Header */}
-      <div className="flex items-center gap-124 px-6 py-4 border-b border-gray-200">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
         <Link
           href="/dashboard/documents"
           className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 transition-colors"
@@ -1101,6 +1101,20 @@ return (
         <h2 className="text-xl font-bold text-gray-800">
           Salary Slip Generator
         </h2>
+
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={formData.employeeName.length === 0}
+          className={`flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 ${
+            formData.employeeName.length === 0
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
+        >
+          <FiDownload size={18} className="mr-2" />
+          Generate
+        </button>
       </div>
 
       {/* Form Grid */}

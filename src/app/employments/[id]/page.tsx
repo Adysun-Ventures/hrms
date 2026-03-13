@@ -459,50 +459,54 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           
 
           
-  <div className="mb-6">
-    <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-      <FiBriefcase className="mr-2" /> Resignation Information
-    </h2>
+          {employment.isResignation && (
+            <>
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <FiBriefcase className="mr-2" /> Resignation Information
+                </h2>
 
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div>
-        <p className="text-lg font-medium text-gray-900">
-          {employment.resignationDate
-            ? formatDateToDayMonYear(employment.resignationDate)
-            : '-'}
-        </p>
-        <p className="text-sm text-gray-500">Resignation Date</p>
-      </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">
+                      {employment.resignationDate
+                        ? formatDateToDayMonYear(employment.resignationDate)
+                        : '-'}
+                    </p>
+                    <p className="text-sm text-gray-500">Resignation Date</p>
+                  </div>
 
-      <div>
-        <p className="text-lg font-medium text-gray-900">
-          {employment.lastSalaryDate
-            ? formatDateToDayMonYear(employment.lastSalaryDate)
-            : '-'}
-        </p>
-        <p className="text-sm text-gray-500">Last Salary Date</p>
-      </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">
+                      {employment.lastSalaryDate
+                        ? formatDateToDayMonYear(employment.lastSalaryDate)
+                        : '-'}
+                    </p>
+                    <p className="text-sm text-gray-500">Last Salary Date</p>
+                  </div>
 
-      <div>
-        <p className="text-lg font-medium text-gray-900">
-          {employment.lastDrawnSalary
-            ? formatCurrency(employment.lastDrawnSalary)
-            : '-'}
-        </p>
-        <p className="text-sm text-gray-500">Last Drawn Salary</p>
-      </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">
+                      {employment.lastDrawnSalary
+                        ? formatCurrency(employment.lastDrawnSalary)
+                        : '-'}
+                    </p>
+                    <p className="text-sm text-gray-500">Last Drawn Salary</p>
+                  </div>
 
-      <div>
-        <p className="text-lg font-medium text-gray-900">
-          {employment.lastWorkingDate
-            ? formatDateToDayMonYear(employment.lastWorkingDate)
-            : '-'}
-        </p>
-        <p className="text-sm text-gray-500">Last Working Date</p>
-      </div>
-    </div>
-  </div>
-  <div className="border-t border-gray-200 my-2" />
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">
+                      {employment.lastWorkingDate
+                        ? formatDateToDayMonYear(employment.lastWorkingDate)
+                        : '-'}
+                    </p>
+                    <p className="text-sm text-gray-500">Last Working Date</p>
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-gray-200 my-2" />
+            </>
+          )}
 
 
 

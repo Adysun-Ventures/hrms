@@ -24,9 +24,7 @@ const EmploymentWorkingStatusBadge = ({ employeeId }: { employeeId: string }) =>
   return (
     <span
       className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-        isResigned
-          ? 'bg-red-100 text-red-800'
-          : 'bg-green-100 text-green-800'
+        isResigned ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
       }`}
     >
       {isResigned ? 'Resigned' : 'Working'}
@@ -736,12 +734,15 @@ useEffect(() => {
                             : 'bg-orange-100 text-orange-800'
                         }`}
                       >
-                        {(employee.employeeType || 'internal').charAt(0).toUpperCase() + (employee.employeeType || 'internal').slice(1)}
+                        {(employee.employeeType || 'internal')
+                          .charAt(0)
+                          .toUpperCase() +
+                          (employee.employeeType || 'internal').slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-2 whitespace-nowrap text-center">
-  <EmploymentWorkingStatusBadge employeeId={employee.id} />
-</td>
+                      <EmploymentWorkingStatusBadge employeeId={employee.id} />
+                    </td>
 
                     <td className="px-6 py-2 whitespace-nowrap">
                       {deleteConfirm === employee.id ? (

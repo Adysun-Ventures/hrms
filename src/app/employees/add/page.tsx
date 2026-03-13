@@ -248,7 +248,7 @@ export default function AddEmployeePage() {
 
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Personal Details Section */}
-          <div className="bg-gray-100 p-4 mb-4 rounded-lg">
+          <div className="bg-white p-4 mb-4 rounded-lg">
             <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Personal Details</h2>
 
             <div className="bg-white p-4 rounded-lg mb-4">
@@ -357,20 +357,6 @@ export default function AddEmployeePage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employee Status
-                  </label>
-                  <select
-                    {...register('employmentStatus')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  >
-                    <option value="">Select status</option>
-                    <option value="working">Working</option>
-                    <option value="resigned">Resigned</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status
                   </label>
                   <select
@@ -431,9 +417,9 @@ export default function AddEmployeePage() {
                 </div>
               </div>
 
-              {/* Row 2: Addresses - leave as 2 columns */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
+              {/* Row 2: Addresses - col-6 each in one row */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
+                <div className="md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Current Address
                   </label>
@@ -448,7 +434,7 @@ export default function AddEmployeePage() {
                   )}
                 </div>
 
-                <div>
+                <div className="md:col-span-6">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-sm font-medium text-gray-700">
                       Permanent Address
@@ -596,7 +582,7 @@ export default function AddEmployeePage() {
           </div>
 
           {/* Educational Details Section */}
-          <div className="bg-gray-100 p-4 rounded-lg">
+          <div className="bg-white p-4 rounded-lg">
             <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Educational Details</h2>
 
             {/* Higher Education */}

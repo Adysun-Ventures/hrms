@@ -276,19 +276,29 @@ export default function AppraisalLetterV2() {
         <TableHeader
           title="Generate Increment Letter"
           backButton={{ href: "/dashboard/documents", label: "Back" }}
+          searchValue=""
+          onSearchChange={() => {}}
           showStats={false}
           showSearch={false}
           showFilter={false}
           headerClassName="px-6 py-6"
+          actionButtons={[
+            {
+              label: "Generate Letter",
+              icon: <FiDownload size={18} />,
+              variant: "success",
+              onClick: generate,
+            },
+          ]}
         />
 
         <div className="p-6 space-y-6">
 
           {/* SECTION CARD */}
-          <div className="bg-gray-100 p-4 rounded-lg">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
+          <div>
+            {/* <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
               Increment Information
-            </h2>
+            </h2> */}
 
             <div className="bg-white p-4 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -392,10 +402,18 @@ export default function AppraisalLetterV2() {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="pt-4 border-t border-gray-200 flex items-center justify-between mt-4">
             <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
               onClick={generate}
-              className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 bg-green-600 text-white hover:bg-green-700"
             >
               <FiDownload size={18} className="mr-2" />
               <span>Generate Letter</span>

@@ -418,6 +418,24 @@ const TableHeader: React.FC<TableHeaderProps> = ({
 
                   {/* Filter Dropdowns */}
                   <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    {onRefresh && (
+                      <Tooltip content="Refresh" position="top" color="blue">
+                        <button
+                          onClick={onRefresh}
+                          disabled={isRefreshing}
+                          className={`border border-gray-300 p-2 rounded-md transition-all duration-200 ${
+                            isRefreshing
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'text-blue-600 hover:bg-blue-50 hover:text-blue-700'
+                          }`}
+                          aria-label="Refresh data"
+                        >
+                          <FiRefreshCw
+                            className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                          />
+                        </button>
+                      </Tooltip>
+                    )}
                     {technologyFilterOptions.length > 0 && onTechnologyFilterChange && (
                       <div className="relative w-full sm:w-32">
                         <select
@@ -491,25 +509,6 @@ const TableHeader: React.FC<TableHeaderProps> = ({
               
               {/* Other Controls */}
               <div className="flex items-center gap-3 w-full sm:w-auto">
-                {onRefresh && (
-                  <Tooltip content="Refresh" position="top" color="blue">
-                    <button
-                      onClick={onRefresh}
-                      disabled={isRefreshing}
-                      className={`border border-gray-300 p-2 rounded-md transition-all duration-200 ${
-                        isRefreshing 
-                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                          : 'text-blue-600 hover:bg-blue-50 hover:text-blue-700'
-                      }`}
-                      aria-label="Refresh data"
-                    >
-                      <FiRefreshCw 
-                        className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} 
-                      />
-                    </button>
-                  </Tooltip>
-                )}
-                
                 {showFilter && onFilterChange && (
                   <div className="relative w-full sm:w-auto">
                     <select

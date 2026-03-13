@@ -326,7 +326,7 @@ export default function AddEmploymentPage() {
               />
 
               {/* Job Details Section - MOVED TO TOP */}
-              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <div className="bg-white p-4 rounded-lg mb-6">
                 <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Job Details</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -416,7 +416,7 @@ export default function AddEmploymentPage() {
               </div>
 
               {/* Employment Information Section */}
-              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <div className="bg-white p-4 rounded-lg mb-6">
                 <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Employment Information</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -522,7 +522,7 @@ export default function AddEmploymentPage() {
               </div>
 
               {/* Career Progression/Increment Details (CTP) */}
-              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <div className="bg-white p-4 rounded-lg mb-6">
                 <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">
                  Increment Details
                 </h2>
@@ -588,7 +588,7 @@ export default function AddEmploymentPage() {
               </div>
 
               {/* Salary Details Section */}
-              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <div className="bg-white p-4 rounded-lg mb-6">
                 <div className="flex justify-between items-center mb-4">
                   <div>
                     <h2 className="text-lg font-medium text-gray-800 mb-2 border-l-4 border-green-500 pl-2">
@@ -826,7 +826,7 @@ export default function AddEmploymentPage() {
               </div>
 
               {/* Bank Details Section */}
-              <div className="bg-gray-50 p-4 rounded-lg mb-6">
+              <div className="bg-white p-4 rounded-lg mb-6">
                 <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Salary Account and Bank Details</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

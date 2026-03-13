@@ -249,7 +249,7 @@ return (
     <Toaster position="top-center" />
 
     {/* MAIN CARD */}
-    <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden mb-8">
+    <div>
 
       {/* HEADER */}
       <div className="p-6 border-b border-gray-200 flex justify-between items-center">
@@ -273,7 +273,7 @@ return (
       {/* FORM SECTION */}
       <div className="p-6">
 
-        <div className="bg-gray-50 rounded-lg p-5 border border-gray-200">
+        <div>
           <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-blue-600 pl-3">
             Experience Letter Details
           </h2>

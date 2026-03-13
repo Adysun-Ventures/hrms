@@ -586,21 +586,34 @@ function OfferLetterV2() {
         <TableHeader
           title="Generate Offer Letter"
           backButton={{ href: '/dashboard/documents', label: 'Back' }}
+          searchValue=""
+          onSearchChange={() => {}}
           showStats={false}
           showSearch={false}
           showFilter={false}
           headerClassName="px-8 pt-8 mb-0"
+          actionButtons={[
+            {
+              label: 'Generate Offer Letter',
+              icon: <FiDownload size={18} />,
+              variant: 'success',
+              onClick: () => {
+                if (!employee) return toast.error('Employee is required');
+                setShowPDF(true);
+                setPdfKey((k) => k + 1);
+              },
+            },
+          ]}
         />
 
         <div className="px-8 pb-8 mt-6">
-          <div className="bg-gray-100 p-5 rounded-lg border border-gray-200">
+          <div>
 
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <span className="w-1 h-6 bg-blue-600 rounded"></span>
-              Employee Information
-            </h2>
+            {/* <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"> */}
+              {/* <span className="w-1 h-6 bg-blue-600 rounded"></span> */}
+            {/* </h2> */}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white p-4 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
 <div>
   <label className="block text-sm font-medium text-slate-800 mb-1">
@@ -663,14 +676,23 @@ function OfferLetterV2() {
             </div>
           </div>
 
-          <div className="flex justify-end mt-6">
+          <div className="px-0 pt-4 border-t border-gray-200 flex items-center justify-between mt-4">
             <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
               onClick={() => {
                 if (!employee) return toast.error('Employee is required');
                 setShowPDF(true);
                 setPdfKey(k => k + 1);
               }}
-              className="flex items-center px-6 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:bg-blue-800 shadow hover:shadow-md transition"
+              className="flex items-center px-6 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 active:bg-green-800 shadow hover:shadow-md transition"
             >
               <FiDownload size={18} className="mr-2" />
               Generate Offer Letter

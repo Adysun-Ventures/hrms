@@ -289,6 +289,14 @@ function RelievingLetterV2() {
     setEmployee(candidates.find(x => x.id === id) || null);
     setEmployment(employments[id] || null);
   };
+
+  const canGenerate = Boolean(
+    employee &&
+    employeeSignDate &&
+    employeeRelievingDate &&
+    employeeResignDate &&
+    employeeSignPlace
+  );
    
 
   return (
@@ -310,6 +318,7 @@ function RelievingLetterV2() {
               label: "Generate Letter",
               icon: <FiDownload size={18} />,
               variant: "success",
+              disabled: !canGenerate,
               onClick: () => {
                 if (!employee) return toast.error("Select employee");
                 if (!employeeSignDate) return toast.error("Select sign date");
@@ -321,7 +330,7 @@ function RelievingLetterV2() {
             },
           ]}
         />
-
+    <div className="-mx-6 border-t border-gray-200 my-4"></div>
         <div className="p-6 space-y-6">
           <div>
             {/* <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
@@ -438,8 +447,8 @@ function RelievingLetterV2() {
               </div>
             </div>
           </div>
-
-          <div className="pt-4 border-t border-gray-200 flex items-center justify-between mt-4">
+          <div className="-mx-6 border-t border-gray-200 my-4"></div>
+          <div className="pt-4 flex items-center justify-between mt-4">
             <button
               type="button"
               onClick={() => window.history.back()}
@@ -449,6 +458,7 @@ function RelievingLetterV2() {
             </button>
             <button
               type="button"
+              disabled={!canGenerate}
               onClick={() => {
                 if (!employee) return toast.error("Select employee");
                 if (!employeeSignDate) return toast.error("Select sign date");
@@ -457,7 +467,11 @@ function RelievingLetterV2() {
                 if (!employeeSignPlace) return toast.error("Enter sign place");
                 setShowPDF(true);
               }}
-              className="flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 bg-green-600 text-white hover:bg-green-700"
+              className={`flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 ${
+                canGenerate
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
             >
               <FiDownload size={18} className="mr-2" />
               Generate Letter

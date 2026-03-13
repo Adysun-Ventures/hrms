@@ -281,14 +281,15 @@ export default function AddEmployeePage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Date of Birth
+                    <span className="text-red-500 mr-1">*</span> Date of Birth
                   </label>
                   <input
                     type="date"
                     {...register('dateOfBirth', {
+                      required: 'Date of Birth is required',
                       validate: {
                         notFuture: (value) => {
-                          if (!value) return true; // Optional field
+                          if (!value) return true;
                           const selectedDate = new Date(value);
                           // The latest valid date is Dec 31, 2025
                           const maxValidDate = new Date("2025-12-31");
@@ -319,12 +320,13 @@ export default function AddEmployeePage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Home Town
+                    <span className="text-red-500 mr-1">*</span> Home Town
                   </label>
                   <input
                     type="text"
                     placeholder="Enter home town"
                     {...register('homeTown', {
+                      required: 'Home town is required',
                       maxLength: {
                         value: 50,
                         message: 'Home town cannot exceed 50 characters'
@@ -400,12 +402,13 @@ export default function AddEmployeePage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email ID
+                    <span className="text-red-500 mr-1">*</span> Email ID
                   </label>
                   <input
                     type="email"
                     placeholder="Enter email address"
                     {...register('email', {
+                      required: 'Email is required',
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                         message: 'Invalid email address'
@@ -421,12 +424,14 @@ export default function AddEmployeePage() {
               <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
                 <div className="md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Address
+                    <span className="text-red-500 mr-1">*</span> Current Address
                   </label>
                   <input
                     type="text"
                     placeholder="Enter current address"
-                    {...register('currentAddress')}
+                    {...register('currentAddress', {
+                      required: 'Current address is required',
+                    })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
                   {errors.currentAddress && (
@@ -437,7 +442,7 @@ export default function AddEmployeePage() {
                 <div className="md:col-span-6">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-sm font-medium text-gray-700">
-                      Permanent Address
+                      <span className="text-red-500 mr-1">*</span> Permanent Address
                     </label>
                     <label htmlFor="addSameAsCurrentAddress" className="flex items-center text-sm text-gray-600 space-x-2">
                       <input
@@ -459,7 +464,9 @@ export default function AddEmployeePage() {
                   <input
                     type="text"
                     placeholder="Enter permanent address (if different from current)"
-                    {...register('permanentAddress')}
+                    {...register('permanentAddress', {
+                      required: 'Permanent address is required',
+                    })}
                     className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black ${
                       sameAsCurrentAddress ? 'bg-gray-100 cursor-not-allowed' : ''
                     }`}
@@ -513,12 +520,13 @@ export default function AddEmployeePage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Aadhar Card
+                    <span className="text-red-500 mr-1">*</span> Aadhar Card
                   </label>
                   <input
                     type="text"
                     placeholder="Enter 12-digit Aadhar number"
                     {...register('aadharCard', {
+                      required: 'Aadhar card is required',
                       pattern: {
                         value: /^\d{12}$/,
                         message: 'Please enter a valid 12-digit Aadhar number'

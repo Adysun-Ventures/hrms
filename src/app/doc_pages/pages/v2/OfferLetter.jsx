@@ -578,6 +578,8 @@ function OfferLetterV2() {
 
   useEffect(() => { setPdfKey(k => k + 1); }, [enablePF]);
 
+  const canGenerate = Boolean(employee);
+
   return (
     <div className="w-full pt-6">
       <Toaster position="top-center" />
@@ -597,6 +599,7 @@ function OfferLetterV2() {
               label: 'Generate Offer Letter',
               icon: <FiDownload size={18} />,
               variant: 'success',
+              disabled: !canGenerate,
               onClick: () => {
                 if (!employee) return toast.error('Employee is required');
                 setShowPDF(true);
@@ -605,10 +608,10 @@ function OfferLetterV2() {
             },
           ]}
         />
-
+<div className="-mx-8 border-t border-gray-200 my-4"></div>
         <div className="px-8 pb-8 mt-6">
           <div>
-
+          
             {/* <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"> */}
               {/* <span className="w-1 h-6 bg-blue-600 rounded"></span> */}
             {/* </h2> */}
@@ -659,11 +662,9 @@ function OfferLetterV2() {
     </Combobox.Options>
   </div>
 </Combobox>
-
 </div>
 
-
-              <div className="flex items-center mt-8 gap-2">
+              <div className="flex items-center mt-8 gap-2 mb-4">
                 <input
                   type="checkbox"
                   checked={enablePF}
@@ -675,8 +676,10 @@ function OfferLetterV2() {
               <div></div>
             </div>
           </div>
+          <div className="-mx-8 border-t border-gray-200 my-4"></div>
+         
 
-          <div className="px-0 pt-4 border-t border-gray-200 flex items-center justify-between mt-4">
+          <div className="px-0 pt-4 flex items-center justify-between mt-4">
             <button
               type="button"
               onClick={() => window.history.back()}
@@ -687,12 +690,17 @@ function OfferLetterV2() {
 
             <button
               type="button"
+              disabled={!canGenerate}
               onClick={() => {
                 if (!employee) return toast.error('Employee is required');
                 setShowPDF(true);
                 setPdfKey(k => k + 1);
               }}
-              className="flex items-center px-6 py-2.5 bg-green-600 text-white rounded-md hover:bg-green-700 active:bg-green-800 shadow hover:shadow-md transition"
+              className={`flex items-center px-6 py-2.5 rounded-md shadow hover:shadow-md transition ${
+                canGenerate
+                  ? 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               <FiDownload size={18} className="mr-2" />
               Generate Offer Letter
@@ -753,6 +761,7 @@ function OfferLetterV2() {
                 enablePF={enablePF}
               />
             </PDFViewer>
+            <div className="-mx-4 sm:-mx-6 md:-mx-8 border-t border-gray-200 my-4"></div>
           </div>
         </div>
       )}

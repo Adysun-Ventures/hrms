@@ -240,8 +240,10 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                   <Link
                     key={index}
                     href={button.href}
-                    className={`${getButtonClasses(button.variant, button.hollow)} ${
-                      button.disabled ? 'opacity-50 cursor-not-allowed' : ''
+                    className={`${
+                      button.disabled
+                        ? 'px-2 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base w-full sm:w-auto bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : getButtonClasses(button.variant, button.hollow)
                     }`}
                     onClick={button.onClick}
                   >
@@ -255,8 +257,10 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                   key={index}
                   onClick={button.onClick}
                   disabled={button.disabled}
-                  className={`${getButtonClasses(button.variant, button.hollow)} ${
-                    button.disabled ? 'opacity-50 cursor-not-allowed' : ''
+                  className={`${
+                    button.disabled
+                      ? 'px-2 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base w-full sm:w-auto bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : getButtonClasses(button.variant, button.hollow)
                   }`}
                 >
                   {buttonContent}
@@ -316,8 +320,10 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                   <Link
                     key={index}
                     href={button.href}
-                    className={`${getButtonClasses(button.variant, button.hollow)} ${
-                      button.disabled ? 'opacity-50 cursor-not-allowed' : ''
+                    className={`${
+                      button.disabled
+                        ? 'px-2 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base w-full sm:w-auto bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : getButtonClasses(button.variant, button.hollow)
                     }`}
                     onClick={button.onClick}
                   >
@@ -331,8 +337,10 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                   key={index}
                   onClick={button.onClick}
                   disabled={button.disabled}
-                  className={`${getButtonClasses(button.variant, button.hollow)} ${
-                    button.disabled ? 'opacity-50 cursor-not-allowed' : ''
+                  className={`${
+                    button.disabled
+                      ? 'px-2 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base w-full sm:w-auto bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : getButtonClasses(button.variant, button.hollow)
                   }`}
                 >
                   {buttonContent}

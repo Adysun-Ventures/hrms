@@ -126,8 +126,10 @@ const Watermark = ({ logoSrc }: { logoSrc?: string }) => {
 };
 
 const formatDate = (date?: string | number | Date): string => {
-  const formatted = formatDateToDayMonYear(date ?? null);
-  return formatted === '-' ? '' : formatted;
+  const safeDate: string | Date | null =
+    typeof date === "number" ? new Date(date) : (date ?? null);
+  const formatted = formatDateToDayMonYear(safeDate);
+  return formatted === "-" ? "" : formatted;
 };
 
 const monthly = (n: number): number => Math.round(n / 12);
@@ -571,7 +573,7 @@ export default function EmployeeOfferLetterPage() {
     <Toaster position="top-center" />
 
     {/* MAIN CARD */}
-    <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden mb-8">
+    <div>
 
       {/* HEADER */}
       <div className="p-6 border-b border-gray-200 flex justify-between items-center">

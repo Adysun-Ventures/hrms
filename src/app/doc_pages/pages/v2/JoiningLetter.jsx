@@ -300,23 +300,33 @@ export default function JoiningLetterV2() {
     <div className="w-full pt-6">
       <Toaster position="top-center" />
 
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6">
         <TableHeader
           title="Generate Joining Letter"
           backButton={{ href: "/dashboard/documents", label: "Back" }}
+          searchValue=""
+          onSearchChange={() => {}}
           showStats={false}
           showSearch={false}
           showFilter={false}
           headerClassName="px-6 py-6"
+          actionButtons={[
+            {
+              label: "Generate Letter",
+              icon: <FiDownload size={18} />,
+              variant: "success",
+              onClick: generate,
+            },
+          ]}
         />
 
-        <div className="p-6 space-y-6">
+        <div className="px-6 py-6 space-y-6">
 
           {/* CARD */}
-          <div className="bg-gray-100 p-4 rounded-lg">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
+          <div>
+            {/* <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
               Joining Information
-            </h2>
+            </h2> */}
 
             <div className="bg-white p-4 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -484,10 +494,19 @@ export default function JoiningLetterV2() {
             </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="px-0 pt-4 border-t border-gray-200 flex items-center justify-between mt-4">
             <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
               onClick={generate}
-              className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 bg-green-600 text-white hover:bg-green-700"
             >
               <FiDownload size={18} className="mr-2" />
               <span>Generate Letter</span>
@@ -499,10 +518,10 @@ export default function JoiningLetterV2() {
 
       {/* PREVIEW */}
       {showPDF && employee && (
-        <div className="bg-white rounded-lg shadow-lg p-4 mt-6">
+        <div className="bg-white rounded-lg shadow-lg p-4 mb-8 mt-6">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold">PDF Preview</h3>
-            <div className="flex items-center gap-2">
+            <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
+            <div className="flex items-center gap-3">
               <PDFDownloadLink
                 document={
                   <JoiningLetterPDF
@@ -519,7 +538,7 @@ export default function JoiningLetterV2() {
                   />
                 }
                 fileName={`Joining_${employee.name}.pdf`}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md"
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
                 Download PDF
               </PDFDownloadLink>
@@ -547,7 +566,7 @@ export default function JoiningLetterV2() {
                     toast.error("Failed to generate DOCX");
                   }
                 }}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                className="px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-800"
               >
                 Download DOCX
               </button>

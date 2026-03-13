@@ -493,7 +493,7 @@ return (
     <Toaster position="top-center" />
 
     {/* ================= MAIN CARD ================= */}
-    <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+    <div>
 
       {/* HEADER */}
       <div className="p-6 border-b border-gray-200 flex justify-between items-center">
@@ -519,7 +519,7 @@ return (
       <div className="p-8 space-y-8">
 
         {/* ================= DETAILS CARD ================= */}
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+        <div>
 
           <h3 className="text-lg font-semibold text-gray-800 mb-6 border-l-4 border-blue-600 pl-3">
             Salary Slip Details

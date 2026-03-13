@@ -291,7 +291,7 @@ export default function EditEmployeePage({ params }: PageParams) {
         />
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Personal Details Section */}
-          <div className="bg-gray-100 p-4 mb-4 rounded-lg">
+          <div className="bg-white p-4 mb-4 rounded-lg">
             <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Personal Details</h2>
             <div className="bg-white p-4 rounded-lg mb-4">
               <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Basic Information</h3>
@@ -370,58 +370,14 @@ export default function EditEmployeePage({ params }: PageParams) {
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employment Status
-                  </label>
-                  <select
-                    {...register('employmentStatus')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  >
-                    <option value="working">Working</option>
-                    <option value="resigned">Resigned</option>
-                  </select>
-                </div>
-
-                {/* Conditional fields for resigned employees - nested grid with cols-8 */}
-                {employmentStatus === 'resigned' && (
-                  <div className="md:col-span-4">
-                    <div className="grid grid-cols-1 md:grid-cols-8 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Resigned Date
-                        </label>
-                        <input
-                          type="date"
-                          {...register('resignedDate')}
-                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        {errors.resignedDate && (
-                          <p className="mt-1 text-sm text-red-600">{errors.resignedDate.message}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Last Working Day
-                        </label>
-                        <input
-                          type="date"
-                          {...register('lastWorkingDay')}
-                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                        {errors.lastWorkingDay && (
-                          <p className="mt-1 text-sm text-red-600">{errors.lastWorkingDay.message}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* Employment Status dropdown removed as requested */}
               </div>
             </div>
 
             {/* Contact Information */}
             <div className="bg-white p-4 rounded-lg mb-4">
               <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Contact Information</h3>
+              {/* Row 1: Phone & Email */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -437,33 +393,38 @@ export default function EditEmployeePage({ params }: PageParams) {
                   <input type="email" placeholder="Enter email address" {...register('email', { pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' } })} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
                   {errors.email && (<p className="mt-1 text-sm text-red-600">{errors.email.message}</p>)}
                 </div>
-                
-                
-                <div className="md:col-span-4">
+              </div>
+
+              {/* Row 2: Addresses (col-6 + col-6 on desktop) */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
+                <div className="md:col-span-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Current Address
                   </label>
                   <input type="text" placeholder="Enter current address" {...register('currentAddress')} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
                   {errors.currentAddress && (<p className="mt-1 text-sm text-red-600">{errors.currentAddress.message}</p>)}
                 </div>
-                <div className="md:col-span-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Permanent Address</label>
-                  <div className="flex items-center mb-2">
-                    <input
-                      id="sameAsCurrentAddress"
-                      type="checkbox"
-                      checked={sameAsCurrentAddress}
-                      onChange={(event) => {
-                        const checked = event.target.checked;
-                        setSameAsCurrentAddress(checked);
-                        if (checked) {
-                          setValue('permanentAddress', currentAddressValue || '');
-                        }
-                      }}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                    />
-                    <label htmlFor="sameAsCurrentAddress" className="ml-2 text-sm text-gray-700">
-                      Same as Current Address
+
+                <div className="md:col-span-6">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Permanent Address
+                    </label>
+                    <label htmlFor="sameAsCurrentAddress" className="flex items-center text-sm text-gray-600 space-x-2">
+                      <input
+                        id="sameAsCurrentAddress"
+                        type="checkbox"
+                        checked={sameAsCurrentAddress}
+                        onChange={(event) => {
+                          const checked = event.target.checked;
+                          setSameAsCurrentAddress(checked);
+                          if (checked) {
+                            setValue('permanentAddress', currentAddressValue || '');
+                          }
+                        }}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      <span>Same as current</span>
                     </label>
                   </div>
                   <input
@@ -576,7 +537,7 @@ export default function EditEmployeePage({ params }: PageParams) {
 
           </div>
           {/* Educational Details Section */}
-          <div className="bg-gray-100 p-4 mb-4 rounded-lg">
+          <div className="bg-white p-4 mb-4 rounded-lg">
             <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Educational Details</h2>
             {/* Higher Education */}
             <div className="bg-white p-4 rounded-lg mb-4">

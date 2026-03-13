@@ -386,7 +386,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Basic Information */}
           <div className="px-6 pb-6">
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <div className="bg-white p-4 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Basic Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
@@ -480,7 +480,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
             
             {/* Job Details - MOVED TO TOP */}
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <div className="bg-white p-4 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Job Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
@@ -562,7 +562,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <div className="bg-white p-4 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Resignation Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
@@ -646,7 +646,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
             </div>
 
             {/* Joining Information */}
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <div className="bg-white p-4 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Employment Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
@@ -709,7 +709,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
             </div>
 
             {/* Career Progression/Increment Details (CTP) */}
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <div className="bg-white p-4 rounded-lg mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-800 border-l-4 border-purple-500 pl-2">
                   Increment Details
@@ -833,7 +833,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
             </div>
 
             {/* Salary Information */}
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <div className="bg-white p-4 rounded-lg mb-6">
               <div className="flex justify-between items-center mb-4">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-green-500 pl-2">
@@ -1071,7 +1071,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
             </div>
 
             {/* Bank Details Section */}
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
+            <div className="bg-white p-4 rounded-lg mb-6">
               <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Salary Account and Bank Details</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

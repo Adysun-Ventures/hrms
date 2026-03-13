@@ -344,19 +344,20 @@ export default function EmployeeViewPage({ params }: PageParams) {
               </div>
 
               <div>
-                {employee.employmentStatus ? (
-                  <span
-                    className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      employee.employmentStatus === 'working'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {employee.employmentStatus.charAt(0).toUpperCase() + employee.employmentStatus.slice(1)}
-                  </span>
-                ) : (
-                  <span className="text-gray-400">-</span>
-                )}
+                {(() => {
+                  const primaryEmployment = safeEmployments[0];
+                  const isResigned = primaryEmployment?.isResignation === true;
+
+                  return (
+                    <span
+                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        isResigned ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                      }`}
+                    >
+                      {isResigned ? 'Resigned' : 'Working'}
+                    </span>
+                  );
+                })()}
                 <p className="text-sm text-gray-500 mt-2">Employment Status</p>
               </div>
             </div>

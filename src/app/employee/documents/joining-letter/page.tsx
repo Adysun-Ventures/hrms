@@ -305,9 +305,9 @@ return (
   >
     <Toaster position="top-center" />
 
-    <div className="container mx-auto pt-6">
+    <div className="mx-auto pt-6">
 
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div>
 
         {/* HEADER */}
         <div className="px-6 py-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
@@ -336,14 +336,14 @@ return (
         <div className="p-6 space-y-6">
 
           {/* SECTION CARD */}
-          <div className="bg-gray-100 p-4 rounded-lg">
+          <div >
             <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
               Joining Information
             </h2>
 
              
 
-            <div className="bg-white p-4 rounded-lg">
+            <div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
                 {/* Issue Date */}

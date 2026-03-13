@@ -249,9 +249,9 @@ const EmployeeRelievingLetter: React.FC = () => {
   >
     <Toaster position="top-center" />
 
-    <div className="container mx-auto pt-6">
+    <div className="mx-auto pt-6">
 
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+      <div>
 
         {/* Header */}
         <div className="px-6 py-6 border-b border-gray-200 flex justify-between items-center">
@@ -275,7 +275,7 @@ const EmployeeRelievingLetter: React.FC = () => {
         <div className="p-6 space-y-6">
 
           {/* Section Card */}
-          <div className="bg-gray-100 p-4 rounded-lg">
+          <div>
             <h2 className="text-lg font-semibold text-gray-800 mb-3 border-l-4 border-blue-500 pl-2">
               Relieving Information
             </h2>

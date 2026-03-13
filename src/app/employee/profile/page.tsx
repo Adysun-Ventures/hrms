@@ -231,12 +231,12 @@ console.log(employmentData?.[0]?.bankName);
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{displayEmployee?.name || '-'}</p>
                 <p className="text-sm text-gray-500">Full Name</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">
                   {(() => {
                     // Try multiple sources to get the employeeId
@@ -263,27 +263,27 @@ console.log(employmentData?.[0]?.bankName);
                 <p className="text-sm text-gray-500">Employee ID <span className="text-xs text-gray-400">(Read Only)</span></p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{displayEmployee?.email || '-'}</p>
                 <p className="text-sm text-gray-500">Email</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{displayEmployee?.phone || '-'}</p>
                 <p className="text-sm text-gray-500">Phone</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.jobTitle || '-'}</p>
                 <p className="text-sm text-gray-500">Position</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.department|| '-'}</p>
                 <p className="text-sm text-gray-500">Department</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <span
                   className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${isUserActive()
                     ? 'bg-green-100 text-green-800'
@@ -295,7 +295,7 @@ console.log(employmentData?.[0]?.bankName);
                 <p className="text-sm text-gray-500 mt-2">Status</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">
                   {(displayEmployee as any)?.dateOfBirth 
                     ? formatDateToDayMonYear((displayEmployee as any).dateOfBirth) 
@@ -304,7 +304,7 @@ console.log(employmentData?.[0]?.bankName);
                 <p className="text-sm text-gray-500">Date of Birth</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">
                   {(displayEmployee as any)?.employeeType === 'internal' ? 'Internal' : 
                    (displayEmployee as any)?.employeeType === 'external' ? 'External' : '-'}
@@ -321,12 +321,12 @@ console.log(employmentData?.[0]?.bankName);
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.currentAddress || '-'}</p>
                 <p className="text-sm text-gray-500">Current Address</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.permanentAddress || '-'}</p>
                 <p className="text-sm text-gray-500">Permanent Address</p>
               </div>
@@ -340,19 +340,19 @@ console.log(employmentData?.[0]?.bankName);
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.aadharCard || '-'}</p>
                 <p className="text-sm text-gray-500">Aadhar Card</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.drivingLicense || '-'}</p>
                 <p className="text-sm text-gray-500">Driving License</p>
               </div>
 
               
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.voterID || '-'}</p>
                 <p className="text-sm text-gray-500">Voter ID</p>
               </div>
@@ -370,34 +370,34 @@ console.log(employmentData?.[0]?.bankName);
               <div className="mb-4">
                 <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Higher Education</h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.graduation?.degree || '-'}</p>
                     <p className="text-sm text-gray-500">Degree</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.graduation?.branch || '-'}</p>
                     <p className="text-sm text-gray-500">Branch</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">
                       {(displayEmployee as any)?.graduation?.month || '-'}
                       {(displayEmployee as any)?.graduation?.passingYear ? ` ${(displayEmployee as any).graduation.passingYear}` : ''}
                     </p>
                     <p className="text-sm text-gray-500">Month & Year</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.graduation?.collegeName || '-'}</p>
                     <p className="text-sm text-gray-500">College Name</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.graduation?.universityName || '-'}</p>
                     <p className="text-sm text-gray-500">University Name</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.graduation?.marks || '-'}</p>
                     <p className="text-sm text-gray-500">Marks</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.graduation?.grade || '-'}</p>
                     <p className="text-sm text-gray-500">Grade</p>
                   </div>
@@ -413,30 +413,30 @@ console.log(employmentData?.[0]?.bankName);
                   <div key={entry.id || index} className="mb-4">
                     {entry.type === '12th' && entry.twelthData && (
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.twelthData.branch || '-'}</p>
                           <p className="text-sm text-gray-500">Branch</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">
                             {entry.twelthData.month || '-'}
                             {entry.twelthData.passingYear ? ` ${entry.twelthData.passingYear}` : ''}
                           </p>
                           <p className="text-sm text-gray-500">Month & Year</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.twelthData.schoolName || '-'}</p>
                           <p className="text-sm text-gray-500">School Name</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.twelthData.board || '-'}</p>
                           <p className="text-sm text-gray-500">Board</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.twelthData.marks || '-'}</p>
                           <p className="text-sm text-gray-500">Marks</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.twelthData.grade || '-'}</p>
                           <p className="text-sm text-gray-500">Grade</p>
                         </div>
@@ -444,34 +444,34 @@ console.log(employmentData?.[0]?.bankName);
                     )}
                     {entry.type === 'diploma' && entry.diplomaData && (
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.diplomaData.name || '-'}</p>
                           <p className="text-sm text-gray-500">Diploma Name</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.diplomaData.branch || '-'}</p>
                           <p className="text-sm text-gray-500">Branch</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">
                             {entry.diplomaData.month || '-'}
                             {entry.diplomaData.passingYear ? ` ${entry.diplomaData.passingYear}` : ''}
                           </p>
                           <p className="text-sm text-gray-500">Month & Year</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.diplomaData.collegeName || '-'}</p>
                           <p className="text-sm text-gray-500">College Name</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.diplomaData.institute || '-'}</p>
                           <p className="text-sm text-gray-500">Institute</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.diplomaData.marks || '-'}</p>
                           <p className="text-sm text-gray-500">Marks</p>
                         </div>
-                        <div className="bg-white rounded-lg shadow p-3">
+                        <div className="p-3">
                           <p className="text-lg font-medium text-gray-900">{entry.diplomaData.grade || '-'}</p>
                           <p className="text-sm text-gray-500">Grade</p>
                         </div>
@@ -487,30 +487,30 @@ console.log(employmentData?.[0]?.bankName);
               <div className="mb-4">
                 <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">10th Standard</h3>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">
                       {(displayEmployee as any)?.tenthStandard?.month || '-'}
                       {(displayEmployee as any)?.tenthStandard?.passingYear ? ` ${(displayEmployee as any).tenthStandard.passingYear}` : ''}
                     </p>
                     <p className="text-sm text-gray-500">Month & Year</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.tenthStandard?.schoolName || '-'}</p>
                     <p className="text-sm text-gray-500">School Name</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.tenthStandard?.board || '-'}</p>
                     <p className="text-sm text-gray-500">Board</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.tenthStandard?.marks || '-'}</p>
                     <p className="text-sm text-gray-500">Marks</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.tenthStandard?.grade || '-'}</p>
                     <p className="text-sm text-gray-500">Grade</p>
                   </div>
-                  <div className="bg-white rounded-lg shadow p-3">
+                  <div className="p-3">
                     <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.tenthStandard?.medium || '-'}</p>
                     <p className="text-sm text-gray-500">Medium</p>
                   </div>
@@ -528,12 +528,12 @@ console.log(employmentData?.[0]?.bankName);
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.homeTown || '-'}</p>
                 <p className="text-sm text-gray-500">Home Town</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">
                   {displayEmployee?.status === 'active' ? 'Yes' : 'No'}
                 </p>
@@ -548,20 +548,20 @@ console.log(employmentData?.[0]?.bankName);
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.bankName|| '-'}</p>
                 <p className="text-sm text-gray-500">Bank Name</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.accountNo || '-'}</p>
                 <p className="text-sm text-gray-500">Account Number</p>
               </div>
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.ifscCode || '-'}</p>
                 <p className="text-sm text-gray-500">IFSC Code</p>
               </div>
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.panNumber || '-'}</p>
                 <p className="text-sm text-gray-500">Pan No</p>
               </div>
@@ -575,22 +575,22 @@ console.log(employmentData?.[0]?.bankName);
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{createdByName || "Admin"}</p>
                 <p className="text-sm text-gray-500">Created By</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{getUserCreatedAt()}</p>
                 <p className="text-sm text-gray-500">Created On</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{updatedByName}</p>
                 <p className="text-sm text-gray-500">Updated By</p>
               </div>
 
-              <div className="bg-white rounded-lg shadow p-3">
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{getUserUpdatedAt()}</p>
                 <p className="text-sm text-gray-500">Updated On</p>
               </div>

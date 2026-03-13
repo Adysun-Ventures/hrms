@@ -394,7 +394,7 @@ export default function EditEmployeeProfilePage() {
                     {/* Personal Details Section */}
                     {/* <div className="bg-gray-100 p-4 mb-4 rounded-lg"> */}
                         
-                        <div className="p-4 rounded-lg mb-4 bg-gray-50">
+                        <div className="mb-4">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Basic Information</h3>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
@@ -466,83 +466,90 @@ export default function EditEmployeeProfilePage() {
                             </div>
 
                         {/* Contact Information */}
-                        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                        <div className="mb-4">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Contact Information</h3>
+                            
+                            {/* Row 1: Phone & Email */}
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        <span className="text-red-500">*</span> Mobile No.
-                                </label>
-                                <input
-                                    type="tel"
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        <span className="text-red-500 mr-1">*</span> Mobile No.
+                                    </label>
+                                    <input
+                                        type="tel"
                                         placeholder="Enter 10-digit mobile number"
                                         {...register('phone', {
                                             required: 'Phone number is required',
                                             pattern: { value: /^[0-9]{10}$/, message: 'Please enter a valid 10-digit phone number' }
                                         })}
                                         className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                                />
-                                {errors.phone && (
+                                    />
+                                    {errors.phone && (
                                         <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-                                )}
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Email ID
-                                </label>
-                                <input
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        <span className="text-red-500 mr-1">*</span> Email ID
+                                    </label>
+                                    <input
                                         type="email"
                                         placeholder="Enter email address"
                                         {...register('email', {
+                                            required: 'Email is required',
                                             pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' }
                                         })}
                                         className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                                />
+                                    />
                                     {errors.email && (
                                         <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
                                     )}
+                                </div>
                             </div>
-                            
-                            
-                                <div className="md:col-span-4">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Current Address
-                                </label>
-                                <textarea
+
+                            {/* Row 2: Current & Permanent Address */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        <span className="text-red-500 mr-1">*</span> Current Address
+                                    </label>
+                                    <textarea
                                         placeholder="Enter current address"
-                                        {...register('currentAddress')}
-                                    rows={3}
+                                        {...register('currentAddress', { required: 'Current address is required' })}
+                                        rows={2}
                                         className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                                />
-                            </div>
-                                <div className="md:col-span-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Permanent Address</label>
-                                    <div className="flex items-center mb-2">
-                                        <input
-                                            id="sameAsCurrentAddress"
-                                            type="checkbox"
-                                            checked={sameAsCurrentAddress}
-                                            onChange={handleSameAsCurrentChange}
-                                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                                        />
-                                        <label htmlFor="sameAsCurrentAddress" className="ml-2 text-sm text-gray-700">
+                                    />
+                                </div>
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            <span className="text-red-500 mr-1">*</span> Permanent Address
+                                        </label>
+                                        <label htmlFor="sameAsCurrentAddress" className="flex items-center text-sm text-gray-700">
+                                            <input
+                                                id="sameAsCurrentAddress"
+                                                type="checkbox"
+                                                checked={sameAsCurrentAddress}
+                                                onChange={handleSameAsCurrentChange}
+                                                className="h-4 w-4 text-blue-600 border-gray-300 rounded mr-2"
+                                            />
                                             Same as Current Address
                                         </label>
                                     </div>
                                     <textarea
                                         placeholder="Enter permanent address"
-                                        {...register('permanentAddress')}
-                                        rows={3}
+                                        {...register('permanentAddress', { required: 'Permanent address is required' })}
+                                        rows={2}
                                         className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black disabled:bg-gray-100 disabled:text-gray-500"
                                         readOnly={sameAsCurrentAddress}
                                         disabled={sameAsCurrentAddress}
-                                        />
+                                    />
                                 </div>
                             </div>
                         </div>
 
                         {/* Password Section */}
-                        <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                        <div className="mb-4">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Login Credentials</h3>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
@@ -606,7 +613,7 @@ export default function EditEmployeeProfilePage() {
                         </div>
 
                         {/* Identification Documents */}
-                        <div className="bg-white p-4 rounded-lg mb-4">
+                        <div className="mb-4">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Identification Documents</h3>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
@@ -666,10 +673,10 @@ export default function EditEmployeeProfilePage() {
                     
 
                     {/* Educational Details Section */}
-                    <div className="bg-gray-50 p-4 mb-4 rounded-lg">
+                    <div className="mb-4">
                         <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Educational Details</h2>
                         {/* Higher Education */}
-                        <div className="bg-white p-4 rounded-lg mb-4">
+                        <div className="mb-4">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Higher Education</h3>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
@@ -765,7 +772,7 @@ export default function EditEmployeeProfilePage() {
                         </div>
 
                         {/* Dynamic Education Entries */}
-                        <div className="bg-white p-4 rounded-lg mb-4">
+                        <div className="mb-4">
                             {educationEntries.map((entry, index) => (
                                 <div key={entry.id} className="mb-6 pb-6 border-b border-gray-200 last:border-b-0">
                                     {/* Header with Dynamic Title and Conditional Toggle */}
@@ -1027,7 +1034,7 @@ export default function EditEmployeeProfilePage() {
                         </div>
 
                         {/* 10th Standard */}
-                        <div className="bg-white p-4 rounded-lg mb-4">
+                        <div className="mb-4">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">10th Standard</h3>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>

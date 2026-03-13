@@ -279,6 +279,15 @@ export default function JoiningLetterV2() {
     loadData();
   }, []);
 
+  const canGenerate = Boolean(
+    employee &&
+    designation &&
+    reportingManager &&
+    joiningDate &&
+    annualCTC &&
+    probation &&
+    signPlace
+  );
   const validate = () => {
     if (!employee) return toast.error("Select employee");
     if (!designation) return toast.error("Enter designation");
@@ -315,13 +324,13 @@ export default function JoiningLetterV2() {
               label: "Generate Letter",
               icon: <FiDownload size={18} />,
               variant: "success",
+              disabled: !canGenerate,
               onClick: generate,
             },
           ]}
         />
-
+<div className="w-full border-t border-gray-200 my-4"></div>
         <div className="px-6 py-6 space-y-6">
-
           {/* CARD */}
           <div>
             {/* <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
@@ -493,8 +502,8 @@ export default function JoiningLetterV2() {
               </div>
             </div>
           </div>
-
-          <div className="px-0 pt-4 border-t border-gray-200 flex items-center justify-between mt-4">
+          <div className="-mx-6 border-t border-gray-200 my-4"></div>
+          <div className="px-0 pt-4 flex items-center justify-between mt-4">
             <button
               type="button"
               onClick={() => window.history.back()}
@@ -505,8 +514,13 @@ export default function JoiningLetterV2() {
 
             <button
               type="button"
+              disabled={!canGenerate}
               onClick={generate}
-              className="flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 bg-green-600 text-white hover:bg-green-700"
+              className={`flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 ${
+                canGenerate
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
             >
               <FiDownload size={18} className="mr-2" />
               <span>Generate Letter</span>

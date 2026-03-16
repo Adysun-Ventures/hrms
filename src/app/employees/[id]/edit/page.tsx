@@ -340,13 +340,7 @@ export default function EditEmployeePage({ params }: PageParams) {
                   )}
                 </div>
                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                  <select {...register('status')} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black">
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
+                {/* Status dropdown removed (backend logic unchanged) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span> Home Town

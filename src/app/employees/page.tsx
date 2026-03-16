@@ -22,11 +22,7 @@ const EmploymentWorkingStatusBadge = ({ employeeId }: { employeeId: string }) =>
   const isResigned = employment?.isResignation === true;
 
   return (
-    <span
-      className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-        isResigned ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-      }`}
-    >
+    <span className={`text-sm font-semibold ${isResigned ? 'text-red-800' : 'text-green-800'}`}>
       {isResigned ? 'Resigned' : 'Working'}
     </span>
   );
@@ -241,7 +237,7 @@ const EmployeeStatusToggle = ({
       onClick={() => onToggle(employeeId, next)}
       disabled={isToggling}
       className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full transition-opacity ${
-        isToggling ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90'
+        isToggling ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 cursor-pointer'
       } ${
         normalized === 'active'
           ? 'bg-green-100 text-green-800'
@@ -728,10 +724,10 @@ useEffect(() => {
 
                     <td className="px-6 py-2 whitespace-nowrap text-center">
                       <span
-                        className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        className={`text-sm font-semibold ${
                           (employee.employeeType || 'internal') === 'internal'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-orange-100 text-orange-800'
+                            ? 'text-blue-800'
+                            : 'text-orange-800'
                         }`}
                       >
                         {(employee.employeeType || 'internal')

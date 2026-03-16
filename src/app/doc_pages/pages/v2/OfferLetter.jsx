@@ -586,7 +586,7 @@ function OfferLetterV2() {
 
       <div className="bg-white rounded-lg shadow-lg mb-8">
         <TableHeader
-          title="Generate Offer Letter"
+          title="Offer Letter"
           backButton={{ href: '/dashboard/documents', label: 'Back' }}
           searchValue=""
           onSearchChange={() => {}}
@@ -596,7 +596,7 @@ function OfferLetterV2() {
           headerClassName="px-8 pt-8 mb-0"
           actionButtons={[
             {
-              label: 'Generate Offer Letter',
+              label: 'Generate',
               icon: <FiDownload size={18} />,
               variant: 'success',
               disabled: !canGenerate,
@@ -703,7 +703,7 @@ function OfferLetterV2() {
               }`}
             >
               <FiDownload size={18} className="mr-2" />
-              Generate Offer Letter
+              Generate
             </button>
           </div>
         </div>

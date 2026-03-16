@@ -244,7 +244,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
         <TableHeader
-          title="Generate Experience Letter"
+          title="Experience Letter"
           backButton={{ href: '/dashboard/documents', label: 'Back' }}
           searchValue=""
           onSearchChange={() => {}}
@@ -254,7 +254,7 @@ const [searchTerm, setSearchTerm] = useState("");
           headerClassName="px-6 py-6"
           actionButtons={[
             {
-              label: "Generate Letter",
+              label: "Generate",
               icon: <FiDownload size={18} />,
               variant: "success",
               disabled: !canGenerate,
@@ -397,7 +397,7 @@ const [searchTerm, setSearchTerm] = useState("");
               }`}
             >
               <FiDownload size={18} className="mr-2" />
-              <span>Generate Letter</span>
+              <span>Generate</span>
             </button>
           </div>
 

@@ -282,7 +282,7 @@ export default function AppraisalLetterV2() {
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <TableHeader
-          title="Generate Increment Letter"
+          title="Increment Letter"
           backButton={{ href: "/dashboard/documents", label: "Back" }}
           searchValue=""
           onSearchChange={() => {}}
@@ -292,7 +292,7 @@ export default function AppraisalLetterV2() {
           headerClassName="px-6 py-6"
           actionButtons={[
             {
-              label: "Generate Letter",
+              label: "Generate",
               icon: <FiDownload size={18} />,
               variant: "success",
               disabled: !canGenerate,
@@ -430,7 +430,7 @@ export default function AppraisalLetterV2() {
               }`}
             >
               <FiDownload size={18} className="mr-2" />
-              <span>Generate Letter</span>
+              <span>Generate</span>
             </button>
           </div>
 

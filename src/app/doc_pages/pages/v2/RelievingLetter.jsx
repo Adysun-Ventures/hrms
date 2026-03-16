@@ -305,7 +305,7 @@ function RelievingLetterV2() {
 
       <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
         <TableHeader
-          title="Generate Relieving Letter"
+          title="Relieving Letter"
           backButton={{ href: "/dashboard/documents", label: "Back" }}
           searchValue=""
           onSearchChange={() => {}}
@@ -315,7 +315,7 @@ function RelievingLetterV2() {
           headerClassName="px-6 py-6"
           actionButtons={[
             {
-              label: "Generate Letter",
+              label: "Generate",
               icon: <FiDownload size={18} />,
               variant: "success",
               disabled: !canGenerate,
@@ -474,7 +474,7 @@ function RelievingLetterV2() {
               }`}
             >
               <FiDownload size={18} className="mr-2" />
-              Generate Letter
+              Generate
             </button>
           </div>
         </div>

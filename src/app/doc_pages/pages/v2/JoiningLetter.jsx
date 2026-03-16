@@ -102,7 +102,7 @@ async function buildJoiningLetterDocx(employee, designation, department, reporti
     new Paragraph({ children: [new TextRun({ text: `Your place of posting shall be ${workLocation || ""} and you will be reporting to ${reportingManager || ""}.` })] }),
     new Paragraph({ children: [new TextRun({ text: "Your annual Cost to Company (CTC) will be " }), new TextRun({ text: formattedCTC, bold: true }), new TextRun({ text: "." })] }),
     new Paragraph({ children: [new TextRun({ text: `You will be on probation for a period of ${probation || ""}, during which your performance will be assessed.` })] }),
-    new Paragraph({ children: [new TextRun({ text: `Your working hours will be ${workingHours || ""}, Monday to Friday.` })] }),
+    new Paragraph({ children: [new TextRun({ text: "Your working hours will be 10:00 AM - 7:00 PM, Monday to Friday." })] }),
     new Paragraph({ text: "We warmly welcome you to our organization and look forward to your valuable contribution." }),
     new Paragraph({ text: "Kindly acknowledge and accept this letter." }),
     new Paragraph({ text: "" }),
@@ -209,7 +209,7 @@ const JoiningLetterPDF = ({
 
         <Text style={{ marginBottom: 10 }}>
           Your working hours will be{" "}
-          <Text style={{ fontWeight: "bold" }}>{workingHours}</Text>, Monday to Friday.
+          <Text style={{ fontWeight: "bold" }}>10:00 AM - 7:00 PM</Text>, Monday to Friday.
         </Text>
 
         <Text style={{ marginBottom: 10 }}>
@@ -255,6 +255,15 @@ export default function JoiningLetterV2() {
   const [candidates, setCandidates] = useState([]);
   const [employee, setEmployee] = useState(null);
 
+  const designationOptionsByDepartment = {
+    Development: ["Software Developer", "Senior Software Developer", "Lead Developer"],
+    Engineering: ["Engineer", "Senior Engineer", "Lead Engineer"],
+    Operation: ["Operations Executive", "Senior Operations Executive", "Operations Manager"],
+    HR: ["HR Executive", "HR Manager", "Talent Acquisition Specialist"],
+    Finance: ["Accountant", "Senior Accountant", "Finance Manager"],
+    Support: ["Support Executive", "Senior Support Executive", "Support Manager"],
+  };
+
   const [designation, setDesignation] = useState("");
   const [department, setDepartment] = useState("");
   const [reportingManager, setReportingManager] = useState("");
@@ -282,6 +291,7 @@ export default function JoiningLetterV2() {
   const canGenerate = Boolean(
     employee &&
     designation &&
+    department &&
     reportingManager &&
     joiningDate &&
     annualCTC &&
@@ -291,6 +301,7 @@ export default function JoiningLetterV2() {
   const validate = () => {
     if (!employee) return toast.error("Select employee");
     if (!designation) return toast.error("Enter designation");
+    if (!department) return toast.error("Enter department");
     if (!reportingManager) return toast.error("Enter reporting manager");
     
     if (!joiningDate) return toast.error("Select joining date");
@@ -311,7 +322,7 @@ export default function JoiningLetterV2() {
 
       <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6">
         <TableHeader
-          title="Generate Joining Letter"
+          title="Joining Letter"
           backButton={{ href: "/dashboard/documents", label: "Back" }}
           searchValue=""
           onSearchChange={() => {}}
@@ -321,7 +332,7 @@ export default function JoiningLetterV2() {
           headerClassName="px-6 py-6"
           actionButtons={[
             {
-              label: "Generate Letter",
+              label: "Generate",
               icon: <FiDownload size={18} />,
               variant: "success",
               disabled: !canGenerate,
@@ -389,38 +400,62 @@ export default function JoiningLetterV2() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    <span className="text-red-500">*</span> Designation
+                    <span className="text-red-500">*</span> Department
                   </label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded-md"
-                    value={designation}
-                    onChange={(e) => setDesignation(e.target.value)}
-                  />
+                  <select
+                    className="w-full p-2 border rounded-md bg-white"
+                    value={department}
+                    onChange={(e) => {
+                      setDepartment(e.target.value);
+                      setDesignation("");
+                    }}
+                  >
+                    <option value="">Select Department</option>
+                    <option value="Development">Development</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Operation">Operation</option>
+                    <option value="HR">HR</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Support">Support</option>
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Department (Optional)
+                    <span className="text-red-500">*</span> Designation
                   </label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded-md"
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                  />
+                  <select
+                    className="w-full p-2 border rounded-md bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    value={designation}
+                    onChange={(e) => setDesignation(e.target.value)}
+                    disabled={!department}
+                  >
+                    <option value="">{department ? "Select Designation" : "Select Department first"}</option>
+                    {department &&
+                      designationOptionsByDepartment[department]?.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Reporting Manager
                   </label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded-md"
+                  <select
+                    className="w-full p-2 border rounded-md bg-white"
                     value={reportingManager}
                     onChange={(e) => setReportingManager(e.target.value)}
-                  />
+                  >
+                    <option value="">Select Reporting Manager</option>
+                    <option value="Viraj Kadam">Viraj Kadam</option>
+                    <option value="Rohit Kore">Rohit Kore</option>
+                    <option value="Vishal Konale">Vishal Konale</option>
+                    <option value="Prachi Jadhav">Prachi Jadhav</option>
+                    <option value="Deepak Kadam">Deepak Kadam</option>
+                  </select>
                 </div>
 
                 <div>
@@ -463,24 +498,15 @@ export default function JoiningLetterV2() {
                   <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Probation Period
                   </label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded-md"
+                  <select
+                    className="w-full p-2 border rounded-md bg-white"
                     value={probation}
                     onChange={(e) => setProbation(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Working Hours
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded-md"
-                    value={workingHours}
-                    onChange={(e) => setWorkingHours(e.target.value)}
-                  />
+                  >
+                    <option value="">Select Probation</option>
+                    <option value="3 Months">3 Months</option>
+                    <option value="6 Months">6 Months</option>
+                  </select>
                 </div>
 
                 <div>
@@ -523,7 +549,7 @@ export default function JoiningLetterV2() {
               }`}
             >
               <FiDownload size={18} className="mr-2" />
-              <span>Generate Letter</span>
+              <span>Generate</span>
             </button>
           </div>
 

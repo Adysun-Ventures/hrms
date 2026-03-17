@@ -304,6 +304,18 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
                 <FiUser className="w-4 h-4" />
                 My Profile
               </button>
+              {currentEmployee && (
+                <button
+                  onClick={() => {
+                    router.push('/employee/employment');
+                    setIsDropdownOpen(false);
+                  }}
+                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <FiUser className="w-4 h-4" />
+                  My Employment
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"

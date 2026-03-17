@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getEmployees, getEmployee, addEmployee, updateEmployee, deleteEmployee } from '@/utils/firebaseUtils';
+import { getEmployees, getEmployee, addEmployee, updateEmployee, deleteEmployee, getEmployeeSelf, getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { queryKeys } from '@/lib/queryKeys';
 import { Employee } from '@/types';
 import { getQueryClient } from '@/lib/queryClient';

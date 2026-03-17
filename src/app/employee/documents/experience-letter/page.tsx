@@ -20,14 +20,6 @@ import {
   View,
   Image
 } from "@react-pdf/renderer";
-import { saveAs } from "file-saver";
-import {
-  Document as DocxDocument,
-  Packer,
-  Paragraph,
-  TextRun,
-  AlignmentType,
-} from "docx";
 
 /* ---------------- TYPES ---------------- */
 interface Employee {
@@ -70,45 +62,6 @@ const toTitleCase = (str?: string): string =>
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ") || "";
-
-async function buildExperienceLetterDocx(emp: Employee | null, empJob: Employment | null, todaysDate: string, employeeSignDate: string, employeeSignPlace: string) {
-  if (!emp || !empJob) return new DocxDocument({ sections: [{ properties: {}, children: [new Paragraph({ text: "No data" })] }] });
-  const employeeName = emp?.name || "";
-  const designation = empJob?.jobTitle || "";
-  const joiningDate = empJob?.joiningDate || "";
-  const relievingDate = empJob?.lastWorkingDate || "";
-  const shortName = employeeName.split(" ")[0] || employeeName;
-  const children = [
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: formatDate(todaysDate) })] }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "EXPERIENCE LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "This is to certify that " }),
-        new TextRun({ text: toTitleCase(employeeName), bold: true }),
-        new TextRun({ text: " was employed with " }),
-        new TextRun({ text: COMPANY_DATA.name, bold: true }),
-        new TextRun({ text: " as a " }),
-        new TextRun({ text: designation, bold: true }),
-        new TextRun({ text: ` from ${formatDate(joiningDate)} to ${formatDate(relievingDate) || formatDate(employeeSignDate)}.` }),
-      ],
-    }),
-    new Paragraph({ text: `During the tenure, ${shortName} performed duties with dedication and professionalism.` }),
-    new Paragraph({ text: `We found ${shortName} to be sincere, reliable, and responsible.` }),
-    new Paragraph({ text: `We wish ${shortName} all the best for future career opportunities.` }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: employeeSignPlace || "" })] }),
-    new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: formatDate(employeeSignDate) })] }),
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
-    new Paragraph({ text: COMPANY_DATA.hrDesignation }),
-    new Paragraph({ text: COMPANY_DATA.hrEmail }),
-  ];
-  return new DocxDocument({ sections: [{ properties: {}, children }] });
-}
 
 /* ---------------- PDF COMPONENT ---------------- */
 const EmployeeExperiencePDF: React.FC<PDFProps> = ({
@@ -210,6 +163,8 @@ const EmployeeExperienceLetter: React.FC = () => {
   const [employeeSignPlace, setEmployeeSignPlace] = useState<string>("");
   const [showPDF, setShowPDF] = useState(false);
 
+  const canGenerate = Boolean(todaysDate && employeeSignDate && employeeSignPlace);
+
   /* ---------------- Load employment and employee data ---------------- */
   useEffect(() => {
     const load = async () => {
@@ -249,25 +204,39 @@ return (
     <Toaster position="top-center" />
 
     {/* MAIN CARD */}
-    <div>
-
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {/* HEADER */}
-      <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Experience Letter
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Fill the required details to generate your experience letter
-          </p>
+      <div className="p-6 border-b border-gray-200 flex items-center">
+        <div className="w-1/3 flex justify-start">
+          <button
+            onClick={() => window.history.back()}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+          >
+            ← Back
+          </button>
         </div>
 
-        <button
-          onClick={() => window.history.back()}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
-        >
-          ← Back
-        </button>
+        <div className="flex-1 flex justify-center">
+          <h1 className="text-2xl font-bold text-gray-800 text-center">
+            Experience Letter
+          </h1>
+        </div>
+
+        <div className="w-1/3 flex justify-end">
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={!canGenerate}
+            className={[
+              "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+              canGenerate
+                ? "bg-green-600 text-white hover:bg-green-700"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed",
+            ].join(" ")}
+          >
+            Generate
+          </button>
+        </div>
       </div>
 
       {/* FORM SECTION */}
@@ -325,6 +294,25 @@ return (
           </div>
         </div>
 
+        {/* FOOTER ACTIONS */}
+        <div className="-mx-6 px-6 border-t border-gray-200 pt-4 flex items-center justify-between mt-6">
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={handleGenerate}
+            className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+          >
+            Generate
+          </button>
+        </div>
+
       </div>
     </div>
 
@@ -353,23 +341,6 @@ return (
             >
               Download PDF
             </PDFDownloadLink>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  const doc = await buildExperienceLetterDocx(employee, employment, todaysDate, employeeSignDate, employeeSignPlace);
-                  const blob = await Packer.toBlob(doc);
-                  saveAs(blob, `ExperienceLetter_${(employee?.name || "").replace(/\s+/g, "_")}.docx`);
-                  toast.success("DOCX downloaded");
-                } catch (err) {
-                  console.error("DOCX download error:", err);
-                  toast.error("Failed to generate DOCX");
-                }
-              }}
-              className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
-            >
-              Download DOCX
-            </button>
           </div>
         </div>
 

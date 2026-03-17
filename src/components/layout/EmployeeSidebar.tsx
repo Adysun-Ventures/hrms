@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiUser, FiCalendar, FiClock, FiMenu, FiX, FiHome, FiFileText } from 'react-icons/fi';
+import { FiUser, FiCalendar, FiClock, FiMenu, FiX, FiHome, FiFileText, FiBriefcase } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { useEmployeeSelfEmployment } from '@/hooks/useEmployees';
 
@@ -43,12 +43,16 @@ const EmployeeSidebar = () => {
       name: 'Dashboard',
       icon: <FiHome className="w-5 h-5" />
     },
-    // Only show Attendance if employee has employment
-    ...(hasEmployment ? [{
-      path: '/employee/attendance',
-      name: 'Attendance',
-      icon: <FiClock className="w-5 h-5" />
-    }] : []),
+    {
+      path: '/employee/profile',
+      name: 'My Profile',
+      icon: <FiUser className="w-5 h-5" />
+    },
+    {
+      path: '/employee/employment',
+      name: 'My Employment',
+      icon: <FiBriefcase className="w-5 h-5" />
+    },
     // {
     //   path: '/employee/leaves',
     //   name: 'Leaves',
@@ -59,12 +63,6 @@ const EmployeeSidebar = () => {
       name: 'Documents',
       icon: <FiFileText className="w-5 h-5" />
     },
-    // Remove Profile - now handled in header dropdown
-    // {
-    //   path: '/employee/profile',
-    //   name: 'My Profile',
-    //   icon: <FiUser className="w-5 h-5" />
-    // },
   ];
 
   return (
@@ -103,7 +101,7 @@ const EmployeeSidebar = () => {
           </button>
         )}
         <div className="p-5 flex flex-col h-full">
-          <h2 className="text-2xl font-bold mb-6">Employee </h2>
+          <h2 className="text-2xl font-bold mb-6 text-center">Employee</h2>
           <nav className="flex-grow">
             <ul className="space-y-2">
               {menuItems.map((item) => (

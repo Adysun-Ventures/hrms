@@ -6,10 +6,12 @@ import Link from 'next/link';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { FiSave } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { getEmployment, updateEmployment, getEmployees, checkEmploymentIdUnique } from '@/utils/firebaseUtils';
+import EmployeeLayout from '@/components/layout/EmployeeLayout';
+import { getEmployment, updateEmployment, getEmployees, checkEmploymentIdUnique, updateEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { Employment, Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
+import { useAuth } from '@/context/AuthContext';
 
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relievingCtc'> {
@@ -32,7 +34,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
 
   const router = useRouter();
+  const { currentUserData } = useAuth();
   const { id } = use(params);
+  const [employmentOwnerId, setEmploymentOwnerId] = useState<string | null>(null);
+  const isEmployeeUser = currentUserData?.userType === 'employee';
+  const Layout: any = isEmployeeUser ? EmployeeLayout : DashboardLayout;
 
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<EmploymentFormData>();
   const breadcrumbEmployeeId = watch('employeeId') || originalEmployment?.employeeId || '';
@@ -52,6 +58,25 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   // Watch salary and resignation state for calculations / UI
   const salary = watch('salary');
   const isResignation = watch('isResignation');
+
+  // After loading original employment, capture owner for employee access check
+  useEffect(() => {
+    if (originalEmployment?.employeeId) {
+      setEmploymentOwnerId(originalEmployment.employeeId);
+    }
+  }, [originalEmployment]);
+
+  // Block employees from editing other employees' employment
+  useEffect(() => {
+    if (
+      currentUserData?.userType === 'employee' &&
+      employmentOwnerId &&
+      employmentOwnerId !== currentUserData.id
+    ) {
+      toast.error('You can only edit your own employment.');
+      router.push('/employee-dashboard');
+    }
+  }, [currentUserData, employmentOwnerId, router]);
 
   // Calculate salary breakdown when annual salary changes
   useEffect(() => {
@@ -102,9 +127,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       try {
         setLoading(true);
 
-        // Fetch employees for the dropdown
-        const employeesData = await getEmployees();
-        setEmployees(employeesData);
+        // Fetch employees for the dropdown (admin only)
+        if (!isEmployeeUser) {
+          const employeesData = await getEmployees();
+          setEmployees(employeesData);
+        }
 
         // Fetch employment data
         const employmentData = await getEmployment(id);
@@ -163,7 +190,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     };
 
     fetchData();
-  }, [id, reset]);
+  }, [id, reset, isEmployeeUser]);
 
   const onSubmit = async (data: EmploymentFormData) => {
     try {
@@ -172,11 +199,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
       toast.loading('Updating employment...', { id: 'updateEmployment' });
 
-      // Check if employment ID is unique (only if it has changed)
-      if (data.employmentId && data.employmentId !== originalEmployment?.employmentId) {
-        const { isUnique, existingEmployment } = await checkEmploymentIdUnique(data.employmentId, id);
-        if (!isUnique) {
-          throw new Error('Employment ID is been already used');
+      // Check if employment ID is unique (admin only)
+      if (!isEmployeeUser) {
+        if (data.employmentId && data.employmentId !== originalEmployment?.employmentId) {
+          const { isUnique } = await checkEmploymentIdUnique(data.employmentId, id);
+          if (!isUnique) {
+            throw new Error('Employment ID is been already used');
+          }
         }
       }
 
@@ -269,7 +298,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         }
       }
 
-      await updateEmployment(id, formattedData);
+      if (isEmployeeUser) {
+        await updateEmployeeSelfEmployment(currentUserData!.id, id, formattedData);
+      } else {
+        await updateEmployment(id, formattedData);
+      }
       toast.success('Employment updated successfully!', { id: 'updateEmployment' });
       router.push(`/employments/${id}`);
     } catch (error: unknown) {
@@ -282,12 +315,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
   if (loading) {
     return (
-      <DashboardLayout
-        breadcrumbItems={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Employees', href: '/employees' },
-          { label: 'Loading...', isCurrent: true },
-        ]}
+      <Layout
+        breadcrumbItems={
+          isEmployeeUser
+            ? [{ label: 'Dashboard', href: '/employee-dashboard' }, { label: 'Employment', isCurrent: true }]
+            : [{ label: 'Dashboard', href: '/dashboard' }, { label: 'Employees', href: '/employees' }, { label: 'Loading...', isCurrent: true }]
+        }
       >
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Skeleton for TableHeader */}
@@ -325,26 +358,34 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </Layout>
     );
   }
 
   return (
-    <DashboardLayout
-      breadcrumbItems={[
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Employees', href: '/employees' },
-        ...(breadcrumbEmployeeId
+    <Layout
+      breadcrumbItems={
+        isEmployeeUser
           ? [
-              {
-                label: breadcrumbEmployeeName || 'Employee',
-                href: `/employees/${breadcrumbEmployeeId}`,
-              },
-              { label: 'Employment', href: `/employments/${id}` },
-            ]
-          : [{ label: 'Employments', href: '/employments' }]),
-        { label: 'Edit Employment', isCurrent: true },
-      ]}
+            { label: 'Dashboard', href: '/employee-dashboard' },
+            { label: 'Employment', href: `/employments/${id}` },
+            { label: 'Edit Employment', isCurrent: true },
+          ]
+          : [
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Employees', href: '/employees' },
+            ...(breadcrumbEmployeeId
+              ? [
+                {
+                  label: breadcrumbEmployeeName || 'Employee',
+                  href: `/employees/${breadcrumbEmployeeId}`,
+                },
+                { label: 'Employment', href: `/employments/${id}` },
+              ]
+              : [{ label: 'Employments', href: '/employments' }]),
+            { label: 'Edit Employment', isCurrent: true },
+          ]
+      }
     >
       <Toaster position="top-center" />
 
@@ -395,16 +436,21 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <select
                     {...register('employeeId', { required: 'Employee is required' })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    disabled={isEmployeeUser}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
-                    <option value="">Select Employee</option>
-                    {employees.map((employee) => (
-                      <option key={employee.id} value={employee.id}>
-                        {employee.name} - {employee.position}
-                      </option>
-                    ))}
+                    {!isEmployeeUser && <option value="">Select Employee</option>}
+                    {isEmployeeUser ? (
+                      <option value={originalEmployment?.employeeId || ''}>My Employment</option>
+                    ) : (
+                      employees.map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.name} - {employee.position}
+                        </option>
+                      ))
+                    )}
                   </select>
-                  {errors.employeeId && (
+                  {!isEmployeeUser && errors.employeeId && (
                     <p className="mt-1 text-sm text-red-600">{errors.employeeId.message}</p>
                   )}
                 </div>
@@ -1191,6 +1237,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
           </div>
         </form>
       </div>
-    </DashboardLayout>
+    </Layout>
   );
 } 

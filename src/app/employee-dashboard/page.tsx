@@ -111,21 +111,47 @@ export default function EmployeeDashboardPage() {
   const hasEmployment = !employmentLoading && employmentData.length > 0;
 
   const cards = [
-    
-   
     {
-      title: 'Documents',
-      description: 'Access your HR documents',
-      icon: <FiFileText className="w-8 h-8 text-orange-500" />,
-      link: '/employee/documents',
-      color: 'bg-orange-50'
+      title: 'Offer Letter',
+      description: 'View your offer letter',
+      icon: <FiFileText className="w-8 h-8 text-blue-500" />,
+      link: '/employee/documents/offer-letter',
+      color: 'bg-blue-50'
     },
     {
-      title: 'My Profile',
-      description: 'View and update your personal information',
-      icon: <FiUser className="w-8 h-8 text-blue-500" />,
-      link: '/employee/profile',
-      color: 'bg-blue-50'
+      title: 'Joining Letter',
+      description: 'View your joining letter',
+      icon: <FiFileText className="w-8 h-8 text-green-500" />,
+      link: '/employee/documents/joining-letter',
+      color: 'bg-green-50'
+    },
+    {
+      title: 'Relieving Letter',
+      description: 'View your relieving letter',
+      icon: <FiFileText className="w-8 h-8 text-red-500" />,
+      link: '/employee/documents/relieving-letter',
+      color: 'bg-red-50'
+    },
+    {
+      title: 'Experience Letter',
+      description: 'View your experience letter',
+      icon: <FiFileText className="w-8 h-8 text-purple-500" />,
+      link: '/employee/documents/experience-letter',
+      color: 'bg-purple-50'
+    },
+    {
+      title: 'Increment Letter',
+      description: 'View your increment letter',
+      icon: <FiFileText className="w-8 h-8 text-amber-500" />,
+      link: '/employee/documents/increment-letter',
+      color: 'bg-amber-50'
+    },
+    {
+      title: 'Salary Slips',
+      description: 'View your salary slips',
+      icon: <FiFileText className="w-8 h-8 text-teal-500" />,
+      link: '/employee/documents/salary-slips',
+      color: 'bg-teal-50'
     },
   ];
 
@@ -146,37 +172,36 @@ export default function EmployeeDashboardPage() {
         </div>
       </div> */}
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {cards.map((card, index) => (
-          <div
-            key={index}
-            className={`${card.color} p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200`}
-            onClick={() => {
-              router.push(card.link);
-            }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800">{card.title}</h3>
-                <p className="text-sm text-gray-600 mt-1">{card.description}</p>
-              </div>
-              <div>{card.icon}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Employee Information Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Employee Information</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">Employee Information</h2>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => router.push("/employee/profile")}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+              >
+                View Profile
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  router.push("/employee/profile/edit");
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              >
+                Edit Profile
+              </button>
+            </div>
+          </div>
           {loading ? (
             <div className="text-center py-4">
               <p className="text-gray-500">Loading employee information...</p>
             </div>
           ) : fullEmployeeData ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {fullEmployeeData.name && (
                 <div>
                   <p className="font-medium text-gray-900">{fullEmployeeData.name}</p>
@@ -215,8 +240,36 @@ export default function EmployeeDashboardPage() {
         {/* Employment Basic Info Card */}
         {!employmentLoading && currentEmployment && (
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Employment Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-800">Employment Information</h2>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  disabled={!(currentEmployment as any)?.id}
+                  onClick={() => {
+                    const employmentId = (currentEmployment as any)?.id;
+                    if (!employmentId) return;
+                    router.push(`/employments/${employmentId}`);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                >
+                  View Employment
+                </button>
+                <button
+                  type="button"
+                  disabled={!(currentEmployment as any)?.id}
+                  onClick={() => {
+                    const employmentId = (currentEmployment as any)?.id;
+                    if (!employmentId) return;
+                    router.push(`/employments/${employmentId}/edit`);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                >
+                  Edit Employment
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {currentEmployment.employmentId && (
                 <div>
                   <p className="font-medium text-gray-900">{currentEmployment.employmentId}</p>
@@ -278,6 +331,27 @@ export default function EmployeeDashboardPage() {
 
         
         
+      </div>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6 mb-8">
+        {cards.map((card, index) => (
+          <div
+            key={index}
+            className={`${card.color} p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer border border-gray-200`}
+            onClick={() => {
+              router.push(card.link);
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">{card.title}</h3>
+                <p className="text-sm text-gray-600 mt-1">{card.description}</p>
+              </div>
+              <div>{card.icon}</div>
+            </div>
+          </div>
+        ))}
       </div>
     </EmployeeLayout>
   );

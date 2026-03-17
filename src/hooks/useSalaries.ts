@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSalaries, getSalary, addSalary, updateSalary, deleteSalary, getSalariesByEmployee } from '@/utils/firebaseUtils';
+import { getSalaries, getSalary, addSalary, updateSalary, deleteSalary, getSalariesByEmployee, getEmployeeSelfSalariesByEmployee } from '@/utils/firebaseUtils';
 import { queryKeys } from '@/lib/queryKeys';
 import { Salary } from '@/types';
 import { getQueryClient } from '@/lib/queryClient';
@@ -24,6 +24,14 @@ export const useSalariesByEmployee = (employeeId: string) => {
   return useQuery({
     queryKey: queryKeys.salaries.byEmployee(employeeId),
     queryFn: () => getSalariesByEmployee(employeeId),
+    enabled: !!employeeId,
+  });
+};
+
+export const useEmployeeSelfSalariesByEmployee = (employeeId: string) => {
+  return useQuery({
+    queryKey: queryKeys.salaries.byEmployee(employeeId),
+    queryFn: () => getEmployeeSelfSalariesByEmployee(employeeId),
     enabled: !!employeeId,
   });
 };

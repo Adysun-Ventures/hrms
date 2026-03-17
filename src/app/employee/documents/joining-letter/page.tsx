@@ -18,6 +18,7 @@ import {
   View,
   Image
 } from "@react-pdf/renderer";
+import { FiDownload } from "react-icons/fi";
 import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 
 /* ---------------- TYPES ---------------- */
@@ -81,7 +82,6 @@ const JoiningLetterPDF = ({
   reportingManager,
   salary,
   probation,
-  workingHours,
   issueDate,
   signPlace
 }: any) => {
@@ -176,7 +176,7 @@ const JoiningLetterPDF = ({
 
         <Text style={{ marginBottom: 10 }}>
           Your working hours will be{" "}
-          <Text style={{ fontWeight: "bold" }}>{workingHours}</Text>, Monday to Friday.
+          <Text style={{ fontWeight: "bold" }}>10:00 AM to 7:00 PM</Text>, Monday to Friday.
         </Text>
 
         <Text style={{ marginBottom: 10 }}>
@@ -224,6 +224,15 @@ export default function EmployeeJoiningLetter() {
 
   const [employee, setEmployee] = useState<Employee | null>(null);
 
+  const designationOptionsByDepartment: Record<string, string[]> = {
+    Development: ["Software Developer", "Senior Software Developer", "Lead Developer"],
+    Engineering: ["Engineer", "Senior Engineer", "Lead Engineer"],
+    Operation: ["Operations Executive", "Senior Operations Executive", "Operations Manager"],
+    HR: ["HR Executive", "HR Manager", "Talent Acquisition Specialist"],
+    Finance: ["Accountant", "Senior Accountant", "Finance Manager"],
+    Support: ["Support Executive", "Senior Support Executive", "Support Manager"],
+  };
+
   const [designation, setDesignation] = useState("");
   const [department, setDepartment] = useState("");
   const [joiningDate, setJoiningDate] = useState("");
@@ -231,8 +240,7 @@ export default function EmployeeJoiningLetter() {
   const [reportingManager, setReportingManager] = useState("");
   const [annualCTC, setAnnualCTC] = useState("");
 
-  const [probation, setProbation] = useState("6 Months");
-  const [workingHours, setWorkingHours] = useState("9:30 AM to 6:30 PM");
+  const [probation, setProbation] = useState("");
 
   const [issueDate, setIssueDate] = useState("");
   const [signPlace, setSignPlace] = useState("");
@@ -241,10 +249,12 @@ export default function EmployeeJoiningLetter() {
   const canGenerate = Boolean(
     employee &&
       issueDate &&
+      department &&
       designation &&
       joiningDate &&
       reportingManager &&
       annualCTC &&
+      probation &&
       signPlace
   );
 
@@ -309,12 +319,13 @@ return (
               onClick={() => setShowPDF(true)}
               disabled={!canGenerate}
               className={[
-                "px-6 py-2 rounded-md text-sm font-medium transition shadow-sm",
+                "px-6 py-2 rounded-md text-sm font-medium transition shadow-sm inline-flex items-center gap-2",
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed",
               ].join(" ")}
             >
+              <FiDownload className="w-4 h-4" />
               Generate
             </button>
           </div>
@@ -348,28 +359,48 @@ return (
                   />
                 </div>
 
+                {/* Department */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    <span className="text-red-500">*</span> Department
+                  </label>
+                  <select
+                    value={department}
+                    onChange={(e) => {
+                      setDepartment(e.target.value);
+                      setDesignation("");
+                    }}
+                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Department</option>
+                    {Object.keys(designationOptionsByDepartment).map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {/* Designation */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Designation
                   </label>
-                  <input
+                  <select
                     value={designation}
                     onChange={(e) => setDesignation(e.target.value)}
                     className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Department */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Department
-                  </label>
-                  <input
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  />
+                    disabled={!department}
+                  >
+                    <option value="">
+                      {department ? "Select Designation" : "Select Department first"}
+                    </option>
+                    {designationOptionsByDepartment[department]?.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 {/* Joining Date */}
@@ -402,11 +433,18 @@ return (
                   <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Reporting Manager
                   </label>
-                  <input
+                  <select
                     value={reportingManager}
                     onChange={(e) => setReportingManager(e.target.value)}
                     className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Select Reporting Manager</option>
+                    <option value="Viraj Kadam">Viraj Kadam</option>
+                    <option value="Rohit Kore">Rohit Kore</option>
+                    <option value="Vishal Konale">Vishal Konale</option>
+                    <option value="Prachi Jadhav">Prachi Jadhav</option>
+                    <option value="Deepak Kadam">Deepak Kadam</option>
+                  </select>
                 </div>
 
                 {/* Annual CTC */}
@@ -425,25 +463,17 @@ return (
                 {/* Probation */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Probation Period
+                    <span className="text-red-500">*</span> Probation Period
                   </label>
-                  <input
+                  <select
                     value={probation}
                     onChange={(e) => setProbation(e.target.value)}
                     className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Working Hours */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Working Hours
-                  </label>
-                  <input
-                    value={workingHours}
-                    onChange={(e) => setWorkingHours(e.target.value)}
-                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Select Probation Period</option>
+                    <option value="3 Months">3 Months</option>
+                    <option value="6 Months">6 Months</option>
+                  </select>
                 </div>
 
                 {/* Place */}
@@ -477,9 +507,16 @@ return (
 
             <button
               onClick={() => setShowPDF(true)}
-              className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              disabled={!canGenerate}
+              className={[
+                "flex items-center gap-2 px-6 py-3 rounded-lg transition",
+                canGenerate
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed",
+              ].join(" ")}
             >
-              Generate Letter
+              <FiDownload className="w-5 h-5" />
+              Generate
             </button>
           </div>
 
@@ -504,7 +541,6 @@ return (
                     reportingManager={reportingManager}
                     salary={annualCTC}
                     probation={probation}
-                    workingHours={workingHours}
                     issueDate={issueDate}
                     signPlace={signPlace}
                   />
@@ -528,7 +564,6 @@ return (
                 reportingManager={reportingManager}
                 salary={annualCTC}
                 probation={probation}
-                workingHours={workingHours}
                 issueDate={issueDate}
                 signPlace={signPlace}
               />

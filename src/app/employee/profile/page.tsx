@@ -200,7 +200,7 @@ console.log(employmentData?.[0]?.bankName);
             {
               label: 'Edit Profile',
               icon: <FiEdit />,
-              variant: 'primary' as const,
+              variant: 'orange' as const,
               href: '/employee/profile/edit'
             },
             // {

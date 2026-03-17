@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { PDFDownloadLink, PDFViewer, Document, Page, Text, View, Image } from "@react-pdf/renderer";
 import { Toaster, toast } from "react-hot-toast";
+import { FiDownload } from "react-icons/fi";
 
 import EmployeeLayout from "@/components/layout/EmployeeLayout";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
@@ -173,6 +174,7 @@ const EmployeeRelievingLetter: React.FC = () => {
   const [employeeSignPlace, setEmployeeSignPlace] = useState<string>("");
   const [employeeRelievingDate, setEmployeeRelievingDate] = useState<string>("");
   const [employeeResignDate, setEmployeeResignDate] = useState<string>("");
+  const [showPDF, setShowPDF] = useState(false);
 
   const canGenerate = Boolean(
     employee &&
@@ -189,6 +191,7 @@ const EmployeeRelievingLetter: React.FC = () => {
     if (!employeeResignDate) return toast.error("Select resignation date");
     if (!employeeSignPlace) return toast.error("Select place");
 
+    setShowPDF(true);
     requestAnimationFrame(() => {
       document.getElementById("relieving-preview")?.scrollIntoView({
         behavior: "smooth",
@@ -256,12 +259,13 @@ const EmployeeRelievingLetter: React.FC = () => {
               onClick={handleGenerate}
               disabled={!canGenerate}
               className={[
-                "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+                "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm inline-flex items-center gap-2",
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed",
               ].join(" ")}
             >
+              <FiDownload className="w-4 h-4" />
               Generate
             </button>
           </div>
@@ -346,13 +350,29 @@ const EmployeeRelievingLetter: React.FC = () => {
             >
               Cancel
             </button>
+
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={!canGenerate}
+              className={[
+                "inline-flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+                canGenerate
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed",
+              ].join(" ")}
+            >
+              <FiDownload className="w-4 h-4" />
+              Generate
+            </button>
           </div>
 
         </div>
       </div>
 
       {/* PDF Preview */}
-      {employee &&
+      {showPDF &&
+        employee &&
         employment &&
         employeeSignDate &&
         employeeSignPlace &&

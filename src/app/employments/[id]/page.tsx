@@ -1,23 +1,29 @@
 'use client';
 
-import { useState, use } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiArrowLeft, FiEdit, FiUser, FiBriefcase, FiCalendar, FiDollarSign, FiMapPin, FiTrendingUp } from 'react-icons/fi';
 import { FaRupeeSign } from "react-icons/fa";
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { Employment, Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { useEmployment, useDeleteEmployment } from '@/hooks/useEmployments';
-import { useEmployee } from '@/hooks/useEmployees';
-import { useSalaries } from '@/hooks/useSalaries';
+import { useEmployee, useEmployeeSelf } from '@/hooks/useEmployees';
+import { useEmployeeSelfSalariesByEmployee, useSalariesByEmployee } from '@/hooks/useSalaries';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
+import { useAuth } from '@/context/AuthContext';
 
 export default function EmploymentViewPage({ params }: { params: Promise<{ id: string }> }) {
 
   const router = useRouter();
+  const { currentUserData } = useAuth();
   const { id } = use(params);
+
+  const isEmployeeUser = currentUserData?.userType === 'employee';
+  const Layout: any = isEmployeeUser ? EmployeeLayout : DashboardLayout;
 
   // Use Tanstack Query for employment data
   const {
@@ -27,16 +33,49 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
     error
   } = useEmployment(id);
 
-  // Use Tanstack Query for employee data
+  // Employee data (admin vs employee-safe)
   const {
-    data: employee,
-    isLoading: employeeLoading,
-    isError: employeeError
-  } = useEmployee(employment?.employeeId || '');
+    data: adminEmployee,
+    isLoading: adminEmployeeLoading,
+    isError: adminEmployeeIsError,
+    error: adminEmployeeError,
+  } = useEmployee(currentUserData?.userType === 'admin' ? (employment?.employeeId || '') : '');
+  const {
+    data: selfEmployee,
+    isLoading: selfEmployeeLoading,
+    isError: selfEmployeeIsError,
+    error: selfEmployeeError,
+  } = useEmployeeSelf(currentUserData?.userType === 'employee' ? (employment?.employeeId || '') : '');
 
-  // Fetch salaries for this employee to check if button should be shown
-  const { data: allSalaries = [] } = useSalaries();
-  const employeeSalaries = allSalaries.filter(salary => salary.employeeId === employment?.employeeId);
+  const employee = currentUserData?.userType === 'admin' ? adminEmployee : selfEmployee;
+  const employeeLoading =
+    currentUserData?.userType === 'admin' ? adminEmployeeLoading : selfEmployeeLoading;
+  const employeeIsError =
+    currentUserData?.userType === 'admin' ? adminEmployeeIsError : selfEmployeeIsError;
+  const employeeError =
+    currentUserData?.userType === 'admin' ? adminEmployeeError : selfEmployeeError;
+
+  // If an employee tries to open someone else's employment, block it
+  useEffect(() => {
+    if (
+      currentUserData?.userType === 'employee' &&
+      employment &&
+      employment.employeeId !== currentUserData.id
+    ) {
+      toast.error('You can only view your own employment.');
+      router.push('/employee-dashboard');
+    }
+  }, [currentUserData, employment, router]);
+
+  // Fetch salaries for this employee (admin vs employee-safe)
+  const { data: adminEmployeeSalaries = [] } = useSalariesByEmployee(
+    currentUserData?.userType === 'admin' ? (employment?.employeeId || '') : ''
+  );
+  const { data: selfEmployeeSalaries = [] } = useEmployeeSelfSalariesByEmployee(
+    currentUserData?.userType === 'employee' ? (employment?.employeeId || '') : ''
+  );
+  const employeeSalaries =
+    currentUserData?.userType === 'admin' ? adminEmployeeSalaries : selfEmployeeSalaries;
   const hasSalaries = employeeSalaries.length > 0;
 
   // Calculate real attendance statistics
@@ -154,16 +193,20 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
   const leaveStats = calculateLeaveStats();
 
-  // Handle error states
-  if (isError && error) {
-    console.error('Employment data error:', error);
-    toast.error('Failed to load employment data');
-  }
+  // Handle error toasts (must not run during render)
+  useEffect(() => {
+    if (isError && error) {
+      console.error('Employment data error:', error);
+      toast.error('Failed to load employment data');
+    }
+  }, [isError, error]);
 
-  if (employeeError) {
-    console.error('Employee data error:', employeeError);
-    toast.error('Failed to load employee data');
-  }
+  useEffect(() => {
+    if (employeeIsError) {
+      console.error('Employee data error:', employeeError);
+      toast.error('Failed to load employee data');
+    }
+  }, [employeeIsError, employeeError]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -174,12 +217,12 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
   if (isLoading) {
     return (
-      <DashboardLayout
-        breadcrumbItems={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Employments', href: '/employments' },
-          { label: 'Loading...', isCurrent: true }
-        ]}
+      <Layout
+        breadcrumbItems={
+          isEmployeeUser
+            ? [{ label: 'Dashboard', href: '/employee-dashboard' }, { label: 'Employment', isCurrent: true }]
+            : [{ label: 'Dashboard', href: '/dashboard' }, { label: 'Employments', href: '/employments' }, { label: 'Loading...', isCurrent: true }]
+        }
       >
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Skeleton for TableHeader */}
@@ -218,65 +261,75 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </Layout>
     );
   }
 
   if (isError) {
     return (
-      <DashboardLayout
-        breadcrumbItems={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Employments', href: '/employments' },
-          { label: 'Error', isCurrent: true }
-        ]}
+      <Layout
+        breadcrumbItems={
+          isEmployeeUser
+            ? [{ label: 'Dashboard', href: '/employee-dashboard' }, { label: 'Employment', isCurrent: true }]
+            : [{ label: 'Dashboard', href: '/dashboard' }, { label: 'Employments', href: '/employments' }, { label: 'Error', isCurrent: true }]
+        }
       >
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-4">
           <p>Failed to load employment data. Please try refreshing the page.</p>
         </div>
         <div className="mt-4">
-          <Link href="/employments" className="text-blue-600 hover:underline flex items-center gap-1">
-            <FiArrowLeft size={16} /> Back to Employments
+          <Link
+            href={isEmployeeUser ? '/employee-dashboard' : '/employments'}
+            className="text-blue-600 hover:underline flex items-center gap-1"
+          >
+            <FiArrowLeft size={16} /> Back
           </Link>
         </div>
-      </DashboardLayout>
+      </Layout>
     );
   }
 
   if (!employment) {
     return (
-      <DashboardLayout
-        breadcrumbItems={[
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Employments', href: '/employments' },
-          { label: 'Not Found', isCurrent: true }
-        ]}
+      <Layout
+        breadcrumbItems={
+          isEmployeeUser
+            ? [{ label: 'Dashboard', href: '/employee-dashboard' }, { label: 'Employment', isCurrent: true }]
+            : [{ label: 'Dashboard', href: '/dashboard' }, { label: 'Employments', href: '/employments' }, { label: 'Not Found', isCurrent: true }]
+        }
       >
         <div className="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4">
           <p>Employment not found</p>
         </div>
         <div className="mt-4">
-          <Link href="/employments" className="text-blue-600 hover:underline flex items-center gap-1">
-            <FiArrowLeft size={16} /> Back to Employments
+          <Link
+            href={isEmployeeUser ? '/employee-dashboard' : '/employments'}
+            className="text-blue-600 hover:underline flex items-center gap-1"
+          >
+            <FiArrowLeft size={16} /> Back
           </Link>
         </div>
-      </DashboardLayout>
+      </Layout>
     );
   }
 
   return (
-    <DashboardLayout
+    <Layout
       breadcrumbItems={
-        employee && employment ? [
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Employees', href: '/employees' },
-          { label: employee.name, href: `/employees/${employment.employeeId}` },
-          { label: 'Employment', isCurrent: true }
-        ] : [
-          { label: 'Dashboard', href: '/dashboard' },
-          { label: 'Employments', href: '/employments' },
-          { label: 'Loading...', isCurrent: true }
-        ]
+        isEmployeeUser
+          ? [{ label: 'Dashboard', href: '/employee-dashboard' }, { label: 'Employment', isCurrent: true }]
+          : employee && employment
+            ? [
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Employees', href: '/employees' },
+              { label: employee.name, href: `/employees/${employment.employeeId}` },
+              { label: 'Employment', isCurrent: true }
+            ]
+            : [
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Employments', href: '/employments' },
+              { label: 'Loading...', isCurrent: true }
+            ]
       }
     >
       <Toaster position="top-center" />
@@ -295,11 +348,13 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           showFilter={false}
           headerClassName="px-6 py-6"
           backButton={{
-            href: employment?.employeeId ? `/employees/${employment.employeeId}` : "/employments",
+            href: isEmployeeUser
+              ? "/employee-dashboard"
+              : (employment?.employeeId ? `/employees/${employment.employeeId}` : "/employments"),
             label: 'Back'
           }}
           actionButtons={[
-            ...(hasSalaries ? [{
+            ...(!isEmployeeUser && hasSalaries ? [{
               label: 'View Salaries',
               icon: <FaRupeeSign />,
               variant: 'purple' as const,
@@ -727,6 +782,6 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </Layout>
   );
 } 

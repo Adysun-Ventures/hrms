@@ -581,22 +581,20 @@ export const getEmployment = async (id: string) => {
   try {
     console.log('🔍 Fetching employment with custom authentication...');
     
-    // Check for custom admin session
-    const sessionId = localStorage.getItem('adminSessionId');
+    // Check for custom admin session OR employee session (self only)
+    const adminSessionId = localStorage.getItem('adminSessionId');
     const adminData = localStorage.getItem('adminData');
-    
-    console.log('🔐 === CUSTOM AUTHENTICATION CHECK ===');
-    console.log('🔑 Session ID:', sessionId);
-    console.log('👤 Admin Data:', adminData ? '✅ Found' : '❌ Not found');
-    
-    if (!sessionId || !adminData) {
-      console.log('❌ CRITICAL: No admin session found!');
-      console.log('💡 This means custom authentication failed');
-      console.log('🔧 Solution: Make sure admin is logged in with Mobile + Password');
+    const employeeSessionId = localStorage.getItem('employeeSessionId');
+    const employeeDataStorage = localStorage.getItem('employeeData');
+
+    const hasAdminSession = !!adminSessionId && !!adminData;
+    const hasEmployeeSession = !!employeeSessionId && !!employeeDataStorage;
+
+    if (!hasAdminSession && !hasEmployeeSession) {
       throw new Error('No admin session found. Please log in as admin first.');
     }
-    
-    console.log('✅ Custom authentication session found');
+
+    const currentEmployee = hasEmployeeSession ? JSON.parse(employeeDataStorage as string) : null;
     console.log('📁 Fetching employment ID:', id);
     
     const docRef = doc(db, 'employments', id);
@@ -604,13 +602,53 @@ export const getEmployment = async (id: string) => {
     
     if (docSnap.exists()) {
       console.log('✅ Employment found successfully');
-      return { id: docSnap.id, ...docSnap.data() } as Employment;
+      const employment = { id: docSnap.id, ...docSnap.data() } as Employment;
+
+      // Employee can only view their own employment
+      if (currentEmployee && employment.employeeId !== currentEmployee.id) {
+        throw new Error('Access denied. You can only view your own employment.');
+      }
+
+      return employment;
     } else {
       console.log('❌ Employment not found in database');
       throw new Error('Employment not found');
     }
   } catch (error) {
     console.error('Error getting employment:', error);
+    throw error;
+  }
+};
+
+// Function for employee to access their own salary slips (self only)
+export const getEmployeeSelfSalariesByEmployee = async (employeeId: string) => {
+  try {
+    // Check for employee session
+    const employeeSessionId = localStorage.getItem('employeeSessionId');
+    const employeeData = localStorage.getItem('employeeData');
+
+    if (!employeeSessionId || !employeeData) {
+      throw new Error('No employee session found. Please log in as employee first.');
+    }
+
+    const currentEmployee = JSON.parse(employeeData);
+
+    // Security check: Employee can only access their own data
+    if (currentEmployee.id !== employeeId) {
+      throw new Error('Access denied. You can only view your own data.');
+    }
+
+    const q = query(collection(db, 'salaries'), where('employeeId', '==', employeeId));
+    const querySnapshot = await getDocs(q);
+    const salaryRecords: any[] = [];
+
+    querySnapshot.forEach((doc) => {
+      salaryRecords.push({ id: doc.id, ...doc.data() });
+    });
+
+    return salaryRecords;
+  } catch (error) {
+    console.error('Error getting employee self salary slips:', error);
     throw error;
   }
 };
@@ -1286,6 +1324,105 @@ export const getEmployeeSelfEmployment = async (employeeId: string) => {
     return employments;
   } catch (error) {
     console.error('Error getting employee self employment data:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update employee's own employment data (for employee self-service)
+ * Only allows updating a safe subset of fields.
+ */
+export const updateEmployeeSelfEmployment = async (
+  employeeId: string,
+  employmentId: string,
+  employmentData: Partial<Employment>
+) => {
+  try {
+    console.log('🔄 Starting employee self-employment update process...');
+
+    // Check for employee session
+    const employeeSessionId = localStorage.getItem('employeeSessionId');
+    const employeeDataStorage = localStorage.getItem('employeeData');
+
+    if (!employeeSessionId || !employeeDataStorage) {
+      throw new Error('No employee session found. Please log in as employee first.');
+    }
+
+    const currentEmployee = JSON.parse(employeeDataStorage);
+
+    // Security check: Employee can only update their own data
+    if (currentEmployee.id !== employeeId) {
+      throw new Error('Access denied. You can only update your own data.');
+    }
+
+    if (!employmentId) {
+      throw new Error('Employment id is required.');
+    }
+
+    // Load employment doc and validate ownership
+    const employmentRef = doc(db, 'employments', employmentId);
+    const employmentSnap = await getDoc(employmentRef);
+    if (!employmentSnap.exists()) {
+      throw new Error('Employment record not found.');
+    }
+
+    const existing = employmentSnap.data() as any;
+    if (existing.employeeId !== employeeId) {
+      throw new Error('Access denied. You can only update your own employment.');
+    }
+
+    // Allow-list fields employees can update themselves
+    const allowedKeys: (keyof Employment)[] = [
+      'bankName',
+      'accountNo',
+      'ifscCode',
+      'accountHolderName',
+      'panNumber',
+      'reportingManager',
+      'location',
+      'workSchedule',
+      'probationPeriod',
+      'noticePeriod',
+      // Dates (employee self-edit)
+      'joiningDate',
+      'startDate',
+      'endDate',
+      'salaryCreditDate',
+      // Job details (non-salary)
+      'jobTitle',
+      'designation',
+      'department',
+      'reportingAuthority',
+      'employmentType',
+      // Resignation details
+      'isResignation',
+      'resignationDate',
+      'lastWorkingDate',
+      'reasonForLeaving',
+      'exitInterviewDate',
+      'lastSalaryDate',
+    ];
+
+    const filtered: Partial<Employment> = {};
+    for (const key of allowedKeys) {
+      if (employmentData[key] !== undefined) {
+        filtered[key] = employmentData[key] as any;
+      }
+    }
+
+    const updateDataWithAudit: Partial<Employment> & { updatedAt: string; updatedBy: string } = {
+      ...filtered,
+      updatedAt: new Date().toISOString(),
+      updatedBy: employeeId,
+    };
+
+    const sanitizedData = sanitizeForFirestore(updateDataWithAudit);
+    await updateDoc(employmentRef, sanitizedData);
+
+    console.log('✅ Employee self-employment update successful');
+    return { id: employmentId, ...updateDataWithAudit };
+  } catch (error) {
+    console.error('Error updating employee self employment:', error);
     throw error;
   }
 };

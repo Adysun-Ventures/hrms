@@ -13,19 +13,6 @@ import {
   Text,
   View
 } from "@react-pdf/renderer";
-import { saveAs } from "file-saver";
-import {
-  Document as DocxDocument,
-  Packer,
-  Paragraph,
-  TextRun,
-  Table,
-  TableRow,
-  TableCell,
-  AlignmentType,
-  BorderStyle,
-  WidthType,
-} from "docx";
 import { formatIndianCurrency, numberToWords } from "@/components/pdf/SalaryUtils";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
@@ -93,121 +80,6 @@ const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
 ];
-
-async function buildSalarySlipDocx(formData: FormDataType) {
-  const totalEarnings = getTotalEarnings(formData);
-  const totalDeductions = getTotalDeductions(formData);
-  const net = getNetSalary(formData);
-  const title = `Salary Slip - ${MONTH_NAMES[formData.month]} ${formData.year}`;
-  const borders = {
-    top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-    bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-    left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-    right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-    insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-    insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "CCCCCC" },
-  };
-  const detailRows = [
-    ["Employee Name", formData.employeeName],
-    ["Employee Code", formData.employeeId],
-    ["Designation", formData.designation],
-    ["Department", formData.department],
-    ["Location", formData.location],
-    ["PAN Number", formData.panNumber],
-    ["Bank Name", formData.bankName],
-    ["Account Number", formData.accountNo],
-    ["IFSC Code", formData.ifscCode],
-    ["Payable Days", String(formData.payableDays)],
-  ];
-  const children = [
-    new Paragraph({ children: [new TextRun({ text: title, bold: true })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders,
-      rows: detailRows.map(([label, value]) =>
-        new TableRow({
-          children: [
-            new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: label, bold: true })] })] }),
-            new TableCell({ width: { size: 60, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: value || "-" })] }),
-          ],
-        })
-      ),
-    }),
-    new Paragraph({ text: "" }),
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders,
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({ shading: { fill: "EEEEEE" }, children: [new Paragraph({ children: [new TextRun({ text: "Earnings (A)", bold: true })] })] }),
-            new TableCell({ shading: { fill: "EEEEEE" }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: "Amount", bold: true })] })] }),
-            new TableCell({ shading: { fill: "EEEEEE" }, children: [new Paragraph({ children: [new TextRun({ text: "Deductions (B)", bold: true })] })] }),
-            new TableCell({ shading: { fill: "EEEEEE" }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: "Amount", bold: true })] })] }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            new TableCell({ children: [new Paragraph({ text: "Basic" })] }),
-            new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: formatIndianCurrency(formData.basicSalary) })] }),
-            new TableCell({ children: [new Paragraph({ text: "Professional Tax" })] }),
-            new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: formatIndianCurrency(formData.professionalTax) })] }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            new TableCell({ children: [new Paragraph({ text: "DA" })] }),
-            new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: formatIndianCurrency(formData.da) })] }),
-            new TableCell({ children: [new Paragraph({ text: formData.enablePF ? "PF (Employee)" : "Leave Deduction" })] }),
-            new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: formatIndianCurrency(formData.enablePF ? formData.pfEmployee : formData.leavesDeduction) })] }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            new TableCell({ children: [new Paragraph({ text: "Conveyance" })] }),
-            new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: formatIndianCurrency(formData.conveyanceAllowance) })] }),
-            ...(formData.enablePF
-              ? [new TableCell({ children: [new Paragraph({ text: "Leave Deduction" })] }), new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: formatIndianCurrency(formData.leavesDeduction) })] })]
-              : [new TableCell({ children: [new Paragraph({ text: "" })] }), new TableCell({ children: [new Paragraph({ text: "" })] })]),
-          ],
-        }),
-        new TableRow({
-          children: [
-            new TableCell({ children: [new Paragraph({ text: "Other Allowance" })] }),
-            new TableCell({ children: [new Paragraph({ alignment: AlignmentType.RIGHT, text: formatIndianCurrency(formData.otherAllowance) })] }),
-            new TableCell({ children: [new Paragraph({ text: "" })] }),
-            new TableCell({ children: [new Paragraph({ text: "" })] }),
-          ],
-        }),
-        new TableRow({
-          children: [
-            new TableCell({ shading: { fill: "EEEEEE" }, children: [new Paragraph({ children: [new TextRun({ text: "Gross Salary", bold: true })] })] }),
-            new TableCell({ shading: { fill: "EEEEEE" }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatIndianCurrency(totalEarnings), bold: true })] })] }),
-            new TableCell({ shading: { fill: "EEEEEE" }, children: [new Paragraph({ children: [new TextRun({ text: "Total Deductions", bold: true })] })] }),
-            new TableCell({ shading: { fill: "EEEEEE" }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatIndianCurrency(totalDeductions), bold: true })] })] }),
-          ],
-        }),
-      ],
-    }),
-    new Paragraph({ text: "" }),
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      borders,
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({ shading: { fill: "EEEEEE" }, children: [new Paragraph({ children: [new TextRun({ text: "Net Salary (A - B)", bold: true })] })] }),
-            new TableCell({ shading: { fill: "EEEEEE" }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: formatIndianCurrency(net), bold: true })] })] }),
-          ],
-        }),
-      ],
-    }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ text: "This is a system generated salary slip and does not require signature.", alignment: AlignmentType.CENTER }),
-  ];
-  return new DocxDocument({ sections: [{ properties: {}, children }] });
-}
 
 /* ================= SALARY CALC ================= */
 
@@ -422,6 +294,10 @@ const EmployeeSalarySlip: React.FC = () => {
     leavesDeduction: 0,
   });
 
+  const canGenerate = Boolean(
+    formData.employeeName && Number.isFinite(formData.month) && formData.year
+  );
+
   useEffect(() => {
     if (!currentUserData?.id) return;
 
@@ -493,26 +369,39 @@ return (
     <Toaster position="top-center" />
 
     {/* ================= MAIN CARD ================= */}
-    <div>
-
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
       {/* HEADER */}
-      <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Salary Slip
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Generate and download your salary slip
-          </p>
+      <div className="p-6 border-b border-gray-200 flex items-center">
+        <div className="w-1/3 flex justify-start">
+          <button
+            onClick={() => window.history.back()}
+            className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition bg-white"
+          >
+            ← Back
+          </button>
         </div>
 
-        {/* Back Button on Right */}
-        <button
-          onClick={() => window.history.back()}
-          className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition"
-        >
-          ← Back
-        </button>
+        <div className="flex-1 flex justify-center">
+          <h1 className="text-2xl font-bold text-gray-800 text-center">
+            Salary Slip
+          </h1>
+        </div>
+
+        <div className="w-1/3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowPDF(true)}
+            disabled={!canGenerate}
+            className={[
+              "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+              canGenerate
+                ? "bg-green-600 text-white hover:bg-green-700"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed",
+            ].join(" ")}
+          >
+            Generate
+          </button>
+        </div>
       </div>
 
       {/* FORM BODY */}
@@ -618,8 +507,16 @@ return (
           </div>
         </div>
 
-        {/* ================= ACTION BUTTON ================= */}
-        <div className="flex justify-end">
+        {/* ================= FOOTER ACTIONS ================= */}
+        <div className="-mx-8 px-8 border-t border-gray-200 pt-4 flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+          >
+            Cancel
+          </button>
+
           <button
             onClick={() => setShowPDF(true)}
             className="bg-green-600 hover:bg-green-700 transition-all duration-200 text-white px-8 py-3 rounded-xl shadow-md font-medium"
@@ -649,23 +546,6 @@ return (
             >
               Download PDF
             </PDFDownloadLink>
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  const doc = await buildSalarySlipDocx(formData);
-                  const blob = await Packer.toBlob(doc);
-                  saveAs(blob, `SalarySlip_${formData.employeeName}_${formData.month + 1}.docx`);
-                  toast.success("DOCX downloaded");
-                } catch (err) {
-                  console.error("DOCX download error:", err);
-                  toast.error("Failed to generate DOCX");
-                }
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition"
-            >
-              Download DOCX
-            </button>
           </div>
         </div>
 

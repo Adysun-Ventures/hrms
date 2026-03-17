@@ -18,14 +18,6 @@ import {
   PDFDownloadLink,
   StyleSheet
 } from "@react-pdf/renderer";
-import { saveAs } from "file-saver";
-import {
-  Document as DocxDocument,
-  Packer,
-  Paragraph,
-  TextRun,
-  AlignmentType,
-} from "docx";
 
 import EmployeeLayout from "@/components/layout/EmployeeLayout";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
@@ -71,47 +63,6 @@ const toTitleCase = (str?: string) =>
     .split(" ")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
-
-async function buildIncrementLetterDocx(letterData: LetterData | null) {
-  if (!letterData) return new DocxDocument({ sections: [{ properties: {}, children: [new Paragraph({ text: "No data" })] }] });
-  const shortName = letterData.employeeName.split(" ")[0] || letterData.employeeName;
-  const today = formatDate(new Date());
-  const formattedCurrent = Number(letterData.currentCTC).toLocaleString("en-IN");
-  const formattedRevised = Number(letterData.revisedCTC).toLocaleString("en-IN");
-  const formattedEffective = formatDate(letterData.effectiveDate);
-  const children = [
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: today })] }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "INCREMENT LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "I am pleased to inform you that due to your consistent outstanding performance and dedication to your role, we are providing you with a salary increment effective from " }),
-        new TextRun({ text: formattedEffective, bold: true }),
-        new TextRun({ text: "." }),
-      ],
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "Your new annual CTC will be " }),
-        new TextRun({ text: formattedRevised, bold: true }),
-        new TextRun({ text: " which is an increase from your previous annual CTC of " }),
-        new TextRun({ text: formattedCurrent, bold: true }),
-        new TextRun({ text: "." }),
-      ],
-    }),
-    new Paragraph({ text: "We appreciate your continuous hard work and commitment and we believe you will continue to excel." }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Effective: " }), new TextRun({ text: formattedEffective })] }),
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
-    new Paragraph({ text: COMPANY_DATA.hrDesignation }),
-    new Paragraph({ text: COMPANY_DATA.hrEmail }),
-  ];
-  return new DocxDocument({ sections: [{ properties: {}, children }] });
-}
 
 const Watermark = ({ logoSrc }: { logoSrc?: string }) => {
   if (!logoSrc) return null;
@@ -259,6 +210,20 @@ const EmployeeIncrementLetter: React.FC = () => {
 
   const [letterData, setLetterData] = useState<LetterData | null>(null);
 
+  const canGenerate = Boolean(letterData);
+
+  const handleGenerate = () => {
+    if (!percentageIncrease) return toast.error("Enter % increase");
+    if (!effectiveDate) return toast.error("Select effective date");
+
+    requestAnimationFrame(() => {
+      document.getElementById("increment-preview")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
   /* ---------------- Load employee + employment ---------------- */
   useEffect(() => {
     const load = async () => {
@@ -309,26 +274,39 @@ return (
     ]}
   >
     <div className="mx-auto pt-6">
-
-      <div>
-
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-6 border-b border-gray-200 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              Increment Letter
-            </h1>
-            <p className="text-gray-600 mt-1 text-sm">
-              View and download your increment letter
-            </p>
+        <div className="px-6 py-6 border-b border-gray-200 flex items-center">
+          <div className="w-1/3 flex justify-start">
+            <button
+              onClick={() => window.history.back()}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition shadow-sm"
+            >
+              ← Back
+            </button>
           </div>
 
-          <button
-            onClick={() => window.history.back()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition shadow-sm"
-          >
-            ← Back
-          </button>
+          <div className="flex-1 flex justify-center">
+            <h1 className="text-2xl font-bold text-gray-800 text-center">
+              Increment Letter
+            </h1>
+          </div>
+
+          <div className="w-1/3 flex justify-end">
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={!canGenerate}
+              className={[
+                "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+                canGenerate
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed",
+              ].join(" ")}
+            >
+              Generate
+            </button>
+          </div>
         </div>
 
         <div className="p-6 space-y-6">
@@ -402,43 +380,38 @@ return (
                 </div>
               </div>
 
-              {/* Download Button */}
-              {letterData && (
-                <div className="flex justify-end gap-2">
-                  <PDFDownloadLink
-                    document={
-                      <EmployeeIncrementPDF letterData={letterData} />
-                    }
-                    fileName={`Increment_${letterData.employeeName}.pdf`}
-                    className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
-                  >
-                    <FiDownload className="mr-2" />
-                    Download PDF
-                  </PDFDownloadLink>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        const doc = await buildIncrementLetterDocx(letterData);
-                        const blob = await Packer.toBlob(doc);
-                        saveAs(blob, `IncrementLetter_${(letterData.employeeName || "").replace(/\s+/g, "_")}.docx`);
-                        toast.success("DOCX downloaded");
-                      } catch (err) {
-                        console.error("DOCX download error:", err);
-                        toast.error("Failed to generate DOCX");
+              {/* FOOTER ACTIONS */}
+              <div className="-mx-6 px-6 border-t border-gray-200 pt-4 flex items-center justify-between gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.history.back()}
+                  className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+
+                {letterData && (
+                  <div className="flex justify-end gap-2">
+                    <PDFDownloadLink
+                      document={
+                        <EmployeeIncrementPDF letterData={letterData} />
                       }
-                    }}
-                    className="flex items-center px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                  >
-                    <FiDownload className="mr-2" />
-                    Download DOCX
-                  </button>
-                </div>
-              )}
+                      fileName={`Increment_${letterData.employeeName}.pdf`}
+                      className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    >
+                      <FiDownload className="mr-2" />
+                      Download PDF
+                    </PDFDownloadLink>
+                  </div>
+                )}
+              </div>
 
               {/* PDF Preview */}
               {letterData && (
-                <div className="bg-white rounded-lg shadow-lg p-6 mt-4">
+                <div
+                  id="increment-preview"
+                  className="bg-white rounded-lg shadow-lg p-6 mt-4"
+                >
                   <h3 className="text-xl font-bold text-gray-800 mb-4">
                     PDF Preview
                   </h3>

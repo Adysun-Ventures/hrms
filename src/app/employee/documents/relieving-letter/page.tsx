@@ -2,14 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { PDFDownloadLink, PDFViewer, Document, Page, Text, View, Image } from "@react-pdf/renderer";
-import { saveAs } from "file-saver";
-import {
-  Document as DocxDocument,
-  Packer,
-  Paragraph,
-  TextRun,
-  AlignmentType,
-} from "docx";
 import { Toaster, toast } from "react-hot-toast";
 
 import EmployeeLayout from "@/components/layout/EmployeeLayout";
@@ -61,39 +53,6 @@ const formatDate = (d?: string): string => {
   const formatted = formatDateToDayMonYear(d ?? null);
   return formatted === "-" ? "" : formatted;
 };
-
-async function buildRelievingLetterDocx(emp: Employee | null, empJob: Employment | null, employeeSignDate: string, employeeSignPlace: string, employeeRelievingDate: string, employeeResignDate: string) {
-  if (!emp || !empJob) return new DocxDocument({ sections: [{ properties: {}, children: [new Paragraph({ text: "No data" })] }] });
-  const employeeName = emp?.name || "";
-  const designation = empJob?.jobTitle || "";
-  const joiningDate = empJob?.joiningDate || "";
-  const shortName = employeeName.split(" ")[0] || employeeName;
-  const resignDate = formatDate(employeeResignDate);
-  const relievingDate = formatDate(employeeRelievingDate);
-  const signDate = formatDate(employeeSignDate);
-  const joinDate = formatDate(joiningDate);
-  const children = [
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: signDate })] }),
-    new Paragraph({ children: [new TextRun({ text: toTitleCase(employeeName), bold: true })] }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "RELIEVING LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
-    new Paragraph({ children: [new TextRun({ text: "This is with reference to your resignation dated " }), new TextRun({ text: resignDate, bold: true }), new TextRun({ text: "." })] }),
-    new Paragraph({ text: "During your tenure with the company, you performed your duties responsibly and professionally." }),
-    new Paragraph({ children: [new TextRun({ text: "We hereby confirm that you have been formally relieved from your services effective end of day " }), new TextRun({ text: relievingDate, bold: true }), new TextRun({ text: "." })] }),
-    new Paragraph({ text: "Further, you have completed all required exit formalities including handover of company assets, documentation, access rights and clearance." }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: employeeSignPlace || "" })] }),
-    new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: signDate })] }),
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
-    new Paragraph({ text: COMPANY_DATA.hrDesignation }),
-    new Paragraph({ text: COMPANY_DATA.hrEmail }),
-  ];
-  return new DocxDocument({ sections: [{ properties: {}, children }] });
-}
 
     const Watermark = ({ logoSrc }: { logoSrc?: string }) => {
       if (!logoSrc) return null;
@@ -215,6 +174,29 @@ const EmployeeRelievingLetter: React.FC = () => {
   const [employeeRelievingDate, setEmployeeRelievingDate] = useState<string>("");
   const [employeeResignDate, setEmployeeResignDate] = useState<string>("");
 
+  const canGenerate = Boolean(
+    employee &&
+      employment &&
+      employeeSignDate &&
+      employeeSignPlace &&
+      employeeRelievingDate &&
+      employeeResignDate
+  );
+
+  const handleGenerate = () => {
+    if (!employeeSignDate) return toast.error("Select sign date");
+    if (!employeeRelievingDate) return toast.error("Select relieving date");
+    if (!employeeResignDate) return toast.error("Select resignation date");
+    if (!employeeSignPlace) return toast.error("Select place");
+
+    requestAnimationFrame(() => {
+      document.getElementById("relieving-preview")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
+  };
+
   /* ---------------- Load employee + employment ---------------- */
   useEffect(() => {
     const load = async () => {
@@ -250,26 +232,39 @@ const EmployeeRelievingLetter: React.FC = () => {
     <Toaster position="top-center" />
 
     <div className="mx-auto pt-6">
-
-      <div>
-
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {/* Header */}
-        <div className="px-6 py-6 border-b border-gray-200 flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              Generate Relieving Letter
-            </h1>
-            <p className="text-gray-600 mt-1 text-sm">
-              Fill the details below and your relieving letter will be generated automatically
-            </p>
+        <div className="px-6 py-6 border-b border-gray-200 flex items-center">
+          <div className="w-1/3 flex justify-start">
+            <button
+              onClick={() => window.history.back()}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition shadow-sm"
+            >
+              ← Back
+            </button>
           </div>
 
-          <button
-            onClick={() => window.history.back()}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition shadow-sm"
-          >
-            ← Back
-          </button>
+          <div className="flex-1 flex justify-center">
+            <h1 className="text-2xl font-bold text-gray-800 text-center">
+              Reliving Letter
+            </h1>
+          </div>
+
+          <div className="w-1/3 flex justify-end">
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={!canGenerate}
+              className={[
+                "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+                canGenerate
+                  ? "bg-green-600 text-white hover:bg-green-700"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed",
+              ].join(" ")}
+            >
+              Generate
+            </button>
+          </div>
         </div>
 
         <div className="p-6 space-y-6">
@@ -342,6 +337,17 @@ const EmployeeRelievingLetter: React.FC = () => {
             </div>
           </div>
 
+          {/* FOOTER ACTIONS */}
+          <div className="-mx-6 px-6 border-t border-gray-200 pt-4 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => window.history.back()}
+              className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+            >
+              Cancel
+            </button>
+          </div>
+
         </div>
       </div>
 
@@ -352,7 +358,10 @@ const EmployeeRelievingLetter: React.FC = () => {
         employeeSignPlace &&
         employeeRelievingDate &&
         employeeResignDate && (
-          <div className="bg-white rounded-lg shadow-lg p-6 mt-6">
+          <div
+            id="relieving-preview"
+            className="bg-white rounded-lg shadow-lg p-6 mt-6"
+          >
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-gray-800">
                 PDF Preview
@@ -375,23 +384,6 @@ const EmployeeRelievingLetter: React.FC = () => {
                 >
                   Download PDF
                 </PDFDownloadLink>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      const doc = await buildRelievingLetterDocx(employee, employment, employeeSignDate, employeeSignPlace, employeeRelievingDate, employeeResignDate);
-                      const blob = await Packer.toBlob(doc);
-                      saveAs(blob, `RelievingLetter_${(employee?.name || "").replace(/\s+/g, "_")}.docx`);
-                      toast.success("DOCX downloaded");
-                    } catch (err) {
-                      console.error("DOCX download error:", err);
-                      toast.error("Failed to generate DOCX");
-                    }
-                  }}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
-                >
-                  Download DOCX
-                </button>
               </div>
             </div>
 

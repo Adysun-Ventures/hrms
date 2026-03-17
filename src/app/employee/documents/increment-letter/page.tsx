@@ -209,6 +209,7 @@ const EmployeeIncrementLetter: React.FC = () => {
   const [revisedCTC, setRevisedCTC] = useState<number>(0);
 
   const [letterData, setLetterData] = useState<LetterData | null>(null);
+  const [showPDF, setShowPDF] = useState(false);
 
   const canGenerate = Boolean(letterData);
 
@@ -216,6 +217,7 @@ const EmployeeIncrementLetter: React.FC = () => {
     if (!percentageIncrease) return toast.error("Enter % increase");
     if (!effectiveDate) return toast.error("Select effective date");
 
+    setShowPDF(true);
     requestAnimationFrame(() => {
       document.getElementById("increment-preview")?.scrollIntoView({
         behavior: "smooth",
@@ -298,12 +300,13 @@ return (
               onClick={handleGenerate}
               disabled={!canGenerate}
               className={[
-                "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+                "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm inline-flex items-center gap-2",
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed",
               ].join(" ")}
             >
+              <FiDownload className="w-4 h-4" />
               Generate
             </button>
           </div>
@@ -390,31 +393,42 @@ return (
                   Cancel
                 </button>
 
-                {letterData && (
-                  <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={!canGenerate}
+                  className={[
+                    "inline-flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+                    canGenerate
+                      ? "bg-green-600 text-white hover:bg-green-700"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed",
+                  ].join(" ")}
+                >
+                  <FiDownload className="w-4 h-4" />
+                  Generate
+                </button>
+              </div>
+
+              {/* PDF Preview */}
+              {showPDF && letterData && (
+                <div
+                  id="increment-preview"
+                  className="bg-white rounded-lg shadow-lg p-6 mt-4"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xl font-bold text-gray-800">
+                      PDF Preview
+                    </h3>
+
                     <PDFDownloadLink
-                      document={
-                        <EmployeeIncrementPDF letterData={letterData} />
-                      }
+                      document={<EmployeeIncrementPDF letterData={letterData} />}
                       fileName={`Increment_${letterData.employeeName}.pdf`}
-                      className="flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                      className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
                     >
                       <FiDownload className="mr-2" />
                       Download PDF
                     </PDFDownloadLink>
                   </div>
-                )}
-              </div>
-
-              {/* PDF Preview */}
-              {letterData && (
-                <div
-                  id="increment-preview"
-                  className="bg-white rounded-lg shadow-lg p-6 mt-4"
-                >
-                  <h3 className="text-xl font-bold text-gray-800 mb-4">
-                    PDF Preview
-                  </h3>
 
                   <div
                     className="border rounded-lg"

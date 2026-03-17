@@ -228,12 +228,13 @@ return (
             onClick={handleGenerate}
             disabled={!canGenerate}
             className={[
-              "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+              "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm inline-flex items-center gap-2",
               canGenerate
                 ? "bg-green-600 text-white hover:bg-green-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed",
             ].join(" ")}
           >
+            <FiDownload className="w-4 h-4" />
             Generate
           </button>
         </div>
@@ -307,8 +308,15 @@ return (
           <button
             type="button"
             onClick={handleGenerate}
-            className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+            disabled={!canGenerate}
+            className={[
+              "flex items-center gap-2 px-6 py-2 rounded-lg transition shadow-sm",
+              canGenerate
+                ? "bg-green-600 text-white hover:bg-green-700"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed",
+            ].join(" ")}
           >
+            <FiDownload className="w-5 h-5" />
             Generate
           </button>
         </div>
@@ -317,7 +325,7 @@ return (
     </div>
 
     {/* PDF PREVIEW CARD */}
-    {employee && employment && todaysDate && employeeSignDate && employeeSignPlace && (
+    {showPDF && employee && employment && todaysDate && employeeSignDate && employeeSignPlace && (
       <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
 
         <div className="flex justify-between items-center mb-6">

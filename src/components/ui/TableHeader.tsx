@@ -174,7 +174,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
       case 'danger':
         return `${baseClasses} bg-red-600 text-white hover:bg-red-700`;
       case 'orange':
-        return `${baseClasses} bg-orange-400 text-white hover:bg-orange-500`;
+        return `${baseClasses} bg-orange-600 text-white hover:bg-orange-700`;
       case 'purple':
         return `${baseClasses} bg-purple-600 text-white hover:bg-purple-700`;
       case 'info':

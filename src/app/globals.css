@@ -135,3 +135,10 @@ textarea:focus {
 .btn-danger {
   @apply py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-md shadow-sm transition-colors;
 }
+
+/* Move 3rd-party floating "tqd" button left */
+.tqd-parent-container .tqd-open-btn-container {
+  right: 260px !important;
+  bottom: 120px !important;
+  left: auto !important;
+}

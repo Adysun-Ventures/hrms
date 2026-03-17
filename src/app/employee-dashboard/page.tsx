@@ -3,7 +3,18 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { FiUser, FiCalendar, FiLogOut, FiFileText, FiLogIn, FiCheck, FiClock } from 'react-icons/fi';
+import {
+  FiUser,
+  FiCalendar,
+  FiLogOut,
+  FiFileText,
+  FiLogIn,
+  FiCheck,
+  FiClock,
+  FiEye,
+  FiEdit2,
+  FiBriefcase,
+} from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { getEmployeeSelf } from '@/utils/firebaseUtils';
@@ -175,14 +186,15 @@ export default function EmployeeDashboardPage() {
       {/* Employee Information Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="-mx-6 px-6 flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-800">Employee Information</h2>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => router.push("/employee/profile")}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
               >
+                <FiEye className="w-4 h-4" />
                 View Profile
               </button>
               <button
@@ -190,8 +202,9 @@ export default function EmployeeDashboardPage() {
                 onClick={() => {
                   router.push("/employee/profile/edit");
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition"
               >
+                <FiEdit2 className="w-4 h-4" />
                 Edit Profile
               </button>
             </div>
@@ -223,10 +236,21 @@ export default function EmployeeDashboardPage() {
                 </div>
               )}
 
-              {fullEmployeeData.currentAddress && (
+              {fullEmployeeData.dateOfBirth && (
                 <div>
-                  <p className="font-medium text-gray-900">{fullEmployeeData.currentAddress}</p>
-                  <p className="text-sm text-gray-600">Current Address</p>
+                  <p className="font-medium text-gray-900">
+                    {formatDateToDayMonYear(fullEmployeeData.dateOfBirth)}
+                  </p>
+                  <p className="text-sm text-gray-600">Date of Birth</p>
+                </div>
+              )}
+
+              {(fullEmployeeData as any)?.aadharCard && (
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {(fullEmployeeData as any).aadharCard}
+                  </p>
+                  <p className="text-sm text-gray-600">Aadhar Card</p>
                 </div>
               )}
             </div>
@@ -240,7 +264,7 @@ export default function EmployeeDashboardPage() {
         {/* Employment Basic Info Card */}
         {!employmentLoading && currentEmployment && (
           <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="-mx-6 px-6 flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-800">Employment Information</h2>
               <div className="flex items-center gap-3">
                 <button
@@ -251,8 +275,9 @@ export default function EmployeeDashboardPage() {
                     if (!employmentId) return;
                     router.push(`/employments/${employmentId}`);
                   }}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
                 >
+                  <FiEye className="w-4 h-4" />
                   View Employment
                 </button>
                 <button
@@ -263,17 +288,62 @@ export default function EmployeeDashboardPage() {
                     if (!employmentId) return;
                     router.push(`/employments/${employmentId}/edit`);
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition"
                 >
+                  <FiEdit2 className="w-4 h-4" />
                   Edit Employment
                 </button>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {currentEmployment.employmentId && (
+              {/* First row (priority) */}
+              {(currentEmployment.employmentId || fullEmployeeData?.employeeId) && (
                 <div>
-                  <p className="font-medium text-gray-900">{currentEmployment.employmentId}</p>
-                  <p className="text-sm text-gray-600">Employment ID</p>
+                  <p className="font-medium text-gray-900">
+                    {String(currentEmployment.employmentId || fullEmployeeData?.employeeId)}
+                  </p>
+                  <p className="text-sm text-gray-600">Employee ID</p>
+                </div>
+              )}
+
+              {currentEmployment.joiningDate && (
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {formatDateToDayMonYear(currentEmployment.joiningDate)}
+                  </p>
+                  <p className="text-sm text-gray-600">Joining Date</p>
+                </div>
+              )}
+
+              {((currentEmployment as any).joiningCtc ??
+                (currentEmployment as any).joiningCTC) && (
+                <div>
+                  <p className="font-medium text-gray-900">
+                    ₹
+                    {Number(
+                      (currentEmployment as any).joiningCtc ??
+                        (currentEmployment as any).joiningCTC
+                    ).toLocaleString("en-IN")}
+                  </p>
+                  <p className="text-sm text-gray-600">Joining CTC</p>
+                </div>
+              )}
+
+              {currentEmployment.startDate && (
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {formatDateToDayMonYear(currentEmployment.startDate)}
+                  </p>
+                  <p className="text-sm text-gray-600">Start Date</p>
+                </div>
+              )}
+
+              {currentEmployment.endDate && (
+                <div>
+                  <p className="font-medium text-gray-900">
+                    {formatDateToDayMonYear(currentEmployment.endDate)}
+                  </p>
+                  <p className="text-sm text-gray-600">End Date</p>
                 </div>
               )}
 
@@ -288,13 +358,6 @@ export default function EmployeeDashboardPage() {
                 <div>
                   <p className="font-medium text-gray-900">{toTitleCase(currentEmployment.department)}</p>
                   <p className="text-sm text-gray-600">Department</p>
-                </div>
-              )}
-
-              {currentEmployment.joiningDate && (
-                <div>
-                  <p className="font-medium text-gray-900">{formatDateToDayMonYear(currentEmployment.joiningDate)}</p>
-                  <p className="text-sm text-gray-600">Joining Date</p>
                 </div>
               )}
 

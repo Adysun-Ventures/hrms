@@ -521,7 +521,7 @@ return (
             onClick={() => setShowPDF(true)}
             className="bg-green-600 hover:bg-green-700 transition-all duration-200 text-white px-8 py-3 rounded-xl shadow-md font-medium"
           >
-            Generate Salary Slip
+            Generate
           </button>
         </div>
 

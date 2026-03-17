@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import EmployeeSidebar from './EmployeeSidebar';
 import Header from './Header';
 import SimpleBreadcrumb from '../ui/SimpleBreadcrumb';
+import EmployeeFooter from './EmployeeFooter';
 
 interface BreadcrumbItem {
   label: string;
@@ -21,17 +22,20 @@ const EmployeeLayout = ({
   showBreadcrumb = true 
 }: EmployeeLayoutProps) => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-transparent flex flex-col">
       <EmployeeSidebar />
       <Header variant="protected" />
-      <main className="pt-16 lg:pl-64 min-h-screen">
-        <div className="p-4 md:p-6">
-          {showBreadcrumb && breadcrumbItems.length > 0 && (
-            <SimpleBreadcrumb items={breadcrumbItems} className="mb-4" />
-          )}
-          {children}
-        </div>
-      </main>
+      <div className="pt-16 lg:pl-64 flex-1 flex flex-col min-h-0">
+        <main className="flex-1">
+          <div className="p-4 md:p-6">
+            {showBreadcrumb && breadcrumbItems.length > 0 && (
+              <SimpleBreadcrumb items={breadcrumbItems} className="mb-4" />
+            )}
+            {children}
+          </div>
+        </main>
+        <EmployeeFooter />
+      </div>
     </div>
   );
 };

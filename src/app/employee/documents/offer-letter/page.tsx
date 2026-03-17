@@ -566,7 +566,7 @@ export default function EmployeeOfferLetterPage() {
             />
           }
           fileName="OfferLetter.pdf"
-          className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+          className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
         >
           <FiDownload className="mr-2" size={18} />
           Generate

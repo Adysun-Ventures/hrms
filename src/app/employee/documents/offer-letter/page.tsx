@@ -6,7 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { getEmployee } from '@/utils/documentFunctions';
 import toast, { Toaster } from 'react-hot-toast';
-import { FiDownload, FiFileText } from 'react-icons/fi';
+import { FiArrowLeft, FiDownload, FiFileText, FiX } from 'react-icons/fi';
 
 import {
   Document,
@@ -497,8 +497,10 @@ export default function EmployeeOfferLetterPage() {
           <button
             onClick={() => window.history.back()}
             className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+            aria-label="Back"
           >
-            ← Back
+            <FiArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Back</span>
           </button>
         </div>
 
@@ -519,9 +521,10 @@ export default function EmployeeOfferLetterPage() {
             }
             fileName="OfferLetter.pdf"
             className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
+            aria-label="Generate"
           >
             <FiDownload className="mr-2" size={18} />
-            Generate
+            <span className="hidden sm:inline">Generate</span>
           </PDFDownloadLink>
         </div>
       </div>
@@ -553,8 +556,10 @@ export default function EmployeeOfferLetterPage() {
           type="button"
           onClick={() => window.history.back()}
           className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+          aria-label="Cancel"
         >
-          Cancel
+          <FiX className="w-4 h-4" />
+          <span className="hidden sm:inline">Cancel</span>
         </button>
 
         <PDFDownloadLink
@@ -567,9 +572,10 @@ export default function EmployeeOfferLetterPage() {
           }
           fileName="OfferLetter.pdf"
           className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
+          aria-label="Generate"
         >
           <FiDownload className="mr-2" size={18} />
-          Generate
+          <span className="hidden sm:inline">Generate</span>
         </PDFDownloadLink>
       </div>
     </div>

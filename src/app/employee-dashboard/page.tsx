@@ -193,9 +193,10 @@ export default function EmployeeDashboardPage() {
                 type="button"
                 onClick={() => router.push("/employee/profile")}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                aria-label="View Profile"
               >
                 <FiEye className="w-4 h-4" />
-                View Profile
+                <span className="hidden sm:inline">View Profile</span>
               </button>
               <button
                 type="button"
@@ -203,9 +204,10 @@ export default function EmployeeDashboardPage() {
                   router.push("/employee/profile/edit");
                 }}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition"
+                aria-label="Edit Profile"
               >
                 <FiEdit2 className="w-4 h-4" />
-                Edit Profile
+                <span className="hidden sm:inline">Edit Profile</span>
               </button>
             </div>
           </div>
@@ -276,9 +278,10 @@ export default function EmployeeDashboardPage() {
                     router.push(`/employments/${employmentId}`);
                   }}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                  aria-label="View Employment"
                 >
                   <FiEye className="w-4 h-4" />
-                  View Employment
+                  <span className="hidden sm:inline">View Employment</span>
                 </button>
                 <button
                   type="button"
@@ -289,9 +292,10 @@ export default function EmployeeDashboardPage() {
                     router.push(`/employments/${employmentId}/edit`);
                   }}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition"
+                  aria-label="Edit Employment"
                 >
                   <FiEdit2 className="w-4 h-4" />
-                  Edit Employment
+                  <span className="hidden sm:inline">Edit Employment</span>
                 </button>
               </div>
             </div>

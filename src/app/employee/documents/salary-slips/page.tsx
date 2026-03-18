@@ -17,7 +17,7 @@ import { formatIndianCurrency, numberToWords } from "@/components/pdf/SalaryUtil
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 import { useRouter } from "next/navigation";
-import { FiArrowLeft } from "react-icons/fi";
+import { FiArrowLeft, FiDownload, FiX } from "react-icons/fi";
 
 /* ================= TYPES ================= */
 
@@ -376,8 +376,12 @@ return (
           <button
             onClick={() => window.history.back()}
             className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition bg-white"
+            aria-label="Back"
           >
-            ← Back
+            <span className="inline-flex items-center gap-2">
+              <FiArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Back</span>
+            </span>
           </button>
         </div>
 
@@ -398,8 +402,12 @@ return (
                 ? "bg-green-600 text-white hover:bg-green-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed",
             ].join(" ")}
+            aria-label="Generate"
           >
-            Generate
+            <span className="inline-flex items-center gap-2">
+              <FiDownload className="w-4 h-4" />
+              <span className="hidden sm:inline">Generate</span>
+            </span>
           </button>
         </div>
       </div>
@@ -513,15 +521,21 @@ return (
             type="button"
             onClick={() => window.history.back()}
             className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+            aria-label="Cancel"
           >
-            Cancel
+            <FiX className="w-4 h-4" />
+            <span className="hidden sm:inline">Cancel</span>
           </button>
 
           <button
             onClick={() => setShowPDF(true)}
             className="bg-green-600 hover:bg-green-700 transition-all duration-200 text-white px-8 py-3 rounded-xl shadow-md font-medium"
+            aria-label="Generate"
           >
-            Generate
+            <span className="inline-flex items-center gap-2">
+              <FiDownload className="w-4 h-4" />
+              <span className="hidden sm:inline">Generate</span>
+            </span>
           </button>
         </div>
 
@@ -543,8 +557,12 @@ return (
               document={memoPDF}
               fileName={`SalarySlip_${formData.employeeName}_${formData.month + 1}.pdf`}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
+              aria-label="Download PDF"
             >
-              Download PDF
+              <span className="inline-flex items-center gap-2">
+                <FiDownload className="w-4 h-4" />
+                <span className="hidden sm:inline">Download PDF</span>
+              </span>
             </PDFDownloadLink>
           </div>
         </div>

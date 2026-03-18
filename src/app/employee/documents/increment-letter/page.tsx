@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FiTrendingUp, FiDownload } from "react-icons/fi";
+import { FiArrowLeft, FiTrendingUp, FiDownload, FiX } from "react-icons/fi";
 import toast from "react-hot-toast";
 
 import { useAuth } from "@/context/AuthContext";
@@ -283,8 +283,10 @@ return (
             <button
               onClick={() => window.history.back()}
               className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition shadow-sm"
+              aria-label="Back"
             >
-              ← Back
+              <FiArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Back</span>
             </button>
           </div>
 
@@ -307,7 +309,7 @@ return (
               ].join(" ")}
             >
               <FiDownload className="w-4 h-4" />
-              Generate
+              <span className="hidden sm:inline">Generate</span>
             </button>
           </div>
         </div>
@@ -389,8 +391,10 @@ return (
                   type="button"
                   onClick={() => window.history.back()}
                   className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                  aria-label="Cancel"
                 >
-                  Cancel
+                  <FiX className="w-4 h-4" />
+                  <span className="hidden sm:inline">Cancel</span>
                 </button>
 
                 <button
@@ -405,7 +409,7 @@ return (
                   ].join(" ")}
                 >
                   <FiDownload className="w-4 h-4" />
-                  Generate
+                  <span className="hidden sm:inline">Generate</span>
                 </button>
               </div>
 
@@ -426,7 +430,7 @@ return (
                       className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
                     >
                       <FiDownload className="mr-2" />
-                      Download PDF
+                      <span className="hidden sm:inline">Download PDF</span>
                     </PDFDownloadLink>
                   </div>
 

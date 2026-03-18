@@ -133,14 +133,14 @@ export default function DashboardPage() {
             <Link
               href={card.link}
               key={card.title}
-              className={`${card.color} p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow`}
+              className={`${card.color} p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden`}
             >
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-slate-700 font-medium">{card.title}</p>
-                  <h3 className="text-3xl font-bold mt-2 text-gray-800">{card.count}</h3>
+              <div className="flex flex-col gap-2">
+                <p className="text-slate-700 font-medium">{card.title}</p>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-3xl font-bold text-gray-800">{card.count}</h3>
+                  <div className="flex-shrink-0">{card.icon}</div>
                 </div>
-                <div>{card.icon}</div>
               </div>
             </Link>
           ))}

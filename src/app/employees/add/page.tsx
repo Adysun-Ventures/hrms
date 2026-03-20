@@ -53,6 +53,13 @@ export default function AddEmployeePage() {
       employmentStatus: 'working',
     }
   });
+
+  const formatAadharCard = (raw: string) => {
+    const digits = (raw || "").replace(/\D/g, "").slice(0, 12);
+    if (digits.length <= 4) return digits;
+    if (digits.length <= 8) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
+    return `${digits.slice(0, 4)} ${digits.slice(4, 8)} ${digits.slice(8, 12)}`;
+  };
   const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
   const currentAddressValue = watch('currentAddress');
 
@@ -166,6 +173,7 @@ export default function AddEmployeePage() {
       // Add audit fields to employee data and ensure status is active
       const employeeDataWithAudit = {
         ...data,
+        aadharCard: data.aadharCard ? data.aadharCard.replace(/\s+/g, "") : undefined,
         secondaryEducation,
         panCard: data.panCard ? data.panCard.toUpperCase() : undefined,
         status: 'active' as const,
@@ -281,96 +289,6 @@ export default function AddEmployeePage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Date of Birth
-                  </label>
-                  <input
-                    type="date"
-                    {...register('dateOfBirth', {
-                      required: 'Date of Birth is required',
-                      validate: {
-                        notFuture: (value) => {
-                          if (!value) return true;
-                          const selectedDate = new Date(value);
-                          // The latest valid date is Dec 31, 2025
-                          const maxValidDate = new Date("2025-12-31");
-                          // Set maxValidDate's time to the very end of the day for full safety
-                          maxValidDate.setHours(23, 59, 59, 999);
-                          if (selectedDate > maxValidDate) {
-                            return 'Date of Birth cannot be after 2025';
-                          }
-                          return true;
-                        },
-                        validDate: (value) => {
-                          if (!value) return true; // Optional field
-                          const date = new Date(value);
-                          return !isNaN(date.getTime()) || 'Please enter a valid date';
-                        }
-                      }
-                    })}
-                    max="2025-12-31"
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={watch('dateOfBirth') ? formatDateToDayMonYear(watch('dateOfBirth')) : 'Select date of birth'}
-                  />
-                  {errors.dateOfBirth && (
-                    <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>
-                  )}
-                </div>
-
-                
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Home Town
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter home town"
-                    {...register('homeTown', {
-                      required: 'Home town is required',
-                      maxLength: {
-                        value: 50,
-                        message: 'Home town cannot exceed 50 characters'
-                      }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                  {errors.homeTown && (
-                    <p className="mt-1 text-sm text-red-600">{errors.homeTown.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Employee Type
-                  </label>
-                  <select
-                    {...register('employeeType', {
-                      required: 'Employee type is required'
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  >
-                    <option value="internal">Internal</option>
-                    <option value="external">External</option>
-                  </select>
-                  {errors.employeeType && (
-                    <p className="mt-1 text-sm text-red-600">{errors.employeeType.message}</p>
-                  )}
-                </div>
-
-                {/* Status dropdown removed (backend logic unchanged) */}
-              </div>
-            </div>
-
-            {/* Contact Information */}
-            <div className="bg-white p-4 rounded-lg mb-4">
-              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">
-                Contact Information
-              </h3>
-
-              {/* Row 1: Phone & Email - 3-column grid on desktop */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span> Mobile No.
                   </label>
                   <input
@@ -385,91 +303,13 @@ export default function AddEmployeePage() {
                     })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
-                  {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Email ID
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="Enter email address"
-                    {...register('email', {
-                      required: 'Email is required',
-                      pattern: {
-                        value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                        message: 'Invalid email address'
-                      }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
-                </div>
-              </div>
-
-              {/* Row 2: Addresses - col-6 each in one row */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
-                <div className="md:col-span-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Current Address
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter current address"
-                    {...register('currentAddress', {
-                      required: 'Current address is required',
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                  {errors.currentAddress && (
-                    <p className="mt-1 text-sm text-red-600">{errors.currentAddress.message}</p>
+                  {errors.phone && (
+                    <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
                   )}
                 </div>
 
-                <div className="md:col-span-6">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-gray-700">
-                      <span className="text-red-500 mr-1">*</span> Permanent Address
-                    </label>
-                    <label htmlFor="addSameAsCurrentAddress" className="flex items-center text-sm text-gray-600 space-x-2">
-                      <input
-                        id="addSameAsCurrentAddress"
-                        type="checkbox"
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                        checked={sameAsCurrentAddress}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setSameAsCurrentAddress(checked);
-                          if (checked) {
-                            setValue('permanentAddress', currentAddressValue || '');
-                          }
-                        }}
-                      />
-                      <span>Same as current</span>
-                    </label>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Enter permanent address (if different from current)"
-                    {...register('permanentAddress', {
-                      required: 'Permanent address is required',
-                    })}
-                    className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black ${
-                      sameAsCurrentAddress ? 'bg-gray-100 cursor-not-allowed' : ''
-                    }`}
-                    readOnly={sameAsCurrentAddress}
-                    disabled={sameAsCurrentAddress}
-                  />
-                </div>
-              </div>
-            </div>
+                
 
-            {/* Password Section */}
-            <div className="bg-white p-4 rounded-lg mb-4">
-              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Login Credentials</h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span> Password
@@ -499,6 +339,169 @@ export default function AddEmployeePage() {
                     <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
                   )}
                 </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <span className="text-red-500 mr-1">*</span> Employee Type
+                  </label>
+                  <select
+                    {...register('employeeType', {
+                      required: 'Employee type is required'
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  >
+                    <option value="internal">Internal</option>
+                    <option value="external">External</option>
+                  </select>
+                  {errors.employeeType && (
+                    <p className="mt-1 text-sm text-red-600">{errors.employeeType.message}</p>
+                  )}
+                </div>
+
+                {/* Status dropdown removed (backend logic unchanged) */}
+              </div>
+            </div>
+
+            {/* Additional (optional) details */}
+            <div className="bg-white p-4 rounded-lg mb-4">
+              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Additional Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    {...register('dateOfBirth', {
+                      validate: {
+                        notFuture: (value) => {
+                          if (!value) return true;
+                          const selectedDate = new Date(value);
+                          const maxValidDate = new Date("2025-12-31");
+                          maxValidDate.setHours(23, 59, 59, 999);
+                          if (selectedDate > maxValidDate) {
+                            return 'Date of Birth cannot be after 2025';
+                          }
+                          return true;
+                        },
+                        validDate: (value) => {
+                          if (!value) return true;
+                          const date = new Date(value);
+                          return !isNaN(date.getTime()) || 'Please enter a valid date';
+                        }
+                      }
+                    })}
+                    max="2025-12-31"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={watch('dateOfBirth') ? formatDateToDayMonYear(watch('dateOfBirth')) : 'Select date of birth'}
+                  />
+                  {errors.dateOfBirth && (
+                    <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Home Town
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter home town"
+                    {...register('homeTown', {
+                      maxLength: {
+                        value: 50,
+                        message: 'Home town cannot exceed 50 characters'
+                      }
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                  {errors.homeTown && (
+                    <p className="mt-1 text-sm text-red-600">{errors.homeTown.message}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Information */}
+            <div className="bg-white p-4 rounded-lg mb-4">
+              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">
+                Contact Information
+              </h3>
+
+              {/* Row 1: Email */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email ID
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="Enter email address"
+                    {...register('email', {
+                      validate: (value) => {
+                        if (!value) return true;
+                        const re = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+                        return re.test(value) || 'Invalid email address';
+                      }
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                  {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
+                </div>
+              </div>
+
+              {/* Row 2: Addresses - col-6 each in one row */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
+                <div className="md:col-span-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Current Address
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter current address"
+                    {...register('currentAddress', {
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                  {errors.currentAddress && (
+                    <p className="mt-1 text-sm text-red-600">{errors.currentAddress.message}</p>
+                  )}
+                </div>
+
+                <div className="md:col-span-6">
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Permanent Address
+                    </label>
+                    <label htmlFor="addSameAsCurrentAddress" className="flex items-center text-sm text-gray-600 space-x-2">
+                      <input
+                        id="addSameAsCurrentAddress"
+                        type="checkbox"
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        checked={sameAsCurrentAddress}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setSameAsCurrentAddress(checked);
+                          if (checked) {
+                            setValue('permanentAddress', currentAddressValue || '');
+                          }
+                        }}
+                      />
+                      <span>Same as current</span>
+                    </label>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Enter permanent address (if different from current)"
+                    {...register('permanentAddress', {
+                    })}
+                    className={`w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black ${
+                      sameAsCurrentAddress ? 'bg-gray-100 cursor-not-allowed' : ''
+                    }`}
+                    readOnly={sameAsCurrentAddress}
+                    disabled={sameAsCurrentAddress}
+                  />
+                </div>
               </div>
             </div>
 
@@ -508,18 +511,27 @@ export default function AddEmployeePage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Aadhar Card
+                    Aadhar Card
                   </label>
                   <input
                     type="text"
                     placeholder="Enter 12-digit Aadhar number"
-                    {...register('aadharCard', {
-                      required: 'Aadhar card is required',
-                      pattern: {
-                        value: /^\d{12}$/,
-                        message: 'Please enter a valid 12-digit Aadhar number'
-                      }
+                    maxLength={14}
+                    inputMode="numeric"
+                    {...register("aadharCard", {
+                      validate: (value) => {
+                        const digits = (value || "").replace(/\s+/g, "");
+                        if (!digits) return true;
+                        if (digits.length !== 12)
+                          return "Please enter a valid 12-digit Aadhar number (e.g., 1234 5678 9012)";
+                        return true;
+                      },
                     })}
+                    onChange={(e) => {
+                      const formatted = formatAadharCard(e.target.value);
+                      e.target.value = formatted;
+                      setValue("aadharCard", formatted, { shouldValidate: false });
+                    }}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
                   {errors.aadharCard && (

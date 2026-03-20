@@ -39,6 +39,13 @@ export default function EditEmployeePage({ params }: PageParams) {
   const currentAddressValue = watch('currentAddress');
   const employmentStatus = watch('employmentStatus');
 
+  const formatAadharCard = (raw: string) => {
+    const digits = (raw || "").replace(/\D/g, "").slice(0, 12);
+    if (digits.length <= 4) return digits;
+    if (digits.length <= 8) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
+    return `${digits.slice(0, 4)} ${digits.slice(4, 8)} ${digits.slice(8, 12)}`;
+  };
+
   // Helper functions for managing education entries
   // Check if we can add more entries
   const canAddEntry = () => {
@@ -211,6 +218,7 @@ export default function EditEmployeePage({ params }: PageParams) {
       // Normalize PAN to uppercase and include new education structure
       const updatedData = {
         ...data,
+        aadharCard: data.aadharCard ? data.aadharCard.replace(/\s+/g, '') : undefined,
         secondaryEducation,
         // Remove old fields from submission
         twelthStandard: undefined,
@@ -305,48 +313,54 @@ export default function EditEmployeePage({ params }: PageParams) {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Date of Birth
+                    <span className="text-red-500">*</span> Mobile No.
                   </label>
                   <input
-                    type="date"
-                    {...register('dateOfBirth', {
-                      required: 'Date of Birth is required',
-                      validate: {
-                        notFuture: (value) => {
-                          if (!value) return true;
-                          const selectedDate = new Date(value);
-                          // The latest valid date is Dec 31, 2025
-                          const maxValidDate = new Date("2025-12-31");
-                          // Set maxValidDate's time to the very end of the day for full safety
-                          maxValidDate.setHours(23, 59, 59, 999);
-                          if (selectedDate > maxValidDate) {
-                            return 'Date of Birth cannot be after 2025';
-                          }
-                          return true;
-                        },
-                        validDate: (value) => {
-                          if (!value) return true; // Optional field
-                          const date = new Date(value);
-                          return !isNaN(date.getTime()) || 'Please enter a valid date';
-                        }
+                    type="tel"
+                    placeholder="Enter 10-digit mobile number"
+                    {...register('phone', {
+                      required: 'Phone number is required',
+                      pattern: {
+                        value: /^[0-9]{10}$/,
+                        message: 'Please enter a valid 10-digit phone number'
                       }
                     })}
-                    max="2025-12-31"
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={watch('dateOfBirth') ? formatDateToDayMonYear(watch('dateOfBirth')) : 'Select date of birth'}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
-                  {errors.dateOfBirth && (
-                    <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>
+                  {errors.phone && (
+                    <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
                   )}
                 </div>
                
                 {/* Status dropdown removed (backend logic unchanged) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Home Town
+                    <span className="text-red-500 mr-1">*</span> Password
                   </label>
-                  <input type="text" placeholder="Enter home town" {...register('homeTown', { required: 'Home town is required', maxLength: { value: 50, message: 'Home town cannot exceed 50 characters' } })} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
-                  {errors.homeTown && (<p className="mt-1 text-sm text-red-600">{errors.homeTown.message}</p>)}
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Enter password"
+                      {...register('password', {
+                        required: 'Password is required',
+                        minLength: {
+                          value: 4,
+                          message: 'Password must be at least 4 characters'
+                        }
+                      })}
+                      className="w-full p-2 pr-10 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
+                    </button>
+                  </div>
+                  {errors.password && (
+                    <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                  )}
                 </div>
 
                 <div>
@@ -371,23 +385,76 @@ export default function EditEmployeePage({ params }: PageParams) {
               </div>
             </div>
 
+            {/* Additional (optional) details */}
+            <div className="bg-white p-4 rounded-lg mb-4">
+              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Additional Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    {...register('dateOfBirth', {
+                      validate: {
+                        notFuture: (value) => {
+                          if (!value) return true;
+                          const selectedDate = new Date(value);
+                          const maxValidDate = new Date("2025-12-31");
+                          maxValidDate.setHours(23, 59, 59, 999);
+                          if (selectedDate > maxValidDate) {
+                            return 'Date of Birth cannot be after 2025';
+                          }
+                          return true;
+                        },
+                        validDate: (value) => {
+                          if (!value) return true;
+                          const date = new Date(value);
+                          return !isNaN(date.getTime()) || 'Please enter a valid date';
+                        }
+                      }
+                    })}
+                    max="2025-12-31"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder={watch('dateOfBirth') ? formatDateToDayMonYear(watch('dateOfBirth')) : 'Select date of birth'}
+                  />
+                  {errors.dateOfBirth && (
+                    <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Home Town
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter home town"
+                    {...register('homeTown', {
+                      maxLength: {
+                        value: 50,
+                        message: 'Home town cannot exceed 50 characters'
+                      }
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                  {errors.homeTown && (
+                    <p className="mt-1 text-sm text-red-600">{errors.homeTown.message}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* Contact Information */}
             <div className="bg-white p-4 rounded-lg mb-4">
               <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Contact Information</h3>
-              {/* Row 1: Phone & Email */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Row 1: Email only */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500">*</span> Mobile No.
+                    Email ID
                   </label>
-                  <input type="tel" placeholder="Enter 10-digit mobile number" {...register('phone', { required: 'Phone number is required', pattern: { value: /^[0-9]{10}$/, message: 'Please enter a valid 10-digit phone number' } })} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
-                  {errors.phone && (<p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>)}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Email ID
-                  </label>
-                  <input type="email" placeholder="Enter email address" {...register('email', { required: 'Email is required', pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' } })} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
+                  <input type="email" placeholder="Enter email address" {...register('email', { pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' } })} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
                   {errors.email && (<p className="mt-1 text-sm text-red-600">{errors.email.message}</p>)}
                 </div>
               </div>
@@ -442,35 +509,6 @@ export default function EditEmployeePage({ params }: PageParams) {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500">*</span> Password
-                  </label>
-                  <div className="relative">
-                    <input 
-                      type={showPassword ? 'text' : 'password'} 
-                      placeholder="Enter password" 
-                      {...register('password', { 
-                        required: 'Password is required',
-                        minLength: {
-                          value: 4,
-                          message: 'Password must be at least 4 characters'
-                        }
-                      })} 
-                      className="w-full p-2 pr-10 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" 
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-                    </button>
-                  </div>
-                  {errors.password && (
-                    <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Confirm Password
                   </label>
                   <div className="relative">
@@ -508,7 +546,28 @@ export default function EditEmployeePage({ params }: PageParams) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span> Aadhar Card
                   </label>
-                  <input type="text" placeholder="Enter 12-digit Aadhar number" {...register('aadharCard', { required: 'Aadhar card is required', pattern: { value: /^\d{12}$/, message: 'Please enter a valid 12-digit Aadhar number' } })} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
+                  <input
+                    type="text"
+                    placeholder="Enter 12-digit Aadhar number"
+                    maxLength={14}
+                    inputMode="numeric"
+                    {...register('aadharCard', {
+                      required: 'Aadhar card is required',
+                      validate: (value) => {
+                        const digits = (value || '').replace(/\s+/g, '');
+                        if (!digits) return 'Aadhar card is required';
+                        if (digits.length !== 12)
+                          return 'Please enter a valid 12-digit Aadhar number (e.g., 1234 5678 9012)';
+                        return true;
+                      }
+                    })}
+                    onChange={(e) => {
+                      const formatted = formatAadharCard(e.target.value);
+                      e.target.value = formatted;
+                      setValue('aadharCard', formatted, { shouldValidate: false });
+                    }}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
                   {errors.aadharCard && (<p className="mt-1 text-sm text-red-600">{errors.aadharCard.message}</p>)}
                 </div>
                 <div>

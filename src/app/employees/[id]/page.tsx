@@ -332,10 +332,10 @@ export default function EmployeeViewPage({ params }: PageParams) {
 
               <div>
                 <span
-                  className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                  className={`text-xs leading-5 font-semibold ${
                     (employee.employeeType || 'internal') === 'internal'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-orange-100 text-orange-800'
+                      ? 'text-blue-800'
+                      : 'text-orange-800'
                   }`}
                 >
                   {(employee.employeeType || 'internal') === 'internal' ? 'Internal' : 'External'}
@@ -350,8 +350,8 @@ export default function EmployeeViewPage({ params }: PageParams) {
 
                   return (
                     <span
-                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        isResigned ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                      className={`text-xs leading-5 font-semibold ${
+                        isResigned ? 'text-red-800' : 'text-green-800'
                       }`}
                     >
                       {isResigned ? 'Resigned' : 'Working'}

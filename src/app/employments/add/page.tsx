@@ -4,12 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { addEmployment, getEmployees, getAdminDataForAudit, checkEmploymentIdUnique } from '@/utils/firebaseUtils';
+import EmployeeLayout from '@/components/layout/EmployeeLayout';
+import { addEmployment, getEmployees, getAdminDataForAudit, checkEmploymentIdUnique, getEmployeeSelf } from '@/utils/firebaseUtils';
 import { Employment, Employee } from '@/types';
 import { FiSave, FiPlus } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
+import { useAuth } from '@/context/AuthContext';
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   // Add all the fields we need
@@ -65,6 +67,12 @@ export default function AddEmploymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const employeeIdFromUrl = searchParams ? searchParams.get('employeeId') : null;
+
+  const { currentUserData } = useAuth();
+  const isEmployeeUser = currentUserData?.userType === 'employee';
+  const isAdminUser = currentUserData?.userType === 'admin';
+  // If userType is still unknown, default to EmployeeLayout to avoid triggering admin-only calls.
+  const Layout: any = isAdminUser ? DashboardLayout : EmployeeLayout;
 
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<EmploymentFormData>({
     defaultValues: {
@@ -144,19 +152,31 @@ export default function AddEmploymentPage() {
   }, [employmentId, setValue]);
 
   useEffect(() => {
+    // Wait for auth to be ready to avoid running admin-only logic on first render.
+    if (!currentUserData?.id || !currentUserData?.userType) return;
+
     const fetchEmployees = async () => {
       try {
-        const data = await getEmployees();
-        setEmployees(data);
+        if (currentUserData.userType === 'employee') {
+          if (!currentUserData?.id) return;
+          // Employee user can only create employment for themselves
+          const selfEmployee = await getEmployeeSelf(currentUserData.id);
+          setEmployees([selfEmployee]);
+          setPreSelectedEmployee(selfEmployee);
+          setValue('employeeId', selfEmployee.id, { shouldValidate: true });
+        } else {
+          const data = await getEmployees();
+          setEmployees(data);
 
-        // If employeeId is provided in URL, find and pre-select that employee
-        if (employeeIdFromUrl) {
-          const selectedEmployee = data.find(emp => emp.id === employeeIdFromUrl);
-          if (selectedEmployee) {
-            setPreSelectedEmployee(selectedEmployee);
-            setValue('employeeId', employeeIdFromUrl);
-          } else {
-            toast.error('Selected employee not found');
+          // If employeeId is provided in URL, find and pre-select that employee
+          if (employeeIdFromUrl) {
+            const selectedEmployee = data.find(emp => emp.id === employeeIdFromUrl);
+            if (selectedEmployee) {
+              setPreSelectedEmployee(selectedEmployee);
+              setValue('employeeId', employeeIdFromUrl);
+            } else {
+              toast.error('Selected employee not found');
+            }
           }
         }
       } catch (error) {
@@ -167,7 +187,7 @@ export default function AddEmploymentPage() {
     };
 
     fetchEmployees();
-  }, [employeeIdFromUrl, setValue]);
+  }, [employeeIdFromUrl, setValue, currentUserData?.id, currentUserData?.userType]);
 
   const onSubmit = async (data: EmploymentFormData) => {
     try {
@@ -176,19 +196,38 @@ export default function AddEmploymentPage() {
       toast.loading('Creating employment record...', { id: 'add-employment' });
 
       // Check if employment ID is unique
-      if (data.employmentId) {
-        const { isUnique, existingEmployment } = await checkEmploymentIdUnique(data.employmentId);
+      const normalizedEmploymentId = data.employmentId?.trim().toUpperCase();
+      if (normalizedEmploymentId) {
+        const { isUnique, existingEmployment } = await checkEmploymentIdUnique(normalizedEmploymentId);
         if (!isUnique) {
-          throw new Error('Employment ID is been already used');
+          const conflictEmploymentId = existingEmployment?.id;
+          const conflictEmployeeId = existingEmployment?.employeeId;
+          const conflictEndDate = existingEmployment?.endDate;
+          const conflictIsResignation = existingEmployment?.isResignation;
+          const conflictIsResigned = existingEmployment?.is_resigned;
+          const conflictEmploymentStatus = existingEmployment?.employmentStatus;
+
+          throw new Error(
+            `Employment ID is already used` +
+              `${conflictEmployeeId ? ` (employeeId: ${conflictEmployeeId})` : ''}` +
+              `${conflictEmploymentId ? ` (employment record: ${conflictEmploymentId})` : ''}` +
+              `${conflictEndDate ? ` (endDate: ${String(conflictEndDate)})` : ''}` +
+              `${conflictIsResignation !== null && conflictIsResignation !== undefined ? ` (isResignation: ${String(conflictIsResignation)})` : ''}` +
+              `${conflictIsResigned !== null && conflictIsResigned !== undefined ? ` (is_resigned: ${String(conflictIsResigned)})` : ''}` +
+              `${conflictEmploymentStatus ? ` (employmentStatus: ${String(conflictEmploymentStatus)})` : ''}`
+          );
         }
       }
 
-      // Get admin data for audit fields
-      const { adminId, currentTimestamp } = getAdminDataForAudit();
+      // Audit fields: admin users use admin session, employees use their own id.
+      const currentTimestamp = new Date().toISOString();
+      const auditId = isEmployeeUser ? currentUserData!.id : getAdminDataForAudit().adminId;
 
       // Convert string values to numbers and handle undefined values
       const formattedData = {
         ...data,
+        // Store normalized employmentId for consistent uniqueness checks
+        employmentId: normalizedEmploymentId,
         salary: Number(data.salary),
         joiningCtc: Number(data.joiningCtc),
         inHandCtc: Number(data.inHandCtc),
@@ -206,9 +245,9 @@ export default function AddEmploymentPage() {
         payableDays: Number(data.payableDays),
         // Add audit fields
         createdAt: currentTimestamp,
-        createdBy: adminId, // Permanent admin document ID
+        createdBy: auditId,
         updatedAt: currentTimestamp,
-        updatedBy: adminId,
+        updatedBy: auditId,
       };
 
       await addEmployment(formattedData);
@@ -230,7 +269,7 @@ export default function AddEmploymentPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <Layout>
         <Toaster position="top-center" />
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="flex justify-between items-center px-6 py-6">
@@ -255,12 +294,12 @@ export default function AddEmploymentPage() {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </Layout>
     );
   }
 
   return (
-    <DashboardLayout
+    <Layout
       breadcrumbItems={[
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'Employees', href: '/employees' },
@@ -947,6 +986,6 @@ export default function AddEmploymentPage() {
             </form>
           </div>
         )}</div>
-    </DashboardLayout>
+    </Layout>
   );
 } 

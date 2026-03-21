@@ -217,17 +217,23 @@ export const addEmployee = async (employeeData: Omit<Employee, 'id'>) => {
     // Handle employee ID - make it nullable if not provided
     let finalEmployeeId = employeeData.employeeId;
 
-    if (finalEmployeeId && finalEmployeeId.trim() !== '') {
+    const candidateEmployeeId =
+      typeof finalEmployeeId === 'string'
+        ? finalEmployeeId.trim()
+        : (finalEmployeeId as any)?.toString?.().trim?.() || '';
+
+    if (candidateEmployeeId) {
       // Validate manual employee ID if provided
-      const exists = await checkEmployeeIdExists(finalEmployeeId);
+      const exists = await checkEmployeeIdExists(candidateEmployeeId);
       if (exists) {
         throw new Error('Employee ID already exists. Please use a different ID.');
       }
+      finalEmployeeId = candidateEmployeeId;
       console.log('✅ Manual Employee ID validated:', finalEmployeeId);
     } else {
-      // Set to undefined if not provided (skip auto-generation)
-      finalEmployeeId = undefined;
-      console.log('ℹ️ Employee ID set to undefined (no auto-generation)');
+      // Auto-generate employeeId when not provided
+      finalEmployeeId = await getNextEmployeeId();
+      console.log('🆕 Auto-generated Employee ID:', finalEmployeeId);
     }
     
     // Ensure password field is always present
@@ -540,13 +546,18 @@ export const checkEmploymentIdUnique = async (employmentId: string, excludeId?: 
   try {
     console.log('🔍 Checking employment ID uniqueness:', employmentId, excludeId ? `(excluding ${excludeId})` : '');
 
-    // Check for custom admin session
+    // Check for custom admin session OR employee session
     const sessionId = localStorage.getItem('adminSessionId');
     const adminData = localStorage.getItem('adminData');
+    const employeeSessionId = localStorage.getItem('employeeSessionId');
+    const employeeDataStorage = localStorage.getItem('employeeData');
 
-    if (!sessionId || !adminData) {
-      console.log('❌ CRITICAL: No admin session found!');
-      throw new Error('No admin session found. Please log in as admin first.');
+    const hasAdminSession = !!sessionId && !!adminData;
+    const hasEmployeeSession = !!employeeSessionId && !!employeeDataStorage;
+
+    if (!hasAdminSession && !hasEmployeeSession) {
+      console.log('❌ CRITICAL: No valid session found!');
+      throw new Error('No valid session found. Please log in first.');
     }
 
     // Query for employments with the same employmentId
@@ -561,8 +572,32 @@ export const checkEmploymentIdUnique = async (employmentId: string, excludeId?: 
       if (excludeId && doc.id === excludeId) {
         return;
       }
-      isUnique = false;
-      existingEmployment = { id: doc.id, ...doc.data() };
+
+      // Allow historical employments to share the same employmentId.
+      // Treat it as conflict only when the other record is still active.
+      const docData = doc.data() as any;
+      const isEnded =
+        !!docData?.endDate ||
+        docData?.isResignation === true ||
+        docData?.is_resigned === true ||
+        docData?.employmentStatus === 'resigned' ||
+        !!docData?.resignedDate ||
+        !!docData?.lastWorkingDay ||
+        !!docData?.lastWorkingDate;
+
+      if (!isEnded) {
+        isUnique = false;
+        // Return only minimal fields to avoid leaking full data to employee clients
+        existingEmployment = {
+          id: doc.id,
+          employeeId: docData?.employeeId,
+          // Help debug why this record is treated as "active"
+          endDate: docData?.endDate ?? null,
+          isResignation: docData?.isResignation ?? null,
+          is_resigned: docData?.is_resigned ?? null,
+          employmentStatus: docData?.employmentStatus ?? null,
+        } as any;
+      }
     });
 
     console.log(`✅ Employment ID "${employmentId}" is ${isUnique ? 'unique' : 'not unique'}`);

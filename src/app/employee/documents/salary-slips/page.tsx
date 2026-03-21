@@ -318,10 +318,15 @@ const EmployeeSalarySlip: React.FC = () => {
           false
         );
 
+        const employmentCode =
+          empm[0].employmentId ||
+          (emp.employeeId ? String(emp.employeeId) : String(emp.id));
+
         setFormData(prev => ({
           ...prev,
           employeeName: emp.name,
-          employeeId: String(emp.employeeId || emp.id),
+          // Use Employment ID only (preferred in employee dashboard)
+          employeeId: String(employmentCode),
           designation: empm[0].jobTitle || "",
           department: empm[0].department || "",
           location: empm[0].location || "",

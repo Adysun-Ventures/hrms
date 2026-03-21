@@ -201,10 +201,28 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
       // Check if employment ID is unique (admin only)
       if (!isEmployeeUser) {
-        if (data.employmentId && data.employmentId !== originalEmployment?.employmentId) {
-          const { isUnique } = await checkEmploymentIdUnique(data.employmentId, id);
+        const normalizedEmploymentId = data.employmentId?.trim().toUpperCase();
+        const normalizedOriginalEmploymentId = originalEmployment?.employmentId?.trim().toUpperCase();
+
+        if (normalizedEmploymentId && normalizedEmploymentId !== normalizedOriginalEmploymentId) {
+          const { isUnique, existingEmployment } = await checkEmploymentIdUnique(normalizedEmploymentId, id);
           if (!isUnique) {
-            throw new Error('Employment ID is been already used');
+            const conflictEmploymentId = existingEmployment?.id;
+            const conflictEmployeeId = existingEmployment?.employeeId;
+            const conflictEndDate = existingEmployment?.endDate;
+            const conflictIsResignation = existingEmployment?.isResignation;
+            const conflictIsResigned = existingEmployment?.is_resigned;
+            const conflictEmploymentStatus = existingEmployment?.employmentStatus;
+
+            throw new Error(
+              `Employment ID is already used` +
+                `${conflictEmployeeId ? ` (employeeId: ${conflictEmployeeId})` : ''}` +
+                `${conflictEmploymentId ? ` (employment record: ${conflictEmploymentId})` : ''}` +
+                `${conflictEndDate ? ` (endDate: ${String(conflictEndDate)})` : ''}` +
+                `${conflictIsResignation !== null && conflictIsResignation !== undefined ? ` (isResignation: ${String(conflictIsResignation)})` : ''}` +
+                `${conflictIsResigned !== null && conflictIsResigned !== undefined ? ` (is_resigned: ${String(conflictIsResigned)})` : ''}` +
+                `${conflictEmploymentStatus ? ` (employmentStatus: ${String(conflictEmploymentStatus)})` : ''}`
+            );
           }
         }
       }
@@ -217,6 +235,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       // Convert string numbers to actual numbers
       const formattedData: any = {
         ...data,
+        employmentId: data.employmentId?.trim().toUpperCase(),
         salary: Number(data.salary),
         joiningCtc: Number(data.joiningCtc),
         inHandCtc: Number(data.inHandCtc),
@@ -242,9 +261,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       if (data.endDate && data.endDate.trim()) {
         formattedData.endDate = data.endDate;
       }
-      if (data.employmentId && data.employmentId.trim()) {
-        formattedData.employmentId = data.employmentId;
-      }
+      // employmentId already normalized above
       if (data.joiningDate && data.joiningDate.trim()) {
         formattedData.joiningDate = data.joiningDate;
       }

@@ -40,10 +40,14 @@ export default function EmployeeEmploymentPage() {
 
   // Redirect to the admin-style employment view (self only)
   useEffect(() => {
-    if (!loading && currentEmployment?.id) {
-      router.push(`/employments/${currentEmployment.id}`);
+    if (!loading && currentUserData?.id && currentUserData.userType === 'employee') {
+      if (currentEmployment?.id) {
+        router.push(`/employments/${currentEmployment.id}`);
+      } else {
+        router.push(`/employments/add?employeeId=${currentUserData.id}`);
+      }
     }
-  }, [loading, currentEmployment?.id, router]);
+  }, [loading, currentEmployment?.id, currentUserData?.id, currentUserData?.userType, router]);
 
   if (!currentUserData || currentUserData.userType !== 'employee') return null;
 
@@ -62,7 +66,7 @@ export default function EmployeeEmploymentPage() {
         </div>
       ) : !currentEmployment?.id ? (
         <div className="bg-white rounded-lg shadow-sm p-6">
-          <p className="text-gray-500">No employment record found.</p>
+          <p className="text-gray-500">No employment record found. Redirecting to add employment...</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow-sm p-6">

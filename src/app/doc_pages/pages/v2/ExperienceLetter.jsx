@@ -187,9 +187,9 @@ const DateDropdown = ({ value, onChange }) => {
 };
 
 /* ---------------- DOCX BUILDER ---------------- */
-async function buildExperienceLetterDocx(employee, employment, employeeSignDate, employeeSignPlace, todaysDate) {
+async function buildExperienceLetterDocx(employee, employment, employeeSignDate, employeeSignPlace, todaysDate, designationOverride) {
   const employeeName = employee?.name || "";
-  const designation = employment?.jobTitle || "";
+  const designation = designationOverride || employment?.jobTitle || "";
   const joiningDate = employment?.joiningDate || "";
   const relievingDate = employment?.lastWorkingDate || "";
   const shortName = employeeName.split(" ")[0] || employeeName;
@@ -226,9 +226,9 @@ async function buildExperienceLetterDocx(employee, employment, employeeSignDate,
 }
 
 /* ---------------- PDF COMPONENT ---------------- */
-const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeSignPlace,todaysDate }) => {
+const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeSignPlace,todaysDate, designationOverride }) => {
   const employeeName = employee?.name || "";
-  const designation = employment?.jobTitle || "";
+  const designation = designationOverride || employment?.jobTitle || "";
   const joiningDate = employment?.joiningDate || "";
   const relievingDate = employment?.lastWorkingDate || "";
   const shortName = employeeName.split(" ")[0];
@@ -313,6 +313,7 @@ function expLetterV2() {
 
   const [employeeSignDate, setEmployeeSignDate] = useState('');
   const [employeeSignPlace, setEmployeeSignPlace] = useState('');
+  const [designationOverride, setDesignationOverride] = useState('');
   const[todaysDate,setTodaysDate]=useState('');
 const [searchTerm, setSearchTerm] = useState("");
 
@@ -432,7 +433,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    <span className="text-red-500">*</span> Date
+                    <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown value={todaysDate} onChange={setTodaysDate} />
                 </div>
@@ -440,11 +441,24 @@ const [searchTerm, setSearchTerm] = useState("");
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    <span className="text-red-500">*</span> Sign Date
+                    <span className="text-red-500">*</span> Date of Exit
                   </label>
                   <DateDropdown value={employeeSignDate} onChange={setEmployeeSignDate} />
                 </div>
                 
+                <div>
+  <label className="block text-sm font-medium mb-1">
+    Designation
+  </label>
+  <input
+    type="text"
+    className="w-full p-3 border rounded-md"
+    value={designationOverride}
+    onChange={(e) => setDesignationOverride(e.target.value)}
+    placeholder="Enter designation"
+  />
+</div>
+
                 <div>
   <label className="block text-sm font-medium mb-1">
     <span className="text-red-500">*</span> Place
@@ -514,6 +528,7 @@ const [searchTerm, setSearchTerm] = useState("");
                     employeeSignDate={employeeSignDate}
                     employeeSignPlace={employeeSignPlace}
                     todaysDate={todaysDate}
+                    designationOverride={designationOverride}
                   />
                 }
                 fileName={`Experience_${employee.name}.pdf`}
@@ -531,7 +546,8 @@ const [searchTerm, setSearchTerm] = useState("");
                       employment,
                       employeeSignDate,
                       employeeSignPlace,
-                      todaysDate
+                      todaysDate,
+                      designationOverride
                     );
                     const blob = await Packer.toBlob(doc);
                     saveAs(blob, `ExperienceLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
@@ -556,6 +572,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 employeeSignDate={employeeSignDate}
                 employeeSignPlace={employeeSignPlace}
                 todaysDate={todaysDate}
+                designationOverride={designationOverride}
               />
             </PDFViewer>
           </div>

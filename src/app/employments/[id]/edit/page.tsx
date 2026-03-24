@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { FiSave } from 'react-icons/fi';
+import { FiSave, FiRefreshCw } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { getEmployment, updateEmployment, getEmployees, checkEmploymentIdUnique, updateEmployeeSelfEmployment } from '@/utils/firebaseUtils';
@@ -26,6 +26,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [includePF, setIncludePF] = useState(true); // Default: With PF
   const [originalEmployment, setOriginalEmployment] = useState<Employment | null>(null);
+  const generatedEmploymentIdsRef = useRef<Set<string>>(new Set());
   useForm({
   defaultValues: {
     isResignation: false
@@ -40,8 +41,31 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const isEmployeeUser = currentUserData?.userType === 'employee';
   const Layout: any = isEmployeeUser ? EmployeeLayout : DashboardLayout;
 
-  const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<EmploymentFormData>();
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<EmploymentFormData>({
+    defaultValues: {
+      workSchedule: 'Office',
+    } as Partial<EmploymentFormData>,
+  });
   const breadcrumbEmployeeId = watch('employeeId') || originalEmployment?.employeeId || '';
+  const generateRandomEmploymentId = async () => {
+    const maxAttempts = 30;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const randomSuffix = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+      const candidate = `ADV${randomSuffix}`;
+
+      if (generatedEmploymentIdsRef.current.has(candidate)) continue;
+
+      const { isUnique } = await checkEmploymentIdUnique(candidate, id);
+      if (!isUnique) continue;
+
+      generatedEmploymentIdsRef.current.add(candidate);
+      setValue('employmentId', candidate as any, { shouldValidate: true, shouldDirty: true });
+      toast.success('Random Employment ID generated');
+      return;
+    }
+
+    toast.error('Could not generate unique Employment ID. Try again.');
+  };
   const breadcrumbEmployeeName =
     employees.find((e) => e.id === breadcrumbEmployeeId)?.name || '';
 
@@ -168,8 +192,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               ]
             : [];
 
+        const normalizedWorkSchedule =
+          rest.workSchedule === 'Office' || rest.workSchedule === 'Remote' || rest.workSchedule === 'Hybrid'
+            ? rest.workSchedule
+            : 'Office';
+
         reset({
           ...rest,
+          workSchedule: normalizedWorkSchedule,
           relievingCtc: relievingCtc ? relievingCtc.toString() : '',
           benefits: employmentData.benefits?.join(', ') || '',
           increments,
@@ -446,106 +476,83 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         )}
 
         <form onSubmit={handleSubmit(onSubmit)}>
-          {/* Basic Information */}
           <div className="px-6 pb-6">
+            <input
+              type="hidden"
+              {...register('employeeId', { required: 'Employee is required' })}
+              value={watch('employeeId') || originalEmployment?.employeeId || ''}
+            />
+
+            {/* Employment Information */}
             <div className="bg-white p-4 rounded-lg mb-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Basic Information</h2>
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Employment Information</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span>Employee
+                    Employment ID
                   </label>
-                  <input
-                    type="text"
-                    value={
-                      employees.find((employee) => employee.id === (watch('employeeId') || originalEmployment?.employeeId))?.name ||
-                      'Selected Employee'
-                    }
-                    readOnly
-                    disabled
-                    className="w-full p-2 border rounded-md bg-gray-100 text-gray-700 cursor-not-allowed"
-                  />
-                  <input
-                    type="hidden"
-                    {...register('employeeId', { required: 'Employee is required' })}
-                    value={watch('employeeId') || originalEmployment?.employeeId || ''}
-                  />
-                  {errors.employeeId && (
-                    <p className="mt-1 text-sm text-red-600">{errors.employeeId.message}</p>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      {...register('employmentId')}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="E.g., ADV001"
+                    />
+                    <button
+                      type="button"
+                      onClick={generateRandomEmploymentId}
+                      className="inline-flex items-center gap-1 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition whitespace-nowrap"
+                    >
+                      <FiRefreshCw className="w-4 h-4" />
+                      Random
+                    </button>
+                  </div>
                 </div>
-
-                {/* <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span>Contract Type
-                  </label>
-                  <select
-                    {...register('contractType', { required: 'Contract type is required' })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="full-time">Full Time</option>
-                    <option value="part-time">Part Time</option>
-                    <option value="contract">Contract</option>
-                  </select>
-                  {errors.contractType && (
-                    <p className="mt-1 text-sm text-red-600">{errors.contractType.message}</p>
-                  )}
-                </div> */}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span>Start Date
+                    Joining Date
                   </label>
                   <input
                     type="date"
-                    {...register('startDate', { required: 'Start date is required' })}
+                    {...register('joiningDate')}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
-                  {errors.startDate && (
-                    <p className="mt-1 text-sm text-red-600">{errors.startDate.message}</p>
-                  )}
                 </div>
 
-                
-
-                {/* <div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span>Salary
+                    Joining CTC
                   </label>
                   <input
                     type="number"
-                    {...register('salary', {
-                      required: 'Salary is required',
-                      min: { value: 0, message: 'Salary must be positive' },
+                    {...register('joiningCtc', {
+                      min: { value: 0, message: 'Joining CTC must be positive' },
                       valueAsNumber: true
                     })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Annual salary"
+                    placeholder="Joining CTC amount"
                   />
-                  {errors.salary && (
-                    <p className="mt-1 text-sm text-red-600">{errors.salary.message}</p>
-                  )}
-                </div> */}
+                </div>
 
-                {/* <div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Payment Frequency
+                    In-hand CTC
                   </label>
-                  <select
-                    {...register('paymentFrequency')}
+                  <input
+                    type="number"
+                    {...register('inHandCtc', {
+                      min: { value: 0, message: 'In-hand CTC must be positive' },
+                      valueAsNumber: true
+                    })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="monthly">Monthly</option>
-                    <option value="bi-weekly">Bi-Weekly</option>
-                    <option value="weekly">Weekly</option>
-                  </select>
-                </div> */}
+                    placeholder="In-hand CTC"
+                  />
+                </div>
               </div>
             </div>
-            
 
-            
-            {/* Job Details - MOVED TO TOP */}
+            {/* Job Details */}
             <div className="bg-white p-4 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Job Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -590,12 +597,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Location
                   </label>
-                  <input
-                    type="text"
+                  <select
                     {...register('location')}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Work location"
-                  />
+                  >
+                    <option value="">Select location</option>
+                    <option value="Pune">Pune</option>
+                    <option value="Mumbai">Mumbai</option>
+                  </select>
                 </div>
 
                 <div>
@@ -708,69 +717,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </>
                 )}
 
-              </div>
-            </div>
-
-            {/* Joining Information */}
-            <div className="bg-white p-4 rounded-lg mb-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Employment Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employment ID
-                  </label>
-                  <input
-                    type="text"
-                    {...register('employmentId')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="E.g., EMP-001"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining Date
-                  </label>
-                  <input
-                    type="date"
-                    {...register('joiningDate')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining CTC
-                  </label>
-                  <input
-                    type="number"
-                    {...register('joiningCtc', {
-                      min: { value: 0, message: 'Joining CTC must be positive' },
-                      valueAsNumber: true
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Joining CTC amount"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    In-hand CTC
-                  </label>
-                  <input
-                    type="number"
-                    {...register('inHandCtc', {
-                      min: { value: 0, message: 'In-hand CTC must be positive' },
-                      valueAsNumber: true
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="In-hand CTC"
-                  />
-                </div>
-
-                
-
-                
               </div>
             </div>
 
@@ -918,9 +864,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-green-500 pl-2">
                     Salary Information
                   </h2>
-                  <p className="text-sm text-gray-600 italic">
-                    💡 Enter annual salary - other components will auto-calculate
-                  </p>
                 </div>
 
                 {/* Sliding Toggle Switch - matches 12th/Diploma style */}
@@ -1063,33 +1006,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 
 
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Salary Credit Date
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 1st of every month"
-                    {...register('salaryCreditDate')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                </div>
-
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Payment Mode
-                  </label>
-                  <select
-                    {...register('paymentMode')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  >
-                    <option value="bank-transfer">Bank Transfer</option>
-                    <option value="cheque">Cheque</option>
-                    <option value="cash">Cash</option>
-                  </select>
-                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

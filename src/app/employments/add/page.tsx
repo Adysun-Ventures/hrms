@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { addEmployment, getEmployees, getAdminDataForAudit, checkEmploymentIdUnique, getEmployeeSelf } from '@/utils/firebaseUtils';
 import { Employment, Employee } from '@/types';
-import { FiSave, FiPlus } from 'react-icons/fi';
+import { FiSave, FiPlus, FiRefreshCw } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
@@ -63,6 +63,7 @@ export default function AddEmploymentPage() {
   const [loading, setLoading] = useState(true);
   const [preSelectedEmployee, setPreSelectedEmployee] = useState<Employee | null>(null);
   const [includePF, setIncludePF] = useState(true); // Default: With PF
+  const generatedEmploymentIdsRef = useRef<Set<string>>(new Set());
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -143,6 +144,25 @@ export default function AddEmploymentPage() {
 
   // Ensure ADV prefix is maintained in employmentId
   const employmentId = watch('employmentId');
+  const generateRandomEmploymentId = async () => {
+    const maxAttempts = 30;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const randomSuffix = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
+      const candidate = `ADV${randomSuffix}`;
+
+      if (generatedEmploymentIdsRef.current.has(candidate)) continue;
+
+      const { isUnique } = await checkEmploymentIdUnique(candidate);
+      if (!isUnique) continue;
+
+      generatedEmploymentIdsRef.current.add(candidate);
+      setValue('employmentId', candidate, { shouldValidate: true, shouldDirty: true });
+      toast.success('Random Employment ID generated');
+      return;
+    }
+
+    toast.error('Could not generate unique Employment ID. Try again.');
+  };
   useEffect(() => {
     if (employmentId && !employmentId.startsWith('ADV')) {
       // If user tries to remove ADV prefix, restore it
@@ -496,18 +516,28 @@ export default function AddEmploymentPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       <span className="text-red-500 mr-1">*</span> Employment ID
                     </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. ADV001, ADV002"
-                      {...register('employmentId', {
-                        required: 'Employment ID is required',
-                        pattern: {
-                          value:  /^ADV[A-Z0-9-]*$/i,
-                          message: 'Employment ID must start with ADV followed by numbers/letters'
-                        }
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. ADV001, ADV002"
+                        {...register('employmentId', {
+                          required: 'Employment ID is required',
+                          pattern: {
+                            value:  /^ADV[A-Z0-9-]*$/i,
+                            message: 'Employment ID must start with ADV followed by numbers/letters'
+                          }
+                        })}
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                      />
+                      <button
+                        type="button"
+                        onClick={generateRandomEmploymentId}
+                        className="inline-flex items-center gap-1 px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition whitespace-nowrap"
+                      >
+                        <FiRefreshCw className="w-4 h-4" />
+                        Random
+                      </button>
+                    </div>
                     {errors.employmentId && (
                       <p className="mt-1 text-sm text-red-600">{errors.employmentId.message}</p>
                     )}
@@ -666,9 +696,6 @@ export default function AddEmploymentPage() {
                     <h2 className="text-lg font-medium text-gray-800 mb-2 border-l-4 border-green-500 pl-2">
                       Salary Information
                     </h2>
-                    <p className="text-sm text-gray-600 italic">
-                      💡 Enter annual salary - other components will auto-calculate
-                    </p>
                   </div>
 
                   {/* Sliding Toggle Switch - matches 12th/Diploma style */}
@@ -811,33 +838,6 @@ export default function AddEmploymentPage() {
                   
 
                   
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current Salary Credit Date
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. 1st of every month"
-                      {...register('salaryCreditDate')}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
-                  </div>
-
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current Payment Mode
-                    </label>
-                    <select
-                      {...register('paymentMode')}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    >
-                      <option value="bank-transfer">Bank Transfer</option>
-                      <option value="cheque">Cheque</option>
-                      <option value="cash">Cash</option>
-                    </select>
-                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">

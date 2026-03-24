@@ -742,18 +742,8 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               </div>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">{employment.salaryCreditDate || '-'}</p>
-                <p className="text-sm text-gray-500">Salary Credit Date</p>
-              </div>
-
-              <div>
                 <p className="text-lg font-medium text-gray-900">{employment.payableDays || '-'}</p>
                 <p className="text-sm text-gray-500">Payable Days</p>
-              </div>
-
-              <div>
-                <p className="text-lg font-medium text-gray-900 capitalize">{employment.paymentMode || '-'}</p>
-                <p className="text-sm text-gray-500">Payment Mode</p>
               </div>
 
               <div>

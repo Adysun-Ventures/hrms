@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FiUser, FiCalendar, FiClock, FiMenu, FiX, FiHome, FiFileText, FiBriefcase } from 'react-icons/fi';
+import { FiUser, FiMenu, FiX, FiHome, FiFileText, FiBriefcase, FiInfo } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import { useEmployeeSelfEmployment } from '@/hooks/useEmployees';
 
@@ -60,8 +60,13 @@ const EmployeeSidebar = () => {
     // },
     {
       path: '/employee/documents',
-      name: 'Documents',
+      name: 'My Document',
       icon: <FiFileText className="w-5 h-5" />
+    },
+    {
+      path: '/employee/company-information',
+      name: 'Company Information',
+      icon: <FiInfo className="w-5 h-5" />
     },
   ];
 
@@ -121,6 +126,7 @@ const EmployeeSidebar = () => {
               ))}
             </ul>
           </nav>
+
         </div>
       </div>
     </>

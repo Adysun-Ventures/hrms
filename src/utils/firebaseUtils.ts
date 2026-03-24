@@ -1407,7 +1407,31 @@ export const updateEmployeeSelfEmployment = async (
     }
 
     // Allow-list fields employees can update themselves
-    const allowedKeys: (keyof Employment)[] = [
+    const allowedKeys: string[] = [
+      // Employment identifiers/info
+      'employmentId',
+      'joiningDate',
+      'startDate',
+      'endDate',
+      'joiningCtc',
+      'inHandCtc',
+      // Salary details
+      'salary',
+      'salaryPerMonth',
+      'basic',
+      'da',
+      'hra',
+      'pf',
+      'medicalAllowance',
+      'transport',
+      'gratuity',
+      'additionalAllowance',
+      'specialAllowance',
+      // Optional leave/pay fields (currently hidden in UI, but keep editable if present)
+      'totalLeaves',
+      'payableDays',
+      'salaryCreditDate',
+      'paymentMode',
       'bankName',
       'accountNo',
       'ifscCode',
@@ -1422,26 +1446,35 @@ export const updateEmployeeSelfEmployment = async (
       'joiningDate',
       'startDate',
       'endDate',
-      'salaryCreditDate',
       // Job details (non-salary)
       'jobTitle',
       'designation',
       'department',
       'reportingAuthority',
       'employmentType',
+      'whereWereYouEmploid',
+      'whereWereYouEmployed',
+      'whereWereYouEmployd',
+      // Increment fields
+      'increments',
+      'incrementDate',
+      'newSalary',
+      'incrementedCtc',
+      'incrementedInHandCtc',
       // Resignation details
       'isResignation',
       'resignationDate',
       'lastWorkingDate',
+      'lastDrawnSalary',
       'reasonForLeaving',
       'exitInterviewDate',
       'lastSalaryDate',
     ];
 
-    const filtered: Partial<Employment> = {};
+    const filtered: Record<string, any> = {};
     for (const key of allowedKeys) {
-      if (employmentData[key] !== undefined) {
-        filtered[key] = employmentData[key] as any;
+      if ((employmentData as any)[key] !== undefined) {
+        filtered[key] = (employmentData as any)[key];
       }
     }
 

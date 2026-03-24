@@ -139,6 +139,12 @@ export interface Employee {
 }
 
 // Employment type
+export interface ProfessionalReference {
+  nameDesignation?: string;
+  emailAndMobile?: string;
+  natureOfAssociation?: string;
+}
+
 export interface EmploymentIncrement {
   id?: string;
   incrementDate?: string;
@@ -209,6 +215,9 @@ export interface Employment {
   probationPeriod?: string;
   noticePeriod?: string;
   benefits: string[];
+
+  /** Up to three professional references (indexed 0 → Ref 1, 1 → Ref 2, 2 → Ref 3). */
+  professionalReferences?: ProfessionalReference[];
   
   // Resignation Details
   resignationDate?: string;

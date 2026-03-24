@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relievingCtc'> {
   benefits: string | string[];
   relievingCtc?: string; // Form input is string, will be converted to number|null
+  whereWereYouEmploid?: string;
 }
 
 export default function EditEmploymentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -44,6 +45,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<EmploymentFormData>({
     defaultValues: {
       workSchedule: 'Office',
+      whereWereYouEmploid: 'Registred Corporate Office',
     } as Partial<EmploymentFormData>,
   });
   const breadcrumbEmployeeId = watch('employeeId') || originalEmployment?.employeeId || '';
@@ -81,7 +83,21 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
   // Watch salary and resignation state for calculations / UI
   const salary = watch('salary');
+  const joiningCtcValue = watch('joiningCtc');
   const isResignation = watch('isResignation');
+
+  const joiningAnnualSalary = Number(joiningCtcValue || 0);
+  const joiningMonthlySalary = joiningAnnualSalary > 0 ? Math.round(joiningAnnualSalary / 12) : 0;
+  const joiningBasic = joiningMonthlySalary > 0 ? Math.round(joiningMonthlySalary * 0.4) : 0;
+  const joiningDA = joiningBasic > 0 ? Math.round(joiningBasic * 0.1) : 0;
+  const joiningHRA = joiningBasic > 0 ? Math.round(joiningBasic * 0.5) : 0;
+  const joiningPF = includePF && joiningBasic > 0 ? Math.round(joiningBasic * 0.12) : 0;
+  const joiningMedicalAllowance = joiningMonthlySalary > 0 ? 1250 : 0;
+  const joiningTransportAllowance = joiningMonthlySalary > 0 ? 1600 : 0;
+  const joiningCalculatedComponents =
+    joiningBasic + joiningHRA + joiningDA + joiningMedicalAllowance + joiningTransportAllowance;
+  const joiningSpecialAllowance =
+    joiningMonthlySalary > 0 ? Math.max(0, joiningMonthlySalary - joiningCalculatedComponents) : 0;
 
   // After loading original employment, capture owner for employee access check
   useEffect(() => {
@@ -200,6 +216,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         reset({
           ...rest,
           workSchedule: normalizedWorkSchedule,
+          whereWereYouEmploid: (rest as any).whereWereYouEmploid || 'Registred Corporate Office',
           relievingCtc: relievingCtc ? relievingCtc.toString() : '',
           benefits: employmentData.benefits?.join(', ') || '',
           increments,
@@ -322,6 +339,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       }
       if (data.workSchedule && data.workSchedule.trim()) {
         formattedData.workSchedule = data.workSchedule;
+      }
+      if (data.whereWereYouEmploid && data.whereWereYouEmploid.trim()) {
+        formattedData.whereWereYouEmploid = data.whereWereYouEmploid;
       }
 
       // Handle increments array and keep latest values in scalar fields for backward compatibility
@@ -633,6 +653,19 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </select>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Where Were You Employed?
+                  </label>
+                  <select
+                    {...register('whereWereYouEmploid')}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="Registred Corporate Office">Registred Corporate Office</option>
+                    <option value="Branch Office">Branch Office</option>
+                  </select>
+                </div>
+
                 
               </div>
             </div>
@@ -857,12 +890,108 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
+            {/* Joining Salary Information */}
+            <div className="bg-white p-4 rounded-lg mb-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-cyan-500 pl-2">
+                Joining Salary Information
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Joining Salary per annum (₹)
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={joiningAnnualSalary || ''}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Joining Salary per month (₹)
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={joiningMonthlySalary || ''}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Joining Basic (₹)
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={joiningBasic || ''}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Joining DA (₹)
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={joiningDA || ''}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Joining HRA (₹)
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={joiningHRA || ''}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Joining PF (₹)
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={joiningPF || ''}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Joining Additional Allowance (₹)
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={0}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Joining Special Allowance (₹)
+                  </label>
+                  <input
+                    type="number"
+                    defaultValue={joiningSpecialAllowance || ''}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
             {/* Salary Information */}
             <div className="bg-white p-4 rounded-lg mb-6">
               <div className="flex justify-between items-center mb-4">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-green-500 pl-2">
-                    Salary Information
+                    Current Salary Information
                   </h2>
                 </div>
 

@@ -47,6 +47,7 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   reportingManager: string;
   employmentType: string;
   workSchedule: string;
+  whereWereYouEmploid?: string;
 
   //Bank details
   bankName?: string;
@@ -79,6 +80,7 @@ export default function AddEmploymentPage() {
     defaultValues: {
       employmentId: 'ADV',
       isResignation: false,
+      whereWereYouEmploid: 'Registred Corporate Office',
     }
   });
 
@@ -504,6 +506,19 @@ export default function AddEmploymentPage() {
                       <option value="Mon-Fri 10 AM to 7 PM">Hybrid</option>
                     </select>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Where Were You Employed?
+                    </label>
+                    <select
+                      {...register('whereWereYouEmploid')}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    >
+                      <option value="Registred Corporate Office">Registred Corporate Office</option>
+                      <option value="Branch Office">Branch Office</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -694,7 +709,7 @@ export default function AddEmploymentPage() {
                 <div className="flex justify-between items-center mb-4">
                   <div>
                     <h2 className="text-lg font-medium text-gray-800 mb-2 border-l-4 border-green-500 pl-2">
-                      Salary Information
+                      Current Salary Information
                     </h2>
                   </div>
 

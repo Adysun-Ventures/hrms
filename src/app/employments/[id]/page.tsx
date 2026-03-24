@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FiArrowLeft, FiEdit, FiUser, FiBriefcase, FiCalendar, FiDollarSign, FiMapPin, FiTrendingUp } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit, FiUser, FiBriefcase, FiCalendar, FiDollarSign, FiMapPin, FiTrendingUp, FiDownload } from 'react-icons/fi';
 import { FaRupeeSign } from "react-icons/fa";
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
-import { Employment, Employee } from '@/types';
+import { Employment, Employee, ProfessionalReference } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { useEmployment, useDeleteEmployment } from '@/hooks/useEmployments';
@@ -15,12 +15,26 @@ import { useEmployee, useEmployeeSelf } from '@/hooks/useEmployees';
 import { useEmployeeSelfSalariesByEmployee, useSalariesByEmployee } from '@/hooks/useSalaries';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { useAuth } from '@/context/AuthContext';
+import { downloadElementAsMultiPagePdf } from '@/utils/employmentViewPdfDownload';
+
+function professionalReferenceCell(
+  refs: ProfessionalReference[] | undefined,
+  index: number,
+  field: keyof ProfessionalReference
+): string {
+  const raw = refs?.[index]?.[field];
+  if (raw === undefined || raw === null) return '\u00a0';
+  const s = String(raw).trim();
+  return s || '\u00a0';
+}
 
 export default function EmploymentViewPage({ params }: { params: Promise<{ id: string }> }) {
 
   const router = useRouter();
   const { currentUserData } = useAuth();
   const { id } = use(params);
+  const [employmentFullPagePdfLoading, setEmploymentFullPagePdfLoading] = useState(false);
+  const employmentFullPagePdfRef = useRef<HTMLDivElement | null>(null);
 
   const isEmployeeUser = currentUserData?.userType === 'employee';
   const Layout: any = isEmployeeUser ? EmployeeLayout : DashboardLayout;
@@ -370,6 +384,125 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
         />
 
         <div className="px-6 pb-6">
+          <div ref={employmentFullPagePdfRef} className="employment-view-pdf-capture space-y-0">
+          <div className="mb-8 -mt-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-900">Professional Reference</h2>
+              <button
+                type="button"
+                data-html2canvas-ignore
+                disabled={employmentFullPagePdfLoading}
+                onClick={async () => {
+                  const el = employmentFullPagePdfRef.current;
+                  if (!el || !employment) return;
+                  setEmploymentFullPagePdfLoading(true);
+                  try {
+                    const safe = (employee?.name || 'employment').replace(/\s+/g, '_');
+                    await downloadElementAsMultiPagePdf(el, `Employment_Details_${safe}.pdf`);
+                    toast.success('PDF downloaded');
+                  } catch (e) {
+                    console.error(e);
+                    const msg = e instanceof Error ? e.message : 'Failed to download PDF';
+                    toast.error(msg);
+                  } finally {
+                    setEmploymentFullPagePdfLoading(false);
+                  }
+                }}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:pointer-events-none shrink-0"
+              >
+                <FiDownload className="w-4 h-4 shrink-0" aria-hidden />
+                {employmentFullPagePdfLoading ? 'Generating…' : 'Download PDF'}
+              </button>
+            </div>
+            <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
+              <table className="w-full min-w-[640px] border-collapse text-sm text-gray-900">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[26%]"
+                    >
+                      &nbsp;
+                    </th>
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-center font-semibold align-middle"
+                    >
+                      Reference No 1
+                    </th>
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-center font-semibold align-middle"
+                    >
+                      Reference No 2
+                    </th>
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-center font-semibold align-middle"
+                    >
+                      Reference No 3
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th
+                      scope="row"
+                      className="border border-gray-800 px-3 py-3 text-left font-medium align-top bg-gray-50/80 whitespace-nowrap"
+                    >
+                      Name / Designation
+                    </th>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      {professionalReferenceCell(employment.professionalReferences, 0, 'nameDesignation')}
+                    </td>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      {professionalReferenceCell(employment.professionalReferences, 1, 'nameDesignation')}
+                    </td>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      {professionalReferenceCell(employment.professionalReferences, 2, 'nameDesignation')}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th
+                      scope="row"
+                      className="border border-gray-800 px-3 py-3 text-left font-medium align-top bg-gray-50/80"
+                    >
+                      Email id and Mob. No.
+                    </th>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      {professionalReferenceCell(employment.professionalReferences, 0, 'emailAndMobile')}
+                    </td>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      {professionalReferenceCell(employment.professionalReferences, 1, 'emailAndMobile')}
+                    </td>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      {professionalReferenceCell(employment.professionalReferences, 2, 'emailAndMobile')}
+                    </td>
+                  </tr>
+                  <tr>
+                    <th
+                      scope="row"
+                      className="border border-gray-800 px-3 py-3 text-left font-medium align-top bg-gray-50/80"
+                    >
+                      Nature of Association
+                    </th>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      {professionalReferenceCell(employment.professionalReferences, 0, 'natureOfAssociation')}
+                    </td>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      {professionalReferenceCell(employment.professionalReferences, 1, 'natureOfAssociation')}
+                    </td>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      {professionalReferenceCell(employment.professionalReferences, 2, 'natureOfAssociation')}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-200 mb-6" />
+
           {/* Basic Information */}
           <div className="mb-4">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h2>
@@ -438,6 +571,16 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               <div>
                 <p className="text-lg font-medium text-gray-900">{employment.workSchedule || '-'}</p>
                 <p className="text-sm text-gray-500">Work Mode</p>
+              </div>
+
+              <div>
+                <p className="text-lg font-medium text-gray-900">
+                  {(employment as any).whereWereYouEmploid ||
+                    (employment as any).whereWereYouEmployed ||
+                    (employment as any).whereWereYouEmployd ||
+                    '-'}
+                </p>
+                <p className="text-sm text-gray-500">Where Were You Employed?</p>
               </div>
 
               <div>
@@ -681,48 +824,115 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 </div>
 <div className="border-t border-gray-200 my-2" />
 
-          {/* Salary Information */}
+          {/* Joining Salary Information */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FaRupeeSign className="mr-2" /> Salary Information
+              <FaRupeeSign className="mr-2" /> Joining Salary Information
+            </h2>
+
+            {(() => {
+              const joiningAnnual = Number(employment.joiningCtc || 0);
+              const joiningMonthly = joiningAnnual > 0 ? Math.round(joiningAnnual / 12) : 0;
+              const joiningBasic = joiningMonthly > 0 ? Math.round(joiningMonthly * 0.4) : 0;
+              const joiningDA = joiningBasic > 0 ? Math.round(joiningBasic * 0.1) : 0;
+              const joiningHRA = joiningBasic > 0 ? Math.round(joiningBasic * 0.5) : 0;
+              const joiningPF = joiningBasic > 0 ? Math.round(joiningBasic * 0.12) : 0;
+              const joiningMedicalAllowance = joiningMonthly > 0 ? 1250 : 0;
+              const joiningTransportAllowance = joiningMonthly > 0 ? 1600 : 0;
+              const joiningCalculated =
+                joiningBasic + joiningHRA + joiningDA + joiningMedicalAllowance + joiningTransportAllowance;
+              const joiningSpecial = joiningMonthly > 0 ? Math.max(0, joiningMonthly - joiningCalculated) : 0;
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{joiningAnnual > 0 ? formatCurrency(joiningAnnual) : '-'}</p>
+                    <p className="text-sm text-gray-500">Joining Salary per annum</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{joiningMonthly > 0 ? formatCurrency(joiningMonthly) : '-'}</p>
+                    <p className="text-sm text-gray-500">Joining Salary per month</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{joiningBasic > 0 ? formatCurrency(joiningBasic) : '-'}</p>
+                    <p className="text-sm text-gray-500">Joining Basic</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{joiningDA > 0 ? formatCurrency(joiningDA) : '-'}</p>
+                    <p className="text-sm text-gray-500">Joining DA (Dearness Allowance)</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{joiningHRA > 0 ? formatCurrency(joiningHRA) : '-'}</p>
+                    <p className="text-sm text-gray-500">Joining HRA (House Rent Allowance)</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{joiningPF > 0 ? formatCurrency(joiningPF) : '-'}</p>
+                    <p className="text-sm text-gray-500">Joining PF (Provident Fund)</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{joiningSpecial > 0 ? formatCurrency(joiningSpecial) : '-'}</p>
+                    <p className="text-sm text-gray-500">Joining Special Allowance</p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="border-t border-gray-200 my-2" />
+
+          {/* Current Salary Information */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <FaRupeeSign className="mr-2" /> Current Salary Information
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {(() => {
+                const annualSalary = Number(employment.salary || 0);
+                const monthlySalary = Number(employment.salaryPerMonth || 0);
+                const basic = Number(employment.basic || 0);
+                const da = Number(employment.da || 0);
+                const hra = Number(employment.hra || 0);
+                const pf = Number(employment.pf || 0);
+                const additionalAllowance = Number(employment.additionalAllowance || 0);
+                const specialAllowance = Number(employment.specialAllowance || 0);
+                return (
+                  <>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">{employment.salary ? formatCurrency(employment.salary) : '-'}</p>
-                <p className="text-sm text-gray-500">Salary per annum</p>
+                <p className="text-lg font-medium text-gray-900">{annualSalary > 0 ? formatCurrency(annualSalary) : '-'}</p>
+                <p className="text-sm text-gray-500">Current Salary per annum</p>
               </div>
 
               <div>
                 <p className="text-lg font-medium text-gray-900">
-                  {employment.salaryPerMonth
-                    ? formatCurrency(employment.salaryPerMonth)
-                    : employment.salary
-                      ? formatCurrency(employment.salary / 12)
+                  {monthlySalary > 0
+                    ? formatCurrency(monthlySalary)
+                    : annualSalary > 0
+                      ? formatCurrency(annualSalary / 12)
                       : '-'}
                 </p>
-                <p className="text-sm text-gray-500">Salary per month</p>
+                <p className="text-sm text-gray-500">Current Salary per month</p>
               </div>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">{employment.basic ? formatCurrency(employment.basic) : '-'}</p>
-                <p className="text-sm text-gray-500">Basic</p>
+                <p className="text-lg font-medium text-gray-900">{basic > 0 ? formatCurrency(basic) : '-'}</p>
+                <p className="text-sm text-gray-500">Current Basic</p>
               </div>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">{employment.da ? formatCurrency(employment.da) : '-'}</p>
-                <p className="text-sm text-gray-500">DA (Dearness Allowance)</p>
+                <p className="text-lg font-medium text-gray-900">{da > 0 ? formatCurrency(da) : '-'}</p>
+                <p className="text-sm text-gray-500">Current DA (Dearness Allowance)</p>
               </div>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">{employment.hra ? formatCurrency(employment.hra) : '-'}</p>
-                <p className="text-sm text-gray-500">HRA (House Rent Allowance)</p>
+                <p className="text-lg font-medium text-gray-900">{hra > 0 ? formatCurrency(hra) : '-'}</p>
+                <p className="text-sm text-gray-500">Current HRA (House Rent Allowance)</p>
               </div>
 
-              {(employment.pf && employment.pf > 0) && (
+              {pf > 0 && (
                 <div>
-                  <p className="text-lg font-medium text-gray-900">{formatCurrency(employment.pf)}</p>
+                  <p className="text-lg font-medium text-gray-900">{formatCurrency(pf)}</p>
                   <p className="text-sm text-gray-500">PF (Provident Fund)</p>
                 </div>
               )}
@@ -736,25 +946,22 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
               
 
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employment.totalLeaves || '-'} {employment.totalLeaves ? 'days/year' : ''}</p>
-                <p className="text-sm text-gray-500">Total Leaves</p>
-              </div>
+              {additionalAllowance > 0 && (
+                <div>
+                  <p className="text-lg font-medium text-gray-900">{formatCurrency(additionalAllowance)}</p>
+                  <p className="text-sm text-gray-500">Additional Allowance</p>
+                </div>
+              )}
 
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employment.payableDays || '-'}</p>
-                <p className="text-sm text-gray-500">Payable Days</p>
-              </div>
-
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employment.additionalAllowance ? formatCurrency(employment.additionalAllowance) : '-'}</p>
-                <p className="text-sm text-gray-500">Additional Allowance</p>
-              </div>
-
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employment.specialAllowance ? formatCurrency(employment.specialAllowance) : '-'}</p>
-                <p className="text-sm text-gray-500">Special Allowance</p>
-              </div>
+              {specialAllowance > 0 && (
+                <div>
+                  <p className="text-lg font-medium text-gray-900">{formatCurrency(specialAllowance)}</p>
+                  <p className="text-sm text-gray-500">Current Special Allowance</p>
+                </div>
+              )}
+                  </>
+                );
+              })()}
 
               {/* <div className="bg-white rounded-lg shadow p-5">
                 <p className="text-lg font-medium text-gray-900 capitalize">
@@ -769,6 +976,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Payment Frequency</p>
               </div> */}
             </div>
+          </div>
           </div>
         </div>
       </div>

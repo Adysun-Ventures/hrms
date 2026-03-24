@@ -35,6 +35,7 @@ interface PDFProps {
   employeeSignPlace: string;
   employeeResignDate: string;
   employeeRelievingDate: string;
+  designationOverride?: string;
 }
 
 /* ---------------- COMPANY DATA ---------------- */
@@ -180,11 +181,12 @@ const RelievingLetterPDF: React.FC<PDFProps> = ({
   employeeSignDate,
   employeeSignPlace,
   employeeResignDate,
-  employeeRelievingDate
+  employeeRelievingDate,
+  designationOverride
 }) => {
   const employeeName = employee?.name || "";
   const shortName = employeeName.split(" ")[0];
-  const designation = employment?.jobTitle || "";
+  const designation = designationOverride || employment?.jobTitle || "";
   const resignDate = formatDate(employeeResignDate);
   const relievingDate = formatDate(employeeRelievingDate);
   const signDate = formatDate(employeeSignDate);
@@ -236,6 +238,12 @@ const RelievingLetterPDF: React.FC<PDFProps> = ({
           <Text style={{ fontWeight: "bold" }}>{resignDate}</Text>.
         </Text>
 
+        {designation && (
+          <Text style={{ marginBottom: 10 }}>
+            You served in the role of <Text style={{ fontWeight: "bold" }}>{designation}</Text>.
+          </Text>
+        )}
+
         <Text style={{ marginBottom: 10 }}>
           During your tenure with the company, you performed your duties responsibly and professionally, 
           and maintained a positive attitude towards work and colleagues.
@@ -284,6 +292,7 @@ const EmployeeRelievingLetter: React.FC = () => {
   const [employeeSignPlace, setEmployeeSignPlace] = useState<string>("");
   const [employeeRelievingDate, setEmployeeRelievingDate] = useState<string>("");
   const [employeeResignDate, setEmployeeResignDate] = useState<string>("");
+  const [designationOverride, setDesignationOverride] = useState<string>("");
   const [showPDF, setShowPDF] = useState(false);
 
   const canGenerate = Boolean(
@@ -397,7 +406,7 @@ const EmployeeRelievingLetter: React.FC = () => {
                 {/* Sign Date */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    <span className="text-red-500">*</span> Sign Date
+                    <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown value={employeeSignDate} onChange={setEmployeeSignDate} />
                 </div>
@@ -416,6 +425,19 @@ const EmployeeRelievingLetter: React.FC = () => {
                     <span className="text-red-500">*</span> Resignation Date
                   </label>
                   <DateDropdown value={employeeResignDate} onChange={setEmployeeResignDate} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Designation
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    value={designationOverride}
+                    onChange={(e) => setDesignationOverride(e.target.value)}
+                    placeholder="Enter designation"
+                  />
                 </div>
 
                 {/* Place */}
@@ -497,6 +519,7 @@ const EmployeeRelievingLetter: React.FC = () => {
                       employeeSignPlace={employeeSignPlace}
                       employeeRelievingDate={employeeRelievingDate}
                       employeeResignDate={employeeResignDate}
+                      designationOverride={designationOverride}
                     />
                   }
                   fileName={`Relieving_${employee.name}.pdf`}
@@ -520,6 +543,7 @@ const EmployeeRelievingLetter: React.FC = () => {
                   employeeSignPlace={employeeSignPlace}
                   employeeRelievingDate={employeeRelievingDate}
                   employeeResignDate={employeeResignDate}
+                  designationOverride={designationOverride}
                 />
               </PDFViewer>
             </div>

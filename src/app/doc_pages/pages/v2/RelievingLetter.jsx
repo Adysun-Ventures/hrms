@@ -179,9 +179,9 @@ const DateDropdown = ({ value, onChange }) => {
 };
 
 /* ---------------- DOCX BUILDER ---------------- */
-async function buildRelievingLetterDocx(employee, employment, employeeSignDate, employeeSignPlace, employeeRelievingDate, employeeResignDate) {
+async function buildRelievingLetterDocx(employee, employment, employeeSignDate, employeeSignPlace, employeeRelievingDate, employeeResignDate, designationOverride) {
   const employeeName = employee?.name || "";
-  const designation = employment?.jobTitle || employment?.designation || "";
+  const designation = designationOverride || employment?.jobTitle || employment?.designation || "";
   const joiningDate = employment?.joiningDate || employment?.startDate || "";
   const shortName = employeeName.split(" ")[0] || employeeName;
   const resignDate = formatDate(employeeResignDate);
@@ -198,6 +198,9 @@ async function buildRelievingLetterDocx(employee, employment, employeeSignDate, 
     new Paragraph({ text: "" }),
     new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCaseRelief(shortName)},` })] }),
     new Paragraph({ children: [new TextRun({ text: "This is with reference to your resignation dated " }), new TextRun({ text: resignDate, bold: true }), new TextRun({ text: "." })] }),
+    ...(designation
+      ? [new Paragraph({ children: [new TextRun({ text: "You served in the role of " }), new TextRun({ text: designation, bold: true }), new TextRun({ text: "." })] })]
+      : []),
     new Paragraph({ text: "During your tenure with the company, you performed your duties responsibly and professionally, and maintained a positive attitude towards work and colleagues." }),
     new Paragraph({ children: [new TextRun({ text: "We hereby confirm that you have been formally relieved from your services effective end of day " }), new TextRun({ text: relievingDate, bold: true }), new TextRun({ text: "." })] }),
     new Paragraph({ text: "Further, you have completed all required exit formalities including handover of company assets, documentation, access rights and clearance." }),
@@ -218,11 +221,12 @@ const RelievingLetterPDF = ({
   employeeSignDate,
   employeeSignPlace,
   employeeRelievingDate,
-  employeeResignDate
+  employeeResignDate,
+  designationOverride
 }) => {
 
   const employeeName = employee?.name || "";
-  const designation = employment?.jobTitle || employment?.designation || "";
+  const designation = designationOverride || employment?.jobTitle || employment?.designation || "";
   const joiningDate = employment?.joiningDate || employment?.startDate || "";
 
   const shortName = employeeName.split(" ")[0];
@@ -312,6 +316,12 @@ const RelievingLetterPDF = ({
           
         </Text>
 
+        {designation && (
+          <Text style={{ marginBottom: 10 }}>
+            You served in the role of <Text style={{ fontWeight: "bold" }}>{designation}</Text>.
+          </Text>
+        )}
+
         <Text style={{ marginBottom: 10 }}>
           During your tenure with the company, you performed your duties responsibly and professionally, and maintained a positive attitude towards work and colleagues.
         </Text>
@@ -377,6 +387,7 @@ function RelievingLetterV2() {
   const [employeeSignPlace, setEmployeeSignPlace] = useState("");
   const [employeeRelievingDate, setEmployeeRelievingDate] = useState("");
   const [employeeResignDate, setEmployeeResignDate] = useState("");
+  const [designationOverride, setDesignationOverride] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
@@ -502,7 +513,7 @@ function RelievingLetterV2() {
                 {/* Sign Date */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    <span className="text-red-500">*</span> Sign Date
+                    <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown
                     value={employeeSignDate}
@@ -529,6 +540,19 @@ function RelievingLetterV2() {
                   <DateDropdown
                     value={employeeResignDate}
                     onChange={setEmployeeResignDate}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Designation
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-3 border rounded-md"
+                    value={designationOverride}
+                    onChange={(e) => setDesignationOverride(e.target.value)}
+                    placeholder="Enter designation"
                   />
                 </div>
 
@@ -600,6 +624,7 @@ function RelievingLetterV2() {
                     employeeSignPlace={employeeSignPlace}
                     employeeRelievingDate={employeeRelievingDate}
                     employeeResignDate={employeeResignDate}
+                    designationOverride={designationOverride}
                   />
                 }
                 fileName={`Relieving_${employee.name}.pdf`}
@@ -618,7 +643,8 @@ function RelievingLetterV2() {
                       employeeSignDate,
                       employeeSignPlace,
                       employeeRelievingDate,
-                      employeeResignDate
+                      employeeResignDate,
+                      designationOverride
                     );
                     const blob = await Packer.toBlob(doc);
                     saveAs(blob, `RelievingLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
@@ -644,6 +670,7 @@ function RelievingLetterV2() {
                 employeeSignPlace={employeeSignPlace}
                 employeeRelievingDate={employeeRelievingDate}
                 employeeResignDate={employeeResignDate}
+                designationOverride={designationOverride}
               />
             </PDFViewer>
           </div>

@@ -179,10 +179,10 @@ const DateDropdown = ({ value, onChange }) => {
 };
 
 /* ---------------- DOCX BUILDER ---------------- */
-async function buildJoiningLetterDocx(employee, designation, department, reportingManager, workLocation, joiningDate, annualCTC, probation, workingHours, signPlace) {
+async function buildJoiningLetterDocx(employee, designation, department, reportingManager, workLocation, joiningDate, annualCTC, probation, workingHours, signPlace, documentGenerateDate) {
   const name = employee?.name || "";
   const shortName = name.split(" ")[0] || name;
-  const issueDate = formatDate(todayISO());
+  const issueDate = formatDate(documentGenerateDate || todayISO());
   const formattedJoiningDate = formatDate(joiningDate);
   const formattedCTC = Number(annualCTC).toLocaleString("en-IN");
   const children = [
@@ -230,11 +230,12 @@ const JoiningLetterPDF = ({
   annualCTC,
   probation,
   workingHours,
-  signPlace
+  signPlace,
+  documentGenerateDate
 }) => {
   const employeeName = employee?.name || "";
   const shortName = employeeName.split(" ")[0];
-  const issueDate = formatDate(todayISO());
+  const issueDate = formatDate(documentGenerateDate || todayISO());
   const formattedJoiningDate = formatDate(joiningDate);
   const formattedCTC = Number(annualCTC).toLocaleString("en-IN");
   const rawAddress = employee?.currentAddress || employee?.permanentAddress || "";
@@ -378,6 +379,7 @@ export default function JoiningLetterV2() {
   const [probation, setProbation] = useState("6 Months");
   const [workingHours, setWorkingHours] = useState("9:30 AM - 6:30 PM");
   const [signPlace, setSignPlace] = useState("Pune");
+  const [documentGenerateDate, setDocumentGenerateDate] = useState(todayISO());
   const [searchTerm, setSearchTerm] = useState("");
   const [employment, setEmployment] = useState({});
   const [employments,setEmployments] = useState({});
@@ -565,6 +567,13 @@ export default function JoiningLetterV2() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
+                    <span className="text-red-500">*</span> Document Generate Date
+                  </label>
+                  <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Joining Date
                   </label>
                   <DateDropdown value={joiningDate} onChange={setJoiningDate} />
@@ -675,6 +684,7 @@ export default function JoiningLetterV2() {
                     probation={probation}
                     workingHours={workingHours}
                     signPlace={signPlace}
+                    documentGenerateDate={documentGenerateDate}
                   />
                 }
                 fileName={`Joining_${employee.name}.pdf`}
@@ -696,7 +706,8 @@ export default function JoiningLetterV2() {
                       annualCTC,
                       probation,
                       workingHours,
-                      signPlace
+                      signPlace,
+                      documentGenerateDate
                     );
                     const blob = await Packer.toBlob(doc);
                     saveAs(blob, `JoiningLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
@@ -726,6 +737,7 @@ export default function JoiningLetterV2() {
                 probation={probation}
                 workingHours={workingHours}
                 signPlace={signPlace}
+                documentGenerateDate={documentGenerateDate}
               />
             </PDFViewer>
           </div>

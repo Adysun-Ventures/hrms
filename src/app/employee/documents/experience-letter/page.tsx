@@ -38,6 +38,7 @@ interface PDFProps {
   todaysDate: string;
   employeeSignDate: string;
   employeeSignPlace: string;
+  designationOverride?: string;
 }
 
 /* ---------------- COMPANY DATA ---------------- */
@@ -63,17 +64,132 @@ const toTitleCase = (str?: string): string =>
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ") || "";
 
+const MONTH_OPTIONS = [
+  { value: "01", label: "Jan" },
+  { value: "02", label: "Feb" },
+  { value: "03", label: "Mar" },
+  { value: "04", label: "Apr" },
+  { value: "05", label: "May" },
+  { value: "06", label: "Jun" },
+  { value: "07", label: "Jul" },
+  { value: "08", label: "Aug" },
+  { value: "09", label: "Sep" },
+  { value: "10", label: "Oct" },
+  { value: "11", label: "Nov" },
+  { value: "12", label: "Dec" },
+];
+
+const DateDropdown: React.FC<{ value: string; onChange: (v: string) => void }> = ({
+  value,
+  onChange,
+}) => {
+  const [initialYear = "", initialMonth = "", initialDay = ""] =
+    value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.split("-") : ["", "", ""];
+
+  const [year, setYear] = useState(initialYear);
+  const [month, setMonth] = useState(initialMonth);
+  const [day, setDay] = useState(initialDay);
+
+  const nowYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 21 }, (_, i) => String(nowYear - 10 + i));
+  const getDaysInMonth = (y: string, m: string) => {
+    if (!y || !m) return 31;
+    return new Date(Number(y), Number(m), 0).getDate();
+  };
+  const maxDays = getDaysInMonth(year, month);
+  const dayOptions = Array.from({ length: maxDays }, (_, i) => String(i + 1).padStart(2, "0"));
+
+  useEffect(() => {
+    if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [y, m, d] = value.split("-");
+      setYear(y);
+      setMonth(m);
+      setDay(d);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (day && Number(day) > maxDays) setDay("");
+  }, [day, maxDays, month, year]);
+
+  const emitIfComplete = (nextYear: string, nextMonth: string, nextDay: string) => {
+    if (nextYear && nextMonth && nextDay) onChange(`${nextYear}-${nextMonth}-${nextDay}`);
+  };
+
+  const selectClass =
+    "w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 text-black";
+
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      <select
+        className={selectClass}
+        value={day}
+        disabled={!month || !year}
+        onChange={(e) => {
+          const nextDay = e.target.value;
+          setDay(nextDay);
+          emitIfComplete(year, month, nextDay);
+        }}
+      >
+        <option value="">{!month || !year ? "Select Mon/Year" : "DD"}</option>
+        {dayOptions.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className={selectClass}
+        value={month}
+        onChange={(e) => {
+          const nextMonth = e.target.value;
+          setMonth(nextMonth);
+          setDay("");
+          emitIfComplete(year, nextMonth, day);
+        }}
+      >
+        <option value="">Mon</option>
+        {MONTH_OPTIONS.map((m) => (
+          <option key={m.value} value={m.value}>
+            {m.label}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className={selectClass}
+        value={year}
+        onChange={(e) => {
+          const nextYear = e.target.value;
+          setYear(nextYear);
+          setDay("");
+          emitIfComplete(nextYear, month, day);
+        }}
+      >
+        <option value="">Year</option>
+        {yearOptions.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
 /* ---------------- PDF COMPONENT ---------------- */
 const EmployeeExperiencePDF: React.FC<PDFProps> = ({
   employee,
   employment,
   todaysDate,
   employeeSignDate,
-  employeeSignPlace
+  employeeSignPlace,
+  designationOverride
 }) => {
   const employeeName = employee?.name || "";
   const shortName = employeeName.split(" ")[0];
-  const designation = employment?.jobTitle || "";
+  const designation = designationOverride || employment?.jobTitle || "";
   const joiningDate = employment?.joiningDate || "";
   const relievingDate = employment?.lastWorkingDate || "";
 
@@ -161,6 +277,7 @@ const EmployeeExperienceLetter: React.FC = () => {
   const [todaysDate, setTodaysDate] = useState<string>("");
   const [employeeSignDate, setEmployeeSignDate] = useState<string>("");
   const [employeeSignPlace, setEmployeeSignPlace] = useState<string>("");
+  const [designationOverride, setDesignationOverride] = useState<string>("");
   const [showPDF, setShowPDF] = useState(false);
 
   const canGenerate = Boolean(todaysDate && employeeSignDate && employeeSignPlace);
@@ -255,26 +372,30 @@ return (
             {/* Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Date <span className="text-red-500">*</span>
+                Document Generate Date <span className="text-red-500">*</span>
               </label>
-              <input
-                type="date"
-                value={todaysDate}
-                onChange={(e) => setTodaysDate(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-              />
+              <DateDropdown value={todaysDate} onChange={setTodaysDate} />
             </div>
 
             {/* Sign Date */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Sign Date <span className="text-red-500">*</span>
+                Date of Exit <span className="text-red-500">*</span>
+              </label>
+              <DateDropdown value={employeeSignDate} onChange={setEmployeeSignDate} />
+            </div>
+
+            {/* Place */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Designation
               </label>
               <input
-                type="date"
-                value={employeeSignDate}
-                onChange={(e) => setEmployeeSignDate(e.target.value)}
+                type="text"
+                value={designationOverride}
+                onChange={(e) => setDesignationOverride(e.target.value)}
                 className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter designation"
               />
             </div>
 
@@ -346,6 +467,7 @@ return (
                   todaysDate={todaysDate}
                   employeeSignDate={employeeSignDate}
                   employeeSignPlace={employeeSignPlace}
+                  designationOverride={designationOverride}
                 />
               }
               fileName={`Experience_${employee.name}.pdf`}
@@ -368,6 +490,7 @@ return (
               todaysDate={todaysDate}
               employeeSignDate={employeeSignDate}
               employeeSignPlace={employeeSignPlace}
+              designationOverride={designationOverride}
             />
           </PDFViewer>
         </div>

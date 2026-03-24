@@ -169,13 +169,13 @@ const DateDropdown = ({ value, onChange }) => {
 };
 
 /* ---------------- DOCX BUILDER ---------------- */
-async function buildAppraisalLetterDocx(employee, currentCTC, percentIncrease, revisedCTC, effectiveDate) {
+async function buildAppraisalLetterDocx(employee, currentCTC, percentIncrease, revisedCTC, effectiveDate, documentGenerateDate, oldDesignation, newDesignation) {
   const employeeName = employee?.name || "";
   const shortName = employeeName.split(" ")[0] || employeeName;
   const formattedCurrent = Number(currentCTC).toLocaleString("en-IN");
   const formattedRevised = Number(revisedCTC).toLocaleString("en-IN");
   const formattedEffective = formatDate(effectiveDate);
-  const today = formatDate(new Date());
+  const today = formatDate(documentGenerateDate || new Date());
   const children = [
     new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
     new Paragraph({ text: "" }),
@@ -200,6 +200,19 @@ async function buildAppraisalLetterDocx(employee, currentCTC, percentIncrease, r
         new TextRun({ text: "." }),
       ],
     }),
+    ...(oldDesignation || newDesignation
+      ? [
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Designation update: " }),
+              new TextRun({ text: oldDesignation || "-", bold: true }),
+              new TextRun({ text: " to " }),
+              new TextRun({ text: newDesignation || "-", bold: true }),
+              new TextRun({ text: "." }),
+            ],
+          }),
+        ]
+      : []),
     new Paragraph({ text: "We appreciate your continuous hard work and commitment and we believe you will continue to excel and contribute towards the company's success." }),
     new Paragraph({ text: "" }),
     new Paragraph({ children: [new TextRun({ text: "Effective: " }), new TextRun({ text: formattedEffective })] }),
@@ -216,14 +229,17 @@ const AppraisalLetterPDF = ({
   currentCTC,
   percentIncrease,
   revisedCTC,
-  effectiveDate
+  effectiveDate,
+  documentGenerateDate,
+  oldDesignation,
+  newDesignation
 }) => {
   const employeeName = employee?.name || "";
   const shortName = employeeName.split(" ")[0];
   const formattedCurrent = Number(currentCTC).toLocaleString("en-IN");
   const formattedRevised = Number(revisedCTC).toLocaleString("en-IN");
   const formattedEffective = formatDate(effectiveDate);
-  const today = formatDate(new Date());
+  const today = formatDate(documentGenerateDate || new Date());
   
 
   return (
@@ -288,6 +304,13 @@ const AppraisalLetterPDF = ({
           Your new annual CTC will be <Text style={{ fontWeight: "bold" }}> {formattedRevised}</Text> which is an increase from your previous annual CTC of <Text style={{ fontWeight: "bold" }}> {formattedCurrent}</Text>.
         </Text>
 
+        {(oldDesignation || newDesignation) && (
+          <Text style={{ marginBottom: 10 }}>
+            Designation update: <Text style={{ fontWeight: "bold" }}>{oldDesignation || "-"}</Text> to{" "}
+            <Text style={{ fontWeight: "bold" }}>{newDesignation || "-"}</Text>.
+          </Text>
+        )}
+
         <Text style={{ marginBottom: 10 }}>
           Your recent contributions across various responsibilities and deliverables have not gone unnoticed, and this increment reflects our recognition of your continued efforts and commitment towards the goals of the organization.
         </Text>
@@ -331,6 +354,9 @@ export default function AppraisalLetterV2() {
   const [percentIncrease, setPercentIncrease] = useState("");
   const [revisedCTC, setRevisedCTC] = useState("");
   const [effectiveDate, setEffectiveDate] = useState("");
+  const [documentGenerateDate, setDocumentGenerateDate] = useState(new Date().toISOString().slice(0, 10));
+  const [oldDesignation, setOldDesignation] = useState("");
+  const [newDesignation, setNewDesignation] = useState("");
   const [showPDF, setShowPDF] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [employments, setEmployments] = useState({});
@@ -349,7 +375,8 @@ export default function AppraisalLetterV2() {
     currentCTC &&
     percentIncrease &&
     revisedCTC &&
-    effectiveDate
+    effectiveDate &&
+    documentGenerateDate
   );
 
   const calcRevised = (current, percent) => {
@@ -378,6 +405,7 @@ export default function AppraisalLetterV2() {
     if (!percentIncrease) return toast.error("Enter % increase");
     if (!revisedCTC) return toast.error("Revised CTC missing");
     if (!effectiveDate) return toast.error("Select effective date");
+    if (!documentGenerateDate) return toast.error("Select document generate date");
     setShowPDF(true);
   };
 
@@ -502,9 +530,40 @@ export default function AppraisalLetterV2() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
+                    Document Generate Date <span className="text-red-500">*</span>
+                  </label>
+                  <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
                     Effective Date <span className="text-red-500">*</span>
                   </label>
                   <DateDropdown value={effectiveDate} onChange={setEffectiveDate} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Old Designation
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-md"
+                    value={oldDesignation}
+                    onChange={(e) => setOldDesignation(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    New Designation
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-md"
+                    value={newDesignation}
+                    onChange={(e) => setNewDesignation(e.target.value)}
+                  />
                 </div>
 
               </div>
@@ -552,6 +611,9 @@ export default function AppraisalLetterV2() {
                     percentIncrease={percentIncrease}
                     revisedCTC={revisedCTC}
                     effectiveDate={effectiveDate}
+                    documentGenerateDate={documentGenerateDate}
+                    oldDesignation={oldDesignation}
+                    newDesignation={newDesignation}
                   />
                 }
                 fileName={`Appraisal_${employee.name}.pdf`}
@@ -568,7 +630,10 @@ export default function AppraisalLetterV2() {
                       currentCTC,
                       percentIncrease,
                       revisedCTC,
-                      effectiveDate
+                      effectiveDate,
+                      documentGenerateDate,
+                      oldDesignation,
+                      newDesignation
                     );
                     const blob = await Packer.toBlob(doc);
                     saveAs(blob, `IncrementLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
@@ -593,6 +658,9 @@ export default function AppraisalLetterV2() {
                 percentIncrease={percentIncrease}
                 revisedCTC={revisedCTC}
                 effectiveDate={effectiveDate}
+                documentGenerateDate={documentGenerateDate}
+                oldDesignation={oldDesignation}
+                newDesignation={newDesignation}
               />
             </PDFViewer>
           </div>

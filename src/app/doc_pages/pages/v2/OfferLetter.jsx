@@ -75,6 +75,111 @@ const balancedStyles = {
   }
 };
 
+const MONTH_OPTIONS = [
+  { value: "01", label: "Jan" },
+  { value: "02", label: "Feb" },
+  { value: "03", label: "Mar" },
+  { value: "04", label: "Apr" },
+  { value: "05", label: "May" },
+  { value: "06", label: "Jun" },
+  { value: "07", label: "Jul" },
+  { value: "08", label: "Aug" },
+  { value: "09", label: "Sep" },
+  { value: "10", label: "Oct" },
+  { value: "11", label: "Nov" },
+  { value: "12", label: "Dec" },
+];
+
+const DateDropdown = ({ value, onChange }) => {
+  const [initialYear = "", initialMonth = "", initialDay = ""] =
+    value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.split("-") : ["", "", ""];
+  const [year, setYear] = useState(initialYear);
+  const [month, setMonth] = useState(initialMonth);
+  const [day, setDay] = useState(initialDay);
+
+  const nowYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 21 }, (_, i) => String(nowYear - 10 + i));
+  const getDaysInMonth = (y, m) => {
+    if (!y || !m) return 31;
+    return new Date(Number(y), Number(m), 0).getDate();
+  };
+  const maxDays = getDaysInMonth(year, month);
+  const dayOptions = Array.from({ length: maxDays }, (_, i) => String(i + 1).padStart(2, "0"));
+
+  useEffect(() => {
+    if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [y, m, d] = value.split("-");
+      setYear(y);
+      setMonth(m);
+      setDay(d);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (day && Number(day) > maxDays) setDay("");
+  }, [day, maxDays, month, year]);
+
+  const emitIfComplete = (nextYear, nextMonth, nextDay) => {
+    if (nextYear && nextMonth && nextDay) onChange(`${nextYear}-${nextMonth}-${nextDay}`);
+  };
+
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      <select
+        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        value={day}
+        disabled={!month || !year}
+        onChange={(e) => {
+          const nextDay = e.target.value;
+          setDay(nextDay);
+          emitIfComplete(year, month, nextDay);
+        }}
+      >
+        <option value="">{!month || !year ? "Select Mon/Year" : "DD"}</option>
+        {dayOptions.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+      <select
+        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        value={month}
+        onChange={(e) => {
+          const nextMonth = e.target.value;
+          setMonth(nextMonth);
+          setDay("");
+          emitIfComplete(year, nextMonth, day);
+        }}
+      >
+        <option value="">Mon</option>
+        {MONTH_OPTIONS.map((m) => (
+          <option key={m.value} value={m.value}>
+            {m.label}
+          </option>
+        ))}
+      </select>
+      <select
+        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        value={year}
+        onChange={(e) => {
+          const nextYear = e.target.value;
+          setYear(nextYear);
+          setDay("");
+          emitIfComplete(nextYear, month, day);
+        }}
+      >
+        <option value="">YYYY</option>
+        {yearOptions.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
 const compactStyles = {
   sectionTitle: {
     fontSize: 13,
@@ -145,7 +250,7 @@ const RowBoldGray = ({ label, m, a }) => (
 );
 
 /* ---------------- PDF DOCUMENT COMPONENT ---------------- */
-const OfferLetterPDF = ({ employee, employment, enablePF }) => {
+const OfferLetterPDF = ({ employee, employment, enablePF, designationOverride, documentGenerateDate }) => {
   if (!employee || !employment) {
     return (
       <Document>
@@ -160,14 +265,16 @@ const OfferLetterPDF = ({ employee, employment, enablePF }) => {
   const fullAddress = rawAddress ? rawAddress.split(/[,;\n]+/).map(v => v.trim()).filter(Boolean) : [];
   const shortAddress = fullAddress.slice(-2);
 
-  const designation = employment?.jobTitle || employment?.designation || '';
+  const designation =
+    (designationOverride || '').trim() ||
+    employment?.jobTitle ||
+    employment?.designation ||
+    '';
   const joiningDate = employment?.joiningDate || employment?.startDate || '';
   const annualCTC = Number(employment?.salary || 0);
- const letterDate = new Date().toLocaleDateString('en-IN', {
-  day: '2-digit',
-  month: '2-digit',
-  year: 'numeric'
-});
+  const letterDate = (documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate))
+    ? new Date(documentGenerateDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 
   /* Salary Computation */
@@ -443,14 +550,21 @@ const toTitleCaseDocx = (str) => {
   return str?.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || '';
 };
 
-async function buildOfferLetterDocx(employee, employment, enablePF) {
+async function buildOfferLetterDocx(employee, employment, enablePF, designationOverride, documentGenerateDate) {
   const name = employee?.name || '';
   const rawAddress = employee?.currentAddress || employee?.permanentAddress || '';
   const fullAddress = rawAddress ? rawAddress.split(/[,;\n]+/).map(v => v.trim()).filter(Boolean) : [];
   const shortAddress = fullAddress.slice(-2).join(', ') || '';
-  const designation = employment?.jobTitle || employment?.designation || '';
+  const designation =
+    (designationOverride || '').trim() ||
+    employment?.jobTitle ||
+    employment?.designation ||
+    '';
   const joiningDate = employment?.joiningDate || employment?.startDate || '';
-  const letterDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const letterDate =
+    documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate)
+      ? new Date(documentGenerateDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+      : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const annualCTC = Number(employment?.salary || 0);
 
   const basic = Math.round(annualCTC * 0.5);
@@ -545,6 +659,8 @@ function OfferLetterV2() {
   const [showPDF, setShowPDF] = useState(false);
   const [enablePF, setEnablePF] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [designationOverride, setDesignationOverride] = useState("");
+  const [documentGenerateDate, setDocumentGenerateDate] = useState(() => new Date().toISOString().slice(0, 10));
   
 
 
@@ -572,7 +688,9 @@ function OfferLetterV2() {
   const handleSelect = e => {
     const id = e.target.value;
     setEmployee(candidates.find(x => x.id === id) || null);
-    setEmployment(employments[id] || null);
+    const nextEmployment = employments[id] || null;
+    setEmployment(nextEmployment);
+    setDesignationOverride(nextEmployment?.jobTitle || nextEmployment?.designation || "");
     setPdfKey(k => k + 1);
   };
 
@@ -664,6 +782,26 @@ function OfferLetterV2() {
 </Combobox>
 </div>
 
+              <div>
+                <label className="block text-sm font-medium text-slate-800 mb-1">
+                  Designation
+                </label>
+                <input
+                  type="text"
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  value={designationOverride}
+                  onChange={(e) => setDesignationOverride(e.target.value)}
+                  placeholder="Enter designation"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-800 mb-1">
+                  Document Generate Date
+                </label>
+                <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
+              </div>
+
               <div className="flex items-center mt-8 gap-2 mb-4">
                 <input
                   type="checkbox"
@@ -722,6 +860,8 @@ function OfferLetterV2() {
                     employee={employee}
                     employment={employment}
                     enablePF={enablePF}
+                    designationOverride={designationOverride}
+                    documentGenerateDate={documentGenerateDate}
                   />
                 }
                 fileName={`OfferLetter_${employee.name}.pdf`}
@@ -733,7 +873,7 @@ function OfferLetterV2() {
                 type="button"
                 onClick={async () => {
                   try {
-                    const doc = await buildOfferLetterDocx(employee, employment, enablePF);
+                    const doc = await buildOfferLetterDocx(employee, employment, enablePF, designationOverride, documentGenerateDate);
                     const blob = await Packer.toBlob(doc);
                     saveAs(blob, `OfferLetter_${employee.name?.replace(/\s+/g, '_') || 'OfferLetter'}.docx`);
                     toast.success('DOCX downloaded');
@@ -759,6 +899,8 @@ function OfferLetterV2() {
                 employee={employee}
                 employment={employment}
                 enablePF={enablePF}
+                designationOverride={designationOverride}
+                documentGenerateDate={documentGenerateDate}
               />
             </PDFViewer>
             <div className="-mx-4 sm:-mx-6 md:-mx-8 border-t border-gray-200 my-4"></div>

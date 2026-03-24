@@ -145,7 +145,8 @@ export interface EmploymentIncrement {
   newSalary?: number;
   incrementedCtc?: number;
   incrementedInHandCtc?: number;
-  notes?: string;
+  previousDesignation?: string;
+  newDesignation?: string;
 }
 
 export interface Employment {

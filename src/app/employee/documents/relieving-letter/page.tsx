@@ -55,6 +55,116 @@ const formatDate = (d?: string): string => {
   return formatted === "-" ? "" : formatted;
 };
 
+const MONTH_OPTIONS = [
+  { value: "01", label: "Jan" },
+  { value: "02", label: "Feb" },
+  { value: "03", label: "Mar" },
+  { value: "04", label: "Apr" },
+  { value: "05", label: "May" },
+  { value: "06", label: "Jun" },
+  { value: "07", label: "Jul" },
+  { value: "08", label: "Aug" },
+  { value: "09", label: "Sep" },
+  { value: "10", label: "Oct" },
+  { value: "11", label: "Nov" },
+  { value: "12", label: "Dec" },
+];
+
+const DateDropdown: React.FC<{ value: string; onChange: (v: string) => void }> = ({
+  value,
+  onChange,
+}) => {
+  const [initialYear = "", initialMonth = "", initialDay = ""] =
+    value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.split("-") : ["", "", ""];
+  const [year, setYear] = useState(initialYear);
+  const [month, setMonth] = useState(initialMonth);
+  const [day, setDay] = useState(initialDay);
+
+  const nowYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 21 }, (_, i) => String(nowYear - 10 + i));
+  const getDaysInMonth = (y: string, m: string) => {
+    if (!y || !m) return 31;
+    return new Date(Number(y), Number(m), 0).getDate();
+  };
+  const maxDays = getDaysInMonth(year, month);
+  const dayOptions = Array.from({ length: maxDays }, (_, i) => String(i + 1).padStart(2, "0"));
+
+  useEffect(() => {
+    if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [y, m, d] = value.split("-");
+      setYear(y);
+      setMonth(m);
+      setDay(d);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (day && Number(day) > maxDays) setDay("");
+  }, [day, maxDays, month, year]);
+
+  const emitIfComplete = (nextYear: string, nextMonth: string, nextDay: string) => {
+    if (nextYear && nextMonth && nextDay) onChange(`${nextYear}-${nextMonth}-${nextDay}`);
+  };
+
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      <select
+        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        value={day}
+        disabled={!month || !year}
+        onChange={(e) => {
+          const nextDay = e.target.value;
+          setDay(nextDay);
+          emitIfComplete(year, month, nextDay);
+        }}
+      >
+        <option value="">{!month || !year ? "Select Mon/Year" : "DD"}</option>
+        {dayOptions.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        value={month}
+        onChange={(e) => {
+          const nextMonth = e.target.value;
+          setMonth(nextMonth);
+          setDay("");
+          emitIfComplete(year, nextMonth, day);
+        }}
+      >
+        <option value="">Mon</option>
+        {MONTH_OPTIONS.map((m) => (
+          <option key={m.value} value={m.value}>
+            {m.label}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        value={year}
+        onChange={(e) => {
+          const nextYear = e.target.value;
+          setYear(nextYear);
+          setDay("");
+          emitIfComplete(nextYear, month, day);
+        }}
+      >
+        <option value="">YYYY</option>
+        {yearOptions.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
     const Watermark = ({ logoSrc }: { logoSrc?: string }) => {
       if (!logoSrc) return null;
       return (
@@ -289,12 +399,7 @@ const EmployeeRelievingLetter: React.FC = () => {
                   <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Sign Date
                   </label>
-                  <input
-                    type="date"
-                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    value={employeeSignDate}
-                    onChange={(e) => setEmployeeSignDate(e.target.value)}
-                  />
+                  <DateDropdown value={employeeSignDate} onChange={setEmployeeSignDate} />
                 </div>
 
                 {/* Relieving Date */}
@@ -302,12 +407,7 @@ const EmployeeRelievingLetter: React.FC = () => {
                   <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Relieving Date
                   </label>
-                  <input
-                    type="date"
-                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    value={employeeRelievingDate}
-                    onChange={(e) => setEmployeeRelievingDate(e.target.value)}
-                  />
+                  <DateDropdown value={employeeRelievingDate} onChange={setEmployeeRelievingDate} />
                 </div>
 
                 {/* Resignation Date */}
@@ -315,12 +415,7 @@ const EmployeeRelievingLetter: React.FC = () => {
                   <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Resignation Date
                   </label>
-                  <input
-                    type="date"
-                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                    value={employeeResignDate}
-                    onChange={(e) => setEmployeeResignDate(e.target.value)}
-                  />
+                  <DateDropdown value={employeeResignDate} onChange={setEmployeeResignDate} />
                 </div>
 
                 {/* Place */}

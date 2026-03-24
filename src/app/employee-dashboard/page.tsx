@@ -354,7 +354,7 @@ export default function EmployeeDashboardPage() {
               {(currentEmployment.jobTitle || currentEmployment.designation) && (
                 <div>
                   <p className="font-medium text-gray-900">{toTitleCase(currentEmployment.jobTitle || currentEmployment.designation)}</p>
-                  <p className="text-sm text-gray-600">Job Title</p>
+                  <p className="text-sm text-gray-600">Designation</p>
                 </div>
               )}
 

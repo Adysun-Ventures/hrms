@@ -248,8 +248,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         medicalAllowance: Number(data.medicalAllowance),
         transport: Number(data.transport),
         gratuity: Number(data.gratuity),
-        totalLeaves: Number(data.totalLeaves),
-        payableDays: Number(data.payableDays),
+        totalLeaves: data.totalLeaves !== undefined && data.totalLeaves !== null && data.totalLeaves !== ('' as any)
+          ? Number(data.totalLeaves)
+          : undefined,
+        payableDays: data.payableDays !== undefined && data.payableDays !== null && data.payableDays !== ('' as any)
+          ? Number(data.payableDays)
+          : undefined,
         additionalAllowance: Number(data.additionalAllowance),
         specialAllowance: Number(data.specialAllowance),
         benefits: benefitsArray,
@@ -451,23 +455,22 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span>Employee
                   </label>
-                  <select
+                  <input
+                    type="text"
+                    value={
+                      employees.find((employee) => employee.id === (watch('employeeId') || originalEmployment?.employeeId))?.name ||
+                      'Selected Employee'
+                    }
+                    readOnly
+                    disabled
+                    className="w-full p-2 border rounded-md bg-gray-100 text-gray-700 cursor-not-allowed"
+                  />
+                  <input
+                    type="hidden"
                     {...register('employeeId', { required: 'Employee is required' })}
-                    disabled={isEmployeeUser}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    {!isEmployeeUser && <option value="">Select Employee</option>}
-                    {isEmployeeUser ? (
-                      <option value={originalEmployment?.employeeId || ''}>My Employment</option>
-                    ) : (
-                      employees.map((employee) => (
-                        <option key={employee.id} value={employee.id}>
-                          {employee.name} - {employee.position}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                  {!isEmployeeUser && errors.employeeId && (
+                    value={watch('employeeId') || originalEmployment?.employeeId || ''}
+                  />
+                  {errors.employeeId && (
                     <p className="mt-1 text-sm text-red-600">{errors.employeeId.message}</p>
                   )}
                 </div>
@@ -548,7 +551,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Job Title
+                    Designation
                   </label>
                   <input
                     type="text"
@@ -611,7 +614,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <label className="block text-sm font-medium text-gray-700 mb-1" >
                     Work Mode
                   </label>
-                  <select value="workSchedule"
+                  <select
                     {...register('workSchedule')}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
@@ -785,7 +788,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       newSalary: undefined,
                       incrementedCtc: undefined,
                       incrementedInHandCtc: undefined,
-                      notes: '',
+                      previousDesignation: '',
+                      newDesignation: '',
                     })
                   }
                   className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
@@ -878,14 +882,26 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         />
                       </div>
 
-                      <div className="md:col-span-4">
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Notes (optional)
+                          Previous Designation
                         </label>
                         <input
                           type="text"
-                          {...register(`increments.${index}.notes` as const)}
-                          placeholder="E.g., Promotion to Senior Developer"
+                          {...register(`increments.${index}.previousDesignation` as const)}
+                          placeholder="E.g., Software Developer"
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          New Designation
+                        </label>
+                        <input
+                          type="text"
+                          {...register(`increments.${index}.newDesignation` as const)}
+                          placeholder="E.g., Senior Software Developer"
                           className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                       </div>
@@ -930,7 +946,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Salary per annum (₹)
+                    <span className="text-red-500 mr-1">*</span> Current Salary per annum (₹)
                   </label>
                   <input
                     type="number"
@@ -949,7 +965,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Salary per month (₹)
+                    <span className="text-red-500 mr-1">*</span> Current Salary per month (₹)
                   </label>
                   <input
                     type="number"
@@ -968,7 +984,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Basic (₹)
+                    <span className="text-red-500 mr-1">*</span> Current Basic (₹)
                   </label>
                   <input
                     type="number"
@@ -987,7 +1003,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    DA (₹)
+                    Current DA (₹)
                   </label>
                   <input
                     type="number"
@@ -1005,7 +1021,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    HRA (₹)
+                    Current HRA (₹)
                   </label>
                   <input
                     type="number"
@@ -1024,7 +1040,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 {includePF && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      PF (₹)
+                      Current PF (₹)
                     </label>
                     <input
                       type="number"
@@ -1047,26 +1063,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Total Leaves
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Days per year"
-                    {...register('totalLeaves', {
-                      min: { value: 0, message: 'Value must be positive' }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                  {errors.totalLeaves && (
-                    <p className="mt-1 text-sm text-red-600">{errors.totalLeaves.message}</p>
-                  )}
-                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Salary Credit Date
+                    Current Salary Credit Date
                   </label>
                   <input
                     type="text"
@@ -1076,21 +1076,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Payable Days
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Days"
-                    {...register('payableDays')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Payment Mode
+                    Current Payment Mode
                   </label>
                   <select
                     {...register('paymentMode')}
@@ -1104,7 +1093,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Additional Allowance (₹)
+                    Current Additional Allowance (₹)
                   </label>
                   <input
                     type="number"
@@ -1118,7 +1107,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Special Allowance (₹)
+                    Current Special Allowance (₹)
                   </label>
                   <input
                     type="number"

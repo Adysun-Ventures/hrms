@@ -241,8 +241,12 @@ export default function AddEmploymentPage() {
         gratuity: Number(data.gratuity) || 0,
         additionalAllowance: Number(data.additionalAllowance) || 0,
         specialAllowance: Number(data.specialAllowance) || 0,
-        totalLeaves: Number(data.totalLeaves),
-        payableDays: Number(data.payableDays),
+        totalLeaves: data.totalLeaves !== undefined && data.totalLeaves !== null && data.totalLeaves !== ('' as any)
+          ? Number(data.totalLeaves)
+          : undefined,
+        payableDays: data.payableDays !== undefined && data.payableDays !== null && data.payableDays !== ('' as any)
+          ? Number(data.payableDays)
+          : undefined,
         // Add audit fields
         createdAt: currentTimestamp,
         createdBy: auditId,
@@ -357,12 +361,41 @@ export default function AddEmploymentPage() {
         ) : (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <form onSubmit={handleSubmit(onSubmit)}>
-              {/* Hidden employee field - always required */}
-              <input
-                type="hidden"
-                {...register('employeeId', { required: 'Employee is required' })}
-                value={preSelectedEmployee?.id || ''}
-              />
+              {isEmployeeUser ? (
+                // Employee self-service: keep employee fixed to logged-in employee.
+                <input
+                  type="hidden"
+                  {...register('employeeId', { required: 'Employee is required' })}
+                  value={preSelectedEmployee?.id || currentUserData?.id || ''}
+                />
+              ) : (
+                <div className="bg-white p-4 rounded-lg mb-6">
+                  <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Basic Information</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <span className="text-red-500 mr-1">*</span>Employee
+                      </label>
+                      <input
+                        type="text"
+                        value={preSelectedEmployee?.name || ''}
+                        readOnly
+                        disabled
+                        placeholder="Employee is pre-selected"
+                        className="w-full p-2 border rounded-md bg-gray-100 text-gray-700 cursor-not-allowed"
+                      />
+                      <input
+                        type="hidden"
+                        {...register('employeeId', { required: 'Employee is required' })}
+                        value={preSelectedEmployee?.id || ''}
+                      />
+                      {errors.employeeId && (
+                        <p className="mt-1 text-sm text-red-600">{errors.employeeId.message}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Job Details Section - MOVED TO TOP */}
               <div className="bg-white p-4 rounded-lg mb-6">
@@ -371,13 +404,13 @@ export default function AddEmploymentPage() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Job Title
+                      <span className="text-red-500 mr-1">*</span> Designation
                     </label>
                     <input
                       type="text"
                       placeholder="e.g. Software Engineer"
                       {...register('jobTitle', {
-                        required: 'Job title is required'
+                        required: 'Designation is required'
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
@@ -662,7 +695,7 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Salary per annum (₹)
+                      <span className="text-red-500 mr-1">*</span> Current Salary per annum (₹)
                     </label>
                     <input
                       type="number"
@@ -681,7 +714,7 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Salary per month (₹)
+                      <span className="text-red-500 mr-1">*</span> Current Salary per month (₹)
                     </label>
                     <input
                       type="number"
@@ -700,7 +733,7 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Basic (₹)
+                      <span className="text-red-500 mr-1">*</span> Current Basic (₹)
                     </label>
                     <input
                       type="number"
@@ -719,7 +752,7 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      DA (₹)
+                      Current DA (₹)
                     </label>
                     <input
                       type="number"
@@ -737,7 +770,7 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      HRA (₹)
+                      Current HRA (₹)
                     </label>
                     <input
                       type="number"
@@ -756,7 +789,7 @@ export default function AddEmploymentPage() {
                   {includePF && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        PF (₹)
+                        Current PF (₹)
                       </label>
                       <input
                         type="number"
@@ -778,26 +811,10 @@ export default function AddEmploymentPage() {
                   
 
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Total Leaves
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Days per year"
-                      {...register('totalLeaves', {
-                        min: { value: 0, message: 'Value must be positive' }
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
-                    {errors.totalLeaves && (
-                      <p className="mt-1 text-sm text-red-600">{errors.totalLeaves.message}</p>
-                    )}
-                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Salary Credit Date
+                      Current Salary Credit Date
                     </label>
                     <input
                       type="text"
@@ -807,21 +824,10 @@ export default function AddEmploymentPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Payable Days
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Days"
-                      {...register('payableDays')}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
-                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Payment Mode
+                      Current Payment Mode
                     </label>
                     <select
                       {...register('paymentMode')}
@@ -835,7 +841,7 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Additional Allowance (₹)
+                      Current Additional Allowance (₹)
                     </label>
                     <input
                       type="number"
@@ -849,7 +855,7 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Special Allowance (₹)
+                      Current Special Allowance (₹)
                     </label>
                     <input
                       type="number"

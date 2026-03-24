@@ -120,6 +120,116 @@ const formatDate = (date?: string | number | Date): string => {
   return formatted === "-" ? "" : formatted;
 };
 
+const MONTH_OPTIONS = [
+  { value: "01", label: "Jan" },
+  { value: "02", label: "Feb" },
+  { value: "03", label: "Mar" },
+  { value: "04", label: "Apr" },
+  { value: "05", label: "May" },
+  { value: "06", label: "Jun" },
+  { value: "07", label: "Jul" },
+  { value: "08", label: "Aug" },
+  { value: "09", label: "Sep" },
+  { value: "10", label: "Oct" },
+  { value: "11", label: "Nov" },
+  { value: "12", label: "Dec" },
+];
+
+const DateDropdown: React.FC<{ value: string; onChange: (v: string) => void }> = ({
+  value,
+  onChange,
+}) => {
+  const [initialYear = "", initialMonth = "", initialDay = ""] =
+    value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.split("-") : ["", "", ""];
+  const [year, setYear] = useState(initialYear);
+  const [month, setMonth] = useState(initialMonth);
+  const [day, setDay] = useState(initialDay);
+
+  const nowYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 21 }, (_, i) => String(nowYear - 10 + i));
+  const getDaysInMonth = (y: string, m: string) => {
+    if (!y || !m) return 31;
+    return new Date(Number(y), Number(m), 0).getDate();
+  };
+  const maxDays = getDaysInMonth(year, month);
+  const dayOptions = Array.from({ length: maxDays }, (_, i) => String(i + 1).padStart(2, "0"));
+
+  useEffect(() => {
+    if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [y, m, d] = value.split("-");
+      setYear(y);
+      setMonth(m);
+      setDay(d);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (day && Number(day) > maxDays) setDay("");
+  }, [day, maxDays, month, year]);
+
+  const emitIfComplete = (nextYear: string, nextMonth: string, nextDay: string) => {
+    if (nextYear && nextMonth && nextDay) onChange(`${nextYear}-${nextMonth}-${nextDay}`);
+  };
+
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      <select
+        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+        value={day}
+        disabled={!month || !year}
+        onChange={(e) => {
+          const nextDay = e.target.value;
+          setDay(nextDay);
+          emitIfComplete(year, month, nextDay);
+        }}
+      >
+        <option value="">{!month || !year ? "Select Mon/Year" : "DD"}</option>
+        {dayOptions.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+        value={month}
+        onChange={(e) => {
+          const nextMonth = e.target.value;
+          setMonth(nextMonth);
+          setDay("");
+          emitIfComplete(year, nextMonth, day);
+        }}
+      >
+        <option value="">Mon</option>
+        {MONTH_OPTIONS.map((m) => (
+          <option key={m.value} value={m.value}>
+            {m.label}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+        value={year}
+        onChange={(e) => {
+          const nextYear = e.target.value;
+          setYear(nextYear);
+          setDay("");
+          emitIfComplete(nextYear, month, day);
+        }}
+      >
+        <option value="">YYYY</option>
+        {yearOptions.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
+
 const monthly = (n: number): number => Math.round(n / 12);
 
 const toTitleCase = (str?: string): string => {
@@ -160,11 +270,15 @@ const RowBoldGray = ({ label, m, a }: { label: string; m: number; a: number }) =
 const OfferLetterPDF = ({
   employee,
   employment,
-  enablePF
+  enablePF,
+  designationOverride,
+  documentGenerateDate,
 }: {
   employee: Employee;
   employment: Employment;
   enablePF: boolean;
+  designationOverride?: string;
+  documentGenerateDate?: string;
 }) => {
   if (!employee || !employment) {
     return (
@@ -190,12 +304,17 @@ const OfferLetterPDF = ({
     .slice(-2);
 
   const designation =
-    employment.jobTitle || employment.designation || '';
+    (designationOverride || '').trim() ||
+    employment.jobTitle ||
+    employment.designation ||
+    '';
 
   const joiningDate = employment.joiningDate || '';
   const annualCTC = Number(employment.salary || 0);
 
-  const letterDate = formatDate(new Date());
+  const letterDate = documentGenerateDate
+    ? formatDate(documentGenerateDate)
+    : formatDate(new Date());
 
   /* ===== Salary Computation (UNCHANGED) ===== */
   const basic = Math.round(annualCTC * 0.5);
@@ -433,6 +552,10 @@ export default function EmployeeOfferLetterPage() {
   const [enablePF, setEnablePF] = useState(false);
   const [showPDF, setShowPDF] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [designationOverride, setDesignationOverride] = useState("");
+  const [documentGenerateDate, setDocumentGenerateDate] = useState(() =>
+    new Date().toISOString().slice(0, 10)
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -442,6 +565,8 @@ export default function EmployeeOfferLetterPage() {
         const empm = await getEmployeeSelfEmployment(currentUserData.id);
         setEmployee(emp);
         setEmployment(empm?.[0]);
+        const initialDesig = empm?.[0]?.jobTitle || empm?.[0]?.designation || "";
+        setDesignationOverride(initialDesig);
       } catch {
         toast.error('Failed to load employee data');
       } finally {
@@ -517,6 +642,8 @@ export default function EmployeeOfferLetterPage() {
                 employee={employee!}
                 employment={employment!}
                 enablePF={enablePF}
+                designationOverride={designationOverride}
+                documentGenerateDate={documentGenerateDate}
               />
             }
             fileName="OfferLetter.pdf"
@@ -547,6 +674,26 @@ export default function EmployeeOfferLetterPage() {
               <span className="text-sm font-semibold text-gray-800">Include PF</span>
             </label>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Designation
+            </label>
+            <input
+              type="text"
+              value={designationOverride}
+              onChange={(e) => setDesignationOverride(e.target.value)}
+              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+              placeholder="Enter designation"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Document Generate Date
+            </label>
+            <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
+          </div>
         </div>
       </div>
 
@@ -568,6 +715,8 @@ export default function EmployeeOfferLetterPage() {
               employee={employee!}
               employment={employment!}
               enablePF={enablePF}
+              designationOverride={designationOverride}
+              documentGenerateDate={documentGenerateDate}
             />
           }
           fileName="OfferLetter.pdf"
@@ -592,6 +741,8 @@ export default function EmployeeOfferLetterPage() {
             employee={employee!}
             employment={employment!}
             enablePF={enablePF}
+            designationOverride={designationOverride}
+            documentGenerateDate={documentGenerateDate}
           />
         </PDFViewer>
       </div>

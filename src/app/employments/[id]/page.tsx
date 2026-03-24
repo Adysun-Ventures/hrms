@@ -401,7 +401,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-lg font-medium text-gray-900">{employment.jobTitle || '-'}</p>
-                <p className="text-sm text-gray-500">Job Title</p>
+                <p className="text-sm text-gray-500">Designation</p>
               </div>
 
               <div>

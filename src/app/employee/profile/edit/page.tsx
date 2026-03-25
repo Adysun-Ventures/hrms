@@ -25,7 +25,6 @@ export default function EditEmployeeProfilePage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [employeeData, setEmployeeData] = useState<Employee[]>([]);
     const [employmentData, setEmploymentData] = useState<Employment[]>([]);
 
@@ -344,6 +343,10 @@ export default function EditEmployeeProfilePage() {
         router.push('/employee/profile');
     };
 
+    const handleTopSaveClick = () => {
+        void handleSubmit(onSubmit)();
+    };
+
     // Show loading if no user data
     if (!currentUserData || !currentEmployee) {
         return (
@@ -388,6 +391,15 @@ export default function EditEmployeeProfilePage() {
                         href: '/employee/profile',
                         label: 'Back'
                     }}
+                    actionButtons={[
+                        {
+                            label: isSubmitting ? 'Saving...' : 'Save Changes',
+                            icon: <FiSave />,
+                            variant: 'success',
+                            onClick: handleTopSaveClick,
+                            disabled: isSubmitting,
+                        }
+                    ]}
                 />
 
                 <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
@@ -567,7 +579,8 @@ export default function EditEmployeeProfilePage() {
                                                     message: 'Password must be at least 4 characters'
                                                 }
                                             })}
-                                            className="w-full px-3 py-2 pr-10 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                                            readOnly
+                                            className="w-full px-3 py-2 pr-10 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-100"
                                         />
                                         <button
                                             type="button"
@@ -582,32 +595,18 @@ export default function EditEmployeeProfilePage() {
                                     )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        Confirm Password
-                                    </label>
-                                    <div className="relative">
+                                    {/* keep confirmPassword registered for validation, but hide UI */}
+                                    <div className="hidden">
                                         <input
-                                            type={showConfirmPassword ? 'text' : 'password'}
-                                            placeholder="Confirm password"
+                                            type="hidden"
                                             {...register('confirmPassword', {
                                                 validate: (value) => {
                                                     const password = watch('password');
                                                     return value === password || 'Passwords do not match';
                                                 }
                                             })}
-                                            className="w-full px-3 py-2 pr-10 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                                        >
-                                            {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-                                        </button>
                                     </div>
-                                    {errors.confirmPassword && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1215,7 +1214,7 @@ export default function EditEmployeeProfilePage() {
             </div> */}
 
                     {/* Action Buttons */}
-                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                    <div className="flex justify-between gap-3 pt-4 border-t border-gray-200">
                         <button
                             type="button"
                             onClick={handleCancel}
@@ -1227,7 +1226,7 @@ export default function EditEmployeeProfilePage() {
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isSubmitting}
                         >
                             <FiSave className="w-4 h-4" />

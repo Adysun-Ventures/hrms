@@ -8,6 +8,122 @@ import html2canvas from "html2canvas";
 
 import { db } from "@/firebase/config";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { Combobox } from "@headlessui/react";
+
+const MONTH_OPTIONS = [
+  { value: "01", label: "Jan" },
+  { value: "02", label: "Feb" },
+  { value: "03", label: "Mar" },
+  { value: "04", label: "Apr" },
+  { value: "05", label: "May" },
+  { value: "06", label: "Jun" },
+  { value: "07", label: "Jul" },
+  { value: "08", label: "Aug" },
+  { value: "09", label: "Sep" },
+  { value: "10", label: "Oct" },
+  { value: "11", label: "Nov" },
+  { value: "12", label: "Dec" }
+];
+
+const DateDropdown = ({ value, onChange }) => {
+  const [initialYear = "", initialMonth = "", initialDay = ""] =
+    value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value.split("-") : ["", "", ""];
+
+  const [year, setYear] = useState(initialYear);
+  const [month, setMonth] = useState(initialMonth);
+  const [day, setDay] = useState(initialDay);
+
+  const nowYear = new Date().getFullYear();
+  const yearOptions = Array.from({ length: 21 }, (_, i) => String(nowYear - 10 + i));
+
+  const getDaysInMonth = (y, m) => {
+    if (!y || !m) return 31;
+    return new Date(Number(y), Number(m), 0).getDate();
+  };
+
+  const maxDays = getDaysInMonth(year, month);
+  const dayOptions = Array.from({ length: maxDays }, (_, i) =>
+    String(i + 1).padStart(2, "0")
+  );
+
+  useEffect(() => {
+    if (value && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      const [y, m, d] = value.split("-");
+      setYear(y);
+      setMonth(m);
+      setDay(d);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (day && Number(day) > maxDays) setDay("");
+  }, [day, maxDays, month, year]);
+
+  const emitIfComplete = (nextYear, nextMonth, nextDay) => {
+    if (nextYear && nextMonth && nextDay) onChange(`${nextYear}-${nextMonth}-${nextDay}`);
+  };
+
+  const selectClass =
+    "w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black";
+
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      <select
+        className={selectClass}
+        value={day}
+        disabled={!month || !year}
+        onChange={(e) => {
+          const nextDay = e.target.value;
+          setDay(nextDay);
+          emitIfComplete(year, month, nextDay);
+        }}
+      >
+        <option value="">{!month || !year ? "Select Mon/Year" : "DD"}</option>
+        {dayOptions.map((d) => (
+          <option key={d} value={d}>
+            {d}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className={selectClass}
+        value={month}
+        onChange={(e) => {
+          const nextMonth = e.target.value;
+          setMonth(nextMonth);
+          setDay("");
+          emitIfComplete(year, nextMonth, day);
+        }}
+      >
+        <option value="">Mon</option>
+        {MONTH_OPTIONS.map((m) => (
+          <option key={m.value} value={m.value}>
+            {m.label}
+          </option>
+        ))}
+      </select>
+
+      <select
+        className={selectClass}
+        value={year}
+        onChange={(e) => {
+          const nextYear = e.target.value;
+          setYear(nextYear);
+          setDay("");
+          emitIfComplete(nextYear, month, day);
+        }}
+      >
+        <option value="">Year</option>
+        {yearOptions.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
 
 function IncrementLetter() {
   const containerRef = React.useRef(null);
@@ -15,7 +131,9 @@ function IncrementLetter() {
   const [formData, setFormData] = useState({
     employeeName: "",
     referenceNumber: "",
+    documentGenerateDate: new Date().toISOString().slice(0, 10),
     effectiveDate: "",
+    employeeSignPlace: "",
     bonusAmount: "",
     basic: "",
     gratuity: "",
@@ -32,7 +150,98 @@ function IncrementLetter() {
     }));
   };
 
+  const [candidates, setCandidates] = useState([]);
+  const [employments, setEmployments] = useState({});
+  const [employee, setEmployee] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [isEmployee, setIsEmployee] = useState(false);
+  useEffect(() => {
+    setIsEmployee(
+      typeof window !== "undefined" &&
+        window.location.pathname.startsWith("/employee/documents/increment-letter")
+    );
+  }, []);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const qs = await getDocs(collection(db, "employees"));
+        const list = qs.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        setCandidates(list);
+
+        const map = {};
+        for (const emp of list) {
+          const qSnap = await getDocs(
+            query(
+              collection(db, "employments"),
+              where("employeeId", "==", emp.id)
+            )
+          );
+          if (!qSnap.empty) {
+            map[emp.id] = qSnap.docs[0].data();
+          }
+        }
+        setEmployments(map);
+      } catch (e) {
+        console.error("Failed to fetch employees for increment letter", e);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
+
+  const handleSelectEmployee = async (emp) => {
+    setEmployee(emp);
+
+    const nextEmployment = emp ? employments[emp.id] : null;
+    const cachedPlace =
+      nextEmployment?.location ||
+      nextEmployment?.workLocation ||
+      nextEmployment?.officeLocation ||
+      nextEmployment?.place ||
+      "";
+
+    setFormData((prevState) => ({
+      ...prevState,
+      employeeName: emp?.name || "",
+      employeeSignPlace: cachedPlace
+    }));
+
+    // If we don't have employment details cached yet, fetch them on-demand.
+    if (emp && !cachedPlace) {
+      try {
+        const qSnap = await getDocs(
+          query(collection(db, "employments"), where("employeeId", "==", emp.id))
+        );
+        if (!qSnap.empty) {
+          const empEmployment = qSnap.docs[0].data();
+          const fetchedPlace =
+            empEmployment?.location ||
+            empEmployment?.workLocation ||
+            empEmployment?.officeLocation ||
+            empEmployment?.place ||
+            "";
+          setFormData((prevState) => ({
+            ...prevState,
+            employeeSignPlace: fetchedPlace
+          }));
+        }
+      } catch (e) {
+        console.error("Failed to fetch employee employment for place", e);
+      }
+    }
+  };
+
+  const canGenerate = Boolean(
+    formData.employeeName &&
+      formData.effectiveDate &&
+      formData.documentGenerateDate &&
+      formData.employeeSignPlace
+  );
+
   const handleDownload = async () => {
+    if (!canGenerate) return;
     if (!containerRef.current) return;
     const pdf = new jsPDF("p", "mm", "a4");
     const elements = containerRef.current.getElementsByClassName("increment-letter-page");
@@ -64,18 +273,80 @@ function IncrementLetter() {
         {/* Form Section - Only Essential Fields */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
           <h2 className="text-xl md:text-2xl font-bold mb-6">Enter Increment Details</h2>
+
+          {/* Place (admin) - keep near top so it is always visible */}
+          <div className="form-group mb-4 md:col-span-2">
+            <label className="block mb-1 text-sm font-medium text-gray-700">
+              Place <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="employeeSignPlace"
+              value={formData.employeeSignPlace}
+              onChange={handleInputChange}
+              aria-label="Place"
+              className="w-full p-2 bg-white border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+            >
+              <option value="">Select Place</option>
+              <option value="Pune">Pune</option>
+              <option value="Mumbai">Mumbai</option>
+              {formData.employeeSignPlace &&
+                formData.employeeSignPlace !== "Pune" &&
+                formData.employeeSignPlace !== "Mumbai" && (
+                  <option value={formData.employeeSignPlace}>
+                    {formData.employeeSignPlace}
+                  </option>
+                )}
+            </select>
+          </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Basic Details */}
             <div className="form-group">
-              <label className="block mb-1 text-sm font-medium text-gray-700">Employee Name</label>
-              <input
-                type="text"
-                name="employeeName"
-                value={formData.employeeName}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+              <label className="block mb-1 text-sm font-medium text-gray-700">
+                Employee Name
+              </label>
+
+              <Combobox
+                value={employee}
+                onChange={(e) => handleSelectEmployee(e)}
+              >
+                <div className="relative">
+                  <Combobox.Input
+                    className="w-full p-2.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Select employee..."
+                    displayValue={(emp) => emp?.name ?? ""}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                  />
+
+                  <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
+                    {candidates
+                      .filter((c) =>
+                        c.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                      )
+                      .map((c) => (
+                        <Combobox.Option
+                          key={c.id}
+                          value={c}
+                          className={({ active }) =>
+                            `cursor-pointer px-3 py-2 ${
+                              active ? "bg-blue-600 text-white" : "bg-white"
+                            }`
+                          }
+                        >
+                          {c.name}
+                        </Combobox.Option>
+                      ))}
+
+                    {candidates.filter((c) =>
+                      c.name?.toLowerCase().includes(searchTerm.toLowerCase())
+                    ).length === 0 && (
+                      <div className="px-3 py-2 text-gray-500 italic">
+                        No results found
+                      </div>
+                    )}
+                  </Combobox.Options>
+                </div>
+              </Combobox>
             </div>
 
             <div className="form-group">
@@ -99,6 +370,23 @@ function IncrementLetter() {
                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
+
+              {isEmployee && (
+                <div className="form-group">
+                  <label className="block mb-1 text-sm font-medium text-gray-700">
+                    Document Generate Date <span className="text-red-500">*</span>
+                  </label>
+                  <DateDropdown
+                    value={formData.documentGenerateDate}
+                    onChange={(v) =>
+                      setFormData((prevState) => ({
+                        ...prevState,
+                        documentGenerateDate: v
+                      }))
+                    }
+                  />
+                </div>
+              )}
 
             <div className="form-group">
               <label className="block mb-1 text-sm font-medium text-gray-700">Bonus Amount</label>
@@ -165,7 +453,13 @@ function IncrementLetter() {
           <div className="mt-6 flex justify-end">
             <button
               onClick={handleDownload}
-              className="download-btn flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:bg-blue-800 shadow-sm hover:shadow transition-all duration-200"
+              disabled={!canGenerate}
+              className={[
+                "download-btn flex items-center px-4 py-2 rounded-md transition-all duration-200 shadow-sm hover:shadow",
+                canGenerate
+                  ? "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed shadow-none"
+              ].join(" ")}
             >
               <Download size={18} className="mr-2" />
               <span>Generate Increment Letter</span>
@@ -219,6 +513,15 @@ function IncrementLetter() {
               <div className="signature-section">
                 <p className="signatory-name">Sukhjit S Pasricha</p>
                 <p className="signatory-designation">President & Group CHRO</p>
+                <p className="signatory-effective">
+                  Effective: {formData.effectiveDate}
+                </p>
+                <p className="signatory-place">
+                  Place: {formData.employeeSignPlace}
+                </p>
+                <p className="signatory-date">
+                  Date: {formData.documentGenerateDate}
+                </p>
               </div>
             </div>
           </div>

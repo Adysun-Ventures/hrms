@@ -27,14 +27,41 @@ const EmployeeSidebar = () => {
   // Function to determine if a menu item is active
   const isActive = (path: string) => {
     if (!pathname) return false;
+
+    // Normalize to avoid trailing-slash mismatches like `/employee/company-information/`
+    const normalize = (p: string) => p.replace(/\/+$/, '');
+    const normalizedPathname = normalize(pathname);
+    const normalizedItemPath = normalize(path);
+
+    const getLastSegment = (p: string) => {
+      const segs = p.split('/').filter(Boolean);
+      return segs.length ? segs[segs.length - 1] : '';
+    };
+    const pathnameLast = getLastSegment(normalizedPathname);
+    const itemLast = getLastSegment(normalizedItemPath);
     
     if (path === '/employee-dashboard') {
       // Only consider dashboard active if we're exactly on the dashboard path
-      return pathname === '/employee-dashboard';
+      return normalizedPathname === '/employee-dashboard';
+    }
+
+    // "My Employment" lives under `/employments/:id` and `/employments/:id/edit`
+    // but the sidebar route is `/employee/employment`. Match both.
+    if (normalizedItemPath === '/employee/employment' || itemLast === 'employment') {
+      return (
+        normalizedPathname === '/employee/employment' ||
+        normalizedPathname.startsWith('/employee/employment') ||
+        normalizedPathname.startsWith('/employments/')
+      );
     }
     
     // For other paths, use the original logic
-    return pathname === path || pathname.startsWith(path + '/');
+    return (
+      normalizedPathname === normalizedItemPath ||
+      normalizedPathname.startsWith(normalizedItemPath + '/') ||
+      // Fallback: match by last segment (more resilient to unexpected prefixes)
+      (itemLast && pathnameLast === itemLast)
+    );
   };
 
   const menuItems = [

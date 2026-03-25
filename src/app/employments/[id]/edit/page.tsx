@@ -18,6 +18,30 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relie
   benefits: string | string[];
   relievingCtc?: string; // Form input is string, will be converted to number|null
   whereWereYouEmploid?: string;
+  teamLead?: {
+    name?: string;
+    employeeId?: string;
+    mobileNo?: string;
+    email?: string;
+    designation?: string;
+    location?: string;
+  };
+  colleague1?: {
+    name?: string;
+    employeeId?: string;
+    mobileNo?: string;
+    email?: string;
+    designation?: string;
+    location?: string;
+  };
+  colleague3?: {
+    name?: string;
+    employeeId?: string;
+    mobileNo?: string;
+    email?: string;
+    designation?: string;
+    location?: string;
+  };
 }
 
 export default function EditEmploymentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -52,8 +76,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const generateRandomEmploymentId = async () => {
     const maxAttempts = 30;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const randomSuffix = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
-      const candidate = `ADV${randomSuffix}`;
+      // Generate: ADV + (1..100)
+      const randomNumber = Math.floor(Math.random() * 100) + 1; // inclusive 1..100
+      const candidate = `ADV${randomNumber}`;
 
       if (generatedEmploymentIdsRef.current.has(candidate)) continue;
 
@@ -85,6 +110,20 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const salary = watch('salary');
   const joiningCtcValue = watch('joiningCtc');
   const isResignation = watch('isResignation');
+  const whereWereYouEmploidValue = watch('whereWereYouEmploid');
+  const derivedLocation =
+    whereWereYouEmploidValue === 'Registred Corporate Office'
+      ? 'Pune'
+      : whereWereYouEmploidValue === 'Branch Office'
+        ? 'Mumbai'
+        : '';
+  const locationValue = watch('location');
+
+  useEffect(() => {
+    // Make `location` dependent on the selected employment office.
+    if (!derivedLocation) return;
+    setValue('location', derivedLocation, { shouldValidate: true, shouldDirty: true });
+  }, [derivedLocation, setValue]);
 
   const joiningAnnualSalary = Number(joiningCtcValue || 0);
   const joiningMonthlySalary = joiningAnnualSalary > 0 ? Math.round(joiningAnnualSalary / 12) : 0;
@@ -344,6 +383,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         formattedData.whereWereYouEmploid = data.whereWereYouEmploid;
       }
 
+      if (data.reasonForLeaving && data.reasonForLeaving.trim()) {
+        formattedData.reasonForLeaving = data.reasonForLeaving.trim();
+      }
+
       // Handle increments array and keep latest values in scalar fields for backward compatibility
       if (data.increments && data.increments.length > 0) {
         formattedData.increments = data.increments.map((inc) => ({
@@ -514,9 +557,21 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      {...register('employmentId')}
+                      {...register('employmentId', {
+                        required: 'Employment ID is required',
+                        pattern: {
+                          value: /^ADV\d+$/i,
+                          message: 'Employment ID must be in the format ADV<number>',
+                        },
+                        validate: (value) => {
+                          const num = Number(String(value).replace(/^ADV/i, ''));
+                          if (!Number.isFinite(num)) return 'Employment ID number is invalid';
+                          if (num < 1 || num > 100) return 'Employment ID number must be between 1 and 100';
+                          return true;
+                        },
+                      })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="E.g., ADV001"
+                      placeholder="E.g., ADV10"
                     />
                     <button
                       type="button"
@@ -622,8 +677,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
                     <option value="">Select location</option>
-                    <option value="Pune">Pune</option>
-                    <option value="Mumbai">Mumbai</option>
+                    {derivedLocation ? <option value={derivedLocation}>{derivedLocation}</option> : null}
+                    {locationValue && locationValue !== derivedLocation ? (
+                      <option value={locationValue}>{locationValue}</option>
+                    ) : null}
                   </select>
                 </div>
 
@@ -745,6 +802,18 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         type="date"
                         {...register('lastSalaryDate')}
                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Reason for Exit
+                      </label>
+                      <input
+                        type="text"
+                        {...register('reasonForLeaving')}
+                        placeholder="Enter reason for exit"
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                       />
                     </div>
                   </>
@@ -892,9 +961,30 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
             {/* Joining Salary Information */}
             <div className="bg-white p-4 rounded-lg mb-6">
-              <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-cyan-500 pl-2">
-                Joining Salary Information
-              </h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-800 border-l-4 border-cyan-500 pl-2">
+                  Joining Salary Information
+                </h2>
+
+                {/* Sliding Toggle Switch - With/Without PF */}
+                <div className="flex items-center space-x-2">
+                  <span className={`text-sm font-medium ${!includePF ? 'text-orange-600' : 'text-gray-500'}`}>
+                    Without PF
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIncludePF(!includePF)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${includePF ? 'bg-green-600' : 'bg-orange-500'
+                      }`}
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${includePF ? 'translate-x-6' : 'translate-x-1'
+                      }`} />
+                  </button>
+                  <span className={`text-sm font-medium ${includePF ? 'text-green-600' : 'text-gray-500'}`}>
+                    With PF
+                  </span>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -902,7 +992,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
-                    defaultValue={joiningAnnualSalary || ''}
+                    value={joiningAnnualSalary || ''}
+                    readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -913,7 +1004,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
-                    defaultValue={joiningMonthlySalary || ''}
+                    value={joiningMonthlySalary || ''}
+                    readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -924,7 +1016,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
-                    defaultValue={joiningBasic || ''}
+                    value={joiningBasic || ''}
+                    readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -935,7 +1028,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
-                    defaultValue={joiningDA || ''}
+                    value={joiningDA || ''}
+                    readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -946,21 +1040,25 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
-                    defaultValue={joiningHRA || ''}
+                    value={joiningHRA || ''}
+                    readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining PF (₹)
-                  </label>
-                  <input
-                    type="number"
-                    defaultValue={joiningPF || ''}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
+                {includePF && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Joining PF (₹)
+                    </label>
+                    <input
+                      type="number"
+                      value={joiningPF || ''}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -968,7 +1066,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
-                    defaultValue={0}
+                    value={0}
+                    readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -979,7 +1078,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
-                    defaultValue={joiningSpecialAllowance || ''}
+                    value={joiningSpecialAllowance || ''}
+                    readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>

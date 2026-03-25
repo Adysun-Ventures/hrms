@@ -24,8 +24,11 @@ interface Employee {
 
 interface Employment {
   jobTitle?: string;
+  designation?: string;
+  location?: string;
   joiningDate?: string;
   lastWorkingDate?: string;
+  resignationDate?: string;
 }
 
 interface PDFProps {
@@ -54,6 +57,14 @@ const toTitleCase = (s?: string) => s?.toLowerCase().split(" ").map(w => w.charA
 const formatDate = (d?: string): string => {
   const formatted = formatDateToDayMonYear(d ?? null);
   return formatted === "-" ? "" : formatted;
+};
+
+const normalizeToISODate = (d?: string): string => {
+  if (!d) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  const parsed = new Date(d);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
 };
 
 const MONTH_OPTIONS = [
@@ -186,7 +197,8 @@ const RelievingLetterPDF: React.FC<PDFProps> = ({
 }) => {
   const employeeName = employee?.name || "";
   const shortName = employeeName.split(" ")[0];
-  const designation = designationOverride || employment?.jobTitle || "";
+  const designation =
+    designationOverride || employment?.designation || employment?.jobTitle || "";
   const resignDate = formatDate(employeeResignDate);
   const relievingDate = formatDate(employeeRelievingDate);
   const signDate = formatDate(employeeSignDate);
@@ -295,6 +307,10 @@ const EmployeeRelievingLetter: React.FC = () => {
   const [designationOverride, setDesignationOverride] = useState<string>("");
   const [showPDF, setShowPDF] = useState(false);
 
+  const joiningDate = normalizeToISODate(employment?.joiningDate);
+  const lastWorkingDate = normalizeToISODate(employment?.lastWorkingDate);
+  const resignationDate = normalizeToISODate(employment?.resignationDate);
+
   const canGenerate = Boolean(
     employee &&
       employment &&
@@ -330,7 +346,13 @@ const EmployeeRelievingLetter: React.FC = () => {
         setEmployee(emp);
 
         const empm = await getEmployeeSelfEmployment(currentUserData.id);
-        if (empm?.[0]) setEmployment(empm[0]);
+        if (empm?.[0]) {
+          setEmployment(empm[0]);
+          setEmployeeSignPlace(empm[0]?.location || "");
+          setDesignationOverride(
+            empm[0]?.designation || empm[0]?.jobTitle || ""
+          );
+        }
       } catch (error) {
         console.error(error);
         toast.error("Failed to load employee data");
@@ -396,10 +418,6 @@ const EmployeeRelievingLetter: React.FC = () => {
 
           {/* Section Card */}
           <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3 border-l-4 border-blue-500 pl-2">
-              Relieving Information
-            </h2>
-
             <div className="bg-white p-4 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
@@ -409,6 +427,21 @@ const EmployeeRelievingLetter: React.FC = () => {
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown value={employeeSignDate} onChange={setEmployeeSignDate} />
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!joiningDate) return toast.error("Joining Date not available");
+                      setEmployeeSignDate(joiningDate);
+                    }}
+                    className={[
+                      "mt-2 block text-sm hover:underline",
+                      joiningDate ? "text-blue-600" : "text-gray-400"
+                    ].join(" ")}
+                  >
+                    Joining Date{" "}
+                    {joiningDate ? `(${formatDate(joiningDate)})` : "(not available)"}
+                  </a>
                 </div>
 
                 {/* Relieving Date */}
@@ -417,6 +450,21 @@ const EmployeeRelievingLetter: React.FC = () => {
                     <span className="text-red-500">*</span> Relieving Date
                   </label>
                   <DateDropdown value={employeeRelievingDate} onChange={setEmployeeRelievingDate} />
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!lastWorkingDate) return toast.error("Last Working Date not available");
+                      setEmployeeRelievingDate(lastWorkingDate);
+                    }}
+                    className={[
+                      "mt-2 block text-sm hover:underline",
+                      lastWorkingDate ? "text-blue-600" : "text-gray-400"
+                    ].join(" ")}
+                  >
+                    Last Working Date{" "}
+                    {lastWorkingDate ? `(${formatDate(lastWorkingDate)})` : "(not available)"}
+                  </a>
                 </div>
 
                 {/* Resignation Date */}
@@ -425,6 +473,21 @@ const EmployeeRelievingLetter: React.FC = () => {
                     <span className="text-red-500">*</span> Resignation Date
                   </label>
                   <DateDropdown value={employeeResignDate} onChange={setEmployeeResignDate} />
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!resignationDate) return toast.error("Resignation Date not available");
+                      setEmployeeResignDate(resignationDate);
+                    }}
+                    className={[
+                      "mt-2 block text-sm hover:underline",
+                      resignationDate ? "text-blue-600" : "text-gray-400"
+                    ].join(" ")}
+                  >
+                    Resign Date{" "}
+                    {resignationDate ? `(${formatDate(resignationDate)})` : "(not available)"}
+                  </a>
                 </div>
 
                 <div>
@@ -453,6 +516,11 @@ const EmployeeRelievingLetter: React.FC = () => {
                     <option value="">Select Place</option>
                     <option value="Pune">Pune</option>
                     <option value="Mumbai">Mumbai</option>
+                    {employeeSignPlace &&
+                      employeeSignPlace !== "Pune" &&
+                      employeeSignPlace !== "Mumbai" && (
+                        <option value={employeeSignPlace}>{employeeSignPlace}</option>
+                      )}
                   </select>
                 </div>
 

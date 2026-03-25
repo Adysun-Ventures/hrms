@@ -368,31 +368,19 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             label: 'Back'
           }}
           actionButtons={[
-            ...(!isEmployeeUser && hasSalaries ? [{
-              label: 'View Salaries',
-              icon: <FaRupeeSign />,
-              variant: 'purple' as const,
-              href: `/salaries?employeeId=${employment?.employeeId}&from=employment`
-            }] : []),
             {
               label: 'Edit Employment',
               icon: <FiEdit />,
               variant: 'orange' as const,
               href: `/employments/${id}/edit`
-            }
-          ]}
-        />
-
-        <div className="px-6 pb-6">
-          <div ref={employmentFullPagePdfRef} className="employment-view-pdf-capture space-y-0">
-          <div className="mb-8 -mt-1">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900">Professional Reference</h2>
-              <button
-                type="button"
-                data-html2canvas-ignore
-                disabled={employmentFullPagePdfLoading}
-                onClick={async () => {
+            },
+            {
+              label: 'Download PDF',
+              icon: <FiDownload />,
+              variant: 'info' as const,
+              disabled: employmentFullPagePdfLoading,
+              onClick: () => {
+                void (async () => {
                   const el = employmentFullPagePdfRef.current;
                   if (!el || !employment) return;
                   setEmploymentFullPagePdfLoading(true);
@@ -407,12 +395,24 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   } finally {
                     setEmploymentFullPagePdfLoading(false);
                   }
-                }}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:pointer-events-none shrink-0"
-              >
-                <FiDownload className="w-4 h-4 shrink-0" aria-hidden />
-                {employmentFullPagePdfLoading ? 'Generating…' : 'Download PDF'}
-              </button>
+                })();
+              }
+            },
+            ...(!isEmployeeUser && hasSalaries ? [{
+              label: 'View Salaries',
+              icon: <FaRupeeSign />,
+              variant: 'purple' as const,
+              href: `/salaries?employeeId=${employment?.employeeId}&from=employment`
+            }
+            ] : []),
+          ]}
+        />
+
+        <div className="px-6 pb-6">
+          <div ref={employmentFullPagePdfRef} className="employment-view-pdf-capture space-y-0">
+          <div className="mb-8 -mt-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-900">Professional Reference</h2>
             </div>
             <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
               <table className="w-full min-w-[640px] border-collapse text-sm text-gray-900">
@@ -503,14 +503,18 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
           <div className="border-t border-gray-200 mb-6" />
 
-          {/* Basic Information */}
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4">Basic Information</h2>
+          {/* Employment Information Section */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <FiBriefcase className="mr-2" /> Employment Information
+            </h2>
+
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <p className="text-lg font-medium text-gray-900">{employee?.name || '-'}</p>
-                <p className="text-sm text-gray-500">Employee Name</p>
+                <p className="text-lg font-medium text-gray-900">{employment.employmentId || '-'}</p>
+                <p className="text-sm text-gray-500">Employment ID</p>
               </div>
+
               <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employment.joiningDate
@@ -519,8 +523,36 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                       ? formatDateToDayMonYear(employment.startDate)
                       : '-'}
                 </p>
-                <p className="text-sm text-gray-500">Start Date</p>
+                <p className="text-sm text-gray-500">Joining Date</p>
               </div>
+
+              <div>
+                <p className="text-lg font-medium text-gray-900">
+                  {employment.joiningCtc
+                    ? formatCurrency(employment.joiningCtc)
+                    : employment.salary
+                      ? formatCurrency(employment.salary)
+                      : '-'}
+                </p>
+                <p className="text-sm text-gray-500">Joining CTC</p>
+              </div>
+
+              <div>
+                <p className="text-lg font-medium text-gray-900">
+                  {employment.inHandCtc ? formatCurrency(employment.inHandCtc) : '-'}
+                </p>
+                <p className="text-sm text-gray-500">In-hand CTC</p>
+              </div>
+
+              {/* <div className="bg-white rounded-lg shadow p-5">
+                <p className="text-lg font-medium text-gray-900">{employment.relievingCtc ? formatCurrency(employment.relievingCtc) : '-'}</p>
+                <p className="text-sm text-gray-500">Relieving CTC</p>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-5">
+                <p className="text-lg font-medium text-gray-900">{employment.isResignation ? 'Yes' : 'No'}</p>
+                <p className="text-sm text-gray-500">Resignation</p>
+              </div> */}
             </div>
           </div>
           <div className="border-t border-gray-200 my-2" />
@@ -601,62 +633,6 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           </div>
           <div className="border-t border-gray-200 my-2" />
 
-          {/* Employment Information Section */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FiBriefcase className="mr-2" /> Employment Information
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employment.employmentId || '-'}</p>
-                <p className="text-sm text-gray-500">Employment ID</p>
-              </div>
-
-              <div>
-                <p className="text-lg font-medium text-gray-900">
-                  {employment.joiningDate
-                    ? formatDateToDayMonYear(employment.joiningDate)
-                    : employment.startDate
-                      ? formatDateToDayMonYear(employment.startDate)
-                      : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Joining Date</p>
-              </div>
-
-              <div>
-                <p className="text-lg font-medium text-gray-900">
-                  {employment.joiningCtc
-                    ? formatCurrency(employment.joiningCtc)
-                    : employment.salary
-                      ? formatCurrency(employment.salary)
-                      : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Joining CTC</p>
-              </div>
-
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employment.inHandCtc ? formatCurrency(employment.inHandCtc) : '-'}</p>
-                <p className="text-sm text-gray-500">In-hand CTC</p>
-              </div>
-
-              {/* <div className="bg-white rounded-lg shadow p-5">
-                <p className="text-lg font-medium text-gray-900">{employment.relievingCtc ? formatCurrency(employment.relievingCtc) : '-'}</p>
-                <p className="text-sm text-gray-500">Relieving CTC</p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow p-5">
-                <p className="text-lg font-medium text-gray-900">{employment.isResignation ? 'Yes' : 'No'}</p>
-                <p className="text-sm text-gray-500">Resignation</p>
-              </div> */}
-
-              
-            </div>
-          </div>
-          <div className="border-t border-gray-200 my-2" />
-          
-
-          
           {employment.isResignation && (
             <>
               <div className="mb-6">

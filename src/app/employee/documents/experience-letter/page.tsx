@@ -30,6 +30,7 @@ interface Employment {
   jobTitle?: string;
   joiningDate?: string;
   lastWorkingDate?: string;
+  location?: string;
 }
 
 interface PDFProps {
@@ -282,6 +283,17 @@ const EmployeeExperienceLetter: React.FC = () => {
 
   const canGenerate = Boolean(todaysDate && employeeSignDate && employeeSignPlace);
 
+  const normalizeToISODate = (value?: string) => {
+    if (!value) return "";
+    // Already ISO (YYYY-MM-DD)
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) return "";
+    return dt.toISOString().slice(0, 10);
+  };
+
+  const lastWorkingDate = normalizeToISODate(employment?.lastWorkingDate);
+
   /* ---------------- Load employment and employee data ---------------- */
   useEffect(() => {
     const load = async () => {
@@ -290,7 +302,15 @@ const EmployeeExperienceLetter: React.FC = () => {
         setEmployee({ name: currentUserData?.name || "" }); // use auth context for name
         const empm = await getEmployeeSelfEmployment(currentUserData.id);
         const emp = await getEmployeeSelf(currentUserData.id);
-        if (empm?.[0]) setEmployment(empm[0]);
+        if (empm?.[0]) {
+          setEmployment(empm[0]);
+          setEmployeeSignPlace(empm[0]?.location || "");
+          setDesignationOverride(
+            (empm[0] as any)?.designation ||
+              (empm[0] as any)?.jobTitle ||
+              ""
+          );
+        }
       } catch (error) {
         toast.error("Failed to load employee data");
       } finally {
@@ -363,10 +383,6 @@ return (
       <div className="p-6">
 
         <div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-blue-600 pl-3">
-            Experience Letter Details
-          </h2>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
             {/* Date */}
@@ -375,6 +391,23 @@ return (
                 Document Generate Date <span className="text-red-500">*</span>
               </label>
               <DateDropdown value={todaysDate} onChange={setTodaysDate} />
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (!lastWorkingDate) return toast.error("Last Working Date not available");
+                  setTodaysDate(lastWorkingDate);
+                }}
+                className={[
+                  "mt-2 block text-sm hover:underline",
+                  lastWorkingDate
+                    ? "text-blue-600"
+                    : "text-gray-400 cursor-not-allowed"
+                ].join(" ")}
+              >
+                Last Working Date{" "}
+                {lastWorkingDate ? `(${formatDate(lastWorkingDate)})` : ""}
+              </a>
             </div>
 
             {/* Sign Date */}
@@ -383,6 +416,23 @@ return (
                 Date of Exit <span className="text-red-500">*</span>
               </label>
               <DateDropdown value={employeeSignDate} onChange={setEmployeeSignDate} />
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (!lastWorkingDate) return toast.error("Last Working Date not available");
+                  setEmployeeSignDate(lastWorkingDate);
+                }}
+                className={[
+                  "mt-2 block text-sm hover:underline",
+                  lastWorkingDate
+                    ? "text-blue-600"
+                    : "text-gray-400 cursor-not-allowed"
+                ].join(" ")}
+              >
+                Last Working Date{" "}
+                {lastWorkingDate ? `(${formatDate(lastWorkingDate)})` : ""}
+              </a>
             </div>
 
             {/* Place */}
@@ -393,9 +443,9 @@ return (
               <input
                 type="text"
                 value={designationOverride}
-                onChange={(e) => setDesignationOverride(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter designation"
+                readOnly
+                className="w-full p-3 border border-gray-300 rounded-md bg-gray-100 focus:ring-2 focus:ring-blue-500"
+                placeholder=""
               />
             </div>
 
@@ -412,6 +462,11 @@ return (
                 <option value="">Select Place</option>
                 <option value="Pune">Pune</option>
                 <option value="Mumbai">Mumbai</option>
+                {employeeSignPlace &&
+                  employeeSignPlace !== "Pune" &&
+                  employeeSignPlace !== "Mumbai" && (
+                    <option value={employeeSignPlace}>{employeeSignPlace}</option>
+                  )}
               </select>
             </div>
 

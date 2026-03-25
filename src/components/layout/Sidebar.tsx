@@ -45,32 +45,40 @@ const Sidebar = () => {
   // Function to determine if a menu item is active
   const isActive = (path: string) => {
     if (!pathname) return false;
+
+    // Normalize to avoid trailing-slash mismatches like `/dashboard/`
+    const normalize = (p: string) => p.replace(/\/+$/, '');
+    const normalizedPathname = normalize(pathname);
+    const normalizedItemPath = normalize(path);
     
     if (path === '/dashboard') {
       // Only consider dashboard active if we're exactly on the dashboard path
-      return pathname === '/dashboard';
+      return normalizedPathname === '/dashboard' || normalizedPathname === normalizedItemPath;
     }
     
     if (path === '/dashboard/documents') {
       // For documents, consider any document-related path to be active
-      return pathname.includes('/documents') || pathname.includes('/doc_pages');
+      return normalizedPathname.includes('/documents') || normalizedPathname.includes('/doc_pages');
     }
     
     if (path === '/dashboard/attendance') {
       // For attendance, consider attendance-related paths to be active
-      return pathname.includes('/attendance');
+      return normalizedPathname.includes('/attendance');
     }
     
     if (path === '/employees') {
       // For employees, consider employee-related paths and salary-related paths to be active
-      return pathname === '/employees' || 
-             pathname.startsWith('/employees/') || 
-             pathname.startsWith('/salaries') ||
-             pathname.startsWith('/employments');
+      return (
+        normalizedPathname === '/employees' ||
+        normalizedPathname.startsWith('/employees/') ||
+        // Salary / employment views can be opened from multiple pages
+        normalizedPathname.includes('/salaries') ||
+        normalizedPathname.includes('/employments')
+      );
     }
     
     // For other paths, use the original logic
-    return pathname === path || pathname.startsWith(path + '/');
+    return normalizedPathname === normalizedItemPath || normalizedPathname.startsWith(normalizedItemPath + '/');
   };
 
   const menuItems = [

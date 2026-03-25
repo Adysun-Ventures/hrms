@@ -102,6 +102,21 @@
     font-size: 11px;
 }
 
+.signatory-effective {
+    font-size: 11px;
+    margin-top: 8px;
+}
+
+.signatory-date {
+    font-size: 11px;
+    margin-top: 8px;
+}
+
+.signatory-place {
+    font-size: 11px;
+    margin-top: 2px;
+}
+
 .policy-content {
     padding: 20px 0;
 }

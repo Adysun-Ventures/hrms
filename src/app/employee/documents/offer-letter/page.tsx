@@ -36,6 +36,7 @@ interface Employee {
 
 interface Employment {
   joiningDate?: string;
+  location?: string;
   jobTitle?: string;
   designation?: string;
   department?: string;
@@ -172,7 +173,7 @@ const DateDropdown: React.FC<{ value: string; onChange: (v: string) => void }> =
   };
 
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-3 gap-2 w-full">
       <select
         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
         value={day}
@@ -273,12 +274,14 @@ const OfferLetterPDF = ({
   enablePF,
   designationOverride,
   documentGenerateDate,
+  employeeSignPlace
 }: {
   employee: Employee;
   employment: Employment;
   enablePF: boolean;
   designationOverride?: string;
   documentGenerateDate?: string;
+  employeeSignPlace?: string;
 }) => {
   if (!employee || !employment) {
     return (
@@ -311,6 +314,7 @@ const OfferLetterPDF = ({
 
   const joiningDate = employment.joiningDate || '';
   const annualCTC = Number(employment.salary || 0);
+  const signPlace = employeeSignPlace || employment.location || '';
 
   const letterDate = documentGenerateDate
     ? formatDate(documentGenerateDate)
@@ -521,8 +525,12 @@ const OfferLetterPDF = ({
         Signature: ________________________________
       </Text>
 
-      <Text style={{ marginBottom: 18 }}>
+      <Text style={{ marginBottom: 6 }}>
         Date: <Text style={{ fontWeight: "bold" }}>{letterDate}</Text>
+      </Text>
+
+      <Text style={{ marginBottom: 18 }}>
+        Place: <Text style={{ fontWeight: "bold" }}>{signPlace || "-"}</Text>
       </Text>
 
       <View style={{ alignItems: "flex-end" }}>
@@ -556,6 +564,15 @@ export default function EmployeeOfferLetterPage() {
   const [documentGenerateDate, setDocumentGenerateDate] = useState(() =>
     new Date().toISOString().slice(0, 10)
   );
+  const [employeeSignPlace, setEmployeeSignPlace] = useState<string>("");
+
+  const employeeJoiningDateRaw = employment?.joiningDate || '';
+  const employeeJoiningDate = employeeJoiningDateRaw
+    ? String(employeeJoiningDateRaw).slice(0, 10)
+    : '';
+
+  // Mandatory field: Designation
+  const canGenerate = designationOverride.trim().length > 0;
 
   useEffect(() => {
     const load = async () => {
@@ -565,6 +582,7 @@ export default function EmployeeOfferLetterPage() {
         const empm = await getEmployeeSelfEmployment(currentUserData.id);
         setEmployee(emp);
         setEmployment(empm?.[0]);
+        setEmployeeSignPlace(empm?.[0]?.location || "");
         const initialDesig = empm?.[0]?.jobTitle || empm?.[0]?.designation || "";
         setDesignationOverride(initialDesig);
       } catch {
@@ -636,23 +654,34 @@ export default function EmployeeOfferLetterPage() {
         </div>
 
         <div className="w-1/3 flex justify-end">
-          <PDFDownloadLink
-            document={
-              <OfferLetterPDF
-                employee={employee!}
-                employment={employment!}
-                enablePF={enablePF}
-                designationOverride={designationOverride}
-                documentGenerateDate={documentGenerateDate}
-              />
-            }
-            fileName="OfferLetter.pdf"
-            className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
-            aria-label="Generate"
-          >
-            <FiDownload className="mr-2" size={18} />
-            <span className="hidden sm:inline">Generate</span>
-          </PDFDownloadLink>
+          {canGenerate ? (
+            <PDFDownloadLink
+              document={
+                <OfferLetterPDF
+                  employee={employee!}
+                  employment={employment!}
+                  enablePF={enablePF}
+                  designationOverride={designationOverride}
+                  documentGenerateDate={documentGenerateDate}
+                  employeeSignPlace={employeeSignPlace}
+                />
+              }
+              fileName="OfferLetter.pdf"
+              className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
+              aria-label="Generate"
+            >
+              <FiDownload className="mr-2" size={18} />
+              <span className="hidden sm:inline">Generate</span>
+            </PDFDownloadLink>
+          ) : (
+            <div
+              className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg transition shadow-sm opacity-50 cursor-not-allowed"
+              aria-disabled="true"
+            >
+              <FiDownload className="mr-2" size={18} />
+              <span className="hidden sm:inline">Generate</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -660,6 +689,7 @@ export default function EmployeeOfferLetterPage() {
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div>
+            <p className="text-sm font-medium text-gray-700 mb-1">PF</p>
             <label
               htmlFor="includePF"
               className="inline-flex items-center gap-3 px-5 py-3 bg-white border border-gray-300 rounded-xl cursor-pointer select-none"
@@ -677,15 +707,24 @@ export default function EmployeeOfferLetterPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Designation
+              Designation <span className="text-red-600">*</span>
             </label>
             <input
               type="text"
               value={designationOverride}
               onChange={(e) => setDesignationOverride(e.target.value)}
-              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+              className={
+                canGenerate
+                  ? "w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  : "w-full p-2 border border-red-500 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 text-black"
+              }
               placeholder="Enter designation"
+              required
+              aria-invalid={!canGenerate}
             />
+            {!canGenerate && (
+              <p className="mt-1 text-sm text-red-600">Designation is required</p>
+            )}
           </div>
 
           <div>
@@ -693,6 +732,35 @@ export default function EmployeeOfferLetterPage() {
               Document Generate Date
             </label>
             <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
+            {employeeJoiningDate && (
+              <button
+                type="button"
+                onClick={() => setDocumentGenerateDate(employeeJoiningDate)}
+                className="mt-2 text-sm text-blue-600 hover:underline"
+              >
+                Use Employee Joining Date
+              </button>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Place
+            </label>
+            <select
+              value={employeeSignPlace}
+              onChange={(e) => setEmployeeSignPlace(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+            >
+              <option value="">Select Place</option>
+              <option value="Pune">Pune</option>
+              <option value="Mumbai">Mumbai</option>
+              {employeeSignPlace &&
+                employeeSignPlace !== "Pune" &&
+                employeeSignPlace !== "Mumbai" && (
+                  <option value={employeeSignPlace}>{employeeSignPlace}</option>
+                )}
+            </select>
           </div>
         </div>
       </div>
@@ -709,31 +777,71 @@ export default function EmployeeOfferLetterPage() {
           <span className="hidden sm:inline">Cancel</span>
         </button>
 
-        <PDFDownloadLink
-          document={
-            <OfferLetterPDF
-              employee={employee!}
-              employment={employment!}
-              enablePF={enablePF}
-              designationOverride={designationOverride}
-              documentGenerateDate={documentGenerateDate}
-            />
-          }
-          fileName="OfferLetter.pdf"
-          className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
-          aria-label="Generate"
-        >
-          <FiDownload className="mr-2" size={18} />
-          <span className="hidden sm:inline">Generate</span>
-        </PDFDownloadLink>
+        {canGenerate ? (
+          <PDFDownloadLink
+            document={
+              <OfferLetterPDF
+                employee={employee!}
+                employment={employment!}
+                enablePF={enablePF}
+                designationOverride={designationOverride}
+                documentGenerateDate={documentGenerateDate}
+                employeeSignPlace={employeeSignPlace}
+              />
+            }
+            fileName="OfferLetter.pdf"
+            className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
+            aria-label="Generate"
+          >
+            <FiDownload className="mr-2" size={18} />
+            <span className="hidden sm:inline">Generate</span>
+          </PDFDownloadLink>
+        ) : (
+          <div
+            className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg transition shadow-sm opacity-50 cursor-not-allowed"
+            aria-disabled="true"
+          >
+            <FiDownload className="mr-2" size={18} />
+            <span className="hidden sm:inline">Generate</span>
+          </div>
+        )}
       </div>
     </div>
 
     {/* PDF PREVIEW */}
-    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-      <h3 className="text-xl font-semibold text-gray-800 mb-6">
-        PDF Preview
-      </h3>
+    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mt-8">
+      <div className="flex items-center justify-between gap-4 mb-6">
+        <h3 className="text-xl font-semibold text-gray-800">PDF Preview</h3>
+
+        {canGenerate ? (
+          <PDFDownloadLink
+            document={
+              <OfferLetterPDF
+                employee={employee!}
+                employment={employment!}
+                enablePF={enablePF}
+                designationOverride={designationOverride}
+                documentGenerateDate={documentGenerateDate}
+                employeeSignPlace={employeeSignPlace}
+              />
+            }
+            fileName="OfferLetter.pdf"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-sm"
+            aria-label="Download PDF"
+          >
+            <FiDownload size={18} />
+            <span className="hidden sm:inline">Download PDF</span>
+          </PDFDownloadLink>
+        ) : (
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg transition shadow-sm opacity-50 cursor-not-allowed"
+            aria-disabled="true"
+          >
+            <FiDownload size={18} />
+            <span className="hidden sm:inline">Download PDF</span>
+          </div>
+        )}
+      </div>
 
       <div className="border rounded-lg overflow-hidden" style={{ height: "80vh" }}>
         <PDFViewer width="100%" height="100%">
@@ -743,6 +851,7 @@ export default function EmployeeOfferLetterPage() {
             enablePF={enablePF}
             designationOverride={designationOverride}
             documentGenerateDate={documentGenerateDate}
+              employeeSignPlace={employeeSignPlace}
           />
         </PDFViewer>
       </div>

@@ -314,6 +314,8 @@ console.log(employmentData?.[0]?.bankName);
             </div>
           </div>
 
+          <div className="border-t border-gray-200 my-2" />
+
           {/* Contact Information */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -332,6 +334,8 @@ console.log(employmentData?.[0]?.bankName);
               </div>
             </div>
           </div>
+
+          <div className="border-t border-gray-200 my-2" />
 
           {/* Identification Documents */}
           <div className="mb-6">
@@ -358,6 +362,8 @@ console.log(employmentData?.[0]?.bankName);
               </div>
             </div>
           </div>
+
+          <div className="border-t border-gray-200 my-2" />
 
           {/* Educational Details */}
           <div className="mb-6">
@@ -519,6 +525,8 @@ console.log(employmentData?.[0]?.bankName);
             )}
           </div>
 
+          <div className="border-t border-gray-200 my-2" />
+
           {/* Employment Information */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -541,6 +549,9 @@ console.log(employmentData?.[0]?.bankName);
               </div>
             </div>
           </div>
+
+          <div className="border-t border-gray-200 my-2" />
+
 {/* //Bank information */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -567,6 +578,8 @@ console.log(employmentData?.[0]?.bankName);
               </div>
             </div>
           </div>
+
+          <div className="border-t border-gray-200 my-2" />
 
           {/* Account Information */}
           <div className="mb-6">
@@ -596,33 +609,12 @@ console.log(employmentData?.[0]?.bankName);
               </div>
             </div>
           </div>
+
+          <div className="border-t border-gray-200 my-2" />
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden mt-6">
-        <div className="px-6 py-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-            <FaRupeeSign className="mr-2" /> Quick Actions
-          </h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-           
-
-            <div className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-              <h3 className="font-medium text-purple-900 mb-2">My Documents</h3>
-              <p className="text-sm text-purple-700 mb-3">Access your employment documents</p>
-              <button
-                onClick={() => router.push('/employee/documents')}
-                className="text-purple-600 hover:text-purple-800 text-sm font-medium flex items-center gap-1"
-              >
-                View Documents <FiArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Quick Actions removed as requested */}
 
 
     </EmployeeLayout>

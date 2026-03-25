@@ -402,7 +402,7 @@ return (
             onClick={() => setShowPDF(true)}
             disabled={!canGenerate}
             className={[
-              "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+              "inline-flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-md",
               canGenerate
                 ? "bg-green-600 text-white hover:bg-green-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed",
@@ -422,10 +422,6 @@ return (
 
         {/* ================= DETAILS CARD ================= */}
         <div>
-
-          <h3 className="text-lg font-semibold text-gray-800 mb-6 border-l-4 border-blue-600 pl-3">
-            Salary Slip Details
-          </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 

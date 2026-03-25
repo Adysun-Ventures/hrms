@@ -42,6 +42,8 @@ interface LetterData {
   currentCTC: number;
   revisedCTC: number;
   effectiveDate: string;
+  documentGenerateDate: string;
+  employeeSignPlace: string;
   oldDesignation?: string;
   newDesignation?: string;
 }
@@ -211,7 +213,7 @@ const styles = StyleSheet.create({
 /* ---------------- PDF COMPONENT ---------------- */
 const EmployeeIncrementPDF: React.FC<{ letterData: LetterData }> = ({ letterData }) => {
   const shortName = letterData?.employeeName.split(" ")[0] || "";
-  const today = formatDate(new Date());
+  const docGenerateDate = formatDate(letterData.documentGenerateDate || new Date().toISOString());
 
   return (
   <Document>
@@ -224,7 +226,7 @@ const EmployeeIncrementPDF: React.FC<{ letterData: LetterData }> = ({ letterData
       {/* DATE */}
       <Text style={styles.dateText}>
         <Text style={styles.bold}>Date: </Text>
-        <Text style={styles.bold}>{today}</Text>
+        <Text style={styles.bold}>{docGenerateDate}</Text>
       </Text>
 
       {/* TITLE */}
@@ -299,6 +301,13 @@ const EmployeeIncrementPDF: React.FC<{ letterData: LetterData }> = ({ letterData
             <Text style={styles.bold}>Effective: </Text>
             {formatDate(letterData.effectiveDate)}
           </Text>
+
+          <Text style={{ marginTop: 6 }}>
+            Place:{" "}
+            <Text style={styles.bold}>
+              {letterData.employeeSignPlace || "-"}
+            </Text>
+          </Text>
         </View>
 
         <View style={{ width: "45%", textAlign: "right", alignItems: "flex-end" }}>
@@ -330,18 +339,23 @@ const EmployeeIncrementLetter: React.FC = () => {
 
   const [percentageIncrease, setPercentageIncrease] = useState<number>(0);
   const [effectiveDate, setEffectiveDate] = useState<string>("");
+  const [documentGenerateDate, setDocumentGenerateDate] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10)
+  );
   const [revisedCTC, setRevisedCTC] = useState<number>(0);
   const [oldDesignation, setOldDesignation] = useState<string>("");
   const [newDesignation, setNewDesignation] = useState<string>("");
+  const [employeeSignPlace, setEmployeeSignPlace] = useState<string>("");
 
   const [letterData, setLetterData] = useState<LetterData | null>(null);
   const [showPDF, setShowPDF] = useState(false);
 
-  const canGenerate = Boolean(letterData);
+  const canGenerate = Boolean(letterData) && Boolean(employeeSignPlace);
 
   const handleGenerate = () => {
     if (!percentageIncrease) return toast.error("Enter % increase");
     if (!effectiveDate) return toast.error("Select effective date");
+    if (!employeeSignPlace) return toast.error("Select place");
 
     setShowPDF(true);
     requestAnimationFrame(() => {
@@ -363,6 +377,13 @@ const EmployeeIncrementLetter: React.FC = () => {
         setEmployee(emp);
         if (empm?.[0]) {
           setEmployment(empm[0]);
+          const place =
+            (empm[0] as any)?.location ||
+            (empm[0] as any)?.workLocation ||
+            (empm[0] as any)?.officeLocation ||
+            (empm[0] as any)?.place ||
+            '';
+          if (place) setEmployeeSignPlace(place);
           setOldDesignation(empm[0]?.designation || empm[0]?.jobTitle || "");
         }
       } catch {
@@ -390,11 +411,22 @@ const EmployeeIncrementLetter: React.FC = () => {
         currentCTC: employment.salary,
         revisedCTC: revisedCTC,
         effectiveDate: effectiveDate,
+        documentGenerateDate,
+        employeeSignPlace,
         oldDesignation,
         newDesignation
       });
     }
-  }, [employee, employment, revisedCTC, effectiveDate, oldDesignation, newDesignation]);
+  }, [
+    employee,
+    employment,
+    revisedCTC,
+    effectiveDate,
+    oldDesignation,
+    newDesignation,
+    documentGenerateDate,
+    employeeSignPlace
+  ]);
 
   if (loading) return <div>Loading...</div>;
 
@@ -433,11 +465,12 @@ return (
               onClick={handleGenerate}
               disabled={!canGenerate}
               className={[
-                "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm inline-flex items-center gap-2",
+                "inline-flex items-center gap-2 px-10 py-3 min-h-[44px] rounded-lg text-sm font-medium transition shadow-sm",
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed",
               ].join(" ")}
+              style={{ paddingLeft: 40, paddingRight: 40, paddingTop: 12, paddingBottom: 12 }}
             >
               <FiDownload className="w-4 h-4" />
               <span className="hidden sm:inline">Generate</span>
@@ -451,10 +484,6 @@ return (
             <>
               {/* Section Card */}
               <div>
-                <h2 className="text-lg font-semibold text-gray-800 mb-3 border-l-4 border-blue-500 pl-2">
-                  Increment Details
-                </h2>
-
                 <div>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
@@ -505,6 +534,38 @@ return (
                         Effective Date <span className="text-red-500">*</span>
                       </label>
                       <DateDropdown value={effectiveDate} onChange={setEffectiveDate} />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1 text-gray-700">
+                        Document Generate Date <span className="text-red-500">*</span>
+                      </label>
+                      <DateDropdown
+                        value={documentGenerateDate}
+                        onChange={setDocumentGenerateDate}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 xl:col-span-4">
+                      <label className="block text-sm font-medium mb-1 text-gray-700">
+                        Place <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={employeeSignPlace}
+                        onChange={(e) => setEmployeeSignPlace(e.target.value)}
+                        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select Place</option>
+                        <option value="Pune">Pune</option>
+                        <option value="Mumbai">Mumbai</option>
+                        {employeeSignPlace &&
+                          employeeSignPlace !== "Pune" &&
+                          employeeSignPlace !== "Mumbai" && (
+                            <option value={employeeSignPlace}>
+                              {employeeSignPlace}
+                            </option>
+                          )}
+                      </select>
                     </div>
 
                     <div>

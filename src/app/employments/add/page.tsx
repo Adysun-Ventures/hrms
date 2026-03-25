@@ -15,6 +15,31 @@ import { useAuth } from '@/context/AuthContext';
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   // Add all the fields we need
+  teamLead?: {
+    name?: string;
+    employeeId?: string;
+    mobileNo?: string;
+    email?: string;
+    designation?: string;
+    location?: string;
+  };
+  colleague1?: {
+    name?: string;
+    employeeId?: string;
+    mobileNo?: string;
+    email?: string;
+    designation?: string;
+    location?: string;
+  };
+  colleague3?: {
+    name?: string;
+    employeeId?: string;
+    mobileNo?: string;
+    email?: string;
+    designation?: string;
+    location?: string;
+  };
+
   employmentId: string;
   joiningDate: string;
   incrementDate: string;
@@ -81,8 +106,23 @@ export default function AddEmploymentPage() {
       employmentId: 'ADV',
       isResignation: false,
       whereWereYouEmploid: 'Registred Corporate Office',
+      location: 'Pune',
     }
   });
+
+  const whereWereYouEmploidValue = watch('whereWereYouEmploid');
+  const derivedLocation =
+    whereWereYouEmploidValue === 'Registred Corporate Office'
+      ? 'Pune'
+      : whereWereYouEmploidValue === 'Branch Office'
+        ? 'Mumbai'
+        : '';
+
+  useEffect(() => {
+    // Make `location` dependent on the selected employment office.
+    if (!derivedLocation) return;
+    setValue('location', derivedLocation, { shouldValidate: true, shouldDirty: true });
+  }, [derivedLocation, setValue]);
 
   // Watch salary for calculations
   const joiningCtc = watch('joiningCtc'); 
@@ -149,8 +189,9 @@ export default function AddEmploymentPage() {
   const generateRandomEmploymentId = async () => {
     const maxAttempts = 30;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const randomSuffix = Math.random().toString(36).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
-      const candidate = `ADV${randomSuffix}`;
+      // Generate: ADV + (1..100)
+      const randomNumber = Math.floor(Math.random() * 100) + 1; // inclusive 1..100
+      const candidate = `ADV${randomNumber}`;
 
       if (generatedEmploymentIdsRef.current.has(candidate)) continue;
 
@@ -168,8 +209,8 @@ export default function AddEmploymentPage() {
   useEffect(() => {
     if (employmentId && !employmentId.startsWith('ADV')) {
       // If user tries to remove ADV prefix, restore it
-      const suffix = employmentId.replace(/^ADV/i, '');
-      setValue('employmentId', 'ADV' + suffix);
+      const suffixDigits = employmentId.replace(/^ADV/i, '').replace(/\D/g, '');
+      setValue('employmentId', 'ADV' + suffixDigits, { shouldValidate: true, shouldDirty: true });
     }
   }, [employmentId, setValue]);
 
@@ -464,12 +505,13 @@ export default function AddEmploymentPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Location
                     </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Headquarters"
-                      {...register('location')}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
+  <select
+    {...register('location', { required: true })}
+    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+  >
+    <option value="">{derivedLocation ? 'Select location' : 'Select location'}</option>
+    {derivedLocation ? <option value={derivedLocation}>{derivedLocation}</option> : null}
+  </select>
                   </div>
 
                   
@@ -534,12 +576,18 @@ export default function AddEmploymentPage() {
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
-                        placeholder="e.g. ADV001, ADV002"
+                        placeholder="E.g., ADV10"
                         {...register('employmentId', {
                           required: 'Employment ID is required',
                           pattern: {
-                            value:  /^ADV[A-Z0-9-]*$/i,
-                            message: 'Employment ID must start with ADV followed by numbers/letters'
+                            value: /^ADV\d+$/i,
+                            message: 'Employment ID must be in the format ADV<number>'
+                          },
+                          validate: (value) => {
+                            const num = Number(String(value).replace(/^ADV/i, ''));
+                            if (!Number.isFinite(num)) return 'Employment ID number is invalid';
+                            if (num < 1 || num > 100) return 'Employment ID number must be between 1 and 100';
+                            return true;
                           }
                         })}
                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"

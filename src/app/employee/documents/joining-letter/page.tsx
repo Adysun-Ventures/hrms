@@ -55,6 +55,14 @@ const formatDate = (d?: string) => {
   return formatted === "-" ? "" : formatted;
 };
 
+const normalizeToISODate = (d?: string): string => {
+  if (!d) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+  const parsed = new Date(d);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
+};
+
     const Watermark = ({ logoSrc }: { logoSrc?: string }) => {
       if (!logoSrc) return null;
       return (
@@ -350,6 +358,7 @@ export default function EmployeeJoiningLetter() {
   const [designation, setDesignation] = useState("");
   const [department, setDepartment] = useState("");
   const [joiningDate, setJoiningDate] = useState("");
+  const [employmentJoiningDate, setEmploymentJoiningDate] = useState("");
   const [workLocation, setWorkLocation] = useState("");
   const [reportingManager, setReportingManager] = useState("");
   const [annualCTC, setAnnualCTC] = useState("");
@@ -384,7 +393,9 @@ export default function EmployeeJoiningLetter() {
 
         if (empm?.[0]) {
           setDesignation(empm[0].jobTitle || "");
-          setJoiningDate(empm[0].joiningDate || "");
+          const normalizedJoining = normalizeToISODate(empm[0].joiningDate);
+          setEmploymentJoiningDate(normalizedJoining);
+          setJoiningDate(normalizedJoining);
           setWorkLocation(empm[0].location || "");
           setReportingManager(empm[0].reportingManager || "");
           setAnnualCTC(String(empm[0].salary || ""));
@@ -453,12 +464,6 @@ return (
 
           {/* SECTION CARD */}
           <div >
-            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
-              Joining Information
-            </h2>
-
-             
-
             <div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
 
@@ -468,6 +473,26 @@ return (
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown value={issueDate} onChange={setIssueDate} />
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!employmentJoiningDate) {
+                        toast.error("Joining Date not available");
+                        return;
+                      }
+                      setJoiningDate(employmentJoiningDate);
+                    }}
+                    className={[
+                      "mt-2 block text-sm hover:underline",
+                      employmentJoiningDate ? "text-blue-600" : "text-gray-400",
+                    ].join(" ")}
+                  >
+                    Joining Date{" "}
+                    {employmentJoiningDate
+                      ? `(${formatDate(employmentJoiningDate)})`
+                      : "(not available)"}
+                  </a>
                 </div>
 
                 {/* Department */}

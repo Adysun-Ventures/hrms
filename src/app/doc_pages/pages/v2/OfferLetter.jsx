@@ -250,7 +250,7 @@ const RowBoldGray = ({ label, m, a }) => (
 );
 
 /* ---------------- PDF DOCUMENT COMPONENT ---------------- */
-const OfferLetterPDF = ({ employee, employment, enablePF, designationOverride, documentGenerateDate }) => {
+const OfferLetterPDF = ({ employee, employment, enablePF, designationOverride, documentGenerateDate, employeeSignPlace }) => {
   if (!employee || !employment) {
     return (
       <Document>
@@ -275,6 +275,8 @@ const OfferLetterPDF = ({ employee, employment, enablePF, designationOverride, d
   const letterDate = (documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate))
     ? new Date(documentGenerateDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
     : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+  const signPlace = employeeSignPlace || employment?.location || '';
 
 
   /* Salary Computation */
@@ -525,6 +527,9 @@ const OfferLetterPDF = ({ employee, employment, enablePF, designationOverride, d
           <Text style={{ fontSize: 11, marginBottom: 12 }}>
             Date: {letterDate}
           </Text>
+          <Text style={{ fontSize: 11, marginBottom: 12 }}>
+            Place: {signPlace || '-'}
+          </Text>
         </View>
 
         <View style={{ marginTop: 18, alignItems: "flex-end" }}>
@@ -550,7 +555,7 @@ const toTitleCaseDocx = (str) => {
   return str?.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || '';
 };
 
-async function buildOfferLetterDocx(employee, employment, enablePF, designationOverride, documentGenerateDate) {
+async function buildOfferLetterDocx(employee, employment, enablePF, designationOverride, documentGenerateDate, employeeSignPlace) {
   const name = employee?.name || '';
   const rawAddress = employee?.currentAddress || employee?.permanentAddress || '';
   const fullAddress = rawAddress ? rawAddress.split(/[,;\n]+/).map(v => v.trim()).filter(Boolean) : [];
@@ -565,6 +570,7 @@ async function buildOfferLetterDocx(employee, employment, enablePF, designationO
     documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate)
       ? new Date(documentGenerateDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
       : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const signPlace = employeeSignPlace || employee?.location || employment?.location || '';
   const annualCTC = Number(employment?.salary || 0);
 
   const basic = Math.round(annualCTC * 0.5);
@@ -645,6 +651,7 @@ async function buildOfferLetterDocx(employee, employment, enablePF, designationO
     new Paragraph({ children: [new TextRun({ text: 'Candidate Name: ' }), new TextRun({ text: toTitleCaseDocx(name), bold: true })] }),
     new Paragraph({ text: 'Signature: ________________________________' }),
     new Paragraph({ children: [new TextRun({ text: 'Date: ' }), new TextRun({ text: letterDate })] }),
+    new Paragraph({ children: [new TextRun({ text: 'Place: ', bold: true }), new TextRun({ text: signPlace || '' })] }),
   ];
 
   return await createAdysunDocx({ children });
@@ -661,6 +668,7 @@ function OfferLetterV2() {
   const [searchTerm, setSearchTerm] = useState("");
   const [designationOverride, setDesignationOverride] = useState("");
   const [documentGenerateDate, setDocumentGenerateDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [employeeSignPlace, setEmployeeSignPlace] = useState("");
   
 
 
@@ -691,12 +699,17 @@ function OfferLetterV2() {
     const nextEmployment = employments[id] || null;
     setEmployment(nextEmployment);
     setDesignationOverride(nextEmployment?.jobTitle || nextEmployment?.designation || "");
+    setEmployeeSignPlace(nextEmployment?.location || "");
     setPdfKey(k => k + 1);
   };
 
   useEffect(() => { setPdfKey(k => k + 1); }, [enablePF]);
 
   const canGenerate = Boolean(employee);
+
+  const placeOptions = Array.from(
+    new Set(["Pune", "Mumbai", employment?.location].filter(Boolean))
+  );
 
   return (
     <div className="w-full pt-6">
@@ -746,6 +759,7 @@ function OfferLetterV2() {
   onChange={(e) => {
     setEmployee(e || null);
     setEmployment(employments[e?.id] || null);
+    setEmployeeSignPlace(employments[e?.id]?.location || '');
   }}
 >
   <div className="relative">
@@ -800,6 +814,26 @@ function OfferLetterV2() {
                   Document Generate Date
                 </label>
                 <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-800 mb-1">
+                  Place
+                </label>
+                <select
+                  value={employeeSignPlace}
+                  onChange={(e) => setEmployeeSignPlace(e.target.value)}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select Place</option>
+                  {placeOptions
+                    .filter(Boolean)
+                    .map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                </select>
               </div>
 
               <div className="flex items-center mt-8 gap-2 mb-4">
@@ -862,6 +896,7 @@ function OfferLetterV2() {
                     enablePF={enablePF}
                     designationOverride={designationOverride}
                     documentGenerateDate={documentGenerateDate}
+                    employeeSignPlace={employeeSignPlace}
                   />
                 }
                 fileName={`OfferLetter_${employee.name}.pdf`}
@@ -873,7 +908,14 @@ function OfferLetterV2() {
                 type="button"
                 onClick={async () => {
                   try {
-                    const doc = await buildOfferLetterDocx(employee, employment, enablePF, designationOverride, documentGenerateDate);
+                    const doc = await buildOfferLetterDocx(
+                      employee,
+                      employment,
+                      enablePF,
+                      designationOverride,
+                      documentGenerateDate,
+                      employeeSignPlace
+                    );
                     const blob = await Packer.toBlob(doc);
                     saveAs(blob, `OfferLetter_${employee.name?.replace(/\s+/g, '_') || 'OfferLetter'}.docx`);
                     toast.success('DOCX downloaded');
@@ -901,6 +943,7 @@ function OfferLetterV2() {
                 enablePF={enablePF}
                 designationOverride={designationOverride}
                 documentGenerateDate={documentGenerateDate}
+                employeeSignPlace={employeeSignPlace}
               />
             </PDFViewer>
             <div className="-mx-4 sm:-mx-6 md:-mx-8 border-t border-gray-200 my-4"></div>

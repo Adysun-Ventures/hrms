@@ -664,6 +664,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
               </div>
             </div>
           </div>
+          <div className="border-t border-gray-200 my-2" />
         </div>
       </div>
     </DashboardLayout>

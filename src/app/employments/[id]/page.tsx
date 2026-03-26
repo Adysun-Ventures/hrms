@@ -644,21 +644,27 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
             {(() => {
               const joiningAnnual = Number(employment.joiningCtc || 0);
+              const currentPfAmount = Number(employment.pf || (employment as any).employerPF || 0);
+              const includePf = currentPfAmount > 0;
+
+              // Match Edit page rounding:
+              // - Joining Salary per month is rounded
+              // - Basic and PF are rounded based on that month value
               const joiningInHand =
                 joiningAnnual > 0
                   ? (() => {
-                      const joiningMonthly = joiningAnnual / 12;
-                      const joiningBasic = joiningMonthly * 0.4;
-                      const joiningPfAnnual = joiningBasic * 0.12 * 12;
-                      return joiningAnnual - joiningPfAnnual;
+                      const joiningMonthly = Math.round(joiningAnnual / 12);
+                      const joiningBasic = Math.round(joiningMonthly * 0.4);
+                      const joiningPfMonthly = includePf ? Math.round(joiningBasic * 0.12) : 0;
+                      const joiningInHandMonthly = joiningMonthly - joiningPfMonthly;
+                      return joiningInHandMonthly;
                     })()
                   : 0;
 
               const currentAnnual = Number(employment.salary || 0);
               const currentInHand = Number((employment as any).inHandCtc || 0);
 
-              const pfAmount = Number(employment.pf || (employment as any).employerPF || 0);
-              const isPf = pfAmount > 0 ? "Yes" : "No";
+              const isPf = includePf ? "Yes" : "No";
 
               return (
                 <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
@@ -1125,7 +1131,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   </div>
                   <div>
                     <p className="text-lg font-medium text-gray-900">{joiningMonthly > 0 ? formatCurrency(joiningMonthly) : '-'}</p>
-                    <p className="text-sm text-gray-500">Joining Salary per month</p>
+                    <p className="text-sm text-gray-500">Joining Salary Per Month</p>
                   </div>
                   <div>
                     <p className="text-lg font-medium text-gray-900">{joiningBasic > 0 ? formatCurrency(joiningBasic) : '-'}</p>

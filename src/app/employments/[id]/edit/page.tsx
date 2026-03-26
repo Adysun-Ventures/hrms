@@ -1012,8 +1012,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     {...register('whereWereYouEmploid')}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Registred Corporate Office">Registred Corporate Office</option>
-                    <option value="Branch Office">Branch Office</option>
+                    <option value="Registred Corporate Office">Registred Corporate Office(Pune)</option>
+                    <option value="Branch Office">Branch Office(Mumbai)</option>
                   </select>
                 </div>
 

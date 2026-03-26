@@ -28,6 +28,80 @@ function professionalReferenceCell(
   return s || '\u00a0';
 }
 
+function parseNameAndDesignation(raw?: string): { name: string; designation: string } {
+  const s = (raw ?? '').toString().trim();
+  if (!s) return { name: '\u00a0', designation: '\u00a0' };
+
+  // Prefer newline-separated values: "Name\nDesignation"
+  const lines = s.split(/\r?\n/).map((v) => v.trim()).filter(Boolean);
+  if (lines.length >= 2) {
+    return {
+      name: lines[0] || '\u00a0',
+      designation: lines.slice(1).join(' ') || '\u00a0',
+    };
+  }
+
+  const normalized = s.replace(/\u2013|\u2014/g, '-');
+
+  // If the string contains explicit labels, extract them.
+  // Examples:
+  // "Name - viraj kadam\nDesignation - Project Manager"
+  // "Name - viraj kadam, Designation-Project Manager"
+  const nameLabeled =
+    normalized.match(/\\bName\\b\\s*[-:|]\\s*(.+)/i)?.[1]?.trim() || '';
+  const designationLabeled =
+    normalized.match(/\\bDesignation\\b\\s*[-:|]\\s*(.+)/i)?.[1]?.trim() || '';
+  if (nameLabeled || designationLabeled) {
+    return {
+      name: nameLabeled || '\u00a0',
+      designation: designationLabeled || '\u00a0',
+    };
+  }
+
+  // Try common separators in a single-line format:
+  // "Name - Designation", "Name | Designation", "Name / Designation"
+  // Use ASCII-only separators and allow optional spaces around them.
+  const dashMatch = normalized.match(/^(.+?)\s*-\s*(.+)$/);
+  if (dashMatch) {
+    return { name: dashMatch[1].trim(), designation: dashMatch[2].trim() || '\u00a0' };
+  }
+
+  const pipeMatch = normalized.match(/^(.+?)\s*\|\s*(.+)$/);
+  if (pipeMatch) {
+    return { name: pipeMatch[1].trim(), designation: pipeMatch[2].trim() || '\u00a0' };
+  }
+
+  const slashMatch = normalized.match(/^(.+?)\s*\/\s*(.+)$/);
+  if (slashMatch) {
+    return { name: slashMatch[1].trim(), designation: slashMatch[2].trim() || '\u00a0' };
+  }
+
+  return { name: s || '\u00a0', designation: '\u00a0' };
+}
+
+function parseEmailAndMobile(raw?: string): { email: string; mobile: string } {
+  const s = (raw ?? '').toString().trim();
+  if (!s) return { email: '\u00a0', mobile: '\u00a0' };
+
+  // Prefer regex extraction over token splitting to handle formats like:
+  // "email\nmobile", "email - mobile", "email, mobile", etc.
+  const emailLabelMatch =
+    s.match(/\\bEmail\\b\\s*[-:|]\\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,})/i)?.[1] ||
+    null;
+  const mobileLabelMatch =
+    s.match(/\\bMobile\\b\\s*(?:no\\b|No\\b)?\\s*[-:|]\\s*(\\d{10,13})/i)?.[1] ||
+    null;
+
+  const emailMatch = emailLabelMatch || s.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i)?.[0] || null;
+  const mobileMatch =
+    mobileLabelMatch ||
+    s.match(/(?:^|[^0-9])(\\d{10,13})(?:[^0-9]|$)/)?.[1] ||
+    s.match(/\\b(\\d{10,13})\\b/)?.[1] ||
+    null;
+
+  return { email: emailMatch || '\u00a0', mobile: mobileMatch || '\u00a0' };
+}
+
 export default function EmploymentViewPage({ params }: { params: Promise<{ id: string }> }) {
 
   const router = useRouter();
@@ -412,90 +486,283 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           <div ref={employmentFullPagePdfRef} className="employment-view-pdf-capture space-y-0">
           <div className="mb-8 -mt-1">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900">Professional Reference</h2>
+              <h2 className="text-lg font-semibold text-gray-900">
+                Where Were You Employed & Address
+              </h2>
             </div>
+
+            <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
+              <table className="w-full min-w-[360px] border-collapse text-sm text-gray-900">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[40%]"
+                    >
+                      Where Were You Employed
+                    </th>
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle"
+                    >
+                      Address
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      {(employment as any).whereWereYouEmploid ||
+                        (employment as any).whereWereYouEmployed ||
+                        (employment as any).whereWereYouEmployd ||
+                        '\u00a0'}
+                    </td>
+                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                      Adysun Ventures Pvt. Ltd.
+                      {"\n"}
+                      Workplex, S no 47, Near Bhapkar Petrol Pump, Pune, Maharashtra - 411009
+                      {"\n"}
+                      Pune Office (Head Office)
+                      {"\n\n"}
+                      Adysun Ventures Pvt. Ltd.
+                      {"\n"}
+                      A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607
+                      {"\n"}
+                      Mumbai Office
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Employment Period / Department / Employee Id / Designation */}
+          <div className="mb-8 -mt-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Employment Details
+              </h2>
+            </div>
+
             <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
               <table className="w-full min-w-[640px] border-collapse text-sm text-gray-900">
                 <thead>
                   <tr className="bg-gray-100">
                     <th
                       scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[26%]"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[25%]"
                     >
-                      &nbsp;
+                      Period Of Employment
                     </th>
                     <th
                       scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-center font-semibold align-middle"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
                     >
-                      Reference No 1
+                      Department
                     </th>
                     <th
                       scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-center font-semibold align-middle"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[25%]"
                     >
-                      Reference No 2
+                      Employee Id
                     </th>
                     <th
                       scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-center font-semibold align-middle"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[30%]"
                     >
-                      Reference No 3
+                      Designation
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <th
-                      scope="row"
-                      className="border border-gray-800 px-3 py-3 text-left font-medium align-top bg-gray-50/80 whitespace-nowrap"
-                    >
-                      Name / Designation
-                    </th>
                     <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {professionalReferenceCell(employment.professionalReferences, 0, 'nameDesignation')}
+                      {employment.joiningDate
+                        ? formatDateToDayMonYear(employment.joiningDate)
+                        : employment.startDate
+                          ? formatDateToDayMonYear(employment.startDate)
+                          : '-'}{' '}
+                      -{' '}
+                      {employment.endDate
+                        ? formatDateToDayMonYear(employment.endDate)
+                        : '-'}
                     </td>
                     <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {professionalReferenceCell(employment.professionalReferences, 1, 'nameDesignation')}
+                      {employment.department || '\u00a0'}
                     </td>
                     <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {professionalReferenceCell(employment.professionalReferences, 2, 'nameDesignation')}
-                    </td>
-                  </tr>
-                  <tr>
-                    <th
-                      scope="row"
-                      className="border border-gray-800 px-3 py-3 text-left font-medium align-top bg-gray-50/80"
-                    >
-                      Email id and Mob. No.
-                    </th>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {professionalReferenceCell(employment.professionalReferences, 0, 'emailAndMobile')}
+                      {employment.employmentId || '\u00a0'}
                     </td>
                     <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {professionalReferenceCell(employment.professionalReferences, 1, 'emailAndMobile')}
-                    </td>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {professionalReferenceCell(employment.professionalReferences, 2, 'emailAndMobile')}
+                      {employment.jobTitle ||
+                        employment.designation ||
+                        '\u00a0'}
                     </td>
                   </tr>
-                  <tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Joining / Current Salary Summary */}
+          <div className="mb-8 -mt-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Salary Summary
+              </h2>
+            </div>
+
+            {(() => {
+              const joiningAnnual = Number(employment.joiningCtc || 0);
+              const joiningInHand =
+                joiningAnnual > 0
+                  ? (() => {
+                      const joiningMonthly = joiningAnnual / 12;
+                      const joiningBasic = joiningMonthly * 0.4;
+                      const joiningPfAnnual = joiningBasic * 0.12 * 12;
+                      return joiningAnnual - joiningPfAnnual;
+                    })()
+                  : 0;
+
+              const currentAnnual = Number(employment.salary || 0);
+              const currentInHand = Number((employment as any).inHandCtc || 0);
+
+              const pfAmount = Number(employment.pf || (employment as any).employerPF || 0);
+              const isPf = pfAmount > 0 ? "Yes" : "No";
+
+              return (
+                <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
+                  <table className="w-full min-w-[640px] border-collapse text-sm text-gray-900">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
+                        >
+                          Joining CTC
+                        </th>
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
+                        >
+                          Joining In Hand
+                        </th>
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
+                        >
+                          Current CTC
+                        </th>
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
+                        >
+                          Current In Hand
+                        </th>
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
+                        >
+                          Is PF
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {joiningAnnual > 0 ? formatCurrency(joiningAnnual) : "-"}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {joiningInHand > 0 ? formatCurrency(Math.round(joiningInHand)) : "-"}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {currentAnnual > 0 ? formatCurrency(currentAnnual) : "-"}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {currentInHand > 0 ? formatCurrency(currentInHand) : "-"}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {isPf}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
+          </div>
+
+          <div className="mb-8 -mt-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <h2 className="text-lg font-semibold text-gray-900">Professional Reference</h2>
+            </div>
+            <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
+              <table className="w-full min-w-[900px] border-collapse text-sm text-gray-900">
+                <thead>
+                  <tr className="bg-gray-100">
                     <th
-                      scope="row"
-                      className="border border-gray-800 px-3 py-3 text-left font-medium align-top bg-gray-50/80"
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
                     >
-                      Nature of Association
+                      &nbsp;
                     </th>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {professionalReferenceCell(employment.professionalReferences, 0, 'natureOfAssociation')}
-                    </td>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {professionalReferenceCell(employment.professionalReferences, 1, 'natureOfAssociation')}
-                    </td>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {professionalReferenceCell(employment.professionalReferences, 2, 'natureOfAssociation')}
-                    </td>
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle"
+                    >
+                      Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle"
+                    >
+                      Email
+                    </th>
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle"
+                    >
+                      Mobile no
+                    </th>
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle"
+                    >
+                      Designation
+                    </th>
                   </tr>
+                </thead>
+                <tbody>
+                  {([0, 1, 2] as const).map((idx) => {
+                    const role =
+                      idx === 0 ? 'Team Leader' : idx === 1 ? 'Colleague 1' : 'Colleague 3';
+                    const ref = employment.professionalReferences?.[idx];
+                    const nd = parseNameAndDesignation(ref?.nameDesignation);
+                    const em = parseEmailAndMobile(ref?.emailAndMobile);
+
+                    return (
+                      <tr key={idx}>
+                        <th
+                          scope="row"
+                          className="border border-gray-800 px-3 py-3 text-left font-medium align-top bg-gray-50/80 whitespace-nowrap"
+                        >
+                          {role}
+                        </th>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {nd.name}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {em.email}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {em.mobile}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {nd.designation}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

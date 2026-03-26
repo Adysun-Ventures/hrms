@@ -7,7 +7,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { FiSave, FiRefreshCw } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
-import { getEmployment, updateEmployment, getEmployees, checkEmploymentIdUnique, updateEmployeeSelfEmployment } from '@/utils/firebaseUtils';
+import { getEmployment, updateEmployment, getEmployees, checkEmploymentIdUnique, updateEmployeeSelfEmployment, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
 import { Employment, Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
@@ -124,6 +124,76 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     if (!derivedLocation) return;
     setValue('location', derivedLocation, { shouldValidate: true, shouldDirty: true });
   }, [derivedLocation, setValue]);
+
+  // ---------------- PROFESSIONAL REFERENCE (Team Lead / Colleagues) ----------------
+  // Name dropdown drives the dependent fields by fetching the selected employee's employment record.
+  type ProfessionalRefKey = 'teamLead' | 'colleague1' | 'colleague3';
+
+  const professionalRefTeamLeadName = watch('teamLead.name') || '';
+  const professionalRefColleague1Name = watch('colleague1.name') || '';
+  const professionalRefColleague3Name = watch('colleague3.name') || '';
+
+  const pickLatestEmployment = (items: Employment[]) => {
+    const safe = items || [];
+    return safe
+      .slice()
+      .sort((a, b) => {
+        const aDate = new Date(a.joiningDate || a.startDate || '').getTime();
+        const bDate = new Date(b.joiningDate || b.startDate || '').getTime();
+        return (Number.isFinite(bDate) ? bDate : 0) - (Number.isFinite(aDate) ? aDate : 0);
+      })[0];
+  };
+
+  const autoFillProfessionalReferenceFromName = async (
+    refKey: ProfessionalRefKey,
+    employeeName: string
+  ) => {
+    if (isEmployeeUser) return; // dropdown-driven autofill only makes sense for admin
+    const selected = employees.find((e) => e.name === employeeName);
+    if (!selected) return;
+
+    const employmentsForSelected = await getEmploymentsByEmployee(selected.id);
+    const latest = pickLatestEmployment(employmentsForSelected);
+
+    // Dependent fields
+    setValue(`${refKey}.name` as any, selected.name || '', { shouldDirty: true });
+    setValue(`${refKey}.mobileNo` as any, selected.phone || '', { shouldDirty: true });
+    setValue(`${refKey}.email` as any, selected.email || '', { shouldDirty: true });
+
+    setValue(
+      `${refKey}.employeeId` as any,
+      latest?.employmentId || '',
+      { shouldDirty: true }
+    );
+    setValue(
+      `${refKey}.designation` as any,
+      latest?.jobTitle || latest?.designation || '',
+      { shouldDirty: true }
+    );
+    setValue(
+      `${refKey}.location` as any,
+      latest?.location || '',
+      { shouldDirty: true }
+    );
+  };
+
+  useEffect(() => {
+    if (!professionalRefTeamLeadName) return;
+    void autoFillProfessionalReferenceFromName('teamLead', professionalRefTeamLeadName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionalRefTeamLeadName, employees, isEmployeeUser]);
+
+  useEffect(() => {
+    if (!professionalRefColleague1Name) return;
+    void autoFillProfessionalReferenceFromName('colleague1', professionalRefColleague1Name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionalRefColleague1Name, employees, isEmployeeUser]);
+
+  useEffect(() => {
+    if (!professionalRefColleague3Name) return;
+    void autoFillProfessionalReferenceFromName('colleague3', professionalRefColleague3Name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionalRefColleague3Name, employees, isEmployeeUser]);
 
   const joiningAnnualSalary = Number(joiningCtcValue || 0);
   const joiningMonthlySalary = joiningAnnualSalary > 0 ? Math.round(joiningAnnualSalary / 12) : 0;
@@ -346,6 +416,42 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         panNumber: data.panNumber ? data.panNumber.trim() : undefined,
 
       };
+
+      // Convert UI fields into the persisted Professional References array.
+      // View page expects:
+      // - nameDesignation: "Name - ...\nDesignation - ..."
+      // - emailAndMobile: "Email - ...\nMobile no - ..."
+      const toProfessionalReference = (ref: any) => {
+        const hasAny =
+          ref &&
+          (ref.name?.trim() ||
+            ref.employeeId?.trim() ||
+            ref.mobileNo?.trim() ||
+            ref.email?.trim() ||
+            ref.designation?.trim() ||
+            ref.location?.trim());
+
+        if (!hasAny) {
+          return { nameDesignation: '', emailAndMobile: '', natureOfAssociation: '' };
+        }
+
+        const name = ref?.name?.trim() || '';
+        const designation = ref?.designation?.trim() || '';
+        const email = ref?.email?.trim() || '';
+        const mobileNo = ref?.mobileNo?.trim() || '';
+
+        return {
+          nameDesignation: `Name - ${name}\nDesignation - ${designation}`,
+          emailAndMobile: `Email - ${email}\nMobile no - ${mobileNo}`,
+          natureOfAssociation: '',
+        };
+      };
+
+      formattedData.professionalReferences = [
+        toProfessionalReference(data.teamLead),
+        toProfessionalReference(data.colleague1),
+        toProfessionalReference(data.colleague3),
+      ];
 
       // Only include optional fields if they have values (not empty strings or undefined)
       if (data.endDate && data.endDate.trim()) {
@@ -726,6 +832,256 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 
               </div>
             </div>
+
+            {!isEmployeeUser && (
+              <div className="bg-white p-4 rounded-lg mb-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-indigo-500 pl-2">
+                  Professional Reference
+                </h2>
+
+                <div className="space-y-6">
+                  {/* Team Leader */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-3">
+                      Team Leader
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Name
+                        </label>
+                        <select
+                          {...register('teamLead.name' as const)}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        >
+                          <option value="">Select Name</option>
+                          {employees.map((emp) => (
+                            <option key={emp.id} value={emp.name}>
+                              {emp.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Employee Id
+                        </label>
+                        <input
+                          {...register('teamLead.employeeId' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Mobile No
+                        </label>
+                        <input
+                          {...register('teamLead.mobileNo' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email
+                        </label>
+                        <input
+                          {...register('teamLead.email' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Designation
+                        </label>
+                        <input
+                          {...register('teamLead.designation' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Place
+                        </label>
+                        <input
+                          {...register('teamLead.location' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Colleague 1 */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-3">
+                      Colleague 1
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Name
+                        </label>
+                        <select
+                          {...register('colleague1.name' as const)}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        >
+                          <option value="">Select Name</option>
+                          {employees.map((emp) => (
+                            <option key={emp.id} value={emp.name}>
+                              {emp.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Employee Id
+                        </label>
+                        <input
+                          {...register('colleague1.employeeId' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Mobile No
+                        </label>
+                        <input
+                          {...register('colleague1.mobileNo' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email
+                        </label>
+                        <input
+                          {...register('colleague1.email' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Designation
+                        </label>
+                        <input
+                          {...register('colleague1.designation' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Place
+                        </label>
+                        <input
+                          {...register('colleague1.location' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Colleague 3 */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-3">
+                      Colleague 3
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Name
+                        </label>
+                        <select
+                          {...register('colleague3.name' as const)}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        >
+                          <option value="">Select Name</option>
+                          {employees.map((emp) => (
+                            <option key={emp.id} value={emp.name}>
+                              {emp.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Employee Id
+                        </label>
+                        <input
+                          {...register('colleague3.employeeId' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Mobile No
+                        </label>
+                        <input
+                          {...register('colleague3.mobileNo' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email
+                        </label>
+                        <input
+                          {...register('colleague3.email' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Designation
+                        </label>
+                        <input
+                          {...register('colleague3.designation' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Place
+                        </label>
+                        <input
+                          {...register('colleague3.location' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="bg-white p-4 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Resignation Details</h2>

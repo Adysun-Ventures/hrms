@@ -546,7 +546,7 @@ return (
                       />
                     </div>
 
-                    <div className="md:col-span-2 xl:col-span-4">
+                    <div className="md:col-span-2 xl:col-span-1">
                       <label className="block text-sm font-medium mb-1 text-gray-700">
                         Place <span className="text-red-500">*</span>
                       </label>

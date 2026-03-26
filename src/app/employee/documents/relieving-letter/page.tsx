@@ -504,7 +504,7 @@ const EmployeeRelievingLetter: React.FC = () => {
                 </div>
 
                 {/* Place */}
-                <div>
+                <div className="md:col-span-2 xl:col-span-1">
                   <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Place
                   </label>

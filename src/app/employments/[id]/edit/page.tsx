@@ -7,11 +7,12 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { FiSave, FiRefreshCw } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
-import { getEmployment, updateEmployment, getEmployees, checkEmploymentIdUnique, updateEmployeeSelfEmployment, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
+import { getEmployment, updateEmployment, getEmployees as getEmployeesAuth, checkEmploymentIdUnique, updateEmployeeSelfEmployment, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
 import { Employment, Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { useAuth } from '@/context/AuthContext';
+import { getEmployees as getEmployeesPublic } from '@/utils/documentFunctions';
 
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relievingCtc'> {
@@ -19,6 +20,7 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relie
   relievingCtc?: string; // Form input is string, will be converted to number|null
   whereWereYouEmploid?: string;
   teamLead?: {
+    employeeDocId?: string;
     name?: string;
     employeeId?: string;
     mobileNo?: string;
@@ -27,6 +29,7 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relie
     location?: string;
   };
   colleague1?: {
+    employeeDocId?: string;
     name?: string;
     employeeId?: string;
     mobileNo?: string;
@@ -35,6 +38,7 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relie
     location?: string;
   };
   colleague3?: {
+    employeeDocId?: string;
     name?: string;
     employeeId?: string;
     mobileNo?: string;
@@ -126,12 +130,18 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   }, [derivedLocation, setValue]);
 
   // ---------------- PROFESSIONAL REFERENCE (Team Lead / Colleagues) ----------------
-  // Name dropdown drives the dependent fields by fetching the selected employee's employment record.
+  // Professional Reference: dropdown shows saved Name.
+  // Dependent fields should be prefilled from stored Professional Reference strings.
   type ProfessionalRefKey = 'teamLead' | 'colleague1' | 'colleague3';
 
   const professionalRefTeamLeadName = watch('teamLead.name') || '';
   const professionalRefColleague1Name = watch('colleague1.name') || '';
   const professionalRefColleague3Name = watch('colleague3.name') || '';
+
+  const normalize = (s: unknown) => String(s ?? '').trim().toLowerCase();
+  const teamLeadOptionExists = !!professionalRefTeamLeadName && employees.some((e) => normalize(e.name) === normalize(professionalRefTeamLeadName));
+  const colleague1OptionExists = !!professionalRefColleague1Name && employees.some((e) => normalize(e.name) === normalize(professionalRefColleague1Name));
+  const colleague3OptionExists = !!professionalRefColleague3Name && employees.some((e) => normalize(e.name) === normalize(professionalRefColleague3Name));
 
   const pickLatestEmployment = (items: Employment[]) => {
     const safe = items || [];
@@ -144,12 +154,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       })[0];
   };
 
-  const autoFillProfessionalReferenceFromName = async (
+  const autoFillProfessionalReferenceFromEmployeeName = async (
     refKey: ProfessionalRefKey,
     employeeName: string
   ) => {
-    if (isEmployeeUser) return; // dropdown-driven autofill only makes sense for admin
-    const selected = employees.find((e) => e.name === employeeName);
+    const normalize = (s: unknown) => String(s ?? '').trim().toLowerCase();
+    const selected = employees.find(
+      (e) => normalize(e.name) === normalize(employeeName)
+    );
     if (!selected) return;
 
     const employmentsForSelected = await getEmploymentsByEmployee(selected.id);
@@ -179,21 +191,115 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
   useEffect(() => {
     if (!professionalRefTeamLeadName) return;
-    void autoFillProfessionalReferenceFromName('teamLead', professionalRefTeamLeadName);
+    void autoFillProfessionalReferenceFromEmployeeName('teamLead', professionalRefTeamLeadName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionalRefTeamLeadName, employees, isEmployeeUser]);
 
   useEffect(() => {
     if (!professionalRefColleague1Name) return;
-    void autoFillProfessionalReferenceFromName('colleague1', professionalRefColleague1Name);
+    void autoFillProfessionalReferenceFromEmployeeName('colleague1', professionalRefColleague1Name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionalRefColleague1Name, employees, isEmployeeUser]);
 
   useEffect(() => {
     if (!professionalRefColleague3Name) return;
-    void autoFillProfessionalReferenceFromName('colleague3', professionalRefColleague3Name);
+    void autoFillProfessionalReferenceFromEmployeeName('colleague3', professionalRefColleague3Name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionalRefColleague3Name, employees, isEmployeeUser]);
+
+  const parseNameAndDesignationFromProfessionalReference = (
+    raw?: string
+  ): { name: string; designation: string; employeeId: string } => {
+    const s = (raw ?? '').toString().trim();
+    if (!s) return { name: '', designation: '', employeeId: '' };
+
+    const normalized = s.replace(/\u2013|\u2014/g, '-');
+
+    const nameLabeled = normalized.match(/\bName\b\s*[-:|]\s*(.+)/i)?.[1]?.trim() || '';
+    const designationLabeled =
+      normalized.match(/\bDesignation\b\s*[-:|]\s*(.+)/i)?.[1]?.trim() || '';
+
+    const employeeIdMatch =
+      normalized.match(/\b(?:Employee\s*Id|Emp\s*Id)\b\s*[-:|]\s*(ADV\d+)/i)?.[1] ||
+      normalized.match(/\b(ADV\d+)\b/i)?.[1] ||
+      '';
+
+    if (nameLabeled || designationLabeled) {
+      return { name: nameLabeled, designation: designationLabeled, employeeId: employeeIdMatch };
+    }
+
+    const lines = s.split(/\r?\n/).map((v) => v.trim()).filter(Boolean);
+    if (lines.length >= 2) {
+      return { name: lines[0], designation: lines.slice(1).join(' '), employeeId: employeeIdMatch };
+    }
+
+    return { name: s, designation: '', employeeId: employeeIdMatch };
+  };
+
+  const parseEmailAndMobileFromProfessionalReference = (
+    raw?: string
+  ): { email: string; mobileNo: string; place: string } => {
+    const s = (raw ?? '').toString().trim();
+    if (!s) return { email: '', mobileNo: '', place: '' };
+
+    const normalized = s.replace(/\u2013|\u2014/g, '-');
+
+    const emailLabelMatch =
+      normalized.match(/\bEmail\b\s*[-:|]\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i)?.[1] || null;
+    const mobileLabelMatch =
+      normalized.match(/\bMobile\b\s*(?:no\b|No\b)?\s*[-:|]\s*(\d{10,13})/i)?.[1] || null;
+
+    const emailMatch =
+      emailLabelMatch ||
+      normalized.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] ||
+      '';
+
+    // Mobile numbers may be stored with spaces like: "+91 84840 25370"
+    // so we fallback to extracting digits and taking the last 10 digits.
+    const allDigits = normalized.replace(/\D/g, '');
+    const mobileFromDigits =
+      allDigits.length >= 10 ? allDigits.slice(-10) : allDigits.length ? allDigits : '';
+
+    const mobileMatch =
+      mobileLabelMatch ||
+      normalized.match(/(?:^|[^0-9])(\d{10,13})(?:[^0-9]|$)/)?.[1] ||
+      normalized.match(/\b(\d{10,13})\b/)?.[1] ||
+      mobileFromDigits ||
+      '';
+
+    const placeMatch =
+      normalized.match(/\bPlace\b\s*[-:|]\s*([^\n\r]+)/i)?.[1]?.trim() ||
+      '';
+
+    let place = placeMatch;
+    if (!place) {
+      // Fallback for comma-separated format like:
+      // "Email - ... , Mobile no - ..., Designation - ..., Pune"
+      const withoutContact = normalized
+        .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, '')
+        .replace(/\b\d{10,13}\b/g, '')
+        .replace(/\bADV\d+\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const lastToken = withoutContact
+        .replace(/\r?\n/g, ',')
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .slice(-1)[0];
+
+      if (
+        lastToken &&
+        lastToken.length <= 20 &&
+        /^[A-Za-z ]+$/.test(lastToken) &&
+        !/manager|engineer|developer|engineers|sr\\.?/i.test(lastToken)
+      ) {
+        place = lastToken;
+      }
+    }
+
+    return { email: emailMatch, mobileNo: mobileMatch, place };
+  };
 
   const joiningAnnualSalary = Number(joiningCtcValue || 0);
   const joiningMonthlySalary = joiningAnnualSalary > 0 ? Math.round(joiningAnnualSalary / 12) : 0;
@@ -276,11 +382,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       try {
         setLoading(true);
 
-        // Fetch employees for the dropdown (admin only)
-        if (!isEmployeeUser) {
-          const employeesData = await getEmployees();
-          setEmployees(employeesData);
-        }
+        // Do not fetch all employees here (keeps Edit page lightweight).
+        // Professional Reference fields are populated from the saved reference strings.
+        setEmployees([]);
 
         // Fetch employment data
         const employmentData = await getEmployment(id);
@@ -322,6 +426,48 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
             ? rest.workSchedule
             : 'Office';
 
+        const proRefs = employmentData.professionalReferences || [];
+        const ref0 = proRefs[0];
+        const ref1 = proRefs[1];
+        const ref2 = proRefs[2];
+
+        const teamLeadNameDesig = parseNameAndDesignationFromProfessionalReference(ref0?.nameDesignation);
+        const teamLeadEmailMobile = parseEmailAndMobileFromProfessionalReference(ref0?.emailAndMobile);
+
+        const colleague1NameDesig = parseNameAndDesignationFromProfessionalReference(ref1?.nameDesignation);
+        const colleague1EmailMobile = parseEmailAndMobileFromProfessionalReference(ref1?.emailAndMobile);
+
+        const colleague3NameDesig = parseNameAndDesignationFromProfessionalReference(ref2?.nameDesignation);
+        const colleague3EmailMobile = parseEmailAndMobileFromProfessionalReference(ref2?.emailAndMobile);
+
+        // Team Leader fallback values (so the dropdown can show without loading all employees)
+        const defaultTeamLead = {
+          name: 'Viraj Kadam',
+          employeeId: 'ADV09',
+          mobileNo: '8806431723',
+          email: 'viraj.kadam@adysunventures.com',
+          designation: 'Project Manager',
+          place: 'Pune',
+        };
+
+        const defaultColleague1 = {
+          name: 'Rohit Kore',
+          employeeId: 'ADV66',
+          mobileNo: '8484025370',
+          email: 'rohit.kore@adysunventures.com',
+          designation: 'Sr. Software Engg',
+          place: 'Pune',
+        };
+
+        const defaultColleague3 = {
+          name: 'Nagesh Chavan',
+          employeeId: 'ADV47',
+          mobileNo: '9834187607',
+          email: 'nagesh.chavan@adysunventures.com',
+          designation: 'Sr. Software Developer',
+          place: 'Pune',
+        };
+
         reset({
           ...rest,
           workSchedule: normalizedWorkSchedule,
@@ -329,6 +475,33 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
           relievingCtc: relievingCtc ? relievingCtc.toString() : '',
           benefits: employmentData.benefits?.join(', ') || '',
           increments,
+          teamLead: {
+            name: teamLeadNameDesig.name || defaultTeamLead.name,
+            employeeDocId: '',
+            employeeId: teamLeadNameDesig.employeeId || defaultTeamLead.employeeId,
+            mobileNo: teamLeadEmailMobile.mobileNo || defaultTeamLead.mobileNo,
+            email: teamLeadEmailMobile.email || defaultTeamLead.email,
+            designation: teamLeadNameDesig.designation || defaultTeamLead.designation,
+            location: teamLeadEmailMobile.place || defaultTeamLead.place,
+          },
+          colleague1: {
+            name: colleague1NameDesig.name || defaultColleague1.name,
+            employeeDocId: '',
+            employeeId: colleague1NameDesig.employeeId || defaultColleague1.employeeId,
+            mobileNo: colleague1EmailMobile.mobileNo || defaultColleague1.mobileNo,
+            email: colleague1EmailMobile.email || defaultColleague1.email,
+            designation: colleague1NameDesig.designation || defaultColleague1.designation,
+            location: colleague1EmailMobile.place || defaultColleague1.place,
+          },
+          colleague3: {
+            name: colleague3NameDesig.name || defaultColleague3.name,
+            employeeDocId: '',
+            employeeId: colleague3NameDesig.employeeId || defaultColleague3.employeeId,
+            mobileNo: colleague3EmailMobile.mobileNo || defaultColleague3.mobileNo,
+            email: colleague3EmailMobile.email || defaultColleague3.email,
+            designation: colleague3NameDesig.designation || defaultColleague3.designation,
+            location: colleague3EmailMobile.place || defaultColleague3.place,
+          },
         });
 
         // Initialize includePF based on existing PF value
@@ -363,12 +536,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         if (normalizedEmploymentId && normalizedEmploymentId !== normalizedOriginalEmploymentId) {
           const { isUnique, existingEmployment } = await checkEmploymentIdUnique(normalizedEmploymentId, id);
           if (!isUnique) {
-            const conflictEmploymentId = existingEmployment?.id;
-            const conflictEmployeeId = existingEmployment?.employeeId;
-            const conflictEndDate = existingEmployment?.endDate;
-            const conflictIsResignation = existingEmployment?.isResignation;
-            const conflictIsResigned = existingEmployment?.is_resigned;
-            const conflictEmploymentStatus = existingEmployment?.employmentStatus;
+            const conflict = existingEmployment as any;
+            const conflictEmploymentId = conflict?.id;
+            const conflictEmployeeId = conflict?.employeeId;
+            const conflictEndDate = conflict?.endDate;
+            const conflictIsResignation = conflict?.isResignation;
+            const conflictIsResigned = conflict?.is_resigned;
+            const conflictEmploymentStatus = conflict?.employmentStatus;
 
             throw new Error(
               `Employment ID is already used` +
@@ -437,12 +611,26 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
         const name = ref?.name?.trim() || '';
         const designation = ref?.designation?.trim() || '';
+        const employeeId = ref?.employeeId?.trim() || '';
         const email = ref?.email?.trim() || '';
         const mobileNo = ref?.mobileNo?.trim() || '';
+        const place = ref?.location?.trim() || '';
+
+        const nameDesignationLines = [
+          `Name - ${name}`,
+          `Designation - ${designation}`,
+          employeeId ? `Employee Id - ${employeeId}` : null,
+        ].filter(Boolean);
+
+        const emailMobileLines = [
+          `Email - ${email}`,
+          `Mobile no - ${mobileNo}`,
+          place ? `Place - ${place}` : null,
+        ].filter(Boolean);
 
         return {
-          nameDesignation: `Name - ${name}\nDesignation - ${designation}`,
-          emailAndMobile: `Email - ${email}\nMobile no - ${mobileNo}`,
+          nameDesignation: nameDesignationLines.join('\n'),
+          emailAndMobile: emailMobileLines.join('\n'),
           natureOfAssociation: '',
         };
       };
@@ -833,19 +1021,18 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {!isEmployeeUser && (
-              <div className="bg-white p-4 rounded-lg mb-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-indigo-500 pl-2">
-                  Professional Reference
-                </h2>
+            <div className="bg-white p-4 rounded-lg mb-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-indigo-500 pl-2">
+                Professional Reference
+              </h2>
 
-                <div className="space-y-6">
+              <div className="space-y-6">
                   {/* Team Leader */}
                   <div>
                     <h3 className="text-md font-medium text-gray-700 mb-3">
                       Team Leader
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Name
@@ -855,6 +1042,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         >
                           <option value="">Select Name</option>
+                          {professionalRefTeamLeadName && !teamLeadOptionExists ? (
+                            <option value={professionalRefTeamLeadName}>
+                              {professionalRefTeamLeadName}
+                            </option>
+                          ) : null}
                           {employees.map((emp) => (
                             <option key={emp.id} value={emp.name}>
                               {emp.name}
@@ -885,7 +1077,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         />
                       </div>
 
-                      <div className="md:col-span-2">
+                    <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Email
                         </label>
@@ -896,7 +1088,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         />
                       </div>
 
-                      <div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Designation
                         </label>
@@ -907,7 +1099,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         />
                       </div>
 
-                      <div>
+                    <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Place
                         </label>
@@ -925,7 +1117,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     <h3 className="text-md font-medium text-gray-700 mb-3">
                       Colleague 1
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Name
@@ -935,6 +1127,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         >
                           <option value="">Select Name</option>
+                          {professionalRefColleague1Name && !colleague1OptionExists ? (
+                            <option value={professionalRefColleague1Name}>
+                              {professionalRefColleague1Name}
+                            </option>
+                          ) : null}
                           {employees.map((emp) => (
                             <option key={emp.id} value={emp.name}>
                               {emp.name}
@@ -965,7 +1162,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         />
                       </div>
 
-                      <div className="md:col-span-2">
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Email
                         </label>
@@ -1000,12 +1197,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     </div>
                   </div>
 
-                  {/* Colleague 3 */}
+                  {/* Colleague 2 */}
                   <div>
                     <h3 className="text-md font-medium text-gray-700 mb-3">
-                      Colleague 3
+                      Colleague 2
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Name
@@ -1015,6 +1212,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         >
                           <option value="">Select Name</option>
+                          {professionalRefColleague3Name && !colleague3OptionExists ? (
+                            <option value={professionalRefColleague3Name}>
+                              {professionalRefColleague3Name}
+                            </option>
+                          ) : null}
                           {employees.map((emp) => (
                             <option key={emp.id} value={emp.name}>
                               {emp.name}
@@ -1045,7 +1247,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         />
                       </div>
 
-                      <div className="md:col-span-2">
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Email
                         </label>
@@ -1081,7 +1283,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </div>
                 </div>
               </div>
-            )}
 
             <div className="bg-white p-4 rounded-lg mb-6">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Resignation Details</h2>

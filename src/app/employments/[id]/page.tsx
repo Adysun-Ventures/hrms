@@ -35,6 +35,23 @@ function parseNameAndDesignation(raw?: string): { name: string; designation: str
   // Prefer newline-separated values: "Name\nDesignation"
   const lines = s.split(/\r?\n/).map((v) => v.trim()).filter(Boolean);
   if (lines.length >= 2) {
+    const nameLine = lines.find((l) => /\bName\b\s*[-:|]/i.test(l));
+    const designationLine = lines.find((l) => /\bDesignation\b\s*[-:|]/i.test(l));
+
+    // If labels exist (saved from Edit Employment), extract only those lines.
+    if (nameLine || designationLine) {
+      const extractedName = (nameLine || lines[0] || '').replace(/\bName\b\s*[-:|]\s*/i, '').trim();
+      const extractedDesignation = (designationLine || lines[1] || '')
+        .replace(/\bDesignation\b\s*[-:|]\s*/i, '')
+        .trim();
+
+      return {
+        name: extractedName || '\u00a0',
+        designation: extractedDesignation || '\u00a0',
+      };
+    }
+
+    // Fallback for unlabeled newline format: "Name\nDesignation"
     return {
       name: lines[0] || '\u00a0',
       designation: lines.slice(1).join(' ') || '\u00a0',
@@ -83,23 +100,36 @@ function parseEmailAndMobile(raw?: string): { email: string; mobile: string } {
   const s = (raw ?? '').toString().trim();
   if (!s) return { email: '\u00a0', mobile: '\u00a0' };
 
-  // Prefer regex extraction over token splitting to handle formats like:
-  // "email\nmobile", "email - mobile", "email, mobile", etc.
-  const emailLabelMatch =
-    s.match(/\\bEmail\\b\\s*[-:|]\\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,})/i)?.[1] ||
-    null;
-  const mobileLabelMatch =
-    s.match(/\\bMobile\\b\\s*(?:no\\b|No\\b)?\\s*[-:|]\\s*(\\d{10,13})/i)?.[1] ||
-    null;
+  const lines = s
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
 
-  const emailMatch = emailLabelMatch || s.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i)?.[0] || null;
-  const mobileMatch =
-    mobileLabelMatch ||
-    s.match(/(?:^|[^0-9])(\\d{10,13})(?:[^0-9]|$)/)?.[1] ||
-    s.match(/\\b(\\d{10,13})\\b/)?.[1] ||
-    null;
+  const emailLine = lines.find((l) => /^Email\b/i.test(l)) || '';
+  const mobileLine = lines.find((l) => /^Mobile\b/i.test(l)) || '';
 
-  return { email: emailMatch || '\u00a0', mobile: mobileMatch || '\u00a0' };
+  const emailExtracted = emailLine
+    ? emailLine.replace(/^Email\b\s*[-:|]\s*/i, '').trim()
+    : '';
+
+  const mobileExtracted = mobileLine
+    ? mobileLine.replace(/^Mobile\b\s*(?:no\s*)?[-:|]\s*/i, '').trim()
+    : '';
+
+  const emailFallbackAnywhere =
+    s.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}/i)?.[0] || '';
+
+  const email = (emailExtracted || emailFallbackAnywhere).trim();
+
+  // Normalize mobile to digits-only and take last 10 digits
+  const mobileDigits = mobileExtracted.replace(/\\D/g, '');
+  const mobile = mobileDigits
+    ? mobileDigits.length >= 10
+      ? mobileDigits.slice(-10)
+      : mobileDigits
+    : '';
+
+  return { email: email || '\u00a0', mobile: mobile || '\u00a0' };
 }
 
 export default function EmploymentViewPage({ params }: { params: Promise<{ id: string }> }) {
@@ -735,7 +765,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <tbody>
                   {([0, 1, 2] as const).map((idx) => {
                     const role =
-                      idx === 0 ? 'Team Leader' : idx === 1 ? 'Colleague 1' : 'Colleague 3';
+                      idx === 0 ? 'Team Leader' : idx === 1 ? 'Colleague 1' : 'Colleague 2';
                     const ref = employment.professionalReferences?.[idx];
                     const nd = parseNameAndDesignation(ref?.nameDesignation);
                     const em = parseEmailAndMobile(ref?.emailAndMobile);
@@ -882,7 +912,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Where Were You Employed?</p>
               </div>
 
-              <div>
+              {/* <div>
                 <p className="text-lg font-medium text-gray-900">
                   {employment.joiningDate
                     ? formatDateToDayMonYear(employment.joiningDate)
@@ -890,10 +920,9 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                       ? formatDateToDayMonYear(employment.startDate)
                       : '-'}
                 </p>
-                <p className="text-sm text-gray-500">Start Date</p>
-              </div>
+  
+              </div> */}
 
-              
             </div>
 
             
@@ -1079,7 +1108,9 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               const joiningBasic = joiningMonthly > 0 ? Math.round(joiningMonthly * 0.4) : 0;
               const joiningDA = joiningBasic > 0 ? Math.round(joiningBasic * 0.1) : 0;
               const joiningHRA = joiningBasic > 0 ? Math.round(joiningBasic * 0.5) : 0;
-              const joiningPF = joiningBasic > 0 ? Math.round(joiningBasic * 0.12) : 0;
+              const pfAmount = Number(employment.pf || (employment as any).employerPF || 0);
+              const pfIncluded = pfAmount > 0;
+              const joiningPF = pfIncluded && joiningBasic > 0 ? Math.round(joiningBasic * 0.12) : 0;
               const joiningMedicalAllowance = joiningMonthly > 0 ? 1250 : 0;
               const joiningTransportAllowance = joiningMonthly > 0 ? 1600 : 0;
               const joiningCalculated =
@@ -1108,10 +1139,12 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                     <p className="text-lg font-medium text-gray-900">{joiningHRA > 0 ? formatCurrency(joiningHRA) : '-'}</p>
                     <p className="text-sm text-gray-500">Joining HRA (House Rent Allowance)</p>
                   </div>
+                {pfIncluded && (
                   <div>
                     <p className="text-lg font-medium text-gray-900">{joiningPF > 0 ? formatCurrency(joiningPF) : '-'}</p>
                     <p className="text-sm text-gray-500">Joining PF (Provident Fund)</p>
                   </div>
+                )}
                   <div>
                     <p className="text-lg font-medium text-gray-900">{joiningSpecial > 0 ? formatCurrency(joiningSpecial) : '-'}</p>
                     <p className="text-sm text-gray-500">Joining Special Allowance</p>

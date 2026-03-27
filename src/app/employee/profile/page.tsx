@@ -224,75 +224,16 @@ console.log(employmentData?.[0]?.bankName);
         />
 
         <div className="px-6 pb-6">
-          {/* Personal Information */}
+          {/* Basic Information */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FiUser className="mr-2" /> Personal Information
+              <FiUser className="mr-2" /> Basic Information
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{displayEmployee?.name || '-'}</p>
-                <p className="text-sm text-gray-500">Full Name</p>
-              </div>
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">
-                  {(() => {
-                    // Try multiple sources to get the employeeId
-                    let employeeId = (displayEmployee as any)?.employeeId;
-
-                    // If not found, try localStorage
-                    if (!employeeId) {
-                      try {
-                        const fullEmployeeData = localStorage.getItem('fullEmployeeData');
-                        if (fullEmployeeData) {
-                          const parsedData = JSON.parse(fullEmployeeData);
-                          if (parsedData.employeeId) {
-                            employeeId = parsedData.employeeId;
-                          }
-                        }
-                      } catch (error) {
-                        console.error('Error retrieving employee ID:', error);
-                      }
-                    }
-
-                    return employeeId || 'Not Assigned';
-                  })()}
-                </p>
-                <p className="text-sm text-gray-500">Employee ID <span className="text-xs text-gray-400">(Read Only)</span></p>
-              </div>
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{displayEmployee?.email || '-'}</p>
-                <p className="text-sm text-gray-500">Email</p>
-              </div>
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{displayEmployee?.phone || '-'}</p>
-                <p className="text-sm text-gray-500">Phone</p>
-              </div>
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.jobTitle || '-'}</p>
-                <p className="text-sm text-gray-500">Position</p>
-              </div>
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.department|| '-'}</p>
-                <p className="text-sm text-gray-500">Department</p>
-              </div>
-
-              <div className="p-3">
-                <span
-                  className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${isUserActive()
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-red-100 text-red-800'
-                    }`}
-                >
-                  {getUserStatus()}
-                </span>
-                <p className="text-sm text-gray-500 mt-2">Status</p>
+                <p className="text-sm text-gray-500">Name</p>
               </div>
 
               <div className="p-3">
@@ -301,15 +242,12 @@ console.log(employmentData?.[0]?.bankName);
                     ? formatDateToDayMonYear((displayEmployee as any).dateOfBirth) 
                     : '-'}
                 </p>
-                <p className="text-sm text-gray-500">Date of Birth</p>
+                <p className="text-sm text-gray-500">Date Of Birth</p>
               </div>
 
               <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">
-                  {(displayEmployee as any)?.employeeType === 'internal' ? 'Internal' : 
-                   (displayEmployee as any)?.employeeType === 'external' ? 'External' : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Employee Type</p>
+                <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.homeTown || '-'}</p>
+                <p className="text-sm text-gray-500">Home Town</p>
               </div>
             </div>
           </div>
@@ -324,13 +262,23 @@ console.log(employmentData?.[0]?.bankName);
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="p-3">
+                <p className="text-lg font-medium text-gray-900">{displayEmployee?.phone || '-'}</p>
+                <p className="text-sm text-gray-500">Mobile No</p>
+              </div>
+
+              <div className="p-3">
+                <p className="text-lg font-medium text-gray-900">{displayEmployee?.email || '-'}</p>
+                <p className="text-sm text-gray-500">Email</p>
+              </div>
+
+              <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.currentAddress || '-'}</p>
-                <p className="text-sm text-gray-500">Current Address</p>
+                <p className="text-sm text-gray-500">Current Adress</p>
               </div>
 
               <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.permanentAddress || '-'}</p>
-                <p className="text-sm text-gray-500">Permanent Address</p>
+                <p className="text-sm text-gray-500">Permanent Adress</p>
               </div>
             </div>
           </div>
@@ -340,7 +288,7 @@ console.log(employmentData?.[0]?.bankName);
           {/* Identification Documents */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FiShield className="mr-2" /> Identification Documents
+              <FiShield className="mr-2" /> Identification Decument
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -354,7 +302,12 @@ console.log(employmentData?.[0]?.bankName);
                 <p className="text-sm text-gray-500">Driving License</p>
               </div>
 
-              
+              <div className="p-3">
+                <p className="text-lg font-medium text-gray-900">
+                  {(displayEmployee as any)?.panCard || (displayEmployee as any)?.panNumber || '-'}
+                </p>
+                <p className="text-sm text-gray-500">Pan Card</p>
+              </div>
 
               <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.voterID || '-'}</p>
@@ -523,31 +476,6 @@ console.log(employmentData?.[0]?.bankName);
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="border-t border-gray-200 my-2" />
-
-          {/* Employment Information */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FiBriefcase className="mr-2" /> Employment Information
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.homeTown || '-'}</p>
-                <p className="text-sm text-gray-500">Home Town</p>
-              </div>
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">
-                  {displayEmployee?.status === 'active' ? 'Yes' : 'No'}
-                </p>
-                <p className="text-sm text-gray-500">Is Active</p>
-              </div>
-            </div>
           </div>
 
           <div className="border-t border-gray-200 my-2" />

@@ -1415,6 +1415,8 @@ export const updateEmployeeSelfEmployment = async (
       'endDate',
       'joiningCtc',
       'inHandCtc',
+      // Professional References (employee self-edit)
+      'professionalReferences',
       // Salary details
       'salary',
       'salaryPerMonth',
@@ -1451,7 +1453,6 @@ export const updateEmployeeSelfEmployment = async (
       'designation',
       'department',
       'reportingAuthority',
-      'employmentType',
       'whereWereYouEmploid',
       'whereWereYouEmployed',
       'whereWereYouEmployd',

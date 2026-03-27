@@ -402,7 +402,7 @@ return (
             onClick={() => setShowPDF(true)}
             disabled={!canGenerate}
             className={[
-              "inline-flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-md",
+              "inline-flex items-center justify-center gap-2 px-8 py-3 rounded-xl text-sm font-medium transition-all duration-200 shadow-md min-h-[48px] min-w-[190px]",
               canGenerate
                 ? "bg-green-600 text-white hover:bg-green-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed",
@@ -424,18 +424,6 @@ return (
         <div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-
-            {/* Employee Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Employee Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                readOnly
-                value={formData.employeeName}
-                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-700"
-              />
-            </div>
 
             {/* Month */}
             <div>
@@ -499,18 +487,23 @@ return (
             </div>
 
             {/* PF Toggle */}
-            <div className="flex items-center gap-3 mt-8">
-              <input
-                type="checkbox"
-                checked={formData.enablePF}
-                onChange={(e) =>
-                  setFormData(p => ({ ...p, enablePF: e.target.checked }))
-                }
-                className="h-5 w-5 text-blue-600 rounded border-gray-300"
-              />
-              <span className="text-sm font-medium text-gray-700">
-                Apply PF Deduction
-              </span>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">PF</label>
+              <div className="border border-gray-300 rounded-lg p-3">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={formData.enablePF}
+                    onChange={(e) =>
+                      setFormData(p => ({ ...p, enablePF: e.target.checked }))
+                    }
+                    className="h-5 w-5 text-blue-600 rounded border-gray-300"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Apply PF Deduction
+                  </span>
+                </div>
+              </div>
             </div>
 
           </div>
@@ -530,7 +523,7 @@ return (
 
           <button
             onClick={() => setShowPDF(true)}
-            className="bg-green-600 hover:bg-green-700 transition-all duration-200 text-white px-8 py-3 rounded-xl shadow-md font-medium"
+            className="bg-green-600 hover:bg-green-700 transition-all duration-200 text-white px-8 py-3 rounded-xl shadow-md font-medium inline-flex items-center justify-center gap-2 text-sm min-h-[48px] min-w-[190px]"
             aria-label="Generate"
           >
             <span className="inline-flex items-center gap-2">

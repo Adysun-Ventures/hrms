@@ -132,6 +132,28 @@ function parseEmailAndMobile(raw?: string): { email: string; mobile: string } {
   return { email: email || '\u00a0', mobile: mobile || '\u00a0' };
 }
 
+function whereEmployedRaw(employment: any): string {
+  const raw =
+    employment?.whereWereYouEmploid ||
+    employment?.whereWereYouEmployed ||
+    employment?.whereWereYouEmployd ||
+    '';
+  const s = String(raw).trim();
+  if (!s) return '-';
+
+  // Persisted values are sometimes stored without the "(Pune)/(Mumbai)" part because
+  // the Edit dropdown uses a shorter value and a longer label. Make display match label.
+  const key = s.toLowerCase();
+  if (key === 'registred corporate office' || key === 'registered corporate office') {
+    return 'Registred Corporate Office(Pune)';
+  }
+  if (key === 'branch office') {
+    return 'Branch Office(Mumbai)';
+  }
+
+  return s;
+}
+
 export default function EmploymentViewPage({ params }: { params: Promise<{ id: string }> }) {
 
   const router = useRouter();
@@ -195,6 +217,25 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
   const employeeSalaries =
     currentUserData?.userType === 'admin' ? adminEmployeeSalaries : selfEmployeeSalaries;
   const hasSalaries = employeeSalaries.length > 0;
+
+  const hasIncrementDetails = (() => {
+    const arr = employment?.increments;
+    if (Array.isArray(arr) && arr.length > 0) return true;
+
+    const incrementDate = String(employment?.incrementDate ?? '').trim();
+    const newSalary = employment?.newSalary != null ? Number(employment.newSalary) : 0;
+    const incrementedCtc =
+      employment?.incrementedCtc != null ? Number(employment.incrementedCtc) : 0;
+    const incrementedInHandCtc =
+      employment?.incrementedInHandCtc != null ? Number(employment.incrementedInHandCtc) : 0;
+
+    return (
+      Boolean(incrementDate) ||
+      newSalary > 0 ||
+      incrementedCtc > 0 ||
+      incrementedInHandCtc > 0
+    );
+  })();
 
   // Calculate real attendance statistics
   const calculateAttendanceStats = () => {
@@ -542,23 +583,53 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <tbody>
                   <tr>
                     <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {(employment as any).whereWereYouEmploid ||
-                        (employment as any).whereWereYouEmployed ||
-                        (employment as any).whereWereYouEmployd ||
-                        '\u00a0'}
+                      {whereEmployedRaw(employment as any) || '\u00a0'}
                     </td>
                     <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      Adysun Ventures Pvt. Ltd.
-                      {"\n"}
-                      Workplex, S no 47, Near Bhapkar Petrol Pump, Pune, Maharashtra - 411009
-                      {"\n"}
-                      Pune Office (Head Office)
-                      {"\n\n"}
-                      Adysun Ventures Pvt. Ltd.
-                      {"\n"}
-                      A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607
-                      {"\n"}
-                      Mumbai Office
+                      {(() => {
+                        const raw =
+                          (employment as any).whereWereYouEmploid ||
+                          (employment as any).whereWereYouEmployed ||
+                          (employment as any).whereWereYouEmployd ||
+                          '';
+                        const key = String(raw).toLowerCase();
+
+                        const isPune =
+                          key.includes('pune') ||
+                          key.includes('registred corporate office') ||
+                          key.includes('registered corporate office') ||
+                          key.includes('head office');
+                        const isMumbai =
+                          key.includes('mumbai') ||
+                          key.includes('branch office') ||
+                          key.includes('thane');
+
+                        if (isPune) {
+                          return (
+                            <>
+                              Adysun Ventures Pvt. Ltd.
+                              {"\n"}
+                              Workplex, S no 47, Near Bhapkar Petrol Pump, Pune, Maharashtra - 411009
+                              {"\n"}
+                              Pune Office (Head Office)
+                            </>
+                          );
+                        }
+
+                        if (isMumbai) {
+                          return (
+                            <>
+                              Adysun Ventures Pvt. Ltd.
+                              {"\n"}
+                              A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607
+                              {"\n"}
+                              Mumbai Office
+                            </>
+                          );
+                        }
+
+                        return '\u00a0';
+                      })()}
                     </td>
                   </tr>
                 </tbody>
@@ -769,9 +840,15 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   </tr>
                 </thead>
                 <tbody>
-                  {([0, 1, 2] as const).map((idx) => {
+                  {([0, 1, 2, 3] as const).map((idx) => {
                     const role =
-                      idx === 0 ? 'Team Leader' : idx === 1 ? 'Colleague 1' : 'Colleague 2';
+                      idx === 0
+                        ? 'Team Leader'
+                        : idx === 1
+                          ? 'Colleague 1'
+                          : idx === 2
+                            ? 'Colleague 2'
+                            : 'Reporting Manager';
                     const ref = employment.professionalReferences?.[idx];
                     const nd = parseNameAndDesignation(ref?.nameDesignation);
                     const em = parseEmailAndMobile(ref?.emailAndMobile);
@@ -909,11 +986,8 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               </div>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">
-                  {(employment as any).whereWereYouEmploid ||
-                    (employment as any).whereWereYouEmployed ||
-                    (employment as any).whereWereYouEmployd ||
-                    '-'}
+                <p className="text-lg font-medium text-gray-900 whitespace-normal break-words">
+                  {whereEmployedRaw(employment as any)}
                 </p>
                 <p className="text-sm text-gray-500">Where Were You Employed?</p>
               </div>
@@ -986,122 +1060,74 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
 
 
-          {/* Career Progression/Increment Details (CTP) */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FiTrendingUp className="mr-2" />Increment Details
-            </h2>
+          {hasIncrementDetails ? (
+            <>
+              {/* Career Progression/Increment Details (CTP) */}
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <FiTrendingUp className="mr-2" />Increment Details
+                </h2>
 
-            {(() => {
-              const increments =
-                employment.increments && employment.increments.length > 0
-                  ? employment.increments
-                  : (employment.incrementDate ||
-                     employment.newSalary ||
-                     employment.incrementedCtc ||
-                     employment.incrementedInHandCtc)
-                  ? [
-                      {
-                        incrementDate: employment.incrementDate,
-                        newSalary: employment.newSalary,
-                        incrementedCtc: employment.incrementedCtc,
-                        incrementedInHandCtc: employment.incrementedInHandCtc,
-                      },
-                    ]
-                  : [];
+                {(() => {
+                  const increments =
+                    employment.increments && employment.increments.length > 0
+                      ? employment.increments
+                      : (employment.incrementDate ||
+                         employment.newSalary ||
+                         employment.incrementedCtc ||
+                         employment.incrementedInHandCtc)
+                        ? [
+                            {
+                              incrementDate: employment.incrementDate,
+                              newSalary: employment.newSalary,
+                              incrementedCtc: employment.incrementedCtc,
+                              incrementedInHandCtc: employment.incrementedInHandCtc,
+                            },
+                          ]
+                        : [];
 
-              if (increments.length === 0) {
-                return (
-                  <div>
-                    <p className="text-sm text-gray-500">No increment records available.</p>
-                  </div>
-                );
-              }
-
-              return (
-                <div className="space-y-4">
-                  {increments.map((inc, index) => (
-                    <div key={inc.id || index}>
-                      <p className="text-sm font-semibold text-gray-500 mb-2">
-                        Increment {index + 1}
-                      </p>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Increment Date</p>
-                          <p className="text-base font-medium text-gray-900">
-                            {inc.incrementDate ? formatDateToDayMonYear(inc.incrementDate) : '-'}
+                  return (
+                    <div className="space-y-4">
+                      {increments.map((inc, index) => (
+                        <div key={inc.id || index}>
+                          <p className="text-sm font-semibold text-gray-500 mb-2">
+                            Increment {index + 1}
                           </p>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Increment Date</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {inc.incrementDate ? formatDateToDayMonYear(inc.incrementDate) : '-'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Incremented Salary</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {inc.newSalary ? formatCurrency(inc.newSalary) : '-'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Incremented CTC</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {inc.incrementedCtc ? formatCurrency(inc.incrementedCtc) : '-'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Incremented In-hand CTC</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {inc.incrementedInHandCtc ? formatCurrency(inc.incrementedInHandCtc) : '-'}
+                              </p>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Incremented Salary</p>
-                          <p className="text-base font-medium text-gray-900">
-                            {inc.newSalary ? formatCurrency(inc.newSalary) : '-'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Incremented CTC</p>
-                          <p className="text-base font-medium text-gray-900">
-                            {inc.incrementedCtc ? formatCurrency(inc.incrementedCtc) : '-'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Incremented In-hand CTC</p>
-                          <p className="text-base font-medium text-gray-900">
-                            {inc.incrementedInHandCtc ? formatCurrency(inc.incrementedInHandCtc) : '-'}
-                          </p>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              );
-            })()}
-          </div>
+                  );
+                })()}
+              </div>
+            </>
+          ) : null}
           <div className="border-t border-gray-200 my-2" />
-         {/* Bank Details Section - SAME STYLE AS OTHER CARDS */}
-<div className="mb-6">
-  <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FaRupeeSign className="mr-2" /> Salary Account Details
-            </h2>
-
-  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-
-    {/* Bank Name */}
-    <div>
-      <p className="text-lg font-medium text-gray-900">
-        {employment.bankName || '-'}
-      </p>
-      <p className="text-sm text-gray-500">Bank Name</p>
-    </div>
-
-    {/* Account Number */}
-    <div>
-      <p className="text-lg font-medium text-gray-900">
-        {employment.accountNo || '-'}
-      </p>
-      <p className="text-sm text-gray-500">Account Number</p>
-    </div>
-
-    {/* IFSC */}
-    <div>
-      <p className="text-lg font-medium text-gray-900">
-        {employment.ifscCode || '-'}
-      </p>
-      <p className="text-sm text-gray-500">IFSC Code</p>
-    </div>
-
-    {/* PAN */}
-    <div>
-      <p className="text-lg font-medium text-gray-900">
-        {employment.panNumber || '-'}
-      </p>
-      <p className="text-sm text-gray-500">PAN Number</p>
-    </div>
-
-  </div>
-</div>
-<div className="border-t border-gray-200 my-2" />
-
           {/* Joining Salary Information */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -1257,6 +1283,40 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 </p>
                 <p className="text-sm text-gray-500">Payment Frequency</p>
               </div> */}
+            </div>
+          </div>
+          <div className="border-t border-gray-200 my-2" />
+
+          {/* Bank Details Section - SAME STYLE AS OTHER CARDS */}
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+              <FaRupeeSign className="mr-2" /> Salary Account Details
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Bank Name */}
+              <div>
+                <p className="text-lg font-medium text-gray-900">{employment.bankName || '-'}</p>
+                <p className="text-sm text-gray-500">Bank Name</p>
+              </div>
+
+              {/* Account Number */}
+              <div>
+                <p className="text-lg font-medium text-gray-900">{employment.accountNo || '-'}</p>
+                <p className="text-sm text-gray-500">Account Number</p>
+              </div>
+
+              {/* IFSC */}
+              <div>
+                <p className="text-lg font-medium text-gray-900">{employment.ifscCode || '-'}</p>
+                <p className="text-sm text-gray-500">IFSC Code</p>
+              </div>
+
+              {/* PAN */}
+              <div>
+                <p className="text-lg font-medium text-gray-900">{employment.panNumber || '-'}</p>
+                <p className="text-sm text-gray-500">PAN Number</p>
+              </div>
             </div>
           </div>
           </div>

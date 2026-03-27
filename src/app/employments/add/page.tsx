@@ -70,7 +70,6 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   department: string;
   location: string;
   reportingManager: string;
-  employmentType: string;
   workSchedule: string;
   whereWereYouEmploid?: string;
 
@@ -111,6 +110,14 @@ export default function AddEmploymentPage() {
   });
 
   const whereWereYouEmploidValue = watch('whereWereYouEmploid');
+  const selectedDepartment = watch('department');
+  const designationOptionsByDepartment: Record<string, string[]> = {
+    Engineering: ['Software Developer', 'Senior Software Developer', 'Lead Developer'],
+    Sales: ['Sales Executive', 'Senior Sales Executive', 'Sales Manager'],
+    Marketing: ['Marketing Executive', 'Senior Marketing Executive', 'Marketing Manager'],
+    HR: ['HR Executive', 'HR Manager', 'Talent Acquisition Specialist'],
+    Finance: ['Accountant', 'Senior Accountant', 'Finance Manager'],
+  };
   const derivedLocation =
     whereWereYouEmploidValue === 'Registred Corporate Office'
       ? 'Pune'
@@ -466,23 +473,6 @@ export default function AddEmploymentPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Designation
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Software Engineer"
-                      {...register('jobTitle', {
-                        required: 'Designation is required'
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
-                    {errors.jobTitle && (
-                      <p className="mt-1 text-sm text-red-600">{errors.jobTitle.message}</p>
-                    )}
-                  </div>
-
-                  <div>
   <label className="block text-sm font-medium text-gray-700 mb-1">
     Department
   </label>
@@ -500,6 +490,31 @@ export default function AddEmploymentPage() {
   </select>
 </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <span className="text-red-500 mr-1">*</span> Designation
+                    </label>
+                    <select
+                      {...register('jobTitle', {
+                        required: 'Designation is required'
+                      })}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      disabled={!selectedDepartment}
+                    >
+                      <option value="">
+                        {selectedDepartment ? 'Select designation' : 'Select department first'}
+                      </option>
+                      {(selectedDepartment ? designationOptionsByDepartment[selectedDepartment] : [])?.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.jobTitle && (
+                      <p className="mt-1 text-sm text-red-600">{errors.jobTitle.message}</p>
+                    )}
+                  </div>
+
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -515,24 +530,6 @@ export default function AddEmploymentPage() {
                   </div>
 
                   
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Employment Type
-                    </label>
-                    <select
-                      {...register('employmentType', { required: 'Employment type is required' })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    >
-                      <option value="full-time">Full Time</option>
-                      <option value="part-time">Part Time</option>
-                      <option value="contract">Contract</option>
-                      <option value="internship">Internship</option>
-                    </select>
-                    {errors.employmentType && (
-                      <p className="mt-1 text-sm text-red-600">{errors.employmentType.message}</p>
-                    )}
-                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">

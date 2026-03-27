@@ -352,6 +352,10 @@ const EmployeeRelievingLetter: React.FC = () => {
           setDesignationOverride(
             empm[0]?.designation || empm[0]?.jobTitle || ""
           );
+          const joiningDateForDoc = normalizeToISODate(empm[0]?.joiningDate);
+          if (joiningDateForDoc) {
+            setEmployeeSignDate(joiningDateForDoc);
+          }
         }
       } catch (error) {
         console.error(error);
@@ -392,7 +396,7 @@ const EmployeeRelievingLetter: React.FC = () => {
 
           <div className="flex-1 flex justify-center">
             <h1 className="text-2xl font-bold text-gray-800 text-center">
-              Reliving Letter
+              Relieving Letter
             </h1>
           </div>
 
@@ -402,7 +406,7 @@ const EmployeeRelievingLetter: React.FC = () => {
               onClick={handleGenerate}
               disabled={!canGenerate}
               className={[
-                "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm inline-flex items-center gap-2",
+                "inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition shadow-sm min-h-[48px] min-w-[190px]",
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed",
@@ -439,8 +443,7 @@ const EmployeeRelievingLetter: React.FC = () => {
                       joiningDate ? "text-blue-600" : "text-gray-400"
                     ].join(" ")}
                   >
-                    Joining Date{" "}
-                    {joiningDate ? `(${formatDate(joiningDate)})` : "(not available)"}
+                    Joining Date
                   </a>
                 </div>
 
@@ -462,8 +465,7 @@ const EmployeeRelievingLetter: React.FC = () => {
                       lastWorkingDate ? "text-blue-600" : "text-gray-400"
                     ].join(" ")}
                   >
-                    Last Working Date{" "}
-                    {lastWorkingDate ? `(${formatDate(lastWorkingDate)})` : "(not available)"}
+                    Last Working Date
                   </a>
                 </div>
 
@@ -485,8 +487,7 @@ const EmployeeRelievingLetter: React.FC = () => {
                       resignationDate ? "text-blue-600" : "text-gray-400"
                     ].join(" ")}
                   >
-                    Resign Date{" "}
-                    {resignationDate ? `(${formatDate(resignationDate)})` : "(not available)"}
+                    Resign Date
                   </a>
                 </div>
 
@@ -545,7 +546,7 @@ const EmployeeRelievingLetter: React.FC = () => {
               onClick={handleGenerate}
               disabled={!canGenerate}
               className={[
-                "inline-flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+                "inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition shadow-sm min-h-[48px] min-w-[190px]",
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed",

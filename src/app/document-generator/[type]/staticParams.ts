@@ -15,6 +15,7 @@ export async function generateStaticParams() {
     { type: 'v2/appointment-letter' },
     { type: 'v2/relieving-letter' },
     { type: 'v2/appraisal-letter' },
+    { type: 'v2/increment-letter' },
     { type: 'v2/salary-slip' },
     { type: 'v2/payslip' }, // Backward compatibility
     { type: 'v2/bank-statement' },

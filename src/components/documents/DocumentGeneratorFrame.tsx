@@ -49,6 +49,7 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
         case 'v2/relieving-letter':
           return <RelievingLetterV2 />;
         case 'v2/appraisal-letter':
+        case 'v2/increment-letter':
           return <AppraisalLetterV2 />;
         case 'v2/salary-slip':
         case 'v2/payslip': // Backward compatibility

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FiDownload } from "react-icons/fi";
+import { FiDownload, FiX } from "react-icons/fi";
 import TableHeader from "@/components/ui/TableHeader";
 
 import {
@@ -23,7 +23,7 @@ import {
 import { createAdysunDocx } from "@/utils/docxAdysun";
 
 import { db } from "@/firebase/config";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
 import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import { Combobox } from "@headlessui/react";
@@ -61,6 +61,19 @@ const toTitleCase = (str) => {
     .split(" ")
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+};
+
+const normalizeDateForInput = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+    return "";
+  }
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return "";
 };
 
 const MONTH_OPTIONS = [
@@ -360,7 +373,7 @@ export default function AppraisalLetterV2() {
   const [showPDF, setShowPDF] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [employments, setEmployments] = useState({});
-  const [employment,setEmployment] = useState({})
+  const [employment, setEmployment] = useState({});
 
   useEffect(() => {
     async function load() {
@@ -369,6 +382,50 @@ export default function AppraisalLetterV2() {
     }
     load();
   }, []);
+
+  const getEmploymentForEmployee = async (employeeId) => {
+    if (!employeeId) return null;
+    if (employments[employeeId]) return employments[employeeId];
+    const qSnap = await getDocs(query(collection(db, "employments"), where("employeeId", "==", employeeId)));
+    if (qSnap.empty) return null;
+    const nextEmployment = qSnap.docs[0].data();
+    setEmployments((prev) => ({ ...prev, [employeeId]: nextEmployment }));
+    return nextEmployment;
+  };
+
+  const autoFillFromEmployment = (empEmployment) => {
+    if (!empEmployment) return;
+
+    const inferredCurrentCtc =
+      empEmployment?.incrementedCtc ||
+      empEmployment?.newSalary ||
+      empEmployment?.joiningCtc ||
+      empEmployment?.salary ||
+      "";
+    const inferredOldDesignation =
+      empEmployment?.designation ||
+      empEmployment?.jobTitle ||
+      "";
+    const inferredNewDesignation =
+      empEmployment?.increments?.[0]?.newDesignation ||
+      empEmployment?.newDesignation ||
+      inferredOldDesignation ||
+      "";
+    const inferredIncrementDate = normalizeDateForInput(
+      empEmployment?.incrementDate ||
+      empEmployment?.effectiveDate ||
+      empEmployment?.appraisalDate ||
+      ""
+    );
+
+    if (inferredCurrentCtc) setCurrentCTC(String(inferredCurrentCtc));
+    if (inferredOldDesignation) setOldDesignation(inferredOldDesignation);
+    if (inferredNewDesignation) setNewDesignation(inferredNewDesignation);
+    if (inferredIncrementDate) {
+      setEffectiveDate(inferredIncrementDate);
+      setDocumentGenerateDate(inferredIncrementDate);
+    }
+  };
 
   const canGenerate = Boolean(
     employee &&
@@ -407,6 +464,20 @@ export default function AppraisalLetterV2() {
     if (!effectiveDate) return toast.error("Select effective date");
     if (!documentGenerateDate) return toast.error("Select document generate date");
     setShowPDF(true);
+  };
+
+  const useIncrementDateFor = (targetSetter) => {
+    const incrementDate = normalizeDateForInput(
+      employment?.incrementDate ||
+      employment?.effectiveDate ||
+      employment?.appraisalDate ||
+      ""
+    );
+    if (!incrementDate) {
+      toast.error("Increment date is not available for selected employee");
+      return;
+    }
+    targetSetter(incrementDate);
   };
 
   return (
@@ -452,19 +523,41 @@ export default function AppraisalLetterV2() {
                 
                   <Combobox
                   value={employee}
-                  onChange={(e) => {
-                    setEmployee(e || null);
-                    setEmployment(employments[e?.id] || null);
+                  onChange={async (e) => {
+                    const nextEmployee = e || null;
+                    setEmployee(nextEmployee);
+                    if (!nextEmployee?.id) {
+                      setEmployment(null);
+                      return;
+                    }
+                    const nextEmployment = await getEmploymentForEmployee(nextEmployee.id);
+                    setEmployment(nextEmployment || null);
+                    autoFillFromEmployment(nextEmployment);
                   }}
                 >
                   <div className="relative">
                 
                     <Combobox.Input
-                      className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                       placeholder="Select or Search employee..."
                       displayValue={(emp) => emp?.name ?? ""}
                       onChange={(event) => setSearchTerm(event.target.value)}
                     />
+                    {employee && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmployee(null);
+                          setEmployment(null);
+                          setSearchTerm("");
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        aria-label="Clear selected employee"
+                        title="Clear"
+                      >
+                        <FiX size={16} />
+                      </button>
+                    )}
                 
                     <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
                       {candidates
@@ -499,6 +592,7 @@ export default function AppraisalLetterV2() {
                   <input
                     type="number"
                     className="w-full p-2 border rounded-md"
+                    placeholder="Enter current CTC"
                     value={currentCTC}
                     onChange={(e) => setCurrentCTC(e.target.value)}
                   />
@@ -511,6 +605,7 @@ export default function AppraisalLetterV2() {
                   <input
                     type="number"
                     className="w-full p-2 border rounded-md"
+                    placeholder="Enter percentage increase"
                     value={percentIncrease}
                     onChange={(e) => onPercentChange(e.target.value)}
                   />
@@ -523,6 +618,7 @@ export default function AppraisalLetterV2() {
                   <input
                     type="number"
                     className="w-full p-2 border rounded-md"
+                    placeholder="Enter revised CTC"
                     value={revisedCTC}
                     onChange={(e) => onRevisedChange(e.target.value)}
                   />
@@ -533,6 +629,13 @@ export default function AppraisalLetterV2() {
                     Document Generate Date <span className="text-red-500">*</span>
                   </label>
                   <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
+                  <button
+                    type="button"
+                    onClick={() => useIncrementDateFor(setDocumentGenerateDate)}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Use Increment Date
+                  </button>
                 </div>
 
                 <div>
@@ -540,6 +643,13 @@ export default function AppraisalLetterV2() {
                     Effective Date <span className="text-red-500">*</span>
                   </label>
                   <DateDropdown value={effectiveDate} onChange={setEffectiveDate} />
+                  <button
+                    type="button"
+                    onClick={() => useIncrementDateFor(setEffectiveDate)}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Use Increment Date
+                  </button>
                 </div>
 
                 <div>
@@ -549,6 +659,7 @@ export default function AppraisalLetterV2() {
                   <input
                     type="text"
                     className="w-full p-2 border rounded-md"
+                    placeholder="Enter old designation"
                     value={oldDesignation}
                     onChange={(e) => setOldDesignation(e.target.value)}
                   />
@@ -561,6 +672,7 @@ export default function AppraisalLetterV2() {
                   <input
                     type="text"
                     className="w-full p-2 border rounded-md"
+                    placeholder="Enter new designation"
                     value={newDesignation}
                     onChange={(e) => setNewDesignation(e.target.value)}
                   />

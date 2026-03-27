@@ -46,6 +46,7 @@ const DocumentGeneratorPage = () => {
         case 'relieving-letter':
           return <RelievingLetterV2 />;
         case 'appraisal-letter':
+        case 'increment-letter':
           return <AppraisalLetterV2 />;
         case 'salary-slip':
         case 'payslip': // Backward compatibility

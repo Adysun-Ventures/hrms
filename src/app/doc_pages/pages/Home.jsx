@@ -25,7 +25,7 @@ function Home() {
     { title: "Appointment Letter", path: "/dashboard/documents/appointment-letter", v2Path: "/dashboard/documents/v2/appointment-letter", icon: <FileText size={32} /> },
     { title: "Salary Slip", path: "/dashboard/documents/salary-slip", v2Path: "/dashboard/documents/v2/salary-slip", icon: <File size={32} /> },
     { title: "Relieving Letter", path: "/dashboard/documents/relieving-letter", v2Path: "/dashboard/documents/v2/relieving-letter", icon: <FileText size={32} /> },
-    { title: "Appraisal Letter", path: "/dashboard/documents/appraisal-letter", v2Path: "/dashboard/documents/v2/appraisal-letter", icon: <Clipboard size={32} /> },
+    { title: "Increment Letter", path: "/dashboard/documents/increment-letter", v2Path: "/dashboard/documents/v2/increment-letter", icon: <Clipboard size={32} /> },
     // { title: "Increment Letter", path: "/dashboard/documents/increment-letter", v2Path: "/dashboard/documents/v2/increment-letter", icon: <Briefcase size={32} /> },
     { title: "Manage Company", path: "/dashboard/documents/company-card", icon: <Building size={32} /> },
    

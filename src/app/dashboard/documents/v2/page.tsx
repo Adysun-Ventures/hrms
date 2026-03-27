@@ -34,7 +34,7 @@ const documents = [
   { 
     title: 'Increment Letter (v2)',
     description: 'Generate selectable text increment letters',
-    path: '/dashboard/documents/v2/appraisal-letter', 
+    path: '/dashboard/documents/v2/increment-letter', 
     icon: <FiClipboard size={24} /> 
   },
   { 

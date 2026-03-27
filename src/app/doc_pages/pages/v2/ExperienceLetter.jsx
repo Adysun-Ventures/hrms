@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { FiDownload } from 'react-icons/fi';
+import { FiDownload, FiX } from 'react-icons/fi';
 import TableHeader from '@/components/ui/TableHeader';
 
 import {
@@ -79,6 +79,18 @@ const formatDate = (d) => {
   } catch (e) {
     return d;
   }
+};
+const normalizeDateForInput = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+    return '';
+  }
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return '';
 };
 
 const MONTH_OPTIONS = [
@@ -332,10 +344,46 @@ const [searchTerm, setSearchTerm] = useState("");
     setEmployments(map);
   };
 
-  const handleSelect = e => {
-    const id = e.target.value;
-    setEmployee(candidates.find(x => x.id === id) || null);
-    setEmployment(employments[id] || null);
+  const autoFillFromEmployment = (empEmployment) => {
+    if (!empEmployment) return;
+
+    const designationFromEmployment =
+      empEmployment?.designation ||
+      empEmployment?.jobTitle ||
+      '';
+    const placeFromEmployment =
+      empEmployment?.location ||
+      empEmployment?.workLocation ||
+      empEmployment?.officeLocation ||
+      empEmployment?.place ||
+      '';
+    const exitDateFromEmployment = normalizeDateForInput(
+      empEmployment?.lastWorkingDate ||
+      empEmployment?.resignationDate ||
+      empEmployment?.resignedDate ||
+      ''
+    );
+
+    if (designationFromEmployment) setDesignationOverride(designationFromEmployment);
+    if (placeFromEmployment) setEmployeeSignPlace(placeFromEmployment);
+    if (exitDateFromEmployment) {
+      setEmployeeSignDate(exitDateFromEmployment);
+      setTodaysDate(exitDateFromEmployment);
+    }
+  };
+
+  const useExitDateFor = (targetSetter) => {
+    const exitDate = normalizeDateForInput(
+      employment?.lastWorkingDate ||
+      employment?.resignationDate ||
+      employment?.resignedDate ||
+      ''
+    );
+    if (!exitDate) {
+      toast.error('Exit date is not available for selected employee');
+      return;
+    }
+    targetSetter(exitDate);
   };
 
   const canGenerate = Boolean(
@@ -393,18 +441,36 @@ const [searchTerm, setSearchTerm] = useState("");
                   <Combobox
                   value={employee}
                   onChange={(e) => {
-                    setEmployee(e || null);
-                    setEmployment(employments[e?.id] || null);
+                    const nextEmployee = e || null;
+                    const nextEmployment = nextEmployee ? (employments[nextEmployee.id] || null) : null;
+                    setEmployee(nextEmployee);
+                    setEmployment(nextEmployment);
+                    autoFillFromEmployment(nextEmployment);
                   }}
                 >
                   <div className="relative">
                 
                     <Combobox.Input
-                      className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                       placeholder="Select or Search employee..."
                       displayValue={(emp) => emp?.name ?? ""}
                       onChange={(event) => setSearchTerm(event.target.value)}
                     />
+                    {employee && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmployee(null);
+                          setEmployment(null);
+                          setSearchTerm('');
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        aria-label="Clear selected employee"
+                        title="Clear"
+                      >
+                        <FiX size={16} />
+                      </button>
+                    )}
                 
                     <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
                       {candidates
@@ -436,6 +502,13 @@ const [searchTerm, setSearchTerm] = useState("");
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown value={todaysDate} onChange={setTodaysDate} />
+                  <button
+                    type="button"
+                    onClick={() => useExitDateFor(setTodaysDate)}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Use Exit Date
+                  </button>
                 </div>
 
 
@@ -444,6 +517,13 @@ const [searchTerm, setSearchTerm] = useState("");
                     <span className="text-red-500">*</span> Date of Exit
                   </label>
                   <DateDropdown value={employeeSignDate} onChange={setEmployeeSignDate} />
+                  <button
+                    type="button"
+                    onClick={() => useExitDateFor(setEmployeeSignDate)}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Use Exit Date
+                  </button>
                 </div>
                 
                 <div>

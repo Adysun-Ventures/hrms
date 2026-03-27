@@ -137,6 +137,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const professionalRefTeamLeadName = watch('teamLead.name') || '';
   const professionalRefColleague1Name = watch('colleague1.name') || '';
   const professionalRefColleague3Name = watch('colleague3.name') || '';
+  const showProfessionalReferenceExtraFields = false;
 
   const normalize = (s: unknown) => String(s ?? '').trim().toLowerCase();
   const teamLeadOptionExists = !!professionalRefTeamLeadName && employees.some((e) => normalize(e.name) === normalize(professionalRefTeamLeadName));
@@ -1026,13 +1027,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 Professional Reference
               </h2>
 
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Team Leader */}
                   <div>
                     <h3 className="text-md font-medium text-gray-700 mb-3">
                       Team Leader
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Name
@@ -1054,6 +1055,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           ))}
                         </select>
                       </div>
+                      <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1109,6 +1111,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         />
                       </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1117,7 +1120,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     <h3 className="text-md font-medium text-gray-700 mb-3">
                       Colleague 1
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Name
@@ -1139,6 +1142,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           ))}
                         </select>
                       </div>
+                      <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1194,6 +1198,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         />
                       </div>
+                      </div>
                     </div>
                   </div>
 
@@ -1202,7 +1207,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     <h3 className="text-md font-medium text-gray-700 mb-3">
                       Colleague 2
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Name
@@ -1224,6 +1229,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           ))}
                         </select>
                       </div>
+                      <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1278,6 +1284,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           readOnly
                           className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         />
+                      </div>
                       </div>
                     </div>
                   </div>

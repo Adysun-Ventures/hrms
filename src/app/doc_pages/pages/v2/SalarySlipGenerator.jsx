@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { FiArrowLeft, FiDownload } from 'react-icons/fi';
+import { FiArrowLeft, FiDownload, FiX } from 'react-icons/fi';
 import { PDFViewer, PDFDownloadLink, Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
 import {
@@ -1099,7 +1099,7 @@ return (
         </Link>
 
         <h2 className="text-xl font-bold text-gray-800">
-          Salary Slip Generator
+          Salary Slip
         </h2>
 
         <button
@@ -1164,11 +1164,41 @@ return (
   >
     <div className="relative">
       <Combobox.Input
-        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
         placeholder="Select or Search employee..."
         displayValue={(emp) => emp?.name ?? ""}
         onChange={(event) => setSearchTerm(event.target.value)}
       />
+      {(employee || searchTerm) && (
+        <button
+          type="button"
+          onClick={() => {
+            setEmployee(null);
+            setEmployment(null);
+            setSearchTerm("");
+            setShowPDF(false);
+            setShowDocPreview(false);
+            setFormData(prev => ({
+              ...prev,
+              employeeName: [],
+              employeeNameText: '',
+              employeeId: '',
+              designation: '',
+              department: '',
+              location: '',
+              panNumber: '',
+              bankName: '',
+              accountNo: '',
+              ifscCode: '',
+            }));
+          }}
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+          aria-label="Clear employee selection"
+          title="Clear"
+        >
+          <FiX className="w-4 h-4" />
+        </button>
+      )}
 
       <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
         {candidates
@@ -1273,18 +1303,24 @@ return (
           />
         </div>
 
-        {/* PF Checkbox */}
-        <div className="form-group flex items-center gap-2 pt-6">
-          <input
-            type="checkbox"
-            name="enablePF"
-            checked={formData.enablePF}
-            onChange={handleInputChange}
-            className="h-5 w-5"
-          />
-          <label className="text-sm font-medium text-gray-700">
-            Apply PF Deduction
+        {/* PF Field */}
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            PF
           </label>
+          <div className="w-full p-2.5 border border-gray-300 rounded-md bg-white flex items-center gap-2">
+            <input
+              id="apply-pf"
+              type="checkbox"
+              name="enablePF"
+              checked={formData.enablePF}
+              onChange={handleInputChange}
+              className="h-5 w-5"
+            />
+            <label htmlFor="apply-pf" className="text-sm font-medium text-gray-700">
+              Apply PF Deduction
+            </label>
+          </div>
         </div>
 
       </div>

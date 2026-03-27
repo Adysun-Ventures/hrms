@@ -46,6 +46,15 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relie
     designation?: string;
     location?: string;
   };
+  reportingManagerRef?: {
+    employeeDocId?: string;
+    name?: string;
+    employeeId?: string;
+    mobileNo?: string;
+    email?: string;
+    designation?: string;
+    location?: string;
+  };
 }
 
 export default function EditEmploymentPage({ params }: { params: Promise<{ id: string }> }) {
@@ -115,6 +124,19 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const joiningCtcValue = watch('joiningCtc');
   const isResignation = watch('isResignation');
   const whereWereYouEmploidValue = watch('whereWereYouEmploid');
+  const selectedDepartment = watch('department');
+  const designationOptionsByDepartment: Record<string, string[]> = {
+    Engineering: ['Software Developer', 'Senior Software Developer', 'Lead Developer'],
+    'Human Resources': ['HR Executive', 'HR Manager', 'Talent Acquisition Specialist'],
+    Finance: ['Accountant', 'Senior Accountant', 'Finance Manager'],
+    Sales: ['Sales Executive', 'Senior Sales Executive', 'Sales Manager'],
+    Marketing: ['Marketing Executive', 'Senior Marketing Executive', 'Marketing Manager'],
+    Operations: ['Operations Executive', 'Senior Operations Executive', 'Operations Manager'],
+    'Customer Support': ['Support Executive', 'Senior Support Executive', 'Support Manager'],
+    IT: ['System Administrator', 'IT Support Engineer', 'IT Manager'],
+    Admin: ['Admin Executive', 'Admin Manager', 'Office Administrator'],
+    Legal: ['Legal Associate', 'Senior Legal Associate', 'Legal Manager'],
+  };
   const derivedLocation =
     whereWereYouEmploidValue === 'Registred Corporate Office'
       ? 'Pune'
@@ -132,17 +154,69 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   // ---------------- PROFESSIONAL REFERENCE (Team Lead / Colleagues) ----------------
   // Professional Reference: dropdown shows saved Name.
   // Dependent fields should be prefilled from stored Professional Reference strings.
-  type ProfessionalRefKey = 'teamLead' | 'colleague1' | 'colleague3';
+  type ProfessionalRefKey = 'teamLead' | 'colleague1' | 'colleague3' | 'reportingManagerRef';
 
   const professionalRefTeamLeadName = watch('teamLead.name') || '';
   const professionalRefColleague1Name = watch('colleague1.name') || '';
   const professionalRefColleague3Name = watch('colleague3.name') || '';
+  const professionalRefReportingManagerName = watch('reportingManagerRef.name') || '';
   const showProfessionalReferenceExtraFields = false;
 
   const normalize = (s: unknown) => String(s ?? '').trim().toLowerCase();
   const teamLeadOptionExists = !!professionalRefTeamLeadName && employees.some((e) => normalize(e.name) === normalize(professionalRefTeamLeadName));
   const colleague1OptionExists = !!professionalRefColleague1Name && employees.some((e) => normalize(e.name) === normalize(professionalRefColleague1Name));
   const colleague3OptionExists = !!professionalRefColleague3Name && employees.some((e) => normalize(e.name) === normalize(professionalRefColleague3Name));
+  const reportingManagerOptionExists = !!professionalRefReportingManagerName && employees.some((e) => normalize(e.name) === normalize(professionalRefReportingManagerName));
+
+  const PROFESSIONAL_REFERENCE_DIRECTORY: Record<
+    string,
+    { employeeId: string; mobileNo: string; email: string; designation: string; location: string }
+  > = {
+    'Viraj Kadam': {
+      employeeId: 'ADV09',
+      mobileNo: '8806431723',
+      email: 'viraj.kadam@adysunventures.com',
+      designation: 'Project Manager',
+      location: 'Pune',
+    },
+    'Rohit Kore': {
+      employeeId: 'ADV66',
+      mobileNo: '8484025370',
+      email: 'rohit.kore@adysunventures.com',
+      designation: 'Sr. Software Engg',
+      location: 'Pune',
+    },
+    'Nagesh Chavan': {
+      employeeId: 'ADV47',
+      mobileNo: '9834187607',
+      email: 'nagesh.chavan@adysunventures.com',
+      designation: 'Sr. Software Developer',
+      location: 'Pune',
+    },
+  };
+
+  const clearProfessionalReferenceFields = (refKey: ProfessionalRefKey) => {
+    setValue(`${refKey}.employeeId` as any, '', { shouldDirty: true });
+    setValue(`${refKey}.mobileNo` as any, '', { shouldDirty: true });
+    setValue(`${refKey}.email` as any, '', { shouldDirty: true });
+    setValue(`${refKey}.designation` as any, '', { shouldDirty: true });
+    setValue(`${refKey}.location` as any, '', { shouldDirty: true });
+  };
+
+  const autoFillProfessionalReferenceFromDirectory = (refKey: ProfessionalRefKey, employeeName: string) => {
+    const person = PROFESSIONAL_REFERENCE_DIRECTORY[employeeName];
+    if (!employeeName) {
+      clearProfessionalReferenceFields(refKey);
+      return;
+    }
+    if (!person) return;
+
+    setValue(`${refKey}.employeeId` as any, person.employeeId, { shouldDirty: true });
+    setValue(`${refKey}.mobileNo` as any, person.mobileNo, { shouldDirty: true });
+    setValue(`${refKey}.email` as any, person.email, { shouldDirty: true });
+    setValue(`${refKey}.designation` as any, person.designation, { shouldDirty: true });
+    setValue(`${refKey}.location` as any, person.location, { shouldDirty: true });
+  };
 
   const pickLatestEmployment = (items: Employment[]) => {
     const safe = items || [];
@@ -192,21 +266,30 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
   useEffect(() => {
     if (!professionalRefTeamLeadName) return;
+    autoFillProfessionalReferenceFromDirectory('teamLead', professionalRefTeamLeadName);
     void autoFillProfessionalReferenceFromEmployeeName('teamLead', professionalRefTeamLeadName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionalRefTeamLeadName, employees, isEmployeeUser]);
 
   useEffect(() => {
     if (!professionalRefColleague1Name) return;
+    autoFillProfessionalReferenceFromDirectory('colleague1', professionalRefColleague1Name);
     void autoFillProfessionalReferenceFromEmployeeName('colleague1', professionalRefColleague1Name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionalRefColleague1Name, employees, isEmployeeUser]);
 
   useEffect(() => {
     if (!professionalRefColleague3Name) return;
+    autoFillProfessionalReferenceFromDirectory('colleague3', professionalRefColleague3Name);
     void autoFillProfessionalReferenceFromEmployeeName('colleague3', professionalRefColleague3Name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionalRefColleague3Name, employees, isEmployeeUser]);
+
+  useEffect(() => {
+    if (!professionalRefReportingManagerName) return;
+    void autoFillProfessionalReferenceFromEmployeeName('reportingManagerRef', professionalRefReportingManagerName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionalRefReportingManagerName, employees, isEmployeeUser]);
 
   const parseNameAndDesignationFromProfessionalReference = (
     raw?: string
@@ -431,6 +514,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         const ref0 = proRefs[0];
         const ref1 = proRefs[1];
         const ref2 = proRefs[2];
+        const ref3 = proRefs[3];
 
         const teamLeadNameDesig = parseNameAndDesignationFromProfessionalReference(ref0?.nameDesignation);
         const teamLeadEmailMobile = parseEmailAndMobileFromProfessionalReference(ref0?.emailAndMobile);
@@ -440,6 +524,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
         const colleague3NameDesig = parseNameAndDesignationFromProfessionalReference(ref2?.nameDesignation);
         const colleague3EmailMobile = parseEmailAndMobileFromProfessionalReference(ref2?.emailAndMobile);
+
+        const reportingManagerNameDesig = parseNameAndDesignationFromProfessionalReference(ref3?.nameDesignation);
+        const reportingManagerEmailMobile = parseEmailAndMobileFromProfessionalReference(ref3?.emailAndMobile);
 
         // Team Leader fallback values (so the dropdown can show without loading all employees)
         const defaultTeamLead = {
@@ -466,6 +553,15 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
           mobileNo: '9834187607',
           email: 'nagesh.chavan@adysunventures.com',
           designation: 'Sr. Software Developer',
+          place: 'Pune',
+        };
+
+        const defaultReportingManager = {
+          name: 'Viraj Kadam',
+          employeeId: 'ADV09',
+          mobileNo: '8806431723',
+          email: 'viraj.kadam@adysunventures.com',
+          designation: 'Project Manager',
           place: 'Pune',
         };
 
@@ -502,6 +598,15 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
             email: colleague3EmailMobile.email || defaultColleague3.email,
             designation: colleague3NameDesig.designation || defaultColleague3.designation,
             location: colleague3EmailMobile.place || defaultColleague3.place,
+          },
+          reportingManagerRef: {
+            name: reportingManagerNameDesig.name || defaultReportingManager.name,
+            employeeDocId: '',
+            employeeId: reportingManagerNameDesig.employeeId || defaultReportingManager.employeeId,
+            mobileNo: reportingManagerEmailMobile.mobileNo || defaultReportingManager.mobileNo,
+            email: reportingManagerEmailMobile.email || defaultReportingManager.email,
+            designation: reportingManagerNameDesig.designation || defaultReportingManager.designation,
+            location: reportingManagerEmailMobile.place || defaultReportingManager.place,
           },
         });
 
@@ -596,6 +701,20 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       // View page expects:
       // - nameDesignation: "Name - ...\nDesignation - ..."
       // - emailAndMobile: "Email - ...\nMobile no - ..."
+      const hydrateRefFromDirectory = (ref: any) => {
+        const name = (ref?.name ?? '').toString().trim();
+        const person = (PROFESSIONAL_REFERENCE_DIRECTORY as any)[name];
+        if (!name || !person) return ref;
+        return {
+          ...ref,
+          employeeId: ref?.employeeId?.trim?.() ? ref.employeeId : person.employeeId,
+          mobileNo: ref?.mobileNo?.trim?.() ? ref.mobileNo : person.mobileNo,
+          email: ref?.email?.trim?.() ? ref.email : person.email,
+          designation: ref?.designation?.trim?.() ? ref.designation : person.designation,
+          location: ref?.location?.trim?.() ? ref.location : person.location,
+        };
+      };
+
       const toProfessionalReference = (ref: any) => {
         const hasAny =
           ref &&
@@ -637,9 +756,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       };
 
       formattedData.professionalReferences = [
-        toProfessionalReference(data.teamLead),
-        toProfessionalReference(data.colleague1),
-        toProfessionalReference(data.colleague3),
+        toProfessionalReference(hydrateRefFromDirectory(data.teamLead)),
+        toProfessionalReference(hydrateRefFromDirectory(data.colleague1)),
+        toProfessionalReference(hydrateRefFromDirectory(data.colleague3)),
+        toProfessionalReference(hydrateRefFromDirectory(data.reportingManagerRef)),
       ];
 
       // Only include optional fields if they have values (not empty strings or undefined)
@@ -667,9 +787,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       }
       if (data.reportingManager && data.reportingManager.trim()) {
         formattedData.reportingManager = data.reportingManager;
-      }
-      if (data.employmentType && data.employmentType.trim()) {
-        formattedData.employmentType = data.employmentType;
       }
       if (data.workSchedule && data.workSchedule.trim()) {
         formattedData.workSchedule = data.workSchedule;
@@ -927,25 +1044,15 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Job Details</h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Designation
-                  </label>
-                  <input
-                    type="text"
-                    {...register('jobTitle')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="E.g., Software Developer"
-                  />
-                </div>
-
-                <div>
   <label className="block text-sm font-medium text-gray-700 mb-1">
     Department
   </label>
 
   <select
-    {...register('department')}
-    
+    {...register('department', {
+      onChange: () => setValue('jobTitle', '', { shouldDirty: true }),
+    })}
+
     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
   >
     <option value="">Select Department</option>
@@ -962,6 +1069,26 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   </select>
 </div>
 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Designation
+                  </label>
+                  <select
+                    {...register('jobTitle')}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={!selectedDepartment}
+                  >
+                    <option value="">
+                      {selectedDepartment ? 'Select Designation' : 'Select Department first'}
+                    </option>
+                    {(selectedDepartment ? designationOptionsByDepartment[selectedDepartment] : [])?.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -977,18 +1104,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       <option value={locationValue}>{locationValue}</option>
                     ) : null}
                   </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Employment Type
-                  </label>
-                  <input
-                    type="text"
-                    {...register('employmentType')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="E.g., Permanent, Contract"
-                  />
                 </div>
 
                 <div>
@@ -1027,27 +1142,45 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 Professional Reference
               </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   {/* Team Leader */}
                   <div>
                     <h3 className="text-md font-medium text-gray-700 mb-3">
                       Team Leader
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
+                      {(() => {
+                        const fixedOptions = ['Viraj Kadam', 'Rohit Kore', 'Nagesh Chavan'] as const;
+                        const fixedSet = new Set(fixedOptions.map((v) => v.toLowerCase()));
+                        const shouldShowSaved =
+                          !!professionalRefTeamLeadName &&
+                          !teamLeadOptionExists &&
+                          !fixedSet.has(professionalRefTeamLeadName.trim().toLowerCase());
+
+                        return (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Name
                         </label>
                         <select
-                          {...register('teamLead.name' as const)}
+                          {...register('teamLead.name' as const, {
+                            onChange: (e) => {
+                              autoFillProfessionalReferenceFromDirectory('teamLead', e.target.value);
+                            },
+                          })}
                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         >
                           <option value="">Select Name</option>
-                          {professionalRefTeamLeadName && !teamLeadOptionExists ? (
+                          {shouldShowSaved ? (
                             <option value={professionalRefTeamLeadName}>
                               {professionalRefTeamLeadName}
                             </option>
                           ) : null}
+                          {fixedOptions.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
                           {employees.map((emp) => (
                             <option key={emp.id} value={emp.name}>
                               {emp.name}
@@ -1055,6 +1188,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           ))}
                         </select>
                       </div>
+                        );
+                      })()}
                       <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
 
                       <div>
@@ -1121,20 +1256,38 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       Colleague 1
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
+                      {(() => {
+                        const fixedOptions = ['Rohit Kore', 'Viraj Kadam', 'Nagesh Chavan'] as const;
+                        const fixedSet = new Set(fixedOptions.map((v) => v.toLowerCase()));
+                        const shouldShowSaved =
+                          !!professionalRefColleague1Name &&
+                          !colleague1OptionExists &&
+                          !fixedSet.has(professionalRefColleague1Name.trim().toLowerCase());
+
+                        return (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Name
                         </label>
                         <select
-                          {...register('colleague1.name' as const)}
+                          {...register('colleague1.name' as const, {
+                            onChange: (e) => {
+                              autoFillProfessionalReferenceFromDirectory('colleague1', e.target.value);
+                            },
+                          })}
                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         >
                           <option value="">Select Name</option>
-                          {professionalRefColleague1Name && !colleague1OptionExists ? (
+                          {shouldShowSaved ? (
                             <option value={professionalRefColleague1Name}>
                               {professionalRefColleague1Name}
                             </option>
                           ) : null}
+                          {fixedOptions.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
                           {employees.map((emp) => (
                             <option key={emp.id} value={emp.name}>
                               {emp.name}
@@ -1142,6 +1295,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           ))}
                         </select>
                       </div>
+                        );
+                      })()}
                       <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
 
                       <div>
@@ -1208,20 +1363,38 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       Colleague 2
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
+                      {(() => {
+                        const fixedOptions = ['Viraj Kadam', 'Rohit Kore', 'Nagesh Chavan'] as const;
+                        const fixedSet = new Set(fixedOptions.map((v) => v.toLowerCase()));
+                        const shouldShowSaved =
+                          !!professionalRefColleague3Name &&
+                          !colleague3OptionExists &&
+                          !fixedSet.has(professionalRefColleague3Name.trim().toLowerCase());
+
+                        return (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Name
                         </label>
                         <select
-                          {...register('colleague3.name' as const)}
+                          {...register('colleague3.name' as const, {
+                            onChange: (e) => {
+                              autoFillProfessionalReferenceFromDirectory('colleague3', e.target.value);
+                            },
+                          })}
                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         >
                           <option value="">Select Name</option>
-                          {professionalRefColleague3Name && !colleague3OptionExists ? (
+                          {shouldShowSaved ? (
                             <option value={professionalRefColleague3Name}>
                               {professionalRefColleague3Name}
                             </option>
                           ) : null}
+                          {fixedOptions.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
                           {employees.map((emp) => (
                             <option key={emp.id} value={emp.name}>
                               {emp.name}
@@ -1229,6 +1402,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           ))}
                         </select>
                       </div>
+                        );
+                      })()}
                       <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
 
                       <div>
@@ -1281,6 +1456,93 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         </label>
                         <input
                           {...register('colleague3.location' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reporting Manager */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-3">
+                      Reporting Manager
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Name
+                        </label>
+                        <select
+                          {...register('reportingManagerRef.name' as const)}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        >
+                          <option value="">Select Name</option>
+                          {professionalRefReportingManagerName && !reportingManagerOptionExists ? (
+                            <option value={professionalRefReportingManagerName}>
+                              {professionalRefReportingManagerName}
+                            </option>
+                          ) : null}
+                          {employees.map((emp) => (
+                            <option key={emp.id} value={emp.name}>
+                              {emp.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Employee Id
+                        </label>
+                        <input
+                          {...register('reportingManagerRef.employeeId' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Mobile No
+                        </label>
+                        <input
+                          {...register('reportingManagerRef.mobileNo' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email
+                        </label>
+                        <input
+                          {...register('reportingManagerRef.email' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Designation
+                        </label>
+                        <input
+                          {...register('reportingManagerRef.designation' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Place
+                        </label>
+                        <input
+                          {...register('reportingManagerRef.location' as const)}
                           readOnly
                           className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         />
@@ -1496,7 +1758,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Previous Designation
+                          Old Designation
                         </label>
                         <input
                           type="text"

@@ -396,6 +396,8 @@ export default function EmployeeJoiningLetter() {
           const normalizedJoining = normalizeToISODate(empm[0].joiningDate);
           setEmploymentJoiningDate(normalizedJoining);
           setJoiningDate(normalizedJoining);
+          // Auto-fill Document Generate Date with Joining Date
+          setIssueDate(normalizedJoining);
           setWorkLocation(empm[0].location || "");
           setReportingManager(empm[0].reportingManager || "");
           setAnnualCTC(String(empm[0].salary || ""));
@@ -446,7 +448,7 @@ return (
               onClick={() => setShowPDF(true)}
               disabled={!canGenerate}
               className={[
-                "px-6 py-2 rounded-md text-sm font-medium transition shadow-sm inline-flex items-center gap-2",
+                "flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition shadow-sm min-h-[48px] min-w-[190px]",
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed",
@@ -481,17 +483,14 @@ return (
                         toast.error("Joining Date not available");
                         return;
                       }
-                      setJoiningDate(employmentJoiningDate);
+                      setIssueDate(employmentJoiningDate);
                     }}
                     className={[
                       "mt-2 block text-sm hover:underline",
                       employmentJoiningDate ? "text-blue-600" : "text-gray-400",
                     ].join(" ")}
                   >
-                    Joining Date{" "}
-                    {employmentJoiningDate
-                      ? `(${formatDate(employmentJoiningDate)})`
-                      : "(not available)"}
+                    Use Joining Date
                   </a>
                 </div>
 
@@ -545,6 +544,23 @@ return (
                     <span className="text-red-500">*</span> Joining Date
                   </label>
                   <DateDropdown value={joiningDate} onChange={setJoiningDate} />
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (!employmentJoiningDate) {
+                        toast.error("Joining Date not available");
+                        return;
+                      }
+                      setJoiningDate(employmentJoiningDate);
+                    }}
+                    className={[
+                      "mt-2 block text-sm hover:underline",
+                      employmentJoiningDate ? "text-blue-600" : "text-gray-400",
+                    ].join(" ")}
+                  >
+                    Use Joining Date
+                  </a>
                 </div>
 
                 {/* Work Location */}
@@ -642,7 +658,7 @@ return (
               onClick={() => setShowPDF(true)}
               disabled={!canGenerate}
               className={[
-                "flex items-center gap-2 px-6 py-3 rounded-lg transition",
+                "flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition min-h-[48px] min-w-[190px]",
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed",

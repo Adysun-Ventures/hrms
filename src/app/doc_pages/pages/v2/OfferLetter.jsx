@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { FiDownload } from 'react-icons/fi';
+import { FiDownload, FiX } from 'react-icons/fi';
 import TableHeader from '@/components/ui/TableHeader';
 import { Combobox } from '@headlessui/react'
 import {
@@ -693,6 +693,15 @@ function OfferLetterV2() {
     setEmployments(map);
   };
 
+  const normalizeDateForInput = (value) => {
+    if (!value) return '';
+    const s = String(value).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  };
+
   const handleSelect = e => {
     const id = e.target.value;
     setEmployee(candidates.find(x => x.id === id) || null);
@@ -757,19 +766,51 @@ function OfferLetterV2() {
   <Combobox
   value={employee}
   onChange={(e) => {
-    setEmployee(e || null);
-    setEmployment(employments[e?.id] || null);
-    setEmployeeSignPlace(employments[e?.id]?.location || '');
+    const selectedEmployee = e || null;
+    const selectedEmployment = employments[selectedEmployee?.id] || null;
+    setEmployee(selectedEmployee);
+    setEmployment(selectedEmployment);
+
+    // Auto-fill designation from employment data
+    setDesignationOverride(selectedEmployment?.jobTitle || selectedEmployment?.designation || '');
+
+    // Auto-fill place from employment location
+    setEmployeeSignPlace(selectedEmployment?.location || '');
+
+    // Auto-fill document generate date from employee joining date
+    const joiningDateForDoc = normalizeDateForInput(
+      selectedEmployment?.joiningDate || selectedEmployment?.startDate || ''
+    );
+    setDocumentGenerateDate(joiningDateForDoc || new Date().toISOString().slice(0, 10));
   }}
 >
   <div className="relative">
 
     <Combobox.Input
-      className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+      className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
       placeholder="Select or Search employee..."
       displayValue={(emp) => emp?.name ?? ""}
       onChange={(event) => setSearchTerm(event.target.value)}
     />
+    {(employee || searchTerm) && (
+      <button
+        type="button"
+        onClick={() => {
+          setEmployee(null);
+          setEmployment(null);
+          setSearchTerm('');
+          setShowPDF(false);
+          setDesignationOverride('');
+          setEmployeeSignPlace('');
+          setDocumentGenerateDate(new Date().toISOString().slice(0, 10));
+        }}
+        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+        aria-label="Clear employee selection"
+        title="Clear"
+      >
+        <FiX className="w-4 h-4" />
+      </button>
+    )}
 
     <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
       {candidates
@@ -814,6 +855,22 @@ function OfferLetterV2() {
                   Document Generate Date
                 </label>
                 <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const joiningDateForDoc = normalizeDateForInput(
+                      employment?.joiningDate || employment?.startDate || ''
+                    );
+                    if (!joiningDateForDoc) {
+                      toast.error('Joining date is not available for selected employee');
+                      return;
+                    }
+                    setDocumentGenerateDate(joiningDateForDoc);
+                  }}
+                  className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                >
+                  Use Joining Date
+                </button>
               </div>
 
               <div>
@@ -836,13 +893,22 @@ function OfferLetterV2() {
                 </select>
               </div>
 
-              <div className="flex items-center mt-8 gap-2 mb-4">
-                <input
-                  type="checkbox"
-                  checked={enablePF}
-                  onChange={e => setEnablePF(e.target.checked)}
-                />
-                <label className="text-sm">Enable PF (12% of Basic)</label>
+              <div>
+                <label className="block text-sm font-medium text-slate-800 mb-1">
+                  PF
+                </label>
+                <div className="w-full p-2.5 border border-gray-300 rounded-md bg-white flex items-center gap-2">
+                  <input
+                    id="enable-pf"
+                    type="checkbox"
+                    checked={enablePF}
+                    onChange={(e) => setEnablePF(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  <label htmlFor="enable-pf" className="text-sm text-gray-700">
+                    Enable PF (12% of Basic)
+                  </label>
+                </div>
               </div>
 
               <div></div>

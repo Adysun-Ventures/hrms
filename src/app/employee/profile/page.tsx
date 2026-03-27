@@ -552,35 +552,6 @@ console.log(employmentData?.[0]?.bankName);
 
           <div className="border-t border-gray-200 my-2" />
 
-{/* //Bank information */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FiMapPin className="mr-2" /> Bank Details
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.bankName|| '-'}</p>
-                <p className="text-sm text-gray-500">Bank Name</p>
-              </div>
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.accountNo || '-'}</p>
-                <p className="text-sm text-gray-500">Account Number</p>
-              </div>
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.ifscCode || '-'}</p>
-                <p className="text-sm text-gray-500">IFSC Code</p>
-              </div>
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{employmentData?.[0]?.panNumber || '-'}</p>
-                <p className="text-sm text-gray-500">Pan No</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t border-gray-200 my-2" />
-
           {/* Account Information */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">

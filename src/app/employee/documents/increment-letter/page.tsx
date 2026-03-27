@@ -68,6 +68,21 @@ const toTitleCase = (str?: string) =>
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 
+const normalizeDateForInput = (value?: string | Date | null) => {
+  if (!value) return '';
+  const raw = typeof value === 'string' ? value : value.toISOString();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+  // Handle YYYY/MM/DD
+  const ymdSlash = raw.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+  if (ymdSlash) return `${ymdSlash[1]}-${ymdSlash[2]}-${ymdSlash[3]}`;
+  // Handle DD-MM-YYYY or DD/MM/YYYY
+  const dmy = raw.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+  if (dmy) return `${dmy[3]}-${dmy[2]}-${dmy[1]}`;
+  const parsed = new Date(raw);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return '';
+};
+
 const MONTH_OPTIONS = [
   { value: "01", label: "Jan" },
   { value: "02", label: "Feb" },
@@ -350,6 +365,8 @@ const EmployeeIncrementLetter: React.FC = () => {
   const [letterData, setLetterData] = useState<LetterData | null>(null);
   const [showPDF, setShowPDF] = useState(false);
 
+  const [incrementDateForEmployee, setIncrementDateForEmployee] = useState<string>('');
+
   const canGenerate = Boolean(letterData) && Boolean(employeeSignPlace);
 
   const handleGenerate = () => {
@@ -385,6 +402,14 @@ const EmployeeIncrementLetter: React.FC = () => {
             '';
           if (place) setEmployeeSignPlace(place);
           setOldDesignation(empm[0]?.designation || empm[0]?.jobTitle || "");
+
+          const inc = normalizeDateForInput(
+            (empm[0] as any)?.incrementDate ||
+              (empm[0] as any)?.effectiveDate ||
+              (empm[0] as any)?.appraisalDate ||
+              ''
+          );
+          if (inc) setIncrementDateForEmployee(inc);
         }
       } catch {
         toast.error("Failed to load employee data");
@@ -394,6 +419,14 @@ const EmployeeIncrementLetter: React.FC = () => {
     };
     load();
   }, [currentUserData]);
+
+  const useIncrementDateFor = (setter: (v: string) => void) => {
+    if (!incrementDateForEmployee) {
+      toast.error('Increment date is not available for selected employee');
+      return;
+    }
+    setter(incrementDateForEmployee);
+  };
 
   /* ---------------- Calculate revised CTC ---------------- */
   useEffect(() => {
@@ -465,12 +498,11 @@ return (
               onClick={handleGenerate}
               disabled={!canGenerate}
               className={[
-                "inline-flex items-center gap-2 px-10 py-3 min-h-[44px] rounded-lg text-sm font-medium transition shadow-sm",
+                "inline-flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm min-h-[44px]",
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed",
               ].join(" ")}
-              style={{ paddingLeft: 40, paddingRight: 40, paddingTop: 12, paddingBottom: 12 }}
             >
               <FiDownload className="w-4 h-4" />
               <span className="hidden sm:inline">Generate</span>
@@ -534,6 +566,19 @@ return (
                         Effective Date <span className="text-red-500">*</span>
                       </label>
                       <DateDropdown value={effectiveDate} onChange={setEffectiveDate} />
+                      <button
+                        type="button"
+                        disabled={!incrementDateForEmployee}
+                        onClick={() => useIncrementDateFor(setEffectiveDate)}
+                        className={[
+                          "mt-2 text-sm underline",
+                          incrementDateForEmployee
+                            ? "text-blue-600 hover:text-blue-700"
+                            : "text-gray-400 cursor-not-allowed",
+                        ].join(" ")}
+                      >
+                        Use Increment Date
+                      </button>
                     </div>
 
                     <div>
@@ -544,6 +589,19 @@ return (
                         value={documentGenerateDate}
                         onChange={setDocumentGenerateDate}
                       />
+                      <button
+                        type="button"
+                        disabled={!incrementDateForEmployee}
+                        onClick={() => useIncrementDateFor(setDocumentGenerateDate)}
+                        className={[
+                          "mt-2 text-sm underline",
+                          incrementDateForEmployee
+                            ? "text-blue-600 hover:text-blue-700"
+                            : "text-gray-400 cursor-not-allowed",
+                        ].join(" ")}
+                      >
+                        Use Increment Date
+                      </button>
                     </div>
 
                     <div className="md:col-span-2 xl:col-span-1">
@@ -577,6 +635,7 @@ return (
                         value={oldDesignation}
                         onChange={(e) => setOldDesignation(e.target.value)}
                         className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter old designation"
                       />
                     </div>
 
@@ -589,6 +648,7 @@ return (
                         value={newDesignation}
                         onChange={(e) => setNewDesignation(e.target.value)}
                         className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter new designation"
                       />
                     </div>
 
@@ -613,7 +673,7 @@ return (
                   onClick={handleGenerate}
                   disabled={!canGenerate}
                   className={[
-                    "inline-flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm",
+                    "inline-flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm min-h-[44px]",
                     canGenerate
                       ? "bg-green-600 text-white hover:bg-green-700"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed",

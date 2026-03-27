@@ -34,7 +34,7 @@ const documents = [
   {
     title: 'Increment Letter',
     description: 'Generate increment letters for promoted employees',
-    path: '/dashboard/documents/v2/appraisal-letter',
+    path: '/dashboard/documents/v2/increment-letter',
     icon: <FiClipboard size={24} />
   },
   // {

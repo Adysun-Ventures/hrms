@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, X } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -154,6 +154,7 @@ function IncrementLetter() {
   const [employments, setEmployments] = useState({});
   const [employee, setEmployee] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [incrementDateForEmployee, setIncrementDateForEmployee] = useState("");
 
   const [isEmployee, setIsEmployee] = useState(false);
   useEffect(() => {
@@ -202,6 +203,13 @@ function IncrementLetter() {
       nextEmployment?.place ||
       "";
 
+    const cachedIncrementDate =
+      nextEmployment?.incrementDate ||
+      nextEmployment?.effectiveDate ||
+      nextEmployment?.appraisalDate ||
+      "";
+    setIncrementDateForEmployee(cachedIncrementDate);
+
     setFormData((prevState) => ({
       ...prevState,
       employeeName: emp?.name || "",
@@ -222,6 +230,13 @@ function IncrementLetter() {
             empEmployment?.officeLocation ||
             empEmployment?.place ||
             "";
+
+          const fetchedIncrementDate =
+            empEmployment?.incrementDate ||
+            empEmployment?.effectiveDate ||
+            empEmployment?.appraisalDate ||
+            "";
+          setIncrementDateForEmployee(fetchedIncrementDate);
           setFormData((prevState) => ({
             ...prevState,
             employeeSignPlace: fetchedPlace
@@ -312,11 +327,29 @@ function IncrementLetter() {
               >
                 <div className="relative">
                   <Combobox.Input
-                    className="w-full p-2.5 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-2.5 pr-10 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Select employee..."
                     displayValue={(emp) => emp?.name ?? ""}
                     onChange={(event) => setSearchTerm(event.target.value)}
                   />
+                  {employee && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEmployee(null);
+                        setSearchTerm("");
+                        setFormData((prevState) => ({
+                          ...prevState,
+                          employeeName: "",
+                        }));
+                      }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      aria-label="Clear selected employee"
+                      title="Clear"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
 
                   <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
                     {candidates
@@ -369,6 +402,22 @@ function IncrementLetter() {
                 onChange={handleInputChange}
                 className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
+              <button
+                type="button"
+                onClick={() => {
+                  if (!incrementDateForEmployee) {
+                    window.alert("Increment date is not available for selected employee");
+                    return;
+                  }
+                  setFormData((prevState) => ({
+                    ...prevState,
+                    effectiveDate: incrementDateForEmployee
+                  }));
+                }}
+                className="mt-2 text-sm text-blue-600 hover:underline"
+              >
+                Use Increment Date
+              </button>
             </div>
 
               {isEmployee && (
@@ -385,6 +434,22 @@ function IncrementLetter() {
                       }))
                     }
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!incrementDateForEmployee) {
+                        window.alert("Increment date is not available for selected employee");
+                        return;
+                      }
+                      setFormData((prevState) => ({
+                        ...prevState,
+                        documentGenerateDate: incrementDateForEmployee
+                      }));
+                    }}
+                    className="mt-2 text-sm text-blue-600 hover:underline"
+                  >
+                    Use Increment Date
+                  </button>
                 </div>
               )}
 

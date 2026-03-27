@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FiDownload } from "react-icons/fi";
+import { FiDownload, FiX } from "react-icons/fi";
 import TableHeader from "@/components/ui/TableHeader";
 
 import {
@@ -23,7 +23,7 @@ import {
 import { createAdysunDocx } from "@/utils/docxAdysun";
 
 import { db } from "@/firebase/config";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
 import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
@@ -46,6 +46,42 @@ const COMPANY_DATA = {
 /* ---------------- UTIL ---------------- */
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
+const normalizeDateForInput = (value) => {
+  if (!value) return "";
+  if (typeof value === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+    // Handle: DD-MM-YYYY or DD/MM/YYYY (common in HR entries)
+    const dmyMatch = value.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+    if (dmyMatch) {
+      const day = dmyMatch[1];
+      const month = dmyMatch[2];
+      const year = dmyMatch[3];
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+
+    // Handle: YYYY/MM/DD
+    const ymdSlashMatch = value.match(/^(\d{4})[-/](\d{2})[-/](\d{2})$/);
+    if (ymdSlashMatch) {
+      const year = ymdSlashMatch[1];
+      const month = ymdSlashMatch[2];
+      const day = ymdSlashMatch[3];
+      return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+    }
+
+    // Handle: milliseconds timestamp as string
+    if (/^\d{13}$/.test(value)) {
+      const parsedMs = new Date(Number(value));
+      if (!Number.isNaN(parsedMs.getTime())) return parsedMs.toISOString().slice(0, 10);
+    }
+
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+    return "";
+  }
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+  return "";
+};
 
 const formatDate = (d) => {
   if (!d) return "";
@@ -361,15 +397,14 @@ export default function JoiningLetterV2() {
   const [candidates, setCandidates] = useState([]);
   const [employee, setEmployee] = useState(null);
 
-  const designationOptionsByDepartment = {
-    Development: ["Software Developer", "Senior Software Developer", "Lead Developer"],
-    Engineering: ["Engineer", "Senior Engineer", "Lead Engineer"],
-    Operation: ["Operations Executive", "Senior Operations Executive", "Operations Manager"],
-    HR: ["HR Executive", "HR Manager", "Talent Acquisition Specialist"],
-    Finance: ["Accountant", "Senior Accountant", "Finance Manager"],
-    Support: ["Support Executive", "Senior Support Executive", "Support Manager"],
-  };
-
+  const departmentOptions = [
+    "Development",
+    "Engineering",
+    "Operation",
+    "HR",
+    "Finance",
+    "Support",
+  ];
   const [designation, setDesignation] = useState("");
   const [department, setDepartment] = useState("");
   const [reportingManager, setReportingManager] = useState("");
@@ -382,7 +417,7 @@ export default function JoiningLetterV2() {
   const [documentGenerateDate, setDocumentGenerateDate] = useState(todayISO());
   const [searchTerm, setSearchTerm] = useState("");
   const [employment, setEmployment] = useState({});
-  const [employments,setEmployments] = useState({});
+  const [employments, setEmployments] = useState({});
   
 
   const [showPDF, setShowPDF] = useState(false);
@@ -394,6 +429,44 @@ export default function JoiningLetterV2() {
     }
     loadData();
   }, []);
+
+  const getEmploymentForEmployee = async (employeeId) => {
+    if (!employeeId) return null;
+    if (employments[employeeId]) return employments[employeeId];
+    const qSnap = await getDocs(query(collection(db, "employments"), where("employeeId", "==", employeeId)));
+    if (qSnap.empty) return null;
+    const nextEmployment = qSnap.docs[0].data();
+    setEmployments((prev) => ({ ...prev, [employeeId]: nextEmployment }));
+    return nextEmployment;
+  };
+
+  const autoFillDatesFromEmployment = (empEmployment) => {
+    if (!empEmployment) return;
+    const joiningDateFromEmployment = normalizeDateForInput(
+      empEmployment?.joiningDate ||
+      empEmployment?.startDate ||
+      ""
+    );
+    const departmentFromEmployment = empEmployment?.department || "";
+    const designationFromEmployment =
+      empEmployment?.designation ||
+      empEmployment?.jobTitle ||
+      "";
+    const annualCtcFromEmployment =
+      empEmployment?.incrementedCtc ||
+      empEmployment?.newSalary ||
+      empEmployment?.joiningCtc ||
+      empEmployment?.salary ||
+      "";
+
+    if (joiningDateFromEmployment) {
+      setJoiningDate(joiningDateFromEmployment);
+      setDocumentGenerateDate(joiningDateFromEmployment);
+    }
+    if (departmentFromEmployment) setDepartment(departmentFromEmployment);
+    if (designationFromEmployment) setDesignation(designationFromEmployment);
+    if (annualCtcFromEmployment) setAnnualCTC(String(annualCtcFromEmployment));
+  };
 
   const canGenerate = Boolean(
     employee &&
@@ -421,6 +494,19 @@ export default function JoiningLetterV2() {
   const generate = () => {
     if (!validate()) return;
     setShowPDF(true);
+  };
+
+  const useEmploymentJoiningDateFor = (targetSetter) => {
+    const employmentJoiningDate = normalizeDateForInput(
+      employment?.joiningDate ||
+      employment?.startDate ||
+      ""
+    );
+    if (!employmentJoiningDate) {
+      toast.error("Joining date is not available for selected employee");
+      return;
+    }
+    targetSetter(employmentJoiningDate);
   };
 
   return (
@@ -465,19 +551,41 @@ export default function JoiningLetterV2() {
                 
                   <Combobox
                   value={employee}
-                  onChange={(e) => {
-                    setEmployee(e || null);
-                    setEmployment(employments[e?.id] || null);
+                  onChange={async (e) => {
+                    const nextEmployee = e || null;
+                    setEmployee(nextEmployee);
+                    if (!nextEmployee?.id) {
+                      setEmployment(null);
+                      return;
+                    }
+                    const nextEmployment = await getEmploymentForEmployee(nextEmployee.id);
+                    setEmployment(nextEmployment || null);
+                    autoFillDatesFromEmployment(nextEmployment);
                   }}
                 >
                   <div className="relative">
                 
                     <Combobox.Input
-                      className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                       placeholder="Select or Search employee..."
                       displayValue={(emp) => emp?.name ?? ""}
                       onChange={(event) => setSearchTerm(event.target.value)}
                     />
+                    {employee && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmployee(null);
+                          setEmployment(null);
+                          setSearchTerm("");
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        aria-label="Clear selected employee"
+                        title="Clear"
+                      >
+                        <FiX size={16} />
+                      </button>
+                    )}
                 
                     <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
                       {candidates
@@ -509,42 +617,26 @@ export default function JoiningLetterV2() {
                   <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Department
                   </label>
-                  <select
-                    className="w-full p-2 border rounded-md bg-white"
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     value={department}
-                    onChange={(e) => {
-                      setDepartment(e.target.value);
-                      setDesignation("");
-                    }}
-                  >
-                    <option value="">Select Department</option>
-                    <option value="Development">Development</option>
-                    <option value="Engineering">Engineering</option>
-                    <option value="Operation">Operation</option>
-                    <option value="HR">HR</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Support">Support</option>
-                  </select>
+                    onChange={(e) => setDepartment(e.target.value)}
+                    placeholder="Enter department"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
                     <span className="text-red-500">*</span> Designation
                   </label>
-                  <select
-                    className="w-full p-2 border rounded-md bg-white disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     value={designation}
                     onChange={(e) => setDesignation(e.target.value)}
-                    disabled={!department}
-                  >
-                    <option value="">{department ? "Select Designation" : "Select Department first"}</option>
-                    {department &&
-                      designationOptionsByDepartment[department]?.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                  </select>
+                    placeholder="Enter designation"
+                  />
                 </div>
 
                 <div>
@@ -570,6 +662,13 @@ export default function JoiningLetterV2() {
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
+                  <button
+                    type="button"
+                    onClick={() => useEmploymentJoiningDateFor(setDocumentGenerateDate)}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Use Joining Date
+                  </button>
                 </div>
 
                 <div>
@@ -577,6 +676,13 @@ export default function JoiningLetterV2() {
                     <span className="text-red-500">*</span> Joining Date
                   </label>
                   <DateDropdown value={joiningDate} onChange={setJoiningDate} />
+                  <button
+                    type="button"
+                    onClick={() => useEmploymentJoiningDateFor(setJoiningDate)}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Use Joining Date
+                  </button>
                 </div>
 
                 {/* <div>
@@ -599,6 +705,7 @@ export default function JoiningLetterV2() {
                     type="number"
                     className="w-full p-2 border rounded-md"
                     value={annualCTC}
+                    placeholder="Enter annual CTC"
                     onChange={(e) => setAnnualCTC(e.target.value)}
                   />
                 </div>

@@ -2,58 +2,36 @@
 
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { useEmployeeSelfEmployment } from '@/hooks/useEmployees';
 import { FiArrowLeft } from 'react-icons/fi';
 
 export default function EmployeeCompanyInformationPage() {
   const router = useRouter();
-  const { currentUserData } = useAuth();
-
-  // Used for "Designation" in the Contact Reference section.
-  const employeeId = currentUserData?.id || '';
-  const { data: employmentData } = useEmployeeSelfEmployment(employeeId);
-
-  const primaryEmployment = employmentData?.[0];
-  const professionalReferences = primaryEmployment?.professionalReferences || [];
-  const teamLeadRef = professionalReferences?.[0];
-  const colleague1Ref = professionalReferences?.[1];
-  const colleague2Ref = professionalReferences?.[2];
-
-  const parseNameDesignationEmployeeId = (raw?: string) => {
-    const s = (raw ?? '').toString();
-    const name = s.match(/\bName\b\s*[-:|]\s*([^\n\r]+)/i)?.[1]?.trim() || '';
-    const designation = s.match(/\bDesignation\b\s*[-:|]\s*([^\n\r]+)/i)?.[1]?.trim() || '';
-    const employeeId =
-      s.match(/\b(?:Employee\s*Id|Emp\s*Id)\b\s*[-:|]\s*([^\n\r]+)/i)?.[1]?.trim() ||
-      s.match(/\bADV\d+\b/i)?.[0]?.trim() ||
-      '';
-    return { name, designation, employeeId };
-  };
-
-  const parseEmailFromEmailAndMobile = (raw?: string) => {
-    const s = (raw ?? '').toString();
-    return (
-      s.match(/\bEmail\b\s*[-:|]\s*([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/i)?.[1]?.trim() ||
-      s.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0]?.trim() ||
-      ''
-    );
-  };
-
-  const parseProfessionalRefRow = (ref?: any, role?: string) => {
-    const parsed = parseNameDesignationEmployeeId(ref?.nameDesignation);
-    return {
-      role: role || '',
-      name: parsed.name,
-      employeeId: parsed.employeeId,
-      email: parseEmailFromEmailAndMobile(ref?.emailAndMobile),
-      designation: parsed.designation,
-    };
-  };
-
-  const rowTeamLead = parseProfessionalRefRow(teamLeadRef, 'Team Leader');
-  const rowColleague1 = parseProfessionalRefRow(colleague1Ref, 'Colleague 1');
-  const rowColleague2 = parseProfessionalRefRow(colleague2Ref, 'Colleague 2');
+  const hardcodedContactReferences = [
+    {
+      role: 'Team Leader',
+      name: 'Viraj Kadam',
+      employeeId: 'ADV09',
+      email: 'viraj.kadam@adysunventures.com',
+      designation: 'Project Manager',
+      location: 'Pune',
+    },
+    {
+      role: 'Colleague 1',
+      name: 'Rohit Kore',
+      employeeId: 'ADV66',
+      email: 'rohit.kore@adysunventures.com',
+      designation: 'Sr. Software Engg',
+      location: 'Pune',
+    },
+    {
+      role: 'Colleague 2',
+      name: 'Nagesh Chavan',
+      employeeId: 'ADV47',
+      email: 'nagesh.chavan@adysunventures.com',
+      designation: 'Sr. Software Developer',
+      location: 'Pune',
+    },
+  ];
 
   // Static company info currently used across the app.
   const company = {
@@ -218,10 +196,11 @@ A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607`,
                       <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Employee Id</th>
                       <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Email</th>
                       <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Designation</th>
+                      <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Location</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[rowTeamLead, rowColleague1, rowColleague2].map((r) => (
+                    {hardcodedContactReferences.map((r) => (
                       <tr key={r.role}>
                         <th scope="row" className="border border-gray-200 px-3 py-2 text-left font-medium bg-gray-50/80 whitespace-nowrap">
                           {r.role}
@@ -230,6 +209,7 @@ A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607`,
                         <td className="border border-gray-200 px-3 py-2">{r.employeeId || '-'}</td>
                         <td className="border border-gray-200 px-3 py-2">{r.email || '-'}</td>
                         <td className="border border-gray-200 px-3 py-2">{r.designation || '-'}</td>
+                        <td className="border border-gray-200 px-3 py-2">{r.location || '-'}</td>
                       </tr>
                     ))}
                   </tbody>

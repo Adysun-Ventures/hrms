@@ -585,6 +585,12 @@ export default function EmployeeOfferLetterPage() {
         setEmployeeSignPlace(empm?.[0]?.location || "");
         const initialDesig = empm?.[0]?.jobTitle || empm?.[0]?.designation || "";
         setDesignationOverride(initialDesig);
+        const joiningDateForDoc = empm?.[0]?.joiningDate
+          ? String(empm[0].joiningDate).slice(0, 10)
+          : "";
+        if (joiningDateForDoc) {
+          setDocumentGenerateDate(joiningDateForDoc);
+        }
       } catch {
         toast.error('Failed to load employee data');
       } finally {
@@ -654,34 +660,20 @@ export default function EmployeeOfferLetterPage() {
         </div>
 
         <div className="w-1/3 flex justify-end">
-          {canGenerate ? (
-            <PDFDownloadLink
-              document={
-                <OfferLetterPDF
-                  employee={employee!}
-                  employment={employment!}
-                  enablePF={enablePF}
-                  designationOverride={designationOverride}
-                  documentGenerateDate={documentGenerateDate}
-                  employeeSignPlace={employeeSignPlace}
-                />
-              }
-              fileName="OfferLetter.pdf"
-              className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
-              aria-label="Generate"
-            >
-              <FiDownload className="mr-2" size={18} />
-              <span className="hidden sm:inline">Generate</span>
-            </PDFDownloadLink>
-          ) : (
-            <div
-              className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg transition shadow-sm opacity-50 cursor-not-allowed"
-              aria-disabled="true"
-            >
-              <FiDownload className="mr-2" size={18} />
-              <span className="hidden sm:inline">Generate</span>
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowPDF(true)}
+            disabled={!canGenerate}
+            className={`flex items-center px-6 py-2 rounded-lg transition shadow-sm ${
+              canGenerate
+                ? "bg-green-600 text-white hover:bg-green-700"
+                : "bg-green-600 text-white opacity-50 cursor-not-allowed"
+            }`}
+            aria-label="Generate"
+          >
+            <FiDownload className="mr-2" size={18} />
+            <span className="hidden sm:inline">Generate</span>
+          </button>
         </div>
       </div>
 
@@ -766,7 +758,7 @@ export default function EmployeeOfferLetterPage() {
       </div>
 
       {/* DOWNLOAD SECTION */}
-      <div className="-mx-6 px-6 border-t border-gray-200 pt-4 flex items-center justify-between gap-3">
+      <div className="px-6 md:px-8 border-t border-gray-200 pt-4 pb-4 flex items-center justify-between gap-3">
         <button
           type="button"
           onClick={() => window.history.back()}
@@ -777,38 +769,25 @@ export default function EmployeeOfferLetterPage() {
           <span className="hidden sm:inline">Cancel</span>
         </button>
 
-        {canGenerate ? (
-          <PDFDownloadLink
-            document={
-              <OfferLetterPDF
-                employee={employee!}
-                employment={employment!}
-                enablePF={enablePF}
-                designationOverride={designationOverride}
-                documentGenerateDate={documentGenerateDate}
-                employeeSignPlace={employeeSignPlace}
-              />
-            }
-            fileName="OfferLetter.pdf"
-            className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-sm"
-            aria-label="Generate"
-          >
-            <FiDownload className="mr-2" size={18} />
-            <span className="hidden sm:inline">Generate</span>
-          </PDFDownloadLink>
-        ) : (
-          <div
-            className="flex items-center px-6 py-2 bg-green-600 text-white rounded-lg transition shadow-sm opacity-50 cursor-not-allowed"
-            aria-disabled="true"
-          >
-            <FiDownload className="mr-2" size={18} />
-            <span className="hidden sm:inline">Generate</span>
-          </div>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowPDF(true)}
+          disabled={!canGenerate}
+          className={`flex items-center px-6 py-2 rounded-lg transition shadow-sm ${
+            canGenerate
+              ? "bg-green-600 text-white hover:bg-green-700"
+              : "bg-green-600 text-white opacity-50 cursor-not-allowed"
+          }`}
+          aria-label="Generate"
+        >
+          <FiDownload className="mr-2" size={18} />
+          <span className="hidden sm:inline">Generate</span>
+        </button>
       </div>
     </div>
 
     {/* PDF PREVIEW */}
+    {showPDF && canGenerate && employee && employment && (
     <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mt-8">
       <div className="flex items-center justify-between gap-4 mb-6">
         <h3 className="text-xl font-semibold text-gray-800">PDF Preview</h3>
@@ -856,6 +835,7 @@ export default function EmployeeOfferLetterPage() {
         </PDFViewer>
       </div>
     </div>
+    )}
 
   </EmployeeLayout>
 );

@@ -367,7 +367,7 @@ return (
             onClick={handleGenerate}
             disabled={!canGenerate}
             className={[
-              "px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm inline-flex items-center gap-2",
+              "inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg text-sm font-medium transition shadow-sm min-h-[48px] min-w-[190px]",
               canGenerate
                 ? "bg-green-600 text-white hover:bg-green-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed",
@@ -405,8 +405,7 @@ return (
                     : "text-gray-400 cursor-not-allowed"
                 ].join(" ")}
               >
-                Last Working Date{" "}
-                {lastWorkingDate ? `(${formatDate(lastWorkingDate)})` : ""}
+                Last Working Date
               </a>
             </div>
 
@@ -430,8 +429,7 @@ return (
                     : "text-gray-400 cursor-not-allowed"
                 ].join(" ")}
               >
-                Last Working Date{" "}
-                {lastWorkingDate ? `(${formatDate(lastWorkingDate)})` : ""}
+                Last Working Date
               </a>
             </div>
 
@@ -443,9 +441,9 @@ return (
               <input
                 type="text"
                 value={designationOverride}
-                readOnly
-                className="w-full p-3 border border-gray-300 rounded-md bg-gray-100 focus:ring-2 focus:ring-blue-500"
-                placeholder=""
+                onChange={(e) => setDesignationOverride(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-md bg-white focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter designation"
               />
             </div>
 
@@ -490,7 +488,7 @@ return (
             onClick={handleGenerate}
             disabled={!canGenerate}
             className={[
-              "flex items-center gap-2 px-6 py-2 rounded-lg transition shadow-sm",
+              "flex items-center justify-center gap-2 px-6 py-3 rounded-lg transition shadow-sm min-h-[48px] min-w-[190px]",
               canGenerate
                 ? "bg-green-600 text-white hover:bg-green-700"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed",

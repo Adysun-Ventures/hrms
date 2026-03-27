@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FiDownload } from "react-icons/fi";
+import { FiDownload, FiX } from "react-icons/fi";
 import TableHeader from "@/components/ui/TableHeader";
 
 import {
@@ -394,6 +394,15 @@ function RelievingLetterV2() {
     fetchEmployees();
   }, []);
 
+  const normalizeDateForInput = (value) => {
+    if (!value) return "";
+    const s = String(value).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toISOString().slice(0, 10);
+  };
+
   const fetchEmployees = async () => {
     const qs = await getDocs(collection(db, "employees"));
     const list = qs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -470,18 +479,61 @@ function RelievingLetterV2() {
                   <Combobox
                   value={employee}
                   onChange={(e) => {
-                    setEmployee(e || null);
-                    setEmployment(employments[e?.id] || null);
+                    const selectedEmployee = e || null;
+                    const selectedEmployment = employments[selectedEmployee?.id] || null;
+                    setEmployee(selectedEmployee);
+                    setEmployment(selectedEmployment);
+                    setSearchTerm("");
+
+                    // Auto-fill from employment
+                    const joiningDateForDoc = normalizeDateForInput(
+                      selectedEmployment?.joiningDate || selectedEmployment?.startDate || ""
+                    );
+                    const resignDate = normalizeDateForInput(
+                      selectedEmployment?.resignationDate ||
+                      selectedEmployment?.resignedDate ||
+                      selectedEmployment?.lastWorkingDate ||
+                      ""
+                    );
+
+                    setEmployeeSignDate(joiningDateForDoc || "");
+                    setEmployeeResignDate(resignDate || "");
+                    setEmployeeRelievingDate(resignDate || "");
+                    setDesignationOverride(
+                      selectedEmployment?.jobTitle || selectedEmployment?.designation || ""
+                    );
+                    setEmployeeSignPlace(selectedEmployment?.location || "");
                   }}
                 >
                   <div className="relative">
                 
                     <Combobox.Input
-                      className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                       placeholder="Select or Search employee..."
                       displayValue={(emp) => emp?.name ?? ""}
                       onChange={(event) => setSearchTerm(event.target.value)}
                     />
+                    {(employee || searchTerm) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmployee(null);
+                          setEmployment(null);
+                          setSearchTerm("");
+                          setShowPDF(false);
+                          setEmployeeSignDate("");
+                          setEmployeeSignPlace("");
+                          setEmployeeRelievingDate("");
+                          setEmployeeResignDate("");
+                          setDesignationOverride("");
+                        }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                        aria-label="Clear employee selection"
+                        title="Clear"
+                      >
+                        <FiX className="w-4 h-4" />
+                      </button>
+                    )}
                 
                     <Combobox.Options className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto mt-1">
                       {candidates
@@ -519,6 +571,22 @@ function RelievingLetterV2() {
                     value={employeeSignDate}
                     onChange={setEmployeeSignDate}
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const joiningDateForDoc = normalizeDateForInput(
+                        employment?.joiningDate || employment?.startDate || ""
+                      );
+                      if (!joiningDateForDoc) {
+                        toast.error("Joining date is not available for selected employee");
+                        return;
+                      }
+                      setEmployeeSignDate(joiningDateForDoc);
+                    }}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Use Joining Date
+                  </button>
                 </div>
 
                 {/* Effective Relieving Date */}
@@ -530,6 +598,25 @@ function RelievingLetterV2() {
                     value={employeeRelievingDate}
                     onChange={setEmployeeRelievingDate}
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const resignDate = normalizeDateForInput(
+                        employment?.resignationDate ||
+                        employment?.resignedDate ||
+                        employment?.lastWorkingDate ||
+                        ""
+                      );
+                      if (!resignDate) {
+                        toast.error("Resign date is not available for selected employee");
+                        return;
+                      }
+                      setEmployeeRelievingDate(resignDate);
+                    }}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Use Resign Date
+                  </button>
                 </div>
 
                 {/* Resignation Date */}
@@ -541,6 +628,25 @@ function RelievingLetterV2() {
                     value={employeeResignDate}
                     onChange={setEmployeeResignDate}
                   />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const resignDate = normalizeDateForInput(
+                        employment?.resignationDate ||
+                        employment?.resignedDate ||
+                        employment?.lastWorkingDate ||
+                        ""
+                      );
+                      if (!resignDate) {
+                        toast.error("Resign date is not available for selected employee");
+                        return;
+                      }
+                      setEmployeeResignDate(resignDate);
+                    }}
+                    className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Use Resign Date
+                  </button>
                 </div>
 
                 <div>

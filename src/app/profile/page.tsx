@@ -21,6 +21,13 @@ export default function ProfilePage() {
     }
   }, [currentUserData, router]);
 
+  // Employees should use the employee profile page
+  useEffect(() => {
+    if (currentUserData?.userType === 'employee') {
+      router.push('/employee/profile');
+    }
+  }, [currentUserData, router]);
+
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);

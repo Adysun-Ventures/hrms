@@ -5,13 +5,30 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
-import { addEmployment, getEmployees, getAdminDataForAudit, checkEmploymentIdUnique, getEmployeeSelf } from '@/utils/firebaseUtils';
+import {
+  addEmployment,
+  getEmployees,
+  getAdminDataForAudit,
+  checkEmploymentIdUnique,
+  getEmployeeSelf,
+} from '@/utils/firebaseUtils';
+import {
+  PROFESSIONAL_REFERENCE_DIRECTORY,
+  PROFESSIONAL_REFERENCE_NAME_OPTIONS,
+  buildProfessionalReferencesArray,
+} from '@/utils/professionalReferenceEmployment';
 import { Employment, Employee } from '@/types';
 import { FiSave, FiPlus, FiRefreshCw } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { useAuth } from '@/context/AuthContext';
+import {
+  EMPLOYMENT_DESIGNATION_BY_DEPARTMENT,
+  EMPLOYMENT_ID_NUMBER_MAX,
+  EMPLOYMENT_ID_NUMBER_MIN,
+  randomEmploymentIdSuffix,
+} from '@/constants/employmentJobOptions';
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   // Add all the fields we need
@@ -32,6 +49,14 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
     location?: string;
   };
   colleague3?: {
+    name?: string;
+    employeeId?: string;
+    mobileNo?: string;
+    email?: string;
+    designation?: string;
+    location?: string;
+  };
+  reportingManagerRef?: {
     name?: string;
     employeeId?: string;
     mobileNo?: string;
@@ -100,28 +125,55 @@ export default function AddEmploymentPage() {
   // If userType is still unknown, default to EmployeeLayout to avoid triggering admin-only calls.
   const Layout: any = isAdminUser ? DashboardLayout : EmployeeLayout;
 
+  /** Employees must not use admin routes (/employees/..., /dashboard, /employments list) for back / cancel. */
+  const addEmploymentBackHref =
+    isEmployeeUser
+      ? '/employee-dashboard'
+      : preSelectedEmployee
+        ? `/employees/${preSelectedEmployee.id}`
+        : '/employments';
+
+  const addEmploymentBreadcrumbItems = isEmployeeUser
+    ? [
+        { label: 'Dashboard', href: '/employee-dashboard' },
+        { label: 'Add Employment', isCurrent: true },
+      ]
+    : [
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Employees', href: '/employees' },
+        ...(preSelectedEmployee
+          ? [
+              { label: preSelectedEmployee.name, href: `/employees/${preSelectedEmployee.id}` },
+              { label: 'Add Employment', isCurrent: true },
+            ]
+          : [
+              { label: 'Employments', href: '/employments' },
+              { label: 'Add Employment', isCurrent: true },
+            ]),
+      ];
+
   const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<EmploymentFormData>({
     defaultValues: {
       employmentId: 'ADV',
       isResignation: false,
-      whereWereYouEmploid: 'Registred Corporate Office',
+      whereWereYouEmploid: 'Registred Corporate Office(Pune)',
       location: 'Pune',
+      teamLead: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
+      colleague1: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
+      colleague3: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
+      reportingManagerRef: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
     }
   });
 
   const whereWereYouEmploidValue = watch('whereWereYouEmploid');
   const selectedDepartment = watch('department');
-  const designationOptionsByDepartment: Record<string, string[]> = {
-    Engineering: ['Software Developer', 'Senior Software Developer', 'Lead Developer'],
-    Sales: ['Sales Executive', 'Senior Sales Executive', 'Sales Manager'],
-    Marketing: ['Marketing Executive', 'Senior Marketing Executive', 'Marketing Manager'],
-    HR: ['HR Executive', 'HR Manager', 'Talent Acquisition Specialist'],
-    Finance: ['Accountant', 'Senior Accountant', 'Finance Manager'],
-  };
+  const designationOptionsByDepartment = EMPLOYMENT_DESIGNATION_BY_DEPARTMENT;
   const derivedLocation =
+    whereWereYouEmploidValue === 'Registred Corporate Office(Pune)' ||
     whereWereYouEmploidValue === 'Registred Corporate Office'
       ? 'Pune'
-      : whereWereYouEmploidValue === 'Branch Office'
+      : whereWereYouEmploidValue === 'Branch Office(Mumbai)' ||
+          whereWereYouEmploidValue === 'Branch Office'
         ? 'Mumbai'
         : '';
 
@@ -130,6 +182,67 @@ export default function AddEmploymentPage() {
     if (!derivedLocation) return;
     setValue('location', derivedLocation, { shouldValidate: true, shouldDirty: true });
   }, [derivedLocation, setValue]);
+
+  // ---------------- Professional Reference (same behavior as Edit Employment) ----------------
+  type ProfessionalRefKey = 'teamLead' | 'colleague1' | 'colleague3' | 'reportingManagerRef';
+
+  const professionalRefTeamLeadName = watch('teamLead.name') || '';
+  const professionalRefColleague1Name = watch('colleague1.name') || '';
+  const professionalRefColleague3Name = watch('colleague3.name') || '';
+  const professionalRefReportingManagerName = watch('reportingManagerRef.name') || '';
+  const showProfessionalReferenceExtraFields = false;
+
+  const clearProfessionalReferenceFields = (refKey: ProfessionalRefKey) => {
+    setValue(`${refKey}.name` as any, '', { shouldDirty: true });
+    setValue(`${refKey}.employeeId` as any, '', { shouldDirty: true });
+    setValue(`${refKey}.mobileNo` as any, '', { shouldDirty: true });
+    setValue(`${refKey}.email` as any, '', { shouldDirty: true });
+    setValue(`${refKey}.designation` as any, '', { shouldDirty: true });
+    setValue(`${refKey}.location` as any, '', { shouldDirty: true });
+  };
+
+  const autoFillProfessionalReferenceFromDirectory = (refKey: ProfessionalRefKey, employeeName: string) => {
+    const key = (employeeName ?? '').trim();
+    if (!key) {
+      clearProfessionalReferenceFields(refKey);
+      return;
+    }
+    const person = PROFESSIONAL_REFERENCE_DIRECTORY[key];
+    if (!person) {
+      clearProfessionalReferenceFields(refKey);
+      return;
+    }
+
+    setValue(`${refKey}.employeeId` as any, person.employeeId, { shouldDirty: true });
+    setValue(`${refKey}.mobileNo` as any, person.mobileNo, { shouldDirty: true });
+    setValue(`${refKey}.email` as any, person.email, { shouldDirty: true });
+    setValue(`${refKey}.designation` as any, person.designation, { shouldDirty: true });
+    setValue(`${refKey}.location` as any, person.location, { shouldDirty: true });
+  };
+
+  useEffect(() => {
+    if (!professionalRefTeamLeadName) return;
+    autoFillProfessionalReferenceFromDirectory('teamLead', professionalRefTeamLeadName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionalRefTeamLeadName]);
+
+  useEffect(() => {
+    if (!professionalRefColleague1Name) return;
+    autoFillProfessionalReferenceFromDirectory('colleague1', professionalRefColleague1Name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionalRefColleague1Name]);
+
+  useEffect(() => {
+    if (!professionalRefColleague3Name) return;
+    autoFillProfessionalReferenceFromDirectory('colleague3', professionalRefColleague3Name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionalRefColleague3Name]);
+
+  useEffect(() => {
+    if (!professionalRefReportingManagerName) return;
+    autoFillProfessionalReferenceFromDirectory('reportingManagerRef', professionalRefReportingManagerName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionalRefReportingManagerName]);
 
   // Watch salary for calculations
   const joiningCtc = watch('joiningCtc'); 
@@ -196,8 +309,7 @@ export default function AddEmploymentPage() {
   const generateRandomEmploymentId = async () => {
     const maxAttempts = 30;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      // Generate: ADV + (1..100)
-      const randomNumber = Math.floor(Math.random() * 100) + 1; // inclusive 1..100
+      const randomNumber = randomEmploymentIdSuffix();
       const candidate = `ADV${randomNumber}`;
 
       if (generatedEmploymentIdsRef.current.has(candidate)) continue;
@@ -293,9 +405,17 @@ export default function AddEmploymentPage() {
       const currentTimestamp = new Date().toISOString();
       const auditId = isEmployeeUser ? currentUserData!.id : getAdminDataForAudit().adminId;
 
+      const {
+        teamLead,
+        colleague1,
+        colleague3,
+        reportingManagerRef,
+        ...rest
+      } = data;
+
       // Convert string values to numbers and handle undefined values
       const formattedData = {
-        ...data,
+        ...rest,
         // Store normalized employmentId for consistent uniqueness checks
         employmentId: normalizedEmploymentId,
         salary: Number(data.salary),
@@ -317,6 +437,12 @@ export default function AddEmploymentPage() {
         payableDays: data.payableDays !== undefined && data.payableDays !== null && data.payableDays !== ('' as any)
           ? Number(data.payableDays)
           : undefined,
+        professionalReferences: buildProfessionalReferencesArray({
+          teamLead,
+          colleague1,
+          colleague3,
+          reportingManagerRef,
+        }),
         // Add audit fields
         createdAt: currentTimestamp,
         createdBy: auditId,
@@ -324,11 +450,12 @@ export default function AddEmploymentPage() {
         updatedBy: auditId,
       };
 
-      await addEmployment(formattedData);
+      const created = await addEmployment(formattedData);
       toast.success('Employment record created successfully!', { id: 'add-employment' });
 
-      // Navigate back to employee details if employee was pre-selected, otherwise to employments list
-      if (preSelectedEmployee) {
+      if (isEmployeeUser && created?.id) {
+        router.push(`/employments/${created.id}?employmentCreated=true`);
+      } else if (preSelectedEmployee) {
         router.push(`/employees/${preSelectedEmployee.id}?employmentCreated=true`);
       } else {
         router.push('/employments');
@@ -373,19 +500,7 @@ export default function AddEmploymentPage() {
   }
 
   return (
-    <Layout
-      breadcrumbItems={[
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Employees', href: '/employees' },
-        ...(preSelectedEmployee ? [
-          { label: preSelectedEmployee.name, href: `/employees/${preSelectedEmployee.id}` },
-          { label: 'Add Employment', isCurrent: true }
-        ] : [
-          { label: 'Employments', href: '/employments' },
-          { label: 'Add Employment', isCurrent: true }
-        ])
-      ]}
-    >
+    <Layout breadcrumbItems={addEmploymentBreadcrumbItems as any}>
       <Toaster position="top-center" />
 
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -403,8 +518,8 @@ export default function AddEmploymentPage() {
           showFilter={false}
           headerClassName="px-6 py-6"
           backButton={{
-            href: preSelectedEmployee ? `/employees/${preSelectedEmployee.id}` : '/employments',
-            label: 'Back'
+            href: addEmploymentBackHref,
+            label: 'Back',
           }}
           actionButtons={[
             {
@@ -483,6 +598,8 @@ export default function AddEmploymentPage() {
   >
     <option value="">Select department</option>
     <option value="Engineering">Engineering</option>
+    <option value="Development">Development</option>
+    <option value="Support">Support</option>
     <option value="Sales">Sales</option>
     <option value="Marketing">Marketing</option>
     <option value="HR">HR</option>
@@ -554,9 +671,278 @@ export default function AddEmploymentPage() {
                       {...register('whereWereYouEmploid')}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     >
-                      <option value="Registred Corporate Office">Registred Corporate Office</option>
-                      <option value="Branch Office">Branch Office</option>
+                      <option value="Registred Corporate Office(Pune)">Registred Corporate Office(Pune)</option>
+                      <option value="Branch Office(Mumbai)">Branch Office(Mumbai)</option>
                     </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Professional Reference — same as Edit Employment */}
+              <div className="bg-white p-4 rounded-lg mb-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-indigo-500 pl-2">
+                  Professional Reference
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-3">Team Leader</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <select
+                          {...register('teamLead.name' as const, {
+                            onChange: (e) => {
+                              autoFillProfessionalReferenceFromDirectory('teamLead', e.target.value);
+                            },
+                          })}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        >
+                          <option value="">Select</option>
+                          {PROFESSIONAL_REFERENCE_NAME_OPTIONS.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Employee Id</label>
+                          <input
+                            {...register('teamLead.employeeId' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Mobile No</label>
+                          <input
+                            {...register('teamLead.mobileNo' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <input
+                            {...register('teamLead.email' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                          <input
+                            {...register('teamLead.designation' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Place</label>
+                          <input
+                            {...register('teamLead.location' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-3">Colleague 1</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <select
+                          {...register('colleague1.name' as const, {
+                            onChange: (e) => {
+                              autoFillProfessionalReferenceFromDirectory('colleague1', e.target.value);
+                            },
+                          })}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        >
+                          <option value="">Select</option>
+                          {PROFESSIONAL_REFERENCE_NAME_OPTIONS.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Employee Id</label>
+                          <input
+                            {...register('colleague1.employeeId' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Mobile No</label>
+                          <input
+                            {...register('colleague1.mobileNo' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <input
+                            {...register('colleague1.email' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                          <input
+                            {...register('colleague1.designation' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Place</label>
+                          <input
+                            {...register('colleague1.location' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-3">Colleague 2</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <select
+                          {...register('colleague3.name' as const, {
+                            onChange: (e) => {
+                              autoFillProfessionalReferenceFromDirectory('colleague3', e.target.value);
+                            },
+                          })}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        >
+                          <option value="">Select</option>
+                          {PROFESSIONAL_REFERENCE_NAME_OPTIONS.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Employee Id</label>
+                          <input
+                            {...register('colleague3.employeeId' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Mobile No</label>
+                          <input
+                            {...register('colleague3.mobileNo' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <input
+                            {...register('colleague3.email' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                          <input
+                            {...register('colleague3.designation' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Place</label>
+                          <input
+                            {...register('colleague3.location' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-3">Reporting Manager</h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <select
+                          {...register('reportingManagerRef.name' as const, {
+                            onChange: (e) => {
+                              autoFillProfessionalReferenceFromDirectory('reportingManagerRef', e.target.value);
+                            },
+                          })}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        >
+                          <option value="">Select</option>
+                          {PROFESSIONAL_REFERENCE_NAME_OPTIONS.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Employee Id</label>
+                          <input
+                            {...register('reportingManagerRef.employeeId' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Mobile No</label>
+                          <input
+                            {...register('reportingManagerRef.mobileNo' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <input
+                            {...register('reportingManagerRef.email' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                          <input
+                            {...register('reportingManagerRef.designation' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Place</label>
+                          <input
+                            {...register('reportingManagerRef.location' as const)}
+                            readOnly
+                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -573,7 +959,7 @@ export default function AddEmploymentPage() {
                     <div className="flex items-center gap-2">
                       <input
                         type="text"
-                        placeholder="E.g., ADV10"
+                        placeholder="E.g., ADV250 (1–999)"
                         {...register('employmentId', {
                           required: 'Employment ID is required',
                           pattern: {
@@ -583,7 +969,8 @@ export default function AddEmploymentPage() {
                           validate: (value) => {
                             const num = Number(String(value).replace(/^ADV/i, ''));
                             if (!Number.isFinite(num)) return 'Employment ID number is invalid';
-                            if (num < 1 || num > 100) return 'Employment ID number must be between 1 and 100';
+                            if (num < EMPLOYMENT_ID_NUMBER_MIN || num > EMPLOYMENT_ID_NUMBER_MAX)
+                              return `Employment ID number must be between ${EMPLOYMENT_ID_NUMBER_MIN} and ${EMPLOYMENT_ID_NUMBER_MAX}`;
                             return true;
                           }
                         })}
@@ -1035,7 +1422,7 @@ export default function AddEmploymentPage() {
               <div className="flex justify-between items-center gap-4 px-6 py-3">
                 <button
                   type="button"
-                  onClick={() => router.back()}
+                  onClick={() => router.push(addEmploymentBackHref)}
                   className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 >
                   Cancel

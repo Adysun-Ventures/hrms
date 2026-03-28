@@ -132,6 +132,43 @@ function parseEmailAndMobile(raw?: string): { email: string; mobile: string } {
   return { email: email || '\u00a0', mobile: mobile || '\u00a0' };
 }
 
+/** From `nameDesignation` block, e.g. line "Employee Id - ADV09". */
+function parseProfessionalReferenceEmployeeId(raw?: string): string {
+  const s = (raw ?? '').toString().trim();
+  if (!s) return '\u00a0';
+  const lines = s
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  for (const line of lines) {
+    const m = line.match(/\bEmployee\s*Id\b\s*[-:|]\s*(.+)$/i);
+    if (m?.[1]) {
+      const v = m[1].trim();
+      if (v) return v;
+    }
+  }
+  const anyAdv = s.match(/\b(ADV\d+)\b/i);
+  return anyAdv?.[1] ?? '\u00a0';
+}
+
+/** From `emailAndMobile` block, e.g. line "Place - Pune". */
+function parseProfessionalReferencePlace(raw?: string): string {
+  const s = (raw ?? '').toString().trim();
+  if (!s) return '\u00a0';
+  const lines = s
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  for (const line of lines) {
+    const m = line.match(/^Place\b\s*[-:|]\s*(.+)$/i);
+    if (m?.[1]) {
+      const v = m[1].trim();
+      if (v) return v;
+    }
+  }
+  return '\u00a0';
+}
+
 function whereEmployedRaw(employment: any): string {
   const raw =
     employment?.whereWereYouEmploid ||
@@ -804,12 +841,12 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               <h2 className="text-lg font-semibold text-gray-900">Professional Reference</h2>
             </div>
             <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-              <table className="w-full min-w-[900px] border-collapse text-sm text-gray-900">
+              <table className="w-full min-w-[1040px] border-collapse text-sm text-gray-900">
                 <thead>
                   <tr className="bg-gray-100">
                     <th
                       scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[18%]"
                     >
                       &nbsp;
                     </th>
@@ -818,6 +855,12 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                       className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle"
                     >
                       Name
+                    </th>
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle whitespace-nowrap"
+                    >
+                      Employee ID
                     </th>
                     <th
                       scope="col"
@@ -837,6 +880,12 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                     >
                       Designation
                     </th>
+                    <th
+                      scope="col"
+                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle"
+                    >
+                      Place
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -852,6 +901,8 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                     const ref = employment.professionalReferences?.[idx];
                     const nd = parseNameAndDesignation(ref?.nameDesignation);
                     const em = parseEmailAndMobile(ref?.emailAndMobile);
+                    const refEmployeeId = parseProfessionalReferenceEmployeeId(ref?.nameDesignation);
+                    const refPlace = parseProfessionalReferencePlace(ref?.emailAndMobile);
 
                     return (
                       <tr key={idx}>
@@ -865,6 +916,9 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                           {nd.name}
                         </td>
                         <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {refEmployeeId}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
                           {em.email}
                         </td>
                         <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
@@ -872,6 +926,9 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                         </td>
                         <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
                           {nd.designation}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {refPlace}
                         </td>
                       </tr>
                     );

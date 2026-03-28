@@ -1,4 +1,4 @@
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, query, where, orderBy, limit, runTransaction, serverTimestamp, deleteField } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, query, where, orderBy, limit, runTransaction, serverTimestamp, deleteField, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Employee, Employment, Salary, SecondaryEducationEntry } from '../types';
 
@@ -349,7 +349,26 @@ export const updateEmployee = async (id: string, employeeData: Partial<Employee>
 
 export const deleteEmployee = async (id: string) => {
   try {
-    await deleteDoc(doc(db, 'employees', id));
+    const [employmentsSnap, salariesSnap] = await Promise.all([
+      getDocs(query(collection(db, 'employments'), where('employeeId', '==', id))),
+      getDocs(query(collection(db, 'salaries'), where('employeeId', '==', id))),
+    ]);
+
+    const refsToDelete = [
+      ...employmentsSnap.docs.map((d) => doc(db, 'employments', d.id)),
+      ...salariesSnap.docs.map((d) => doc(db, 'salaries', d.id)),
+      doc(db, 'employees', id),
+    ];
+
+    const BATCH_LIMIT = 500;
+    for (let i = 0; i < refsToDelete.length; i += BATCH_LIMIT) {
+      const batch = writeBatch(db);
+      for (const ref of refsToDelete.slice(i, i + BATCH_LIMIT)) {
+        batch.delete(ref);
+      }
+      await batch.commit();
+    }
+
     return true;
   } catch (error) {
     console.error('Error deleting employee:', error);
@@ -462,8 +481,9 @@ export const getEmployee = async (id: string) => {
 // Employment CRUD operations
 export const addEmployment = async (employmentData: Omit<Employment, 'id'>) => {
   try {
-    const docRef = await addDoc(collection(db, 'employments'), employmentData);
-    return { id: docRef.id, ...employmentData };
+    const sanitizedData = sanitizeForFirestore(employmentData);
+    const docRef = await addDoc(collection(db, 'employments'), sanitizedData);
+    return { id: docRef.id, ...sanitizedData };
   } catch (error) {
     console.error('Error adding employment:', error);
     throw error;

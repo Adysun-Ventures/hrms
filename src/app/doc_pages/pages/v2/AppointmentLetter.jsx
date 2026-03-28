@@ -5,7 +5,7 @@ import { PDFViewer, PDFDownloadLink, Document, Page, Text, View, Image, StyleShe
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import Link from 'next/link';
-import { FiArrowLeft } from 'react-icons/fi';
+import { FiArrowLeft, FiDownload } from 'react-icons/fi';
 import { CompanyHeader, FormattedDate, Paragraph, Signature, Footer, Watermark } from '@/components/pdf/PDFComponents';
 import { commonStyles } from '@/components/pdf/PDFStyles';
 import { formatIndianCurrency, numberToWords } from '@/components/pdf/SalaryUtils';
@@ -1117,9 +1117,14 @@ function AppointmentLetterV2() {
           <PDFDownloadLink 
             document={memoizedPdfDocument}
             fileName="appointment-letter.pdf"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
-            {({ loading }) => (loading ? 'Loading document...' : 'Download PDF')}
+            {({ loading }) => (
+              <>
+                <FiDownload size={18} className="shrink-0" aria-hidden />
+                {loading ? 'Loading document...' : 'Download PDF'}
+              </>
+            )}
           </PDFDownloadLink>
         </div>
         

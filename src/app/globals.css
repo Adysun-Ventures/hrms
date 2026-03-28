@@ -71,12 +71,7 @@ body {
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* App uses a light UI; keep light page/chrome even when OS prefers dark mode */
 
 body {
   background: var(--background);

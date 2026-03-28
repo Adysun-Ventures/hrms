@@ -4,19 +4,6 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { FiArrowLeft, FiDownload, FiX } from 'react-icons/fi';
 import { PDFViewer, PDFDownloadLink, Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
-import { saveAs } from 'file-saver';
-import {
-  AlignmentType,
-  BorderStyle,
-  Packer,
-  Paragraph,
-  Table,
-  TableCell,
-  TableRow,
-  TextRun,
-  WidthType,
-} from 'docx';
-import { createAdysunDocx } from '@/utils/docxAdysun';
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { CompanyHeader, Watermark } from '@/components/pdf/PDFComponents';
@@ -859,231 +846,6 @@ function SalarySlipGeneratorV2() {
     return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  const buildSalarySlipDocx = async (f) => {
-    const safe = (v) => (v === null || v === undefined || v === '' ? '-' : String(v));
-
-    const monthLabel = MONTH_NAMES[Number(f.month)] || '';
-    const title = `Salary Slip  ${monthLabel} ${safe(f.year)}`.trim();
-
-    const employeeName = safe(getEmployeeNameText(f.employeeName, f.employeeNameText));
-    const empCode = safe(f.employeeId);
-    const designation = safe(f.designation);
-    const department = safe(f.department);
-    const bankName = safe(f.bankName);
-    const ifsc = safe(f.ifscCode);
-    const accountNo = safe(f.accountNo);
-    const panNo = safe(f.panNumber);
-    const leaves = safe(f.leaves || 0);
-    const effectiveDays = `${safe(f.payableDays)} Days`;
-
-    const earningsRows = [
-      ['Basic', formatMoney2(f.basicSalary)],
-      ['HRA', formatMoney2(f.da)],
-      ['Conveyance Allowance', formatMoney2(f.conveyanceAllowance)],
-      ['Other Allowance', formatMoney2(f.otherAllowance)],
-    ];
-
-    const deductionsRows = [
-      ['PT', formatMoney2(f.professionalTax)],
-      ...(f.enablePF ? [['PF (Employee)', formatMoney2(f.pfEmployee)]] : []),
-      ['Leave Deduction', formatMoney2(f.leavesDeduction)],
-      ['Other Deductions', formatMoney2(f.otherDeductions)],
-    ];
-
-    const bordersBlack = {
-      top: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
-      bottom: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
-      left: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
-      right: { style: BorderStyle.SINGLE, size: 2, color: '000000' },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: '7A7A7A' },
-      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: '7A7A7A' },
-    };
-
-    const cellLabel = (text, opts = {}) =>
-      new TableCell({
-        ...opts,
-        children: [new Paragraph({ children: [new TextRun({ text, bold: true })] })],
-      });
-
-    const cellValue = (text, opts = {}) =>
-      new TableCell({
-        ...opts,
-        children: [new Paragraph(String(text))],
-      });
-
-    const makeDetailsTable = () => {
-      const rows = [];
-
-      const rowSpanValue = (label, value) =>
-        new TableRow({
-          children: [
-            cellLabel(label),
-            cellValue(value, { columnSpan: 3 }),
-          ],
-        });
-
-      rows.push(rowSpanValue('Employee Name', employeeName));
-      rows.push(rowSpanValue('Employee Code', empCode));
-      rows.push(rowSpanValue('Designation', designation));
-      rows.push(rowSpanValue('Department', department));
-      rows.push(
-        new TableRow({
-          children: [
-            cellLabel('Bank Name'),
-            cellValue(bankName),
-            cellLabel('IFSC'),
-            cellValue(ifsc),
-          ],
-        })
-      );
-      rows.push(rowSpanValue('Bank Account No', accountNo));
-      rows.push(rowSpanValue('Pan No', panNo));
-      rows.push(rowSpanValue('Leaves', leaves));
-      rows.push(rowSpanValue('Effective Work Days', effectiveDays));
-
-      return new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: bordersBlack,
-        rows,
-      });
-    };
-
-    const headerCell = (text, align = AlignmentType.LEFT) =>
-      new TableCell({
-        shading: { fill: 'EDEDED' },
-        children: [
-          new Paragraph({
-            alignment: align,
-            children: [new TextRun({ text, bold: true })],
-          }),
-        ],
-      });
-
-    const amountCell = (text, bold = false) =>
-      new TableCell({
-        children: [
-          new Paragraph({
-            alignment: AlignmentType.RIGHT,
-            children: [new TextRun({ text: String(text), bold })],
-          }),
-        ],
-      });
-
-    const textCell = (text, bold = false) =>
-      new TableCell({
-        children: [new Paragraph({ children: [new TextRun({ text: String(text), bold })] })],
-      });
-
-    const makeEarningsDeductionsTable = () => {
-      const max = Math.max(earningsRows.length, deductionsRows.length);
-      const rows = [];
-
-      rows.push(
-        new TableRow({
-          children: [
-            headerCell('Earnings (A)'),
-            headerCell('Amount', AlignmentType.RIGHT),
-            headerCell('Deductions (B)'),
-            headerCell('Amount', AlignmentType.RIGHT),
-          ],
-        })
-      );
-
-      for (let i = 0; i < max; i++) {
-        const e = earningsRows[i] || ['', ''];
-        const d = deductionsRows[i] || ['', ''];
-        rows.push(
-          new TableRow({
-            children: [
-              textCell(e[0]),
-              amountCell(e[1]),
-              textCell(d[0]),
-              amountCell(d[1]),
-            ],
-          })
-        );
-      }
-
-      rows.push(
-        new TableRow({
-          children: [
-            textCell('Gross Salary', true),
-            amountCell(formatMoney2(getTotalEarnings(f)), true),
-            textCell('Total Deductions', true),
-            amountCell(formatMoney2(getTotalDeductions(f)), true),
-          ],
-        })
-      );
-
-      return new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: bordersBlack,
-        rows,
-      });
-    };
-
-    const makeNetSalaryRow = () =>
-      new Table({
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: bordersBlack,
-        rows: [
-          new TableRow({
-            children: [
-              new TableCell({
-                shading: { fill: 'EDEDED' },
-                children: [new Paragraph({ children: [new TextRun({ text: 'Net Salary (A - B)', bold: true })] })],
-              }),
-              new TableCell({
-                shading: { fill: 'EDEDED' },
-                children: [
-                  new Paragraph({
-                    alignment: AlignmentType.RIGHT,
-                    children: [new TextRun({ text: formatMoney2(getNetSalary(f)), bold: true })],
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      });
-
-    return await createAdysunDocx({
-      children: [
-        new Paragraph({ text: "" }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [new TextRun({ text: title, bold: true })],
-        }),
-        new Paragraph({ text: "" }),
-        makeDetailsTable(),
-        new Paragraph({ text: "" }),
-        makeEarningsDeductionsTable(),
-        new Paragraph({ text: "" }),
-        makeNetSalaryRow(),
-        new Paragraph({ text: "" }),
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [
-            new TextRun({
-              text: "This document is digitally generated and does not require signature.",
-              bold: true,
-            }),
-          ],
-        }),
-      ],
-    });
-  };
-
-  const handleDownloadDocx = async () => {
-    try {
-      const doc = await buildSalarySlipDocx(formData);
-      const blob = await Packer.toBlob(doc);
-      saveAs(blob, `SalarySlip_${formData.employeeNameText}_${formData.payDate}.docx`);
-    } catch (err) {
-      console.error('DOCX download error:', err);
-      toast.error('Failed to generate DOCX');
-    }
-  };
 return (
   <div className="w-full pt-6">
     <Toaster position="top-center" />
@@ -1209,7 +971,7 @@ return (
               value={emp}
               className={({ active }) =>
                 `cursor-pointer px-3 py-2 ${
-                  active ? 'bg-blue-600 text-white' : 'bg-white'
+                  active ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'
                 }`
               }
             >
@@ -1355,19 +1117,17 @@ return (
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleDownloadDocx}
-              className="px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-800"
-            >
-              Download DOCX
-            </button>
             <PDFDownloadLink
               document={memoPDF}
               fileName={`SalarySlip_${formData.employeeNameText}_${formData.payDate}.pdf`}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
-              {({ loading }) => loading ? 'Loading...' : 'Download PDF'}
+              {({ loading }) => (
+                <>
+                  <FiDownload size={18} className="shrink-0" aria-hidden />
+                  {loading ? 'Loading...' : 'Download PDF'}
+                </>
+              )}
             </PDFDownloadLink>
           </div>
         </div>
@@ -1382,15 +1142,8 @@ return (
     {/* DOCX PREVIEW (HTML) */}
     {showDocPreview && (
       <div className="bg-white rounded-lg shadow-lg p-4 mb-8">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6">
           <h3 className="text-xl font-bold text-gray-800">DOCX Preview</h3>
-          <button
-            type="button"
-            onClick={handleDownloadDocx}
-            className="px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-800"
-          >
-            Download DOCX
-          </button>
         </div>
 
         <div className="border rounded-lg p-6">

@@ -567,7 +567,7 @@ export default function AppraisalLetterV2() {
                             key={emp.id}
                             value={emp}
                             className={({ active }) =>
-                              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white'}`
+                              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'}`
                             }
                           >
                             {emp.name}
@@ -586,7 +586,7 @@ export default function AppraisalLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     Current CTC (Annual) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -599,7 +599,7 @@ export default function AppraisalLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     % Increase <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -612,7 +612,7 @@ export default function AppraisalLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     Revised CTC (Annual) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -625,7 +625,7 @@ export default function AppraisalLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     Document Generate Date <span className="text-red-500">*</span>
                   </label>
                   <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
@@ -639,7 +639,7 @@ export default function AppraisalLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     Effective Date <span className="text-red-500">*</span>
                   </label>
                   <DateDropdown value={effectiveDate} onChange={setEffectiveDate} />
@@ -653,7 +653,7 @@ export default function AppraisalLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     Old Designation
                   </label>
                   <input
@@ -666,7 +666,7 @@ export default function AppraisalLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     New Designation
                   </label>
                   <input
@@ -729,36 +729,11 @@ export default function AppraisalLetterV2() {
                   />
                 }
                 fileName={`Appraisal_${employee.name}.pdf`}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
+                <FiDownload size={18} className="shrink-0" aria-hidden />
                 Download PDF
               </PDFDownloadLink>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const doc = await buildAppraisalLetterDocx(
-                      employee,
-                      currentCTC,
-                      percentIncrease,
-                      revisedCTC,
-                      effectiveDate,
-                      documentGenerateDate,
-                      oldDesignation,
-                      newDesignation
-                    );
-                    const blob = await Packer.toBlob(doc);
-                    saveAs(blob, `IncrementLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
-                    toast.success("DOCX downloaded");
-                  } catch (err) {
-                    console.error("DOCX download error:", err);
-                    toast.error("Failed to generate DOCX");
-                  }
-                }}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                Download DOCX
-              </button>
             </div>
           </div>
 

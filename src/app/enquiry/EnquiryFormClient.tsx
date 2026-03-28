@@ -587,7 +587,7 @@ export default function EnquirySubmitPage({
   // If page should use Google Form embed, render header + google form + footer
   if (useGoogleForm) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen bg-white flex flex-col">
         <Navigation />
         <div className="flex-1 flex items-center justify-center pt-24 px-4 sm:px-6 lg:px-8">
           <div className="max-w-5xl w-full">
@@ -666,7 +666,7 @@ export default function EnquirySubmitPage({
             background: rgba(255, 255, 255, 0.35);
           }
         `}</style>
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <div className="min-h-screen bg-white flex flex-col">
           <Navigation />
           <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl w-full">
@@ -757,7 +757,7 @@ export default function EnquirySubmitPage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <Navigation />
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-5xl w-full">

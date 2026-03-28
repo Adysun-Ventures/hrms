@@ -543,7 +543,7 @@ function RelievingLetterV2() {
                             key={emp.id}
                             value={emp}
                             className={({ active }) =>
-                              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white'}`
+                              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'}`
                             }
                           >
                             {emp.name}
@@ -564,7 +564,7 @@ function RelievingLetterV2() {
 
                 {/* Sign Date */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown
@@ -591,7 +591,7 @@ function RelievingLetterV2() {
 
                 {/* Effective Relieving Date */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Effective Relieving Date
                   </label>
                   <DateDropdown
@@ -621,7 +621,7 @@ function RelievingLetterV2() {
 
                 {/* Resignation Date */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Employee Resign Date
                   </label>
                   <DateDropdown
@@ -650,7 +650,7 @@ function RelievingLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     Designation
                   </label>
                   <input
@@ -664,7 +664,7 @@ function RelievingLetterV2() {
 
                 {/* Place */}
                <div>
-  <label className="block text-sm font-medium mb-1">
+  <label className="block text-sm font-medium text-slate-800 mb-1">
     <span className="text-red-500">*</span> Place
   </label>
   <select
@@ -734,36 +734,12 @@ function RelievingLetterV2() {
                   />
                 }
                 fileName={`Relieving_${employee.name}.pdf`}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 key={Date.now()}
               >
+                <FiDownload size={18} className="shrink-0" aria-hidden />
                 Download PDF
               </PDFDownloadLink>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const doc = await buildRelievingLetterDocx(
-                      employee,
-                      employment,
-                      employeeSignDate,
-                      employeeSignPlace,
-                      employeeRelievingDate,
-                      employeeResignDate,
-                      designationOverride
-                    );
-                    const blob = await Packer.toBlob(doc);
-                    saveAs(blob, `RelievingLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
-                    toast.success("DOCX downloaded");
-                  } catch (err) {
-                    console.error("DOCX download error:", err);
-                    toast.error("Failed to generate DOCX");
-                  }
-                }}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                Download DOCX
-              </button>
             </div>
           </div>
 

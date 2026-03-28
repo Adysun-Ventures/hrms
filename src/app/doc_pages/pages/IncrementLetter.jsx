@@ -362,7 +362,7 @@ function IncrementLetter() {
                           value={c}
                           className={({ active }) =>
                             `cursor-pointer px-3 py-2 ${
-                              active ? "bg-blue-600 text-white" : "bg-white"
+                              active ? "bg-blue-600 text-white" : "bg-white text-gray-900"
                             }`
                           }
                         >

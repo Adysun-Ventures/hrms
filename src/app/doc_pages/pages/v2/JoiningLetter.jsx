@@ -595,7 +595,7 @@ export default function JoiningLetterV2() {
                             key={emp.id}
                             value={emp}
                             className={({ active }) =>
-                              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white'}`
+                              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'}`
                             }
                           >
                             {emp.name}
@@ -614,7 +614,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Department
                   </label>
                   <input
@@ -627,7 +627,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Designation
                   </label>
                   <input
@@ -640,7 +640,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Reporting Manager
                   </label>
                   <select
@@ -658,7 +658,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
@@ -672,7 +672,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Joining Date
                   </label>
                   <DateDropdown value={joiningDate} onChange={setJoiningDate} />
@@ -686,7 +686,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 {/* <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Work Location
                   </label>
                   <input
@@ -698,7 +698,7 @@ export default function JoiningLetterV2() {
                 </div> */}
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Annual CTC
                   </label>
                   <input
@@ -711,7 +711,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Probation Period
                   </label>
                   <select
@@ -726,7 +726,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-  <label className="block text-sm font-medium mb-1">
+  <label className="block text-sm font-medium text-slate-800 mb-1">
     <span className="text-red-500">*</span> Place
   </label>
   <select
@@ -795,39 +795,11 @@ export default function JoiningLetterV2() {
                   />
                 }
                 fileName={`Joining_${employee.name}.pdf`}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
+                <FiDownload size={18} className="shrink-0" aria-hidden />
                 Download PDF
               </PDFDownloadLink>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const doc = await buildJoiningLetterDocx(
-                      employee,
-                      designation,
-                      department,
-                      reportingManager,
-                      workLocation,
-                      joiningDate,
-                      annualCTC,
-                      probation,
-                      workingHours,
-                      signPlace,
-                      documentGenerateDate
-                    );
-                    const blob = await Packer.toBlob(doc);
-                    saveAs(blob, `JoiningLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
-                    toast.success("DOCX downloaded");
-                  } catch (err) {
-                    console.error("DOCX download error:", err);
-                    toast.error("Failed to generate DOCX");
-                  }
-                }}
-                className="px-4 py-2 bg-slate-700 text-white rounded-md hover:bg-slate-800"
-              >
-                Download DOCX
-              </button>
             </div>
           </div>
 

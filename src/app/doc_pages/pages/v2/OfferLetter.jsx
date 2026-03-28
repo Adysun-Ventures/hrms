@@ -820,7 +820,7 @@ function OfferLetterV2() {
             key={emp.id}
             value={emp}
             className={({ active }) =>
-              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white'}`
+              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'}`
             }
           >
             {emp.name}
@@ -966,34 +966,11 @@ function OfferLetterV2() {
                   />
                 }
                 fileName={`OfferLetter_${employee.name}.pdf`}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
               >
+                <FiDownload size={18} className="shrink-0" aria-hidden />
                 Download PDF
               </PDFDownloadLink>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const doc = await buildOfferLetterDocx(
-                      employee,
-                      employment,
-                      enablePF,
-                      designationOverride,
-                      documentGenerateDate,
-                      employeeSignPlace
-                    );
-                    const blob = await Packer.toBlob(doc);
-                    saveAs(blob, `OfferLetter_${employee.name?.replace(/\s+/g, '_') || 'OfferLetter'}.docx`);
-                    toast.success('DOCX downloaded');
-                  } catch (err) {
-                    console.error('DOCX download error:', err);
-                    toast.error('Failed to generate DOCX');
-                  }
-                }}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-              >
-                Download DOCX
-              </button>
             </div>
           </div>
 

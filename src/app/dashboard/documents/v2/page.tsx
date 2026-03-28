@@ -20,7 +20,7 @@ const documents = [
     icon: <FiFileText size={24} /> 
   },
   { 
-    title: 'Salary Slip Generator (v2)',
+    title: 'Salary Slip (v2)',
     description: 'Generate selectable text salary slips',
     path: '/dashboard/documents/v2/salary-slip', 
     icon: <FiFile size={24} /> 

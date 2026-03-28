@@ -480,7 +480,7 @@ const [searchTerm, setSearchTerm] = useState("");
                             key={emp.id}
                             value={emp}
                             className={({ active }) =>
-                              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white'}`
+                              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'}`
                             }
                           >
                             {emp.name}
@@ -498,7 +498,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown value={todaysDate} onChange={setTodaysDate} />
@@ -513,7 +513,7 @@ const [searchTerm, setSearchTerm] = useState("");
 
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Date of Exit
                   </label>
                   <DateDropdown value={employeeSignDate} onChange={setEmployeeSignDate} />
@@ -527,7 +527,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 </div>
                 
                 <div>
-  <label className="block text-sm font-medium mb-1">
+  <label className="block text-sm font-medium text-slate-800 mb-1">
     Designation
   </label>
   <input
@@ -540,7 +540,7 @@ const [searchTerm, setSearchTerm] = useState("");
 </div>
 
                 <div>
-  <label className="block text-sm font-medium mb-1">
+  <label className="block text-sm font-medium text-slate-800 mb-1">
     <span className="text-red-500">*</span> Place
   </label>
   <select
@@ -612,35 +612,12 @@ const [searchTerm, setSearchTerm] = useState("");
                   />
                 }
                 fileName={`Experience_${employee.name}.pdf`}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 key={Date.now()}
               >
+                <FiDownload size={18} className="shrink-0" aria-hidden />
                 Download PDF
               </PDFDownloadLink>
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    const doc = await buildExperienceLetterDocx(
-                      employee,
-                      employment,
-                      employeeSignDate,
-                      employeeSignPlace,
-                      todaysDate,
-                      designationOverride
-                    );
-                    const blob = await Packer.toBlob(doc);
-                    saveAs(blob, `ExperienceLetter_${(employee.name || "").replace(/\s+/g, "_")}.docx`);
-                    toast.success("DOCX downloaded");
-                  } catch (err) {
-                    console.error("DOCX download error:", err);
-                    toast.error("Failed to generate DOCX");
-                  }
-                }}
-                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-              >
-                Download DOCX
-              </button>
             </div>
           </div>
 

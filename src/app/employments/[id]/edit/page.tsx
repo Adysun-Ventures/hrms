@@ -7,12 +7,23 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { FiSave, FiRefreshCw } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
-import { getEmployment, updateEmployment, getEmployees as getEmployeesAuth, checkEmploymentIdUnique, updateEmployeeSelfEmployment, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
+import { getEmployment, updateEmployment, getEmployees as getEmployeesAuth, checkEmploymentIdUnique, updateEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { Employment, Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { useAuth } from '@/context/AuthContext';
+import {
+  EMPLOYMENT_DESIGNATION_BY_DEPARTMENT,
+  EMPLOYMENT_ID_NUMBER_MAX,
+  EMPLOYMENT_ID_NUMBER_MIN,
+  randomEmploymentIdSuffix,
+} from '@/constants/employmentJobOptions';
 import { getEmployees as getEmployeesPublic } from '@/utils/documentFunctions';
+import {
+  PROFESSIONAL_REFERENCE_DIRECTORY,
+  PROFESSIONAL_REFERENCE_NAME_OPTIONS,
+  buildProfessionalReferencesArray,
+} from '@/utils/professionalReferenceEmployment';
 
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relievingCtc'> {
@@ -82,15 +93,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<EmploymentFormData>({
     defaultValues: {
       workSchedule: 'Office',
-      whereWereYouEmploid: 'Registred Corporate Office',
+      whereWereYouEmploid: 'Registred Corporate Office(Pune)',
     } as Partial<EmploymentFormData>,
   });
   const breadcrumbEmployeeId = watch('employeeId') || originalEmployment?.employeeId || '';
   const generateRandomEmploymentId = async () => {
     const maxAttempts = 30;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      // Generate: ADV + (1..100)
-      const randomNumber = Math.floor(Math.random() * 100) + 1; // inclusive 1..100
+      const randomNumber = randomEmploymentIdSuffix();
       const candidate = `ADV${randomNumber}`;
 
       if (generatedEmploymentIdsRef.current.has(candidate)) continue;
@@ -125,22 +135,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const isResignation = watch('isResignation');
   const whereWereYouEmploidValue = watch('whereWereYouEmploid');
   const selectedDepartment = watch('department');
-  const designationOptionsByDepartment: Record<string, string[]> = {
-    Engineering: ['Software Developer', 'Senior Software Developer', 'Lead Developer'],
-    'Human Resources': ['HR Executive', 'HR Manager', 'Talent Acquisition Specialist'],
-    Finance: ['Accountant', 'Senior Accountant', 'Finance Manager'],
-    Sales: ['Sales Executive', 'Senior Sales Executive', 'Sales Manager'],
-    Marketing: ['Marketing Executive', 'Senior Marketing Executive', 'Marketing Manager'],
-    Operations: ['Operations Executive', 'Senior Operations Executive', 'Operations Manager'],
-    'Customer Support': ['Support Executive', 'Senior Support Executive', 'Support Manager'],
-    IT: ['System Administrator', 'IT Support Engineer', 'IT Manager'],
-    Admin: ['Admin Executive', 'Admin Manager', 'Office Administrator'],
-    Legal: ['Legal Associate', 'Senior Legal Associate', 'Legal Manager'],
-  };
+  const designationOptionsByDepartment = EMPLOYMENT_DESIGNATION_BY_DEPARTMENT;
   const derivedLocation =
+    whereWereYouEmploidValue === 'Registred Corporate Office(Pune)' ||
     whereWereYouEmploidValue === 'Registred Corporate Office'
       ? 'Pune'
-      : whereWereYouEmploidValue === 'Branch Office'
+      : whereWereYouEmploidValue === 'Branch Office(Mumbai)' ||
+          whereWereYouEmploidValue === 'Branch Office'
         ? 'Mumbai'
         : '';
   const locationValue = watch('location');
@@ -162,39 +163,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const professionalRefReportingManagerName = watch('reportingManagerRef.name') || '';
   const showProfessionalReferenceExtraFields = false;
 
-  const normalize = (s: unknown) => String(s ?? '').trim().toLowerCase();
-  const teamLeadOptionExists = !!professionalRefTeamLeadName && employees.some((e) => normalize(e.name) === normalize(professionalRefTeamLeadName));
-  const colleague1OptionExists = !!professionalRefColleague1Name && employees.some((e) => normalize(e.name) === normalize(professionalRefColleague1Name));
-  const colleague3OptionExists = !!professionalRefColleague3Name && employees.some((e) => normalize(e.name) === normalize(professionalRefColleague3Name));
-  const reportingManagerOptionExists = !!professionalRefReportingManagerName && employees.some((e) => normalize(e.name) === normalize(professionalRefReportingManagerName));
-
-  const PROFESSIONAL_REFERENCE_DIRECTORY: Record<
-    string,
-    { employeeId: string; mobileNo: string; email: string; designation: string; location: string }
-  > = {
-    'Viraj Kadam': {
-      employeeId: 'ADV09',
-      mobileNo: '8806431723',
-      email: 'viraj.kadam@adysunventures.com',
-      designation: 'Project Manager',
-      location: 'Pune',
-    },
-    'Rohit Kore': {
-      employeeId: 'ADV66',
-      mobileNo: '8484025370',
-      email: 'rohit.kore@adysunventures.com',
-      designation: 'Sr. Software Engg',
-      location: 'Pune',
-    },
-    'Nagesh Chavan': {
-      employeeId: 'ADV47',
-      mobileNo: '9834187607',
-      email: 'nagesh.chavan@adysunventures.com',
-      designation: 'Sr. Software Developer',
-      location: 'Pune',
-    },
-  };
-
   const clearProfessionalReferenceFields = (refKey: ProfessionalRefKey) => {
     setValue(`${refKey}.employeeId` as any, '', { shouldDirty: true });
     setValue(`${refKey}.mobileNo` as any, '', { shouldDirty: true });
@@ -204,12 +172,18 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   };
 
   const autoFillProfessionalReferenceFromDirectory = (refKey: ProfessionalRefKey, employeeName: string) => {
-    const person = PROFESSIONAL_REFERENCE_DIRECTORY[employeeName];
-    if (!employeeName) {
+    const key = (employeeName ?? '').trim();
+    if (!key) {
       clearProfessionalReferenceFields(refKey);
+      setValue(`${refKey}.name` as any, '', { shouldDirty: true });
       return;
     }
-    if (!person) return;
+    const person = PROFESSIONAL_REFERENCE_DIRECTORY[key];
+    if (!person) {
+      clearProfessionalReferenceFields(refKey);
+      setValue(`${refKey}.name` as any, '', { shouldDirty: true });
+      return;
+    }
 
     setValue(`${refKey}.employeeId` as any, person.employeeId, { shouldDirty: true });
     setValue(`${refKey}.mobileNo` as any, person.mobileNo, { shouldDirty: true });
@@ -218,82 +192,43 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     setValue(`${refKey}.location` as any, person.location, { shouldDirty: true });
   };
 
-  const pickLatestEmployment = (items: Employment[]) => {
-    const safe = items || [];
-    return safe
-      .slice()
-      .sort((a, b) => {
-        const aDate = new Date(a.joiningDate || a.startDate || '').getTime();
-        const bDate = new Date(b.joiningDate || b.startDate || '').getTime();
-        return (Number.isFinite(bDate) ? bDate : 0) - (Number.isFinite(aDate) ? aDate : 0);
-      })[0];
-  };
-
-  const autoFillProfessionalReferenceFromEmployeeName = async (
-    refKey: ProfessionalRefKey,
-    employeeName: string
-  ) => {
-    const normalize = (s: unknown) => String(s ?? '').trim().toLowerCase();
-    const selected = employees.find(
-      (e) => normalize(e.name) === normalize(employeeName)
-    );
-    if (!selected) return;
-
-    const employmentsForSelected = await getEmploymentsByEmployee(selected.id);
-    const latest = pickLatestEmployment(employmentsForSelected);
-
-    // Dependent fields
-    setValue(`${refKey}.name` as any, selected.name || '', { shouldDirty: true });
-    setValue(`${refKey}.mobileNo` as any, selected.phone || '', { shouldDirty: true });
-    setValue(`${refKey}.email` as any, selected.email || '', { shouldDirty: true });
-
-    setValue(
-      `${refKey}.employeeId` as any,
-      latest?.employmentId || '',
-      { shouldDirty: true }
-    );
-    setValue(
-      `${refKey}.designation` as any,
-      latest?.jobTitle || latest?.designation || '',
-      { shouldDirty: true }
-    );
-    setValue(
-      `${refKey}.location` as any,
-      latest?.location || '',
-      { shouldDirty: true }
-    );
-  };
-
   useEffect(() => {
     if (!professionalRefTeamLeadName) return;
     autoFillProfessionalReferenceFromDirectory('teamLead', professionalRefTeamLeadName);
-    void autoFillProfessionalReferenceFromEmployeeName('teamLead', professionalRefTeamLeadName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [professionalRefTeamLeadName, employees, isEmployeeUser]);
+  }, [professionalRefTeamLeadName]);
 
   useEffect(() => {
     if (!professionalRefColleague1Name) return;
     autoFillProfessionalReferenceFromDirectory('colleague1', professionalRefColleague1Name);
-    void autoFillProfessionalReferenceFromEmployeeName('colleague1', professionalRefColleague1Name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [professionalRefColleague1Name, employees, isEmployeeUser]);
+  }, [professionalRefColleague1Name]);
 
   useEffect(() => {
     if (!professionalRefColleague3Name) return;
     autoFillProfessionalReferenceFromDirectory('colleague3', professionalRefColleague3Name);
-    void autoFillProfessionalReferenceFromEmployeeName('colleague3', professionalRefColleague3Name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [professionalRefColleague3Name, employees, isEmployeeUser]);
+  }, [professionalRefColleague3Name]);
 
   useEffect(() => {
     if (!professionalRefReportingManagerName) return;
-    void autoFillProfessionalReferenceFromEmployeeName('reportingManagerRef', professionalRefReportingManagerName);
+    autoFillProfessionalReferenceFromDirectory('reportingManagerRef', professionalRefReportingManagerName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [professionalRefReportingManagerName, employees, isEmployeeUser]);
+  }, [professionalRefReportingManagerName]);
 
   const parseNameAndDesignationFromProfessionalReference = (
     raw?: string
   ): { name: string; designation: string; employeeId: string } => {
+    const cleanParsedPersonName = (n: string): string => {
+      let t = (n ?? '').trim();
+      if (!t) return '';
+      if (/^name$/i.test(t)) return '';
+      const stripped = t.replace(/^name\s*[-:|]\s*/i, '').trim();
+      if (stripped) t = stripped;
+      if (/^name$/i.test(t) || /^designation$/i.test(t)) return '';
+      return t;
+    };
+
     const s = (raw ?? '').toString().trim();
     if (!s) return { name: '', designation: '', employeeId: '' };
 
@@ -308,16 +243,28 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       normalized.match(/\b(ADV\d+)\b/i)?.[1] ||
       '';
 
+    let name: string;
+    let designation: string;
+
     if (nameLabeled || designationLabeled) {
-      return { name: nameLabeled, designation: designationLabeled, employeeId: employeeIdMatch };
+      name = nameLabeled;
+      designation = designationLabeled;
+    } else {
+      const lines = s.split(/\r?\n/).map((v) => v.trim()).filter(Boolean);
+      if (lines.length >= 2) {
+        name = lines[0];
+        designation = lines.slice(1).join(' ');
+      } else {
+        name = s;
+        designation = '';
+      }
     }
 
-    const lines = s.split(/\r?\n/).map((v) => v.trim()).filter(Boolean);
-    if (lines.length >= 2) {
-      return { name: lines[0], designation: lines.slice(1).join(' '), employeeId: employeeIdMatch };
-    }
-
-    return { name: s, designation: '', employeeId: employeeIdMatch };
+    return {
+      name: cleanParsedPersonName(name),
+      designation: designation.trim(),
+      employeeId: employeeIdMatch,
+    };
   };
 
   const parseEmailAndMobileFromProfessionalReference = (
@@ -528,86 +475,151 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         const reportingManagerNameDesig = parseNameAndDesignationFromProfessionalReference(ref3?.nameDesignation);
         const reportingManagerEmailMobile = parseEmailAndMobileFromProfessionalReference(ref3?.emailAndMobile);
 
-        // Team Leader fallback values (so the dropdown can show without loading all employees)
-        const defaultTeamLead = {
-          name: 'Viraj Kadam',
-          employeeId: 'ADV09',
-          mobileNo: '8806431723',
-          email: 'viraj.kadam@adysunventures.com',
-          designation: 'Project Manager',
-          place: 'Pune',
+        /** Parsed label junk like "Name" (no real person) is not a valid dropdown value. */
+        const hasSubstantiveProRefData = (
+          nd: { name: string; designation: string; employeeId: string },
+          em: { email: string; mobileNo: string; place: string }
+        ) => {
+          const trimmedName = (nd.name ?? '').trim();
+          const nameIsDirectoryPerson =
+            !!trimmedName &&
+            !/^name$/i.test(trimmedName) &&
+            Boolean(PROFESSIONAL_REFERENCE_DIRECTORY[trimmedName]);
+          return (
+            nameIsDirectoryPerson ||
+            !!(nd.employeeId && nd.employeeId.trim()) ||
+            !!(em.email && em.email.trim()) ||
+            !!(em.mobileNo && em.mobileNo.trim()) ||
+            !!(em.place && em.place.trim())
+          );
         };
 
-        const defaultColleague1 = {
-          name: 'Rohit Kore',
-          employeeId: 'ADV66',
-          mobileNo: '8484025370',
-          email: 'rohit.kore@adysunventures.com',
-          designation: 'Sr. Software Engg',
-          place: 'Pune',
+        const pickDirectoryDropdownName = (
+          nd: { name: string; designation: string; employeeId: string }
+        ) => {
+          const t = (nd.name ?? '').trim();
+          if (t && PROFESSIONAL_REFERENCE_DIRECTORY[t]) return t;
+          const adv = (nd.employeeId ?? '').trim().toUpperCase();
+          if (adv) {
+            for (const [personName, info] of Object.entries(PROFESSIONAL_REFERENCE_DIRECTORY)) {
+              if (String(info.employeeId).toUpperCase() === adv) return personName;
+            }
+          }
+          return '';
         };
 
-        const defaultColleague3 = {
-          name: 'Nagesh Chavan',
-          employeeId: 'ADV47',
-          mobileNo: '9834187607',
-          email: 'nagesh.chavan@adysunventures.com',
-          designation: 'Sr. Software Developer',
-          place: 'Pune',
+        /** True when Firestore has no usable reference (incl. empty "Name -\nDesignation -" blobs). */
+        const isProRefSlotVacant = (
+          ref: (typeof proRefs)[number] | undefined,
+          nd: { name: string; designation: string; employeeId: string },
+          em: { email: string; mobileNo: string; place: string }
+        ) => {
+          if (!ref) return true;
+          const rawNd = String((ref as any).nameDesignation ?? '').trim();
+          const rawEm = String((ref as any).emailAndMobile ?? '').trim();
+          if (!rawNd && !rawEm) return true;
+          return !hasSubstantiveProRefData(nd, em);
         };
 
-        const defaultReportingManager = {
-          name: 'Viraj Kadam',
-          employeeId: 'ADV09',
-          mobileNo: '8806431723',
-          email: 'viraj.kadam@adysunventures.com',
-          designation: 'Project Manager',
-          place: 'Pune',
+        const ref0Vacant = isProRefSlotVacant(ref0, teamLeadNameDesig, teamLeadEmailMobile);
+        const ref1Vacant = isProRefSlotVacant(ref1, colleague1NameDesig, colleague1EmailMobile);
+        const ref2Vacant = isProRefSlotVacant(ref2, colleague3NameDesig, colleague3EmailMobile);
+        const ref3Vacant = isProRefSlotVacant(ref3, reportingManagerNameDesig, reportingManagerEmailMobile);
+
+        const emptyProRefForm = {
+          name: '',
+          employeeDocId: '',
+          employeeId: '',
+          mobileNo: '',
+          email: '',
+          designation: '',
+          location: '',
         };
+
+        /** When parsed data exists but name not in directory — fill from directory by employee id only. */
+        const directoryRowForMerge = (personName: string) =>
+          personName && PROFESSIONAL_REFERENCE_DIRECTORY[personName]
+            ? PROFESSIONAL_REFERENCE_DIRECTORY[personName]
+            : null;
+
+        const rawWhereEmployed =
+          (rest as any).whereWereYouEmploid || 'Registred Corporate Office(Pune)';
+        const normalizedWhereEmployed =
+          rawWhereEmployed === 'Registred Corporate Office' ||
+          rawWhereEmployed === 'Registred Corporate Office(Pune)'
+            ? 'Registred Corporate Office(Pune)'
+            : rawWhereEmployed === 'Branch Office' ||
+                rawWhereEmployed === 'Branch Office(Mumbai)'
+              ? 'Branch Office(Mumbai)'
+              : rawWhereEmployed;
 
         reset({
           ...rest,
           workSchedule: normalizedWorkSchedule,
-          whereWereYouEmploid: (rest as any).whereWereYouEmploid || 'Registred Corporate Office',
+          whereWereYouEmploid: normalizedWhereEmployed,
           relievingCtc: relievingCtc ? relievingCtc.toString() : '',
           benefits: employmentData.benefits?.join(', ') || '',
           increments,
-          teamLead: {
-            name: teamLeadNameDesig.name || defaultTeamLead.name,
-            employeeDocId: '',
-            employeeId: teamLeadNameDesig.employeeId || defaultTeamLead.employeeId,
-            mobileNo: teamLeadEmailMobile.mobileNo || defaultTeamLead.mobileNo,
-            email: teamLeadEmailMobile.email || defaultTeamLead.email,
-            designation: teamLeadNameDesig.designation || defaultTeamLead.designation,
-            location: teamLeadEmailMobile.place || defaultTeamLead.place,
-          },
-          colleague1: {
-            name: colleague1NameDesig.name || defaultColleague1.name,
-            employeeDocId: '',
-            employeeId: colleague1NameDesig.employeeId || defaultColleague1.employeeId,
-            mobileNo: colleague1EmailMobile.mobileNo || defaultColleague1.mobileNo,
-            email: colleague1EmailMobile.email || defaultColleague1.email,
-            designation: colleague1NameDesig.designation || defaultColleague1.designation,
-            location: colleague1EmailMobile.place || defaultColleague1.place,
-          },
-          colleague3: {
-            name: colleague3NameDesig.name || defaultColleague3.name,
-            employeeDocId: '',
-            employeeId: colleague3NameDesig.employeeId || defaultColleague3.employeeId,
-            mobileNo: colleague3EmailMobile.mobileNo || defaultColleague3.mobileNo,
-            email: colleague3EmailMobile.email || defaultColleague3.email,
-            designation: colleague3NameDesig.designation || defaultColleague3.designation,
-            location: colleague3EmailMobile.place || defaultColleague3.place,
-          },
-          reportingManagerRef: {
-            name: reportingManagerNameDesig.name || defaultReportingManager.name,
-            employeeDocId: '',
-            employeeId: reportingManagerNameDesig.employeeId || defaultReportingManager.employeeId,
-            mobileNo: reportingManagerEmailMobile.mobileNo || defaultReportingManager.mobileNo,
-            email: reportingManagerEmailMobile.email || defaultReportingManager.email,
-            designation: reportingManagerNameDesig.designation || defaultReportingManager.designation,
-            location: reportingManagerEmailMobile.place || defaultReportingManager.place,
-          },
+          teamLead: ref0Vacant
+            ? { ...emptyProRefForm }
+            : (() => {
+                const dn = pickDirectoryDropdownName(teamLeadNameDesig);
+                const dir = dn ? directoryRowForMerge(dn) : null;
+                return {
+                  name: dn,
+                  employeeDocId: '',
+                  employeeId: teamLeadNameDesig.employeeId || dir?.employeeId || '',
+                  mobileNo: teamLeadEmailMobile.mobileNo || dir?.mobileNo || '',
+                  email: teamLeadEmailMobile.email || dir?.email || '',
+                  designation: teamLeadNameDesig.designation || dir?.designation || '',
+                  location: teamLeadEmailMobile.place || dir?.location || '',
+                };
+              })(),
+          colleague1: ref1Vacant
+            ? { ...emptyProRefForm }
+            : (() => {
+                const dn = pickDirectoryDropdownName(colleague1NameDesig);
+                const dir = dn ? directoryRowForMerge(dn) : null;
+                return {
+                  name: dn,
+                  employeeDocId: '',
+                  employeeId: colleague1NameDesig.employeeId || dir?.employeeId || '',
+                  mobileNo: colleague1EmailMobile.mobileNo || dir?.mobileNo || '',
+                  email: colleague1EmailMobile.email || dir?.email || '',
+                  designation: colleague1NameDesig.designation || dir?.designation || '',
+                  location: colleague1EmailMobile.place || dir?.location || '',
+                };
+              })(),
+          colleague3: ref2Vacant
+            ? { ...emptyProRefForm }
+            : (() => {
+                const dn = pickDirectoryDropdownName(colleague3NameDesig);
+                const dir = dn ? directoryRowForMerge(dn) : null;
+                return {
+                  name: dn,
+                  employeeDocId: '',
+                  employeeId: colleague3NameDesig.employeeId || dir?.employeeId || '',
+                  mobileNo: colleague3EmailMobile.mobileNo || dir?.mobileNo || '',
+                  email: colleague3EmailMobile.email || dir?.email || '',
+                  designation: colleague3NameDesig.designation || dir?.designation || '',
+                  location: colleague3EmailMobile.place || dir?.location || '',
+                };
+              })(),
+          reportingManagerRef: ref3Vacant
+            ? { ...emptyProRefForm }
+            : (() => {
+                const dn = pickDirectoryDropdownName(reportingManagerNameDesig);
+                const dir = dn ? directoryRowForMerge(dn) : null;
+                return {
+                  name: dn,
+                  employeeDocId: '',
+                  employeeId: reportingManagerNameDesig.employeeId || dir?.employeeId || '',
+                  mobileNo: reportingManagerEmailMobile.mobileNo || dir?.mobileNo || '',
+                  email: reportingManagerEmailMobile.email || dir?.email || '',
+                  designation: reportingManagerNameDesig.designation || dir?.designation || '',
+                  location: reportingManagerEmailMobile.place || dir?.location || '',
+                };
+              })(),
         });
 
         // Initialize includePF based on existing PF value
@@ -697,70 +709,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
       };
 
-      // Convert UI fields into the persisted Professional References array.
-      // View page expects:
-      // - nameDesignation: "Name - ...\nDesignation - ..."
-      // - emailAndMobile: "Email - ...\nMobile no - ..."
-      const hydrateRefFromDirectory = (ref: any) => {
-        const name = (ref?.name ?? '').toString().trim();
-        const person = (PROFESSIONAL_REFERENCE_DIRECTORY as any)[name];
-        if (!name || !person) return ref;
-        return {
-          ...ref,
-          employeeId: ref?.employeeId?.trim?.() ? ref.employeeId : person.employeeId,
-          mobileNo: ref?.mobileNo?.trim?.() ? ref.mobileNo : person.mobileNo,
-          email: ref?.email?.trim?.() ? ref.email : person.email,
-          designation: ref?.designation?.trim?.() ? ref.designation : person.designation,
-          location: ref?.location?.trim?.() ? ref.location : person.location,
-        };
-      };
-
-      const toProfessionalReference = (ref: any) => {
-        const hasAny =
-          ref &&
-          (ref.name?.trim() ||
-            ref.employeeId?.trim() ||
-            ref.mobileNo?.trim() ||
-            ref.email?.trim() ||
-            ref.designation?.trim() ||
-            ref.location?.trim());
-
-        if (!hasAny) {
-          return { nameDesignation: '', emailAndMobile: '', natureOfAssociation: '' };
-        }
-
-        const name = ref?.name?.trim() || '';
-        const designation = ref?.designation?.trim() || '';
-        const employeeId = ref?.employeeId?.trim() || '';
-        const email = ref?.email?.trim() || '';
-        const mobileNo = ref?.mobileNo?.trim() || '';
-        const place = ref?.location?.trim() || '';
-
-        const nameDesignationLines = [
-          `Name - ${name}`,
-          `Designation - ${designation}`,
-          employeeId ? `Employee Id - ${employeeId}` : null,
-        ].filter(Boolean);
-
-        const emailMobileLines = [
-          `Email - ${email}`,
-          `Mobile no - ${mobileNo}`,
-          place ? `Place - ${place}` : null,
-        ].filter(Boolean);
-
-        return {
-          nameDesignation: nameDesignationLines.join('\n'),
-          emailAndMobile: emailMobileLines.join('\n'),
-          natureOfAssociation: '',
-        };
-      };
-
-      formattedData.professionalReferences = [
-        toProfessionalReference(hydrateRefFromDirectory(data.teamLead)),
-        toProfessionalReference(hydrateRefFromDirectory(data.colleague1)),
-        toProfessionalReference(hydrateRefFromDirectory(data.colleague3)),
-        toProfessionalReference(hydrateRefFromDirectory(data.reportingManagerRef)),
-      ];
+      formattedData.professionalReferences = buildProfessionalReferencesArray({
+        teamLead: data.teamLead,
+        colleague1: data.colleague1,
+        colleague3: data.colleague3,
+        reportingManagerRef: data.reportingManagerRef,
+      });
 
       // Only include optional fields if they have values (not empty strings or undefined)
       if (data.endDate && data.endDate.trim()) {
@@ -978,12 +932,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         validate: (value) => {
                           const num = Number(String(value).replace(/^ADV/i, ''));
                           if (!Number.isFinite(num)) return 'Employment ID number is invalid';
-                          if (num < 1 || num > 100) return 'Employment ID number must be between 1 and 100';
+                          if (num < EMPLOYMENT_ID_NUMBER_MIN || num > EMPLOYMENT_ID_NUMBER_MAX)
+                            return `Employment ID number must be between ${EMPLOYMENT_ID_NUMBER_MIN} and ${EMPLOYMENT_ID_NUMBER_MAX}`;
                           return true;
                         },
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="E.g., ADV10"
+                      placeholder="E.g., ADV250 (1–999)"
                     />
                     <button
                       type="button"
@@ -1057,6 +1012,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   >
     <option value="">Select Department</option>
     <option value="Engineering">Engineering</option>
+    <option value="Development">Development</option>
+    <option value="Support">Support</option>
     <option value="Human Resources">Human Resources</option>
     <option value="Finance">Finance</option>
     <option value="Sales">Sales</option>
@@ -1128,8 +1085,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     {...register('whereWereYouEmploid')}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="Registred Corporate Office">Registred Corporate Office(Pune)</option>
-                    <option value="Branch Office">Branch Office(Mumbai)</option>
+                    <option value="Registred Corporate Office(Pune)">Registred Corporate Office(Pune)</option>
+                    <option value="Branch Office(Mumbai)">Branch Office(Mumbai)</option>
                   </select>
                 </div>
 
@@ -1149,19 +1106,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       Team Leader
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
-                      {(() => {
-                        const fixedOptions = ['Viraj Kadam', 'Rohit Kore', 'Nagesh Chavan'] as const;
-                        const fixedSet = new Set(fixedOptions.map((v) => v.toLowerCase()));
-                        const shouldShowSaved =
-                          !!professionalRefTeamLeadName &&
-                          !teamLeadOptionExists &&
-                          !fixedSet.has(professionalRefTeamLeadName.trim().toLowerCase());
-
-                        return (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Name
-                        </label>
                         <select
                           {...register('teamLead.name' as const, {
                             onChange: (e) => {
@@ -1170,26 +1115,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           })}
                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         >
-                          <option value="">Select Name</option>
-                          {shouldShowSaved ? (
-                            <option value={professionalRefTeamLeadName}>
-                              {professionalRefTeamLeadName}
-                            </option>
-                          ) : null}
-                          {fixedOptions.map((name) => (
+                          <option value="">Select</option>
+                          {PROFESSIONAL_REFERENCE_NAME_OPTIONS.map((name) => (
                             <option key={name} value={name}>
                               {name}
                             </option>
                           ))}
-                          {employees.map((emp) => (
-                            <option key={emp.id} value={emp.name}>
-                              {emp.name}
-                            </option>
-                          ))}
                         </select>
                       </div>
-                        );
-                      })()}
                       <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
 
                       <div>
@@ -1256,19 +1189,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       Colleague 1
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
-                      {(() => {
-                        const fixedOptions = ['Rohit Kore', 'Viraj Kadam', 'Nagesh Chavan'] as const;
-                        const fixedSet = new Set(fixedOptions.map((v) => v.toLowerCase()));
-                        const shouldShowSaved =
-                          !!professionalRefColleague1Name &&
-                          !colleague1OptionExists &&
-                          !fixedSet.has(professionalRefColleague1Name.trim().toLowerCase());
-
-                        return (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Name
-                        </label>
                         <select
                           {...register('colleague1.name' as const, {
                             onChange: (e) => {
@@ -1277,26 +1198,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           })}
                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         >
-                          <option value="">Select Name</option>
-                          {shouldShowSaved ? (
-                            <option value={professionalRefColleague1Name}>
-                              {professionalRefColleague1Name}
-                            </option>
-                          ) : null}
-                          {fixedOptions.map((name) => (
+                          <option value="">Select</option>
+                          {PROFESSIONAL_REFERENCE_NAME_OPTIONS.map((name) => (
                             <option key={name} value={name}>
                               {name}
                             </option>
                           ))}
-                          {employees.map((emp) => (
-                            <option key={emp.id} value={emp.name}>
-                              {emp.name}
-                            </option>
-                          ))}
                         </select>
                       </div>
-                        );
-                      })()}
                       <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
 
                       <div>
@@ -1363,19 +1272,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       Colleague 2
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
-                      {(() => {
-                        const fixedOptions = ['Viraj Kadam', 'Rohit Kore', 'Nagesh Chavan'] as const;
-                        const fixedSet = new Set(fixedOptions.map((v) => v.toLowerCase()));
-                        const shouldShowSaved =
-                          !!professionalRefColleague3Name &&
-                          !colleague3OptionExists &&
-                          !fixedSet.has(professionalRefColleague3Name.trim().toLowerCase());
-
-                        return (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Name
-                        </label>
                         <select
                           {...register('colleague3.name' as const, {
                             onChange: (e) => {
@@ -1384,26 +1281,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           })}
                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         >
-                          <option value="">Select Name</option>
-                          {shouldShowSaved ? (
-                            <option value={professionalRefColleague3Name}>
-                              {professionalRefColleague3Name}
-                            </option>
-                          ) : null}
-                          {fixedOptions.map((name) => (
+                          <option value="">Select</option>
+                          {PROFESSIONAL_REFERENCE_NAME_OPTIONS.map((name) => (
                             <option key={name} value={name}>
                               {name}
                             </option>
                           ))}
-                          {employees.map((emp) => (
-                            <option key={emp.id} value={emp.name}>
-                              {emp.name}
-                            </option>
-                          ))}
                         </select>
                       </div>
-                        );
-                      })()}
                       <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
 
                       <div>
@@ -1471,22 +1356,18 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     </h3>
                     <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Name
-                        </label>
                         <select
-                          {...register('reportingManagerRef.name' as const)}
+                          {...register('reportingManagerRef.name' as const, {
+                            onChange: (e) => {
+                              autoFillProfessionalReferenceFromDirectory('reportingManagerRef', e.target.value);
+                            },
+                          })}
                           className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         >
-                          <option value="">Select Name</option>
-                          {professionalRefReportingManagerName && !reportingManagerOptionExists ? (
-                            <option value={professionalRefReportingManagerName}>
-                              {professionalRefReportingManagerName}
-                            </option>
-                          ) : null}
-                          {employees.map((emp) => (
-                            <option key={emp.id} value={emp.name}>
-                              {emp.name}
+                          <option value="">Select</option>
+                          {PROFESSIONAL_REFERENCE_NAME_OPTIONS.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
                             </option>
                           ))}
                         </select>

@@ -347,12 +347,24 @@ export default function EmployeeJoiningLetter() {
   const [employee, setEmployee] = useState<Employee | null>(null);
 
   const designationOptionsByDepartment: Record<string, string[]> = {
-    Development: ["Software Developer", "Senior Software Developer", "Lead Developer"],
+    Development: [
+      "Junior Developer",
+      "Software Developer",
+      "Senior Software Developer",
+      "Development Lead",
+      "Engineering Manager",
+    ],
     Engineering: ["Engineer", "Senior Engineer", "Lead Engineer"],
     Operation: ["Operations Executive", "Senior Operations Executive", "Operations Manager"],
     HR: ["HR Executive", "HR Manager", "Talent Acquisition Specialist"],
     Finance: ["Accountant", "Senior Accountant", "Finance Manager"],
-    Support: ["Support Executive", "Senior Support Executive", "Support Manager"],
+    Support: [
+      "Support Associate",
+      "Senior Support Associate",
+      "Technical Support Engineer",
+      "Support Lead",
+      "Customer Support Manager",
+    ],
   };
 
   const [designation, setDesignation] = useState("");

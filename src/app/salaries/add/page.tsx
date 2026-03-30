@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { FiArrowLeft, FiSave } from 'react-icons/fi';
+import { FiArrowLeft, FiCheckCircle, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TableHeader from '@/components/ui/TableHeader';
 import toast, { Toaster } from 'react-hot-toast';
@@ -402,7 +402,7 @@ export default function AddSalaryPage() {
           actionButtons={[
             {
               label: 'Save',
-              icon: <FiSave />,
+              icon: <FiCheckCircle />,
               variant: 'success',
               onClick: handleSubmit(onSubmit),
               disabled: isLoading
@@ -804,8 +804,9 @@ export default function AddSalaryPage() {
           <div className="mt-8 flex justify-between py-3">
             <Link
               href={employeeId ? `/salaries?employeeId=${employeeId}` : '/salaries'}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2"
             >
+              <FiX className="w-4 h-4" />
               Cancel
             </Link>
             <button
@@ -813,7 +814,7 @@ export default function AddSalaryPage() {
               disabled={isLoading}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              <FiSave className="w-4 h-4" />
+              <FiCheckCircle className="w-4 h-4" />
               Save
             </button>
           </div>

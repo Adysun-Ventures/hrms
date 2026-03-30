@@ -1386,11 +1386,6 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">IFSC Code</p>
               </div>
 
-              {/* PAN */}
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employment.panNumber || '-'}</p>
-                <p className="text-sm text-gray-500">PAN Number</p>
-              </div>
             </div>
           </div>
           </div>

@@ -706,7 +706,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         additionalAllowance: Number(data.additionalAllowance),
         specialAllowance: Number(data.specialAllowance),
         benefits: benefitsArray,
-        panNumber: data.panNumber ? data.panNumber.trim() : undefined,
 
       };
 
@@ -2092,26 +2091,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </p> */}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Pan Card No.
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter PAN number"
-                    {...register('panNumber', {
-                      required: 'PAN number is required',
-                      pattern: {
-                        value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
-                        message: 'Invalid PAN format. Must be 10 characters: 5 letters + 4 digits + 1 letter'
-                      }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                  />
-                  {errors.accountHolderName && (
-                    <p className="mt-1 text-sm text-red-600">{errors.accountHolderName.message}</p>
-                  )}
-                </div>
               </div>
             </div>
 

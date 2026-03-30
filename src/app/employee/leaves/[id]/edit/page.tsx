@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getEmployeeLeaveById } from '@/utils/firebaseUtils';
 import TableHeader from '@/components/ui/TableHeader';
 import { useUpdateLeaveRequest } from '@/hooks/useLeaves';
+import CustomDateInput from '@/components/ui/CustomDateInput';
 
 interface LeaveRequestForm {
   type: 'casual' | 'sick' | 'annual' | 'personal' | 'maternity' | 'paternity';
@@ -257,30 +258,31 @@ export default function EditLeavePage({ params }: { params: Promise<{ id: string
               </div>
               
               <div>
-                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="hidden-startDate" className="block text-sm font-medium text-gray-700 mb-2">
                   From Date
                 </label>
-                <input
-                  type="date"
-                  id="startDate"
+                <CustomDateInput
+                  name="startDate"
                   value={formData.startDate}
+                  onChange={(v) => handleInputChange('startDate', v)}
                   disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500 cursor-not-allowed"
+                  placeholder="Select from date"
+                  className="px-3 py-2"
                 />
               </div>
               
               <div>
-                <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="hidden-endDate" className="block text-sm font-medium text-gray-700 mb-2">
                   To Date
                 </label>
-                <input
-                  type="date"
-                  id="endDate"
+                <CustomDateInput
+                  name="endDate"
                   value={formData.endDate}
-                  onChange={(e) => handleInputChange('endDate', e.target.value)}
+                  onChange={(v) => handleInputChange('endDate', v)}
                   min={formData.startDate || new Date().toISOString().split('T')[0]}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Select to date"
                   required
+                  className="px-3 py-2"
                 />
               </div>
               

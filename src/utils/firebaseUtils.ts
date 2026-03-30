@@ -1,6 +1,7 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, query, where, orderBy, limit, runTransaction, serverTimestamp, deleteField, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Employee, Employment, Salary, SecondaryEducationEntry } from '../types';
+import { toTitleCase } from './stringUtils';
 
 /**
  * Sanitizes data for Firestore by removing undefined values
@@ -401,7 +402,12 @@ export const getEmployees = async () => {
     const querySnapshot = await getDocs(collection(db, 'employees'));
     const employees: Employee[] = [];
     querySnapshot.forEach((doc) => {
-      employees.push({ id: doc.id, ...doc.data() } as Employee);
+      const data = doc.data() as Employee;
+      employees.push({
+        ...data,
+        id: doc.id,
+        name: toTitleCase(data.name),
+      } as Employee);
     });
     
     console.log('✅ Successfully fetched employees:', employees.length);
@@ -467,7 +473,7 @@ export const getEmployee = async (id: string) => {
         console.log('✅ Migration completed:', migratedEducation.length, 'entries created');
       }
       
-      return { ...data, id: docSnap.id } as Employee;
+      return { ...data, id: docSnap.id, name: toTitleCase((data as any).name) } as Employee;
     } else {
       console.log('❌ Employee not found in database');
       throw new Error('Employee not found');
@@ -1262,7 +1268,8 @@ export const getEmployeeSelf = async (employeeId: string) => {
     
     if (docSnap.exists()) {
       console.log('✅ Employee self data found successfully');
-      return { id: docSnap.id, ...docSnap.data() } as Employee;
+      const data = docSnap.data() as Employee;
+      return { id: docSnap.id, ...data, name: toTitleCase((data as any).name) } as Employee;
     } else {
       console.log('❌ Employee not found in database');
       throw new Error('Employee not found');

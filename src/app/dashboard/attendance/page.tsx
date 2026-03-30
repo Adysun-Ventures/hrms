@@ -11,6 +11,7 @@ import { useEmployees } from '@/hooks/useEmployees';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { formatDurationHours } from '@/lib/utils';
 import TableHeader from '@/components/ui/TableHeader';
+import CustomDateInput from '@/components/ui/CustomDateInput';
 
 interface AttendanceRecord {
   id: string;
@@ -175,11 +176,12 @@ export default function AdminAttendancePage() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Date
               </label>
-              <input
-                type="date"
+              <CustomDateInput
+                name="currentDate"
                 value={currentDate}
-                onChange={(e) => setCurrentDate(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={setCurrentDate}
+                placeholder="Select date"
+                className="px-3 py-2"
               />
             </div>
 

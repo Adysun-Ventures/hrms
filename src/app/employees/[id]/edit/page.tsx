@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { FiCheckCircle, FiEye, FiEyeOff, FiPlus, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { getEmployee, updateEmployee, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere } from '@/utils/firebaseUtils';
@@ -11,6 +11,8 @@ import { Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
+import { toTitleCase } from '@/utils/stringUtils';
+import CustomDateInput from '@/components/ui/CustomDateInput';
 
 
 type PageParams = {
@@ -33,7 +35,7 @@ export default function EditEmployeePage({ params }: PageParams) {
   const router = useRouter();
   const { id } = use(params);
 
-  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<Omit<Employee, 'id'>>();
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<Omit<Employee, 'id'>>();
   const employeeName = watch('name');
   const currentAddressValue = watch('currentAddress');
   const employmentStatus = watch('employmentStatus');
@@ -217,6 +219,7 @@ export default function EditEmployeePage({ params }: PageParams) {
       // Normalize PAN to uppercase and include new education structure
       const updatedData = {
         ...data,
+        name: toTitleCase(data.name),
         aadharCard: data.aadharCard ? data.aadharCard.replace(/\s+/g, '') : undefined,
         secondaryEducation,
         // Remove old fields from submission
@@ -392,9 +395,10 @@ export default function EditEmployeePage({ params }: PageParams) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Date of Birth
                   </label>
-                  <input
-                    type="date"
-                    {...register('dateOfBirth', {
+                  <Controller
+                    name="dateOfBirth"
+                    control={control}
+                    rules={{
                       validate: {
                         notFuture: (value) => {
                           if (!value) return true;
@@ -412,10 +416,17 @@ export default function EditEmployeePage({ params }: PageParams) {
                           return !isNaN(date.getTime()) || 'Please enter a valid date';
                         }
                       }
-                    })}
-                    max="2025-12-31"
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={watch('dateOfBirth') ? formatDateToDayMonYear(watch('dateOfBirth')) : 'Select date of birth'}
+                    }}
+                    render={({ field }) => (
+                      <CustomDateInput
+                        name="dateOfBirth"
+                        value={field.value}
+                        onChange={field.onChange}
+                        max="2025-12-31"
+                        placeholder="Select date of birth"
+                        className="px-3 py-2"
+                      />
+                    )}
                   />
                   {errors.dateOfBirth && (
                     <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { FiUser, FiMapPin, FiCheckCircle, FiX, FiEye, FiEyeOff, FiPlus } from 'react-icons/fi';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -12,6 +12,8 @@ import { updateEmployeeSelf, getEmployeeSelf, checkUserByPhone, validatePANForma
 import { Employee, Employment } from '@/types';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
+import { toTitleCase } from '@/utils/stringUtils';
+import CustomDateInput from '@/components/ui/CustomDateInput';
 
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relievingCtc'> {
@@ -36,7 +38,7 @@ export default function EditEmployeeProfilePage() {
     ]);
     const employmentForm = useForm<EmploymentFormData>();
 
-    const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<Omit<Employee, 'id'> & { confirmPassword?: string }>();
+    const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<Omit<Employee, 'id'> & { confirmPassword?: string }>();
     const currentAddressValue = watch('currentAddress');
     const {
   register: employmentRegister,
@@ -259,7 +261,7 @@ export default function EditEmployeeProfilePage() {
 
             // Prepare update data for basic profile (name, email, phone)
             const basicProfileData = {
-                name: data.name.trim(),
+                name: toTitleCase(data.name?.trim()),
                 email: data.email.trim(),
                 phone: data.phone.trim()
             };
@@ -431,31 +433,39 @@ export default function EditEmployeeProfilePage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Date of Birth
                                 </label>
-                                <input
-                                        type="date"
-                                        {...register('dateOfBirth', {
-                                            validate: {
-                                                notFuture: (value) => {
-                                                    if (!value) return true;
-                                                    const selectedDate = new Date(value);
-                                                    const maxValidDate = new Date("2025-12-31");
-                                                    maxValidDate.setHours(23, 59, 59, 999);
-                                                    if (selectedDate > maxValidDate) {
-                                                        return 'Date of Birth cannot be after 2025';
-                                                    }
-                                                    return true;
-                                                },
-                                                validDate: (value) => {
-                                                    if (!value) return true;
-                                                    const date = new Date(value);
-                                                    return !isNaN(date.getTime()) || 'Please enter a valid date';
+                                <Controller
+                                    name="dateOfBirth"
+                                    control={control}
+                                    rules={{
+                                        validate: {
+                                            notFuture: (value) => {
+                                                if (!value) return true;
+                                                const selectedDate = new Date(value);
+                                                const maxValidDate = new Date("2025-12-31");
+                                                maxValidDate.setHours(23, 59, 59, 999);
+                                                if (selectedDate > maxValidDate) {
+                                                    return 'Date of Birth cannot be after 2025';
                                                 }
+                                                return true;
+                                            },
+                                            validDate: (value) => {
+                                                if (!value) return true;
+                                                const date = new Date(value);
+                                                return !isNaN(date.getTime()) || 'Please enter a valid date';
                                             }
-                                        })}
-                                        max="2025-12-31"
-                                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                        placeholder={watch('dateOfBirth') ? formatDateToDayMonYear(watch('dateOfBirth')!) : 'Select date of birth'}
-                                    />
+                                        }
+                                    }}
+                                    render={({ field }) => (
+                                        <CustomDateInput
+                                            name="dateOfBirth"
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            max="2025-12-31"
+                                            placeholder="Select date of birth"
+                                            className="px-3 py-2"
+                                        />
+                                    )}
+                                />
                                     {errors.dateOfBirth && (
                                         <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>
                                     )}

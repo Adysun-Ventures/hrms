@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef, use } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiArrowLeft, FiEdit, FiUser, FiBriefcase, FiCalendar, FiDollarSign, FiMapPin, FiTrendingUp, FiDownload } from 'react-icons/fi';
@@ -15,7 +15,9 @@ import { useEmployee, useEmployeeSelf } from '@/hooks/useEmployees';
 import { useEmployeeSelfSalariesByEmployee, useSalariesByEmployee } from '@/hooks/useSalaries';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { useAuth } from '@/context/AuthContext';
-import { downloadElementAsMultiPagePdf } from '@/utils/employmentViewPdfDownload';
+import EmploymentDetailsPDF from '@/components/pdf/EmploymentDetailsPDF';
+import { pdf } from '@react-pdf/renderer';
+import { saveAs } from 'file-saver';
 
 function professionalReferenceCell(
   refs: ProfessionalReference[] | undefined,
@@ -197,7 +199,6 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
   const { currentUserData } = useAuth();
   const { id } = use(params);
   const [employmentFullPagePdfLoading, setEmploymentFullPagePdfLoading] = useState(false);
-  const employmentFullPagePdfRef = useRef<HTMLDivElement | null>(null);
 
   const isEmployeeUser = currentUserData?.userType === 'employee';
   const Layout: any = isEmployeeUser ? EmployeeLayout : DashboardLayout;
@@ -563,12 +564,14 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               disabled: employmentFullPagePdfLoading,
               onClick: () => {
                 void (async () => {
-                  const el = employmentFullPagePdfRef.current;
-                  if (!el || !employment) return;
+                  if (!employment) return;
                   setEmploymentFullPagePdfLoading(true);
                   try {
                     const safe = (employee?.name || 'employment').replace(/\s+/g, '_');
-                    await downloadElementAsMultiPagePdf(el, `Employment_Details_${safe}.pdf`);
+                    const blob = await pdf(
+                      <EmploymentDetailsPDF employment={employment} employee={employee} />
+                    ).toBlob();
+                    saveAs(blob, `Employment_Details_${safe}.pdf`);
                     toast.success('PDF downloaded');
                   } catch (e) {
                     console.error(e);
@@ -591,8 +594,8 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
         />
 
         <div className="px-6 pb-6">
-          <div ref={employmentFullPagePdfRef} className="employment-view-pdf-capture space-y-0">
-          <div className="mb-8 -mt-1">
+          <div className="employment-view-pdf-capture space-y-0">
+          <div className="mb-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-900">
                 Where Were You Employed & Address
@@ -675,7 +678,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           </div>
 
           {/* Employment Period / Department / Employee Id / Designation */}
-          <div className="mb-8 -mt-1">
+          <div className="mb-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-900">
                 Employment Details
@@ -753,7 +756,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           </div>
 
           {/* Joining / Current Salary Summary */}
-          <div className="mb-8 -mt-1">
+          <div className="mb-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-900">
                 Salary Summary
@@ -846,7 +849,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             })()}
           </div>
 
-          <div className="mb-8 -mt-1">
+          <div className="mb-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
               <h2 className="text-lg font-semibold text-gray-900">Professional Reference</h2>
             </div>
@@ -1026,26 +1029,30 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Location</p>
               </div>
 
-              {(((employment.employmentType ?? '')).trim() && ((employment.employmentType ?? '')).trim() !== '-') ||
-              (((employment.contractType ?? '')).trim() && ((employment.contractType ?? '')).trim() !== '-') ? (
-                <div>
-                  <p className="text-lg font-medium text-gray-900 capitalize">
-                    {(((employment.employmentType ?? '')).trim() && ((employment.employmentType ?? '')).trim() !== '-') ? (
-                      employment.employmentType.includes('-') ?
-                        employment.employmentType.split('-').map(word =>
-                          word.charAt(0).toUpperCase() + word.slice(1)
-                        ).join(' ') :
-                        employment.employmentType.charAt(0).toUpperCase() + employment.employmentType.slice(1)
-                    ) : (((employment.contractType ?? '')).trim() && ((employment.contractType ?? '')).trim() !== '-') ? (
-                      employment.contractType.includes('-') ?
-                        employment.contractType.split('-').map(word =>
-                          word.charAt(0).toUpperCase() + word.slice(1)
-                        ).join(' ') :
-                        employment.contractType.charAt(0).toUpperCase() + employment.contractType.slice(1)
-                    ) : ''}
-                  </p>
-                </div>
-              ) : null}
+              {(() => {
+                const employmentType = (employment.employmentType ?? '').trim();
+                const contractType = (employment.contractType ?? '').trim();
+
+                const hasEmploymentType = employmentType !== '' && employmentType !== '-';
+                const hasContractType = contractType !== '' && contractType !== '-';
+
+                if (!hasEmploymentType && !hasContractType) return null;
+
+                const rawValue = hasEmploymentType ? employmentType : contractType;
+
+                const formattedValue = rawValue.includes('-')
+                  ? rawValue
+                    .split('-')
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ')
+                  : rawValue.charAt(0).toUpperCase() + rawValue.slice(1);
+
+                return (
+                  <div>
+                    <p className="text-lg font-medium text-gray-900 capitalize">{formattedValue}</p>
+                  </div>
+                );
+              })()}
 
               <div>
                 <p className="text-lg font-medium text-gray-900">{employment.workSchedule || '-'}</p>

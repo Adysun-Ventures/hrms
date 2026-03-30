@@ -12,6 +12,8 @@ interface CustomDateInputProps {
   required?: boolean;
   disabled?: boolean;
   name?: string;
+  min?: string;
+  max?: string;
 }
 
 export default function CustomDateInput({
@@ -21,10 +23,14 @@ export default function CustomDateInput({
   className = "",
   required = false,
   disabled = false,
-  name
+  name,
+  min,
+  max
 }: CustomDateInputProps) {
   const [displayValue, setDisplayValue] = useState<string>('');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+  const safeName = String(name || 'date').replace(/[^a-zA-Z0-9_-]/g, '-');
 
   useEffect(() => {
     if (value) {
@@ -50,7 +56,7 @@ export default function CustomDateInput({
     if (!disabled) {
       setIsDatePickerOpen(true);
       // Focus the hidden input
-      const hiddenInput = document.getElementById(`hidden-${name}`) as HTMLInputElement;
+      const hiddenInput = document.getElementById(`hidden-${safeName}`) as HTMLInputElement;
       if (hiddenInput) {
         hiddenInput.focus();
       }
@@ -76,13 +82,15 @@ export default function CustomDateInput({
       
       {/* Hidden date input for actual date picker */}
       <input
-        id={`hidden-${name}`}
+        id={`hidden-${safeName}`}
         type="date"
         value={value || ''}
         onChange={handleDateChange}
         className="absolute inset-0 opacity-0 cursor-pointer"
         required={required}
         disabled={disabled}
+        min={min}
+        max={max}
         onBlur={() => setIsDatePickerOpen(false)}
       />
     </div>

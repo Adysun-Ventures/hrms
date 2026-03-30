@@ -7,6 +7,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { db } from "@/firebase/config";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import CustomDateInput from '@/components/ui/CustomDateInput';
 
 function AppraisalLetter() {
   const containerRef = useRef(null);
@@ -384,12 +385,12 @@ console.log("salary:", numericSalary);
             {/* Date */}
             <div className="form-group">
               <label className="block mb-1 text-sm font-medium text-gray-700"> Appraisal Date</label>
-              <input
-                type="date"
+              <CustomDateInput
                 name="date"
                 value={formData.date}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onChange={(v) => setFormData((prev) => ({ ...prev, date: v }))}
+                placeholder="Select appraisal date"
+                className="px-3 py-2"
               />
             </div>
 

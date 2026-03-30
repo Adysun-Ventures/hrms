@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { FiUsers, FiBriefcase, FiRefreshCw, FiMail } from 'react-icons/fi';
+import { FiClipboard, FiFile, FiFileText, FiRefreshCw, FiUsers } from 'react-icons/fi';
 import { Toaster, toast } from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -79,6 +79,45 @@ export default function DashboardPage() {
     
   ];
 
+  const documentQuickActions = [
+    {
+      title: 'Offer Letter',
+      description: 'Generate offer letter',
+      href: '/dashboard/documents/v2/offer-letter',
+      icon: <FiFileText className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Salary Slip',
+      description: 'Generate salary slip',
+      href: '/dashboard/documents/v2/salary-slip',
+      icon: <FiFile className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Relieving Letter',
+      description: 'Generate relieving letter',
+      href: '/dashboard/documents/v2/relieving-letter',
+      icon: <FiFileText className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Increment Letter',
+      description: 'Generate increment letter',
+      href: '/dashboard/documents/v2/increment-letter',
+      icon: <FiClipboard className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Experience Letter',
+      description: 'Generate experience letter',
+      href: '/dashboard/documents/v2/experience-letter',
+      icon: <FiFileText className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Joining Letter',
+      description: 'Generate joining letter',
+      href: '/dashboard/documents/v2/joining-letter',
+      icon: <FiFileText className="w-6 h-6 text-blue-600" />,
+    },
+  ];
+
   return (
     <DashboardLayout allowedUserTypes={['admin']} showBreadcrumb={false}>
       <Toaster position="top-center" />
@@ -149,24 +188,20 @@ export default function DashboardPage() {
 
       <div className="mt-12">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          <Link
-            href="/employees/add"
-            className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
-          >
-            <h3 className="font-medium text-gray-800">Add Employee</h3>
-            <p className="text-sm text-gray-600 mt-1">Create a new employee record</p>
-          </Link>
-          
-          
-          
-          <Link
-            href="/dashboard/documents"
-            className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200"
-          >
-            <h3 className="font-medium text-gray-800">Documents</h3>
-            <p className="text-sm text-gray-600 mt-1">Generate and manage documents</p>
-          </Link>
+        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 gap-4">
+          {documentQuickActions.map((doc) => (
+            <Link
+              key={doc.href}
+              href={doc.href}
+              className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 flex items-start gap-3"
+            >
+              <div className="p-2 bg-blue-50 rounded-lg shrink-0">{doc.icon}</div>
+              <div>
+                <h3 className="font-medium text-gray-800">{doc.title}</h3>
+                <p className="text-sm text-gray-600 mt-1">{doc.description}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
     </DashboardLayout>

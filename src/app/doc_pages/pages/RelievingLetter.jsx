@@ -7,6 +7,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { db } from "@/firebase/config";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import CustomDateInput from '@/components/ui/CustomDateInput';
 
 function RelievingLetter() {
   const containerRef = useRef(null);
@@ -207,13 +208,12 @@ function RelievingLetter() {
 
             <div className="form-group">
               <label className="block mb-1 text-sm font-medium text-gray-700">Employee Sign Date</label>
-              <input
-                type="date"
+              <CustomDateInput
                 name="employeeSignDate"
                 value={formData.employeeSignDate}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter signing date"
+                onChange={(v) => setFormData((prev) => ({ ...prev, employeeSignDate: v }))}
+                placeholder="Select signing date"
+                className="px-3 py-2"
               />
             </div>
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import {
@@ -22,6 +22,7 @@ import { FiCheckCircle, FiPlus, FiRefreshCw, FiX } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
+import CustomDateInput from '@/components/ui/CustomDateInput';
 import { useAuth } from '@/context/AuthContext';
 import {
   EMPLOYMENT_DESIGNATION_BY_DEPARTMENT,
@@ -152,7 +153,7 @@ export default function AddEmploymentPage() {
             ]),
       ];
 
-  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<EmploymentFormData>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue, control } = useForm<EmploymentFormData>({
     defaultValues: {
       employmentId: 'ADV',
       isResignation: false,
@@ -994,11 +995,19 @@ export default function AddEmploymentPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       <span className="text-red-500 mr-1">*</span> Joining Date
                     </label>
-                    <input
-                      type="date"
-                      {...register('joiningDate', { required: 'Joining date is required' })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder={watch('joiningDate') ? formatDateToDayMonYear(watch('joiningDate')) : 'Select joining date'}
+                    <Controller
+                      name="joiningDate"
+                      control={control}
+                      rules={{ required: 'Joining date is required' }}
+                      render={({ field }) => (
+                        <CustomDateInput
+                          name="joiningDate"
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select joining date"
+                          className="px-3 py-2"
+                        />
+                      )}
                     />
                     {errors.joiningDate && (
                       <p className="mt-1 text-sm text-red-600">{errors.joiningDate.message}</p>
@@ -1081,11 +1090,18 @@ export default function AddEmploymentPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Increment Date
                     </label>
-                    <input
-                      type="date"
-                      {...register('incrementDate')}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder={watch('incrementDate') ? formatDateToDayMonYear(watch('incrementDate')) : 'Select increment date'}
+                    <Controller
+                      name="incrementDate"
+                      control={control}
+                      render={({ field }) => (
+                        <CustomDateInput
+                          name="incrementDate"
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select increment date"
+                          className="px-3 py-2"
+                        />
+                      )}
                     />
                   </div>
 

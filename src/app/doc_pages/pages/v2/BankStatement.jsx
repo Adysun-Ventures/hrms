@@ -7,6 +7,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { FiArrowLeft, FiDownload } from "react-icons/fi";
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
+import CustomDateInput from '@/components/ui/CustomDateInput';
 import {
   Document,
   Page,
@@ -1353,11 +1354,12 @@ const BankStatement = () => {
               <label className="block mb-2 text-sm font-medium text-slate-800">
                 Statement Start Date
               </label>
-              <input
-                type="date"
+              <CustomDateInput
+                name="startDate"
                 value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onChange={setStartDate}
+                placeholder="Select start date"
+                className="px-3 py-2"
                 disabled={isLoading}
               />
             </div>
@@ -1365,11 +1367,12 @@ const BankStatement = () => {
               <label className="block mb-2 text-sm font-medium text-slate-800">
                 Statement End Date
               </label>
-              <input
-                type="date"
+              <CustomDateInput
+                name="endDate"
                 value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onChange={setEndDate}
+                placeholder="Select end date"
+                className="px-3 py-2"
                 disabled={isLoading}
               />
             </div>

@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import TableHeader from '@/components/ui/TableHeader';
 import { useCreateLeaveRequest } from '@/hooks/useLeaves';
 import { useEmployee } from '@/hooks/useEmployees';
+import CustomDateInput from '@/components/ui/CustomDateInput';
 
 interface LeaveRequestForm {
   type: 'casual' | 'sick' | 'annual' | 'personal' | 'maternity' | 'paternity';
@@ -216,31 +217,31 @@ export default function AddLeavePage() {
                 </div>
                 
                 <div>
-                  <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label htmlFor="hidden-startDate" className="block text-sm font-medium text-gray-700 mb-2">
                     <span className="text-red-500 mr-1">*</span>Start Date
                   </label>
-                  <input
-                    type="date"
-                    id="startDate"
+                  <CustomDateInput
+                    name="startDate"
                     value={formData.startDate}
-                    onChange={(e) => handleInputChange('startDate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    onChange={(v) => handleInputChange('startDate', v)}
+                    placeholder="Select start date"
                     required
+                    className="px-3 py-2"
                   />
                 </div>
                 
                 <div>
-                  <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-2">
-                    <span className="text-red-500 mr-1">*</span>End Date 
+                  <label htmlFor="hidden-endDate" className="block text-sm font-medium text-gray-700 mb-2">
+                    <span className="text-red-500 mr-1">*</span>End Date
                   </label>
-                  <input
-                    type="date"
-                    id="endDate"
+                  <CustomDateInput
+                    name="endDate"
                     value={formData.endDate}
-                    onChange={(e) => handleInputChange('endDate', e.target.value)}
+                    onChange={(v) => handleInputChange('endDate', v)}
                     min={formData.startDate}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Select end date"
                     required
+                    className="px-3 py-2"
                   />
                 </div>
                 

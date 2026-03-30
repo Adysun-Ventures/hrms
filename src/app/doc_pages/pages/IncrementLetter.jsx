@@ -9,6 +9,7 @@ import html2canvas from "html2canvas";
 import { db } from "@/firebase/config";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { Combobox } from "@headlessui/react";
+import CustomDateInput from '@/components/ui/CustomDateInput';
 
 const MONTH_OPTIONS = [
   { value: "01", label: "Jan" },
@@ -395,12 +396,12 @@ function IncrementLetter() {
 
             <div className="form-group">
               <label className="block mb-1 text-sm font-medium text-gray-700">Effective Date</label>
-              <input
-                type="date"
+              <CustomDateInput
                 name="effectiveDate"
                 value={formData.effectiveDate}
-                onChange={handleInputChange}
-                className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                onChange={(v) => setFormData((prev) => ({ ...prev, effectiveDate: v }))}
+                placeholder="Select effective date"
+                className="px-3 py-2"
               />
               <button
                 type="button"

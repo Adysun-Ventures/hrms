@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { addEmployee } from '@/utils/firebaseUtils';
 import { getAdminDataForAudit, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere } from '@/utils/firebaseUtils';
@@ -12,6 +12,8 @@ import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
+import { toTitleCase } from '@/utils/stringUtils';
+import CustomDateInput from '@/components/ui/CustomDateInput';
 
 
 type EmployeeFormData = Omit<Employee, 'id'>;
@@ -45,7 +47,7 @@ export default function AddEmployeePage() {
 
   const router = useRouter();
 
-  const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<EmployeeFormData>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue, control } = useForm<EmployeeFormData>({
     defaultValues: {
       status: 'active',
       employeeType: 'internal', // Default to internal
@@ -173,6 +175,7 @@ export default function AddEmployeePage() {
       // Add audit fields to employee data and ensure status is active
       const employeeDataWithAudit = {
         ...data,
+        name: toTitleCase(data.name),
         aadharCard: data.aadharCard ? data.aadharCard.replace(/\s+/g, "") : undefined,
         secondaryEducation,
         panCard: data.panCard ? data.panCard.toUpperCase() : undefined,
@@ -370,9 +373,10 @@ export default function AddEmployeePage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Date of Birth
                   </label>
-                  <input
-                    type="date"
-                    {...register('dateOfBirth', {
+                  <Controller
+                    name="dateOfBirth"
+                    control={control}
+                    rules={{
                       validate: {
                         notFuture: (value) => {
                           if (!value) return true;
@@ -390,10 +394,17 @@ export default function AddEmployeePage() {
                           return !isNaN(date.getTime()) || 'Please enter a valid date';
                         }
                       }
-                    })}
-                    max="2025-12-31"
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={watch('dateOfBirth') ? formatDateToDayMonYear(watch('dateOfBirth')) : 'Select date of birth'}
+                    }}
+                    render={({ field }) => (
+                      <CustomDateInput
+                        name="dateOfBirth"
+                        value={field.value}
+                        onChange={field.onChange}
+                        max="2025-12-31"
+                        placeholder="Select date of birth"
+                        className="px-3 py-2"
+                      />
+                    )}
                   />
                   {errors.dateOfBirth && (
                     <p className="mt-1 text-sm text-red-600">{errors.dateOfBirth.message}</p>

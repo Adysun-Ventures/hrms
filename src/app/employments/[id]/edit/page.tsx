@@ -3,7 +3,7 @@
 import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { FiCheckCircle, FiRefreshCw, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
@@ -11,6 +11,7 @@ import { getEmployment, updateEmployment, getEmployees as getEmployeesAuth, chec
 import { Employment, Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
+import CustomDateInput from '@/components/ui/CustomDateInput';
 import { useAuth } from '@/context/AuthContext';
 import {
   EMPLOYMENT_DESIGNATION_BY_DEPARTMENT,
@@ -955,10 +956,18 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Joining Date
                   </label>
-                  <input
-                    type="date"
-                    {...register('joiningDate')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  <Controller
+                    name="joiningDate"
+                    control={control}
+                    render={({ field }) => (
+                      <CustomDateInput
+                        name="joiningDate"
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select joining date"
+                        className="px-3 py-2"
+                      />
+                    )}
                   />
                 </div>
 
@@ -1469,10 +1478,18 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Resignation Date
                       </label>
-                      <input
-                        type="date"
-                        {...register('resignationDate')}
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      <Controller
+                        name="resignationDate"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomDateInput
+                            name="resignationDate"
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select resignation date"
+                            className="px-3 py-2"
+                          />
+                        )}
                       />
                     </div>
 
@@ -1480,10 +1497,18 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Last Working Date
                       </label>
-                      <input
-                        type="date"
-                        {...register('lastWorkingDate')}
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                      <Controller
+                        name="lastWorkingDate"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomDateInput
+                            name="lastWorkingDate"
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select last working date"
+                            className="px-3 py-2"
+                          />
+                        )}
                       />
                     </div>
 
@@ -1505,10 +1530,18 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Last Salary Date
                       </label>
-                      <input
-                        type="date"
-                        {...register('lastSalaryDate')}
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      <Controller
+                        name="lastSalaryDate"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomDateInput
+                            name="lastSalaryDate"
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select last salary date"
+                            className="px-3 py-2"
+                          />
+                        )}
                       />
                     </div>
 
@@ -1585,10 +1618,18 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           Increment Date
                         </label>
-                        <input
-                          type="date"
-                          {...register(`increments.${index}.incrementDate` as const)}
-                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        <Controller
+                          name={`increments.${index}.incrementDate` as const}
+                          control={control}
+                          render={({ field }) => (
+                            <CustomDateInput
+                              name={`increments.${index}.incrementDate`}
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select increment date"
+                              className="px-3 py-2"
+                            />
+                          )}
                         />
                       </div>
 

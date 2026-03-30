@@ -74,7 +74,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [includePF, setIncludePF] = useState(true); // Default: With PF
+  // Salary breakdown sections removed as requested.
   const [originalEmployment, setOriginalEmployment] = useState<Employment | null>(null);
   const generatedEmploymentIdsRef = useRef<Set<string>>(new Set());
   useForm({
@@ -91,7 +91,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const isEmployeeUser = currentUserData?.userType === 'employee';
   const Layout: any = isEmployeeUser ? EmployeeLayout : DashboardLayout;
 
-  const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<EmploymentFormData>({
+  const { register, handleSubmit, formState: { errors, dirtyFields }, reset, watch, setValue, control } = useForm<EmploymentFormData>({
     defaultValues: {
       workSchedule: 'Office',
       whereWereYouEmploid: 'Registred Corporate Office(Pune)',
@@ -130,9 +130,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     name: 'increments',
   });
 
-  // Watch salary and resignation state for calculations / UI
-  const salary = watch('salary');
   const joiningCtcValue = watch('joiningCtc');
+  const joiningFixedPayValue = watch('joiningFixedPay');
   const isResignation = watch('isResignation');
   const whereWereYouEmploidValue = watch('whereWereYouEmploid');
   const selectedDepartment = watch('department');
@@ -152,6 +151,63 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     if (!derivedLocation) return;
     setValue('location', derivedLocation, { shouldValidate: true, shouldDirty: true });
   }, [derivedLocation, setValue]);
+
+  // Joining Fixed is read-only and computed as: joiningFixedPay = joiningCtc - joiningVariablePay
+  const joiningVariablePayValue = watch('joiningVariablePay');
+  useEffect(() => {
+    const ctc = Number(joiningCtcValue ?? 0) || 0;
+    const variable = Number(joiningVariablePayValue ?? 0) || 0;
+    const fixed = ctc - variable;
+    setValue('joiningFixedPay', fixed, { shouldValidate: false, shouldDirty: true });
+  }, [joiningCtcValue, joiningVariablePayValue, setValue]);
+
+  // Current Fixed is read-only and computed as: currentFixedPay = salary - currentVariablePay
+  const currentCtcValue = watch('salary');
+  const currentVariablePayValue = watch('currentVariablePay');
+  const currentFixedPayValue = watch('currentFixedPay');
+  useEffect(() => {
+    const ctc = Number(currentCtcValue ?? 0) || 0;
+    const variable = Number(currentVariablePayValue ?? 0) || 0;
+    const fixed = ctc - variable;
+    setValue('currentFixedPay', fixed, { shouldValidate: false, shouldDirty: true });
+  }, [currentCtcValue, currentVariablePayValue, setValue]);
+
+  const joiningMonthlyFixed = (Number(joiningFixedPayValue ?? 0) || 0) / 12;
+  const joiningBasic = joiningMonthlyFixed * 0.5;
+  const joiningHra = joiningBasic * 0.4;
+  const joiningConveyance = 2000;
+  const joiningOtherAllowanceCalculated =
+    joiningMonthlyFixed - (joiningBasic + joiningHra + joiningConveyance);
+  const joiningOtherAllowanceValue = watch('joiningOtherAllowance') ?? joiningOtherAllowanceCalculated;
+
+  const currentMonthlyFixed = (Number(currentFixedPayValue ?? 0) || 0) / 12;
+  const currentBasic = currentMonthlyFixed * 0.5;
+  const currentHra = currentBasic * 0.4;
+  const currentConveyance = 2000;
+  const currentOtherAllowanceCalculated =
+    currentMonthlyFixed - (currentBasic + currentHra + currentConveyance);
+  const currentOtherAllowanceValue = watch('currentOtherAllowance') ?? currentOtherAllowanceCalculated;
+
+  const joiningGrossSalary =
+    joiningBasic + joiningHra + joiningConveyance + (Number(joiningOtherAllowanceValue) || 0);
+  const currentGrossSalary =
+    currentBasic + currentHra + currentConveyance + (Number(currentOtherAllowanceValue) || 0);
+
+  useEffect(() => {
+    if ((dirtyFields as any)?.joiningOtherAllowance) return;
+    setValue('joiningOtherAllowance', joiningOtherAllowanceCalculated, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+  }, [dirtyFields, joiningOtherAllowanceCalculated, setValue]);
+
+  useEffect(() => {
+    if ((dirtyFields as any)?.currentOtherAllowance) return;
+    setValue('currentOtherAllowance', currentOtherAllowanceCalculated, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+  }, [dirtyFields, currentOtherAllowanceCalculated, setValue]);
 
   // ---------------- PROFESSIONAL REFERENCE (Team Lead / Colleagues) ----------------
   // Professional Reference: dropdown shows saved Name.
@@ -333,18 +389,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     return { email: emailMatch, mobileNo: mobileMatch, place };
   };
 
-  const joiningAnnualSalary = Number(joiningCtcValue || 0);
-  const joiningMonthlySalary = joiningAnnualSalary > 0 ? Math.round(joiningAnnualSalary / 12) : 0;
-  const joiningBasic = joiningMonthlySalary > 0 ? Math.round(joiningMonthlySalary * 0.4) : 0;
-  const joiningDA = joiningBasic > 0 ? Math.round(joiningBasic * 0.1) : 0;
-  const joiningHRA = joiningBasic > 0 ? Math.round(joiningBasic * 0.5) : 0;
-  const joiningPF = includePF && joiningBasic > 0 ? Math.round(joiningBasic * 0.12) : 0;
-  const joiningMedicalAllowance = joiningMonthlySalary > 0 ? 1250 : 0;
-  const joiningTransportAllowance = joiningMonthlySalary > 0 ? 1600 : 0;
-  const joiningCalculatedComponents =
-    joiningBasic + joiningHRA + joiningDA + joiningMedicalAllowance + joiningTransportAllowance;
-  const joiningSpecialAllowance =
-    joiningMonthlySalary > 0 ? Math.max(0, joiningMonthlySalary - joiningCalculatedComponents) : 0;
+  // Joining salary breakdown UI removed as requested.
 
   // After loading original employment, capture owner for employee access check
   useEffect(() => {
@@ -365,49 +410,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     }
   }, [currentUserData, employmentOwnerId, router]);
 
-  // Calculate salary breakdown when annual salary changes
-  useEffect(() => {
-    if (salary && salary > 0) {
-      const annualSalary = Number(salary);
-
-      // Calculate monthly salary
-      const monthlySalary = Math.round(annualSalary / 12);
-      setValue('salaryPerMonth', monthlySalary);
-
-      // Calculate Basic (40% of monthly salary)
-      const basic = Math.round(monthlySalary * 0.40);
-      setValue('basic', basic);
-
-      // Calculate HRA (50% of Basic)
-      const hra = Math.round(basic * 0.50);
-      setValue('hra', hra);
-
-      // Calculate DA (10% of Basic)
-      const da = Math.round(basic * 0.10);
-      setValue('da', da);
-
-      // Fixed allowances as per Indian standards
-      const medicalAllowance = 1250;
-      const transport = 1600;
-      setValue('medicalAllowance', medicalAllowance);
-      setValue('transport', transport);
-
-      // Calculate PF (12% of Basic - employer contribution) - only if includePF is true
-      if (includePF) {
-        const pf = Math.round(basic * 0.12);
-        setValue('pf', pf);
-      } else {
-        setValue('pf', 0);
-      }
-
-      // Calculate Special Allowance (balancing figure)
-      const calculatedComponents = includePF
-        ? basic + hra + da + medicalAllowance + transport
-        : basic + hra + da + medicalAllowance + transport - Math.round(basic * 0.12);
-      const specialAllowance = Math.max(0, monthlySalary - calculatedComponents);
-      setValue('specialAllowance', specialAllowance);
-    }
-  }, [salary, setValue, includePF]);
+  // Salary calculations removed as requested.
 
   useEffect(() => {
     const fetchData = async () => {
@@ -623,12 +626,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               })(),
         });
 
-        // Initialize includePF based on existing PF value
-        if (employmentData.pf && employmentData.pf > 0) {
-          setIncludePF(true);
-        } else {
-          setIncludePF(false);
-        }
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch data';
         setError(errorMessage);
@@ -685,26 +682,32 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       const formattedData: any = {
         ...data,
         employmentId: data.employmentId?.trim().toUpperCase(),
-        salary: Number(data.salary),
-        joiningCtc: Number(data.joiningCtc),
-        inHandCtc: Number(data.inHandCtc),
-        relievingCtc: Number(data.relievingCtc),
-        salaryPerMonth: Number(data.salaryPerMonth),
-        basic: Number(data.basic),
-        da: Number(data.da),
-        hra: Number(data.hra),
-        pf: Number(data.pf),
-        medicalAllowance: Number(data.medicalAllowance),
-        transport: Number(data.transport),
-        gratuity: Number(data.gratuity),
+        salary: Number((data as any).salary ?? 0),
+        joiningCtc: Number(data.joiningCtc ?? 0),
+        inHandCtc: Number(data.inHandCtc ?? 0),
+        relievingCtc: Number((data as any).relievingCtc ?? 0),
+        salaryPerMonth: Number((data as any).salaryPerMonth ?? 0) || 0,
+        basic: Number((data as any).basic ?? 0) || 0,
+        da: Number((data as any).da ?? 0) || 0,
+        hra: Number((data as any).hra ?? 0) || 0,
+        pf: Number((data as any).pf ?? 0) || 0,
+        medicalAllowance: Number((data as any).medicalAllowance ?? 0) || 0,
+        transport: Number((data as any).transport ?? 0) || 0,
+        gratuity: Number((data as any).gratuity ?? 0) || 0,
         totalLeaves: data.totalLeaves !== undefined && data.totalLeaves !== null && data.totalLeaves !== ('' as any)
           ? Number(data.totalLeaves)
           : undefined,
         payableDays: data.payableDays !== undefined && data.payableDays !== null && data.payableDays !== ('' as any)
           ? Number(data.payableDays)
           : undefined,
-        additionalAllowance: Number(data.additionalAllowance),
-        specialAllowance: Number(data.specialAllowance),
+        additionalAllowance: Number((data as any).additionalAllowance ?? 0) || 0,
+        specialAllowance: Number((data as any).specialAllowance ?? 0) || 0,
+        joiningFixedPay: Number((data as any).joiningFixedPay ?? 0) || 0,
+        joiningVariablePay: Number((data as any).joiningVariablePay ?? 0) || 0,
+        currentFixedPay: Number((data as any).currentFixedPay ?? 0) || 0,
+        currentVariablePay: Number((data as any).currentVariablePay ?? 0) || 0,
+        joiningOtherAllowance: Number((data as any).joiningOtherAllowance ?? 0) || 0,
+        currentOtherAllowance: Number((data as any).currentOtherAllowance ?? 0) || 0,
         benefits: benefitsArray,
 
       };
@@ -970,35 +973,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining CTC
-                  </label>
-                  <input
-                    type="number"
-                    {...register('joiningCtc', {
-                      min: { value: 0, message: 'Joining CTC must be positive' },
-                      valueAsNumber: true
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Joining CTC amount"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    In-hand CTC
-                  </label>
-                  <input
-                    type="number"
-                    {...register('inHandCtc', {
-                      min: { value: 0, message: 'In-hand CTC must be positive' },
-                      valueAsNumber: true
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="In-hand CTC"
-                  />
-                </div>
+                {/* Joining CTC and In-hand CTC removed from this section */}
               </div>
             </div>
 
@@ -1706,174 +1681,160 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {/* Joining Salary Information */}
+            {/* Joining Salary Information (CTC split) */}
             <div className="bg-white p-4 rounded-lg mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-800 border-l-4 border-cyan-500 pl-2">
-                  Joining Salary Information
-                </h2>
-
-                {/* Sliding Toggle Switch - With/Without PF */}
-                <div className="flex items-center space-x-2">
-                  <span className={`text-sm font-medium ${!includePF ? 'text-orange-600' : 'text-gray-500'}`}>
-                    Without PF
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setIncludePF(!includePF)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${includePF ? 'bg-green-600' : 'bg-orange-500'
-                      }`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${includePF ? 'translate-x-6' : 'translate-x-1'
-                      }`} />
-                  </button>
-                  <span className={`text-sm font-medium ${includePF ? 'text-green-600' : 'text-gray-500'}`}>
-                    With PF
-                  </span>
-                </div>
-              </div>
+              <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-cyan-500 pl-2">
+                Joining Salary Information
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining Salary per annum (₹)
+                    <span className="text-red-500 mr-1">*</span> Joining CTC (₹)
                   </label>
                   <input
                     type="number"
-                    value={joiningAnnualSalary || ''}
-                    readOnly
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Joining CTC"
+                    {...register('joiningCtc', {
+                      required: 'Joining CTC is required',
+                      min: { value: 0, message: 'Joining CTC must be positive' },
+                      valueAsNumber: true,
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                  {errors.joiningCtc && (
+                    <p className="mt-1 text-sm text-red-600">{errors.joiningCtc.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Joining Variable (₹)
+                  </label>
+                  <input
+                    type="number"
+                      placeholder="Joining Variable"
+                      {...register('joiningVariablePay', {
+                        min: { value: 0, message: 'Amount must be positive' },
+                        valueAsNumber: true,
+                      })}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining Salary per month (₹)
+                      Joining Fixed (₹)
                   </label>
                   <input
                     type="number"
-                    value={joiningMonthlySalary || ''}
-                    readOnly
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining Basic (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={joiningBasic || ''}
-                    readOnly
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining DA (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={joiningDA || ''}
-                    readOnly
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining HRA (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={joiningHRA || ''}
-                    readOnly
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-
-                {includePF && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Joining PF (₹)
-                    </label>
-                    <input
-                      type="number"
-                      value={joiningPF || ''}
+                      placeholder="Joining Fixed"
+                      {...register('joiningFixedPay', {
+                      min: { value: 0, message: 'Amount must be positive' },
+                      valueAsNumber: true,
+                    })}
                       readOnly
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                )}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining Additional Allowance (₹)
-                  </label>
-                  <input
-                    type="number"
-                    value={0}
-                    readOnly
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining Special Allowance (₹)
+                    Monthly Fixed (₹)
                   </label>
                   <input
                     type="number"
-                    value={joiningSpecialAllowance || ''}
+                    placeholder="Monthly Fixed"
+                    value={joiningMonthlyFixed}
                     readOnly
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Basic (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Basic"
+                    value={joiningBasic}
+                    readOnly
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    HRA (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="HRA"
+                    value={joiningHra}
+                    readOnly
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Conveyance Allowance (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Conveyance Allowance"
+                    value={joiningConveyance}
+                    readOnly
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Other Allowance (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Other Allowance"
+                    {...register('joiningOtherAllowance', {
+                      valueAsNumber: true,
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gross Salary (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Gross Salary"
+                    value={joiningGrossSalary}
+                    readOnly
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Salary Information */}
+            {/* Current Salary Information (CTC split) */}
             <div className="bg-white p-4 rounded-lg mb-6">
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-green-500 pl-2">
-                    Current Salary Information
-                  </h2>
-                </div>
-
-                {/* Sliding Toggle Switch - matches 12th/Diploma style */}
-                <div className="flex items-center space-x-2">
-                  <span className={`text-sm font-medium ${!includePF ? 'text-orange-600' : 'text-gray-500'}`}>
-                    Without PF
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setIncludePF(!includePF)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${includePF ? 'bg-green-600' : 'bg-orange-500'
-                      }`}
-                  >
-                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${includePF ? 'translate-x-6' : 'translate-x-1'
-                      }`} />
-                  </button>
-                  <span className={`text-sm font-medium ${includePF ? 'text-green-600' : 'text-gray-500'}`}>
-                    With PF
-                  </span>
-                </div>
-              </div>
+              <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-green-500 pl-2">
+                Current Salary Information
+              </h2>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Current Salary per annum (₹)
+                    <span className="text-red-500 mr-1">*</span> Current CTC (₹)
                   </label>
                   <input
                     type="number"
-                    placeholder="Annual salary amount"
+                    placeholder="Current CTC"
                     {...register('salary', {
-                      required: 'Salary is required',
-                      min: { value: 0, message: 'Salary must be positive' },
-                      valueAsNumber: true
+                      required: 'Current CTC is required',
+                      min: { value: 0, message: 'Current CTC must be positive' },
+                      valueAsNumber: true,
                     })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
@@ -1884,114 +1845,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Current Salary per month (₹)
+                    Variable (₹)
                   </label>
                   <input
                     type="number"
-                    placeholder="Monthly salary amount"
-                    {...register('salaryPerMonth', {
-                      required: 'Monthly salary is required',
-                      min: { value: 0, message: 'Amount must be positive' }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">Annual salary ÷ 12</p>
-                  {errors.salaryPerMonth && (
-                    <p className="mt-1 text-sm text-red-600">{errors.salaryPerMonth.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Current Basic (₹)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Basic salary amount"
-                    {...register('basic', {
-                      required: 'Basic salary is required',
-                      min: { value: 0, message: 'Amount must be positive' }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">40% of monthly salary</p>
-                  {errors.basic && (
-                    <p className="mt-1 text-sm text-red-600">{errors.basic.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current DA (₹)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Dearness Allowance"
-                    {...register('da', {
-                      min: { value: 0, message: 'Amount must be positive' }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">10% of Basic</p>
-                  {errors.da && (
-                    <p className="mt-1 text-sm text-red-600">{errors.da.message}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current HRA (₹)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="House Rent Allowance"
-                    {...register('hra', {
-                      min: { value: 0, message: 'Amount must be positive' }
-                    })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">50% of Basic</p>
-                  {errors.hra && (
-                    <p className="mt-1 text-sm text-red-600">{errors.hra.message}</p>
-                  )}
-                </div>
-
-                {includePF && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current PF (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Provident Fund"
-                      {...register('pf', {
-                        min: { value: 0, message: 'Amount must be positive' }
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">12% of Basic</p>
-                    {errors.pf && (
-                      <p className="mt-1 text-sm text-red-600">{errors.pf.message}</p>
-                    )}
-                  </div>
-                )}
-
-                
-
-                
-
-                
-
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Additional Allowance (₹)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="Additional Allowance"
-                    {...register('additionalAllowance', {
-                      min: { value: 0, message: 'Amount must be positive' }
+                    placeholder="Variable"
+                    {...register('currentVariablePay', {
+                      min: { value: 0, message: 'Amount must be positive' },
+                      valueAsNumber: true,
                     })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
@@ -1999,17 +1860,97 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Special Allowance (₹)
+                    Fixed (₹)
                   </label>
                   <input
                     type="number"
-                    placeholder="Special Allowance"
-                    {...register('specialAllowance', {
-                      min: { value: 0, message: 'Amount must be positive' }
+                    placeholder="Fixed"
+                    {...register('currentFixedPay', {
+                      min: { value: 0, message: 'Amount must be positive' },
+                      valueAsNumber: true,
                     })}
+                    readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
-                  <p className="mt-1 text-xs text-gray-500">Balancing amount</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Monthly Fixed (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Monthly Fixed"
+                    value={currentMonthlyFixed}
+                    readOnly
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Basic (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Basic"
+                    value={currentBasic}
+                    readOnly
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    HRA (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="HRA"
+                    value={currentHra}
+                    readOnly
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Conveyance Allowance (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Conveyance Allowance"
+                    value={currentConveyance}
+                    readOnly
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Other Allowance (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Other Allowance"
+                    {...register('currentOtherAllowance', {
+                      valueAsNumber: true,
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gross Salary (₹)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="Gross Salary"
+                    value={currentGrossSalary}
+                    readOnly
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                  />
                 </div>
               </div>
             </div>

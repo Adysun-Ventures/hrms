@@ -112,7 +112,8 @@ export default function AddEmploymentPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [preSelectedEmployee, setPreSelectedEmployee] = useState<Employee | null>(null);
-  const [includePF, setIncludePF] = useState(true); // Default: With PF
+  const [showIncrementDetails, setShowIncrementDetails] = useState(false);
+  // Salary breakdown sections removed as requested.
   const generatedEmploymentIdsRef = useRef<Set<string>>(new Set());
 
   const router = useRouter();
@@ -152,7 +153,7 @@ export default function AddEmploymentPage() {
             ]),
       ];
 
-  const { register, handleSubmit, formState: { errors }, watch, setValue, control } = useForm<EmploymentFormData>({
+  const { register, handleSubmit, formState: { errors, dirtyFields }, watch, setValue, control } = useForm<EmploymentFormData>({
     defaultValues: {
       employmentId: 'ADV',
       isResignation: false,
@@ -244,65 +245,67 @@ export default function AddEmploymentPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionalRefReportingManagerName]);
 
-  // Watch salary for calculations
-  const joiningCtc = watch('joiningCtc'); 
+  // Salary calculations removed as requested.
 
-   useEffect(() => {
-    if (joiningCtc && joiningCtc > 0) {
-      const annual = Number(joiningCtc);
-      const gross = Math.round(annual / 12);      // Monthly Gross
-      const basic = Math.round(gross * 0.40);     // Basic 40%
-      const pf = Math.round(basic * 0.12) *2;        // Employee PF 12%
-      const pt = 200;                             // Professional Tax Fixed
-      const inHand = (gross - pf - pt)  ;
-      setValue('inHandCtc', inHand);
-    }
-  }, [joiningCtc, setValue]);
-  const salary = watch('salary');
+  // Joining Fixed is read-only and computed as: joiningFixedPay = joiningCtc - joiningVariablePay
+  const joiningCtcValue = watch('joiningCtc');
+  const joiningVariablePayValue = watch('joiningVariablePay');
+  const joiningFixedPayValue = watch('joiningFixedPay');
 
-  // Calculate salary breakdown when annual salary changes
   useEffect(() => {
-    if (salary && salary > 0) {
-      const annualSalary = Number(salary);
+    const ctc = Number(joiningCtcValue ?? 0) || 0;
+    const variable = Number(joiningVariablePayValue ?? 0) || 0;
+    const fixed = ctc - variable;
+    setValue('joiningFixedPay', fixed, { shouldValidate: false, shouldDirty: true });
+  }, [joiningCtcValue, joiningVariablePayValue, setValue]);
 
-      // Calculate monthly salary
-      const monthlySalary = Math.round(annualSalary / 12);
-      setValue('salaryPerMonth', monthlySalary);
+  const currentCtcValue = watch('salary');
+  const currentVariablePayValue = watch('currentVariablePay');
+  const currentFixedPayValue = watch('currentFixedPay');
 
-      // Calculate Basic (40% of monthly salary)
-      const basic = Math.round(monthlySalary * 0.40);
-      setValue('basic', basic);
+  useEffect(() => {
+    const ctc = Number(currentCtcValue ?? 0) || 0;
+    const variable = Number(currentVariablePayValue ?? 0) || 0;
+    const fixed = ctc - variable;
+    setValue('currentFixedPay', fixed, { shouldValidate: false, shouldDirty: true });
+  }, [currentCtcValue, currentVariablePayValue, setValue]);
 
-      // Calculate HRA (50% of Basic)
-      const hra = Math.round(basic * 0.50);
-      setValue('hra', hra);
+  const joiningMonthlyFixed = (Number(joiningFixedPayValue ?? 0) || 0) / 12;
+  const joiningBasic = joiningMonthlyFixed * 0.5;
+  const joiningHra = joiningBasic * 0.4;
+  const joiningConveyance = 2000;
+  const joiningOtherAllowanceCalculated =
+    joiningMonthlyFixed - (joiningBasic + joiningHra + joiningConveyance);
+  const joiningOtherAllowanceValue = watch('joiningOtherAllowance') ?? joiningOtherAllowanceCalculated;
 
-      // Calculate DA (10% of Basic)
-      const da = Math.round(basic * 0.10);
-      setValue('da', da);
+  const currentMonthlyFixed = (Number(currentFixedPayValue ?? 0) || 0) / 12;
+  const currentBasic = currentMonthlyFixed * 0.5;
+  const currentHra = currentBasic * 0.4;
+  const currentConveyance = 2000;
+  const currentOtherAllowanceCalculated =
+    currentMonthlyFixed - (currentBasic + currentHra + currentConveyance);
+  const currentOtherAllowanceValue = watch('currentOtherAllowance') ?? currentOtherAllowanceCalculated;
 
-      // Fixed allowances as per Indian standards
-      const medicalAllowance = 1250;
-      const transport = 1600;
-      setValue('medicalAllowance', medicalAllowance);
-      setValue('transport', transport);
+  const joiningGrossSalary =
+    joiningBasic + joiningHra + joiningConveyance + (Number(joiningOtherAllowanceValue) || 0);
+  const currentGrossSalary =
+    currentBasic + currentHra + currentConveyance + (Number(currentOtherAllowanceValue) || 0);
 
-      // Calculate PF (12% of Basic - employer contribution) - only if includePF is true
-      if (includePF) {
-        const pf = Math.round(basic * 0.12);
-        setValue('pf', pf);
-      } else {
-        setValue('pf', 0);
-      }
+  useEffect(() => {
+    if ((dirtyFields as any)?.joiningOtherAllowance) return;
+    setValue('joiningOtherAllowance', joiningOtherAllowanceCalculated, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+  }, [dirtyFields, joiningOtherAllowanceCalculated, setValue]);
 
-      // Calculate Special Allowance (balancing figure)
-      const calculatedComponents = includePF
-        ? basic + hra + da + medicalAllowance + transport
-        : basic + hra + da + medicalAllowance + transport - Math.round(basic * 0.12);
-      const specialAllowance = Math.max(0, monthlySalary - calculatedComponents);
-      setValue('specialAllowance', specialAllowance);
-    }
-  }, [salary, setValue, includePF]);
+  useEffect(() => {
+    if ((dirtyFields as any)?.currentOtherAllowance) return;
+    setValue('currentOtherAllowance', currentOtherAllowanceCalculated, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+  }, [dirtyFields, currentOtherAllowanceCalculated, setValue]);
 
   // Ensure ADV prefix is maintained in employmentId
   const employmentId = watch('employmentId');
@@ -418,19 +421,26 @@ export default function AddEmploymentPage() {
         ...rest,
         // Store normalized employmentId for consistent uniqueness checks
         employmentId: normalizedEmploymentId,
-        salary: Number(data.salary),
-        joiningCtc: Number(data.joiningCtc),
-        inHandCtc: Number(data.inHandCtc),
+        salary: Number((data as any).salary ?? 0),
+        joiningCtc: Number(data.joiningCtc ?? 0),
+        inHandCtc: Number(data.inHandCtc ?? 0),
         relievingCtc: data.relievingCtc && data.relievingCtc !== '' ? Number(data.relievingCtc) : null,
-        basic: Number(data.basic),
-        da: Number(data.da) || 0,
-        hra: Number(data.hra) || 0,
-        pf: Number(data.pf) || 0,
-        medicalAllowance: Number(data.medicalAllowance) || 0,
-        transport: Number(data.transport) || 0,
-        gratuity: Number(data.gratuity) || 0,
-        additionalAllowance: Number(data.additionalAllowance) || 0,
-        specialAllowance: Number(data.specialAllowance) || 0,
+        salaryPerMonth: Number((data as any).salaryPerMonth ?? 0) || 0,
+        basic: Number((data as any).basic ?? 0) || 0,
+        da: Number((data as any).da ?? 0) || 0,
+        hra: Number((data as any).hra ?? 0) || 0,
+        pf: Number((data as any).pf ?? 0) || 0,
+        medicalAllowance: Number((data as any).medicalAllowance ?? 0) || 0,
+        transport: Number((data as any).transport ?? 0) || 0,
+        gratuity: Number((data as any).gratuity ?? 0) || 0,
+        additionalAllowance: Number((data as any).additionalAllowance ?? 0) || 0,
+        specialAllowance: Number((data as any).specialAllowance ?? 0) || 0,
+        joiningFixedPay: Number((data as any).joiningFixedPay ?? 0) || 0,
+        joiningVariablePay: Number((data as any).joiningVariablePay ?? 0) || 0,
+        currentFixedPay: Number((data as any).currentFixedPay ?? 0) || 0,
+        currentVariablePay: Number((data as any).currentVariablePay ?? 0) || 0,
+        joiningOtherAllowance: Number((data as any).joiningOtherAllowance ?? 0) || 0,
+        currentOtherAllowance: Number((data as any).currentOtherAllowance ?? 0) || 0,
         totalLeaves: data.totalLeaves !== undefined && data.totalLeaves !== null && data.totalLeaves !== ('' as any)
           ? Number(data.totalLeaves)
           : undefined,
@@ -1013,43 +1023,7 @@ export default function AddEmploymentPage() {
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Joining CTC (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Annual Joining CTC amount"
-                      {...register('joiningCtc', {
-                        required: 'Joining CTC is required',
-                        min: { value: 0, message: 'Joining CTC must be positive' },
-                        valueAsNumber: true
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
-                    {errors.joiningCtc && (
-                      <p className="mt-1 text-sm text-red-600">{errors.joiningCtc.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> In-hand CTC (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="In-hand CTC amount"
-                      {...register('inHandCtc', {
-                        required: 'In-hand CTC is required',
-                        min: { value: 0, message: 'In-hand CTC must be positive' },
-                        valueAsNumber: true
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
-                    {errors.inHandCtc && (
-                      <p className="mt-1 text-sm text-red-600">{errors.inHandCtc.message}</p>
-                    )}
-                  </div>
+                  {/* Joining CTC and In-hand CTC removed from this section */}
 
                   {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1084,115 +1058,238 @@ export default function AddEmploymentPage() {
                  Increment Details
                 </h2>
 
+                {!showIncrementDetails ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowIncrementDetails(true)}
+                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                  >
+                    <FiPlus className="mr-2" />
+                    Add Increment
+                  </button>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Increment Date
+                      </label>
+                      <Controller
+                        name="incrementDate"
+                        control={control}
+                        render={({ field }) => (
+                          <CustomDateInput
+                            name="incrementDate"
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Select increment date"
+                            className="px-3 py-2"
+                          />
+                        )}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Incremented Salary (₹)
+                      </label>
+                      <input
+                        type="number"
+                        {...register('newSalary', {
+                          min: { value: 0, message: 'Amount must be positive' },
+                          valueAsNumber: true
+                        })}
+                        placeholder="Incremented salary amount"
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Incremented CTC (₹)
+                      </label>
+                      <input
+                        type="number"
+                        {...register('incrementedCtc', {
+                          min: { value: 0, message: 'Amount must be positive' },
+                          valueAsNumber: true
+                        })}
+                        placeholder="Incremented CTC amount"
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Incremented In-hand CTC (₹)
+                      </label>
+                      <input
+                        type="number"
+                        {...register('incrementedInHandCtc', {
+                          min: { value: 0, message: 'Amount must be positive' },
+                          valueAsNumber: true
+                        })}
+                        placeholder="Incremented in-hand CTC"
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Joining Salary Information (CTC split) */}
+              <div className="bg-white p-4 rounded-lg mb-6">
+                <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-cyan-500 pl-2">
+                  Joining Salary Information
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Increment Date
+                      <span className="text-red-500 mr-1">*</span> Joining CTC (₹)
                     </label>
-                    <Controller
-                      name="incrementDate"
-                      control={control}
-                      render={({ field }) => (
-                        <CustomDateInput
-                          name="incrementDate"
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Select increment date"
-                          className="px-3 py-2"
-                        />
-                      )}
+                    <input
+                      type="number"
+                      placeholder="Joining CTC"
+                      {...register('joiningCtc', {
+                        required: 'Joining CTC is required',
+                        min: { value: 0, message: 'Joining CTC must be positive' },
+                        valueAsNumber: true,
+                      })}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
+                    {errors.joiningCtc && (
+                      <p className="mt-1 text-sm text-red-600">{errors.joiningCtc.message}</p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Incremented Salary (₹)
+                      Joining Variable (₹)
                     </label>
                     <input
                       type="number"
-                      {...register('newSalary', {
+                      placeholder="Joining Variable"
+                      {...register('joiningVariablePay', {
                         min: { value: 0, message: 'Amount must be positive' },
-                        valueAsNumber: true
+                        valueAsNumber: true,
                       })}
-                      placeholder="Incremented salary amount"
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Incremented CTC (₹)
+                      Joining Fixed (₹)
                     </label>
                     <input
                       type="number"
-                      {...register('incrementedCtc', {
+                      placeholder="Joining Fixed"
+                      {...register('joiningFixedPay', {
                         min: { value: 0, message: 'Amount must be positive' },
-                        valueAsNumber: true
+                        valueAsNumber: true,
                       })}
-                      placeholder="Incremented CTC amount"
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Monthly Fixed (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Monthly Fixed"
+                      value={joiningMonthlyFixed}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Basic (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Basic"
+                      value={joiningBasic}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      HRA (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="HRA"
+                      value={joiningHra}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Conveyance Allowance (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Conveyance Allowance"
+                      value={joiningConveyance}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Other Allowance (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Other Allowance"
+                      {...register('joiningOtherAllowance', {
+                        valueAsNumber: true,
+                      })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Incremented In-hand CTC (₹)
+                      Gross Salary (₹)
                     </label>
                     <input
                       type="number"
-                      {...register('incrementedInHandCtc', {
-                        min: { value: 0, message: 'Amount must be positive' },
-                        valueAsNumber: true
-                      })}
-                      placeholder="Incremented in-hand CTC"
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                      placeholder="Gross Salary"
+                      value={joiningGrossSalary}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Salary Details Section */}
+              {/* Current Salary Information (CTC split) */}
               <div className="bg-white p-4 rounded-lg mb-6">
-                <div className="flex justify-between items-center mb-4">
-                  <div>
-                    <h2 className="text-lg font-medium text-gray-800 mb-2 border-l-4 border-green-500 pl-2">
-                      Current Salary Information
-                    </h2>
-                  </div>
-
-                  {/* Sliding Toggle Switch - matches 12th/Diploma style */}
-                  <div className="flex items-center space-x-2">
-                    <span className={`text-sm font-medium ${!includePF ? 'text-orange-600' : 'text-gray-500'}`}>
-                      Without PF
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setIncludePF(!includePF)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${includePF ? 'bg-green-600' : 'bg-orange-500'
-                        }`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${includePF ? 'translate-x-6' : 'translate-x-1'
-                        }`} />
-                    </button>
-                    <span className={`text-sm font-medium ${includePF ? 'text-green-600' : 'text-gray-500'}`}>
-                      With PF
-                    </span>
-                  </div>
-                </div>
-
+                <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-green-500 pl-2">
+                  Current Salary Information
+                </h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Current Salary per annum (₹)
+                      <span className="text-red-500 mr-1">*</span> Current CTC (₹)
                     </label>
                     <input
                       type="number"
-                      placeholder="Annual salary amount"
+                      placeholder="Current CTC"
                       {...register('salary', {
-                        required: 'Salary is required',
-                        min: { value: 0, message: 'Salary must be positive' },
-                        valueAsNumber: true
+                        required: 'Current CTC is required',
+                        min: { value: 0, message: 'Current CTC must be positive' },
+                        valueAsNumber: true,
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
@@ -1203,113 +1300,14 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Current Salary per month (₹)
+                      Variable (₹)
                     </label>
                     <input
                       type="number"
-                      placeholder="Monthly salary amount"
-                      {...register('salaryPerMonth', {
-                        required: 'Monthly salary is required',
-                        min: { value: 0, message: 'Amount must be positive' }
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Annual salary ÷ 12</p>
-                    {errors.salaryPerMonth && (
-                      <p className="mt-1 text-sm text-red-600">{errors.salaryPerMonth.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Current Basic (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Basic salary amount"
-                      {...register('basic', {
-                        required: 'Basic salary is required',
-                        min: { value: 0, message: 'Amount must be positive' }
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">40% of monthly salary</p>
-                    {errors.basic && (
-                      <p className="mt-1 text-sm text-red-600">{errors.basic.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current DA (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Dearness Allowance"
-                      {...register('da', {
-                        min: { value: 0, message: 'Amount must be positive' }
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">10% of Basic</p>
-                    {errors.da && (
-                      <p className="mt-1 text-sm text-red-600">{errors.da.message}</p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current HRA (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="House Rent Allowance"
-                      {...register('hra', {
-                        min: { value: 0, message: 'Amount must be positive' }
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">50% of Basic</p>
-                    {errors.hra && (
-                      <p className="mt-1 text-sm text-red-600">{errors.hra.message}</p>
-                    )}
-                  </div>
-
-                  {includePF && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Current PF (₹)
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="Provident Fund"
-                        {...register('pf', {
-                          min: { value: 0, message: 'Amount must be positive' }
-                        })}
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                      />
-                      <p className="mt-1 text-xs text-gray-500">12% of Basic</p>
-                      {errors.pf && (
-                        <p className="mt-1 text-sm text-red-600">{errors.pf.message}</p>
-                      )}
-                    </div>
-                  )}
-
-                  
-
-                  
-
-                  
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current Additional Allowance (₹)
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Additional Allowance"
-                      {...register('additionalAllowance', {
-                        min: { value: 0, message: 'Amount must be positive' }
+                      placeholder="Variable"
+                      {...register('currentVariablePay', {
+                        min: { value: 0, message: 'Amount must be positive' },
+                        valueAsNumber: true,
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
@@ -1317,17 +1315,97 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current Special Allowance (₹)
+                      Fixed (₹)
                     </label>
                     <input
                       type="number"
-                      placeholder="Special Allowance"
-                      {...register('specialAllowance', {
-                        min: { value: 0, message: 'Amount must be positive' }
+                      placeholder="Fixed"
+                      {...register('currentFixedPay', {
+                        min: { value: 0, message: 'Amount must be positive' },
+                        valueAsNumber: true,
                       })}
+                      readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
-                    <p className="mt-1 text-xs text-gray-500">Balancing amount</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Monthly Fixed (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Monthly Fixed"
+                      value={currentMonthlyFixed}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Basic (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Basic"
+                      value={currentBasic}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      HRA (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="HRA"
+                      value={currentHra}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Conveyance Allowance (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Conveyance Allowance"
+                      value={currentConveyance}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Other Allowance (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Other Allowance"
+                      {...register('currentOtherAllowance', {
+                        valueAsNumber: true,
+                      })}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Gross Salary (₹)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Gross Salary"
+                      value={currentGrossSalary}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
                   </div>
                 </div>
               </div>

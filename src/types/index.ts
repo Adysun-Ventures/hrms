@@ -170,6 +170,14 @@ export interface Employment {
   inHandCtc?: number;
   relievingCtc?: number | null;
   isResignation?: boolean;
+
+  // CTC split (optional) - requested for Employment Add/Edit forms
+  joiningFixedPay?: number;
+  joiningVariablePay?: number;
+  currentFixedPay?: number;
+  currentVariablePay?: number;
+  joiningOtherAllowance?: number;
+  currentOtherAllowance?: number;
   
   // Salary Information
   salary: number;

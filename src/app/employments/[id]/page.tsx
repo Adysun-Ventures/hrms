@@ -764,86 +764,121 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             </div>
 
             {(() => {
-              const joiningAnnual = Number(employment.joiningCtc || 0);
               const currentPfAmount = Number(employment.pf || (employment as any).employerPF || 0);
               const includePf = currentPfAmount > 0;
+              const isPf = includePf ? 'Yes' : 'No';
 
-              // Match Edit page rounding:
-              // - Joining Salary per month is rounded
-              // - Basic and PF are rounded based on that month value
-              const joiningInHand =
-                joiningAnnual > 0
-                  ? (() => {
-                      const joiningMonthly = Math.round(joiningAnnual / 12);
-                      const joiningBasic = Math.round(joiningMonthly * 0.4);
-                      const joiningPfMonthly = includePf ? Math.round(joiningBasic * 0.12) : 0;
-                      const joiningInHandMonthly = joiningMonthly - joiningPfMonthly;
-                      return joiningInHandMonthly;
-                    })()
-                  : 0;
+              const joiningCtc = Number(employment.joiningCtc ?? 0) || 0;
+              const joiningVariablePay = Number(employment.joiningVariablePay ?? 0) || 0;
+              const joiningFixedPay = Number(employment.joiningFixedPay ?? 0) || 0;
+              const joiningMonthlyFixed = joiningFixedPay / 12;
+              const joiningBasic = joiningMonthlyFixed * 0.5;
+              const joiningHra = joiningBasic * 0.4;
+              const joiningConveyance = 2000;
+              const joiningOtherAllowance = Number((employment as any).joiningOtherAllowance ?? 0) || 0;
+              const joiningGrossSalary =
+                joiningBasic + joiningHra + joiningConveyance + joiningOtherAllowance;
 
-              const currentAnnual = Number(employment.salary || 0);
-              const currentInHand = Number((employment as any).inHandCtc || 0);
+              const currentCtc = Number(employment.salary ?? 0) || 0;
+              const currentVariablePay = Number(employment.currentVariablePay ?? 0) || 0;
+              const currentFixedPay = Number(employment.currentFixedPay ?? 0) || 0;
+              const currentMonthlyFixed = currentFixedPay / 12;
+              const currentBasic = currentMonthlyFixed * 0.5;
+              const currentHra = currentBasic * 0.4;
+              const currentConveyance = 2000;
+              const currentOtherAllowance = Number((employment as any).currentOtherAllowance ?? 0) || 0;
+              const currentGrossSalary =
+                currentBasic + currentHra + currentConveyance + currentOtherAllowance;
 
-              const isPf = includePf ? "Yes" : "No";
+              const currencyOrDash = (v: number) => (v > 0 ? formatCurrency(v) : '-');
 
               return (
-                <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-                  <table className="w-full min-w-[640px] border-collapse text-sm text-gray-900">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th
-                          scope="col"
-                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
-                        >
-                          Joining CTC
-                        </th>
-                        <th
-                          scope="col"
-                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
-                        >
-                          Joining In Hand
-                        </th>
-                        <th
-                          scope="col"
-                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
-                        >
-                          Current CTC
-                        </th>
-                        <th
-                          scope="col"
-                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
-                        >
-                          Current In Hand
-                        </th>
-                        <th
-                          scope="col"
-                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
-                        >
-                          Is PF
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {joiningAnnual > 0 ? formatCurrency(joiningAnnual) : "-"}
-                        </td>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {joiningInHand > 0 ? formatCurrency(Math.round(joiningInHand)) : "-"}
-                        </td>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {currentAnnual > 0 ? formatCurrency(currentAnnual) : "-"}
-                        </td>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {currentInHand > 0 ? formatCurrency(currentInHand) : "-"}
-                        </td>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {isPf}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div className="space-y-4">
+                  <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
+                    <table className="w-full min-w-[720px] border-collapse text-sm text-gray-900">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            Joining CTC
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            Joining Variable
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            Fixed
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            Gross Salary
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            Is PF
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {currencyOrDash(joiningCtc)}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {currencyOrDash(joiningVariablePay)}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {currencyOrDash(joiningFixedPay)}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {currencyOrDash(joiningGrossSalary)}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {isPf}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
+                    <table className="w-full min-w-[720px] border-collapse text-sm text-gray-900">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            Current CTC
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            Variable
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            Fixed
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            Gross Salary
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            Is PF
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {currencyOrDash(currentCtc)}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {currencyOrDash(currentVariablePay)}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {currencyOrDash(currentFixedPay)}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {currencyOrDash(currentGrossSalary)}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {isPf}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               );
             })()}
@@ -1209,51 +1244,58 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             </h2>
 
             {(() => {
-              const joiningAnnual = Number(employment.joiningCtc || 0);
-              const joiningMonthly = joiningAnnual > 0 ? Math.round(joiningAnnual / 12) : 0;
-              const joiningBasic = joiningMonthly > 0 ? Math.round(joiningMonthly * 0.4) : 0;
-              const joiningDA = joiningBasic > 0 ? Math.round(joiningBasic * 0.1) : 0;
-              const joiningHRA = joiningBasic > 0 ? Math.round(joiningBasic * 0.5) : 0;
-              const pfAmount = Number(employment.pf || (employment as any).employerPF || 0);
-              const pfIncluded = pfAmount > 0;
-              const joiningPF = pfIncluded && joiningBasic > 0 ? Math.round(joiningBasic * 0.12) : 0;
-              const joiningMedicalAllowance = joiningMonthly > 0 ? 1250 : 0;
-              const joiningTransportAllowance = joiningMonthly > 0 ? 1600 : 0;
-              const joiningCalculated =
-                joiningBasic + joiningHRA + joiningDA + joiningMedicalAllowance + joiningTransportAllowance;
-              const joiningSpecial = joiningMonthly > 0 ? Math.max(0, joiningMonthly - joiningCalculated) : 0;
+              const joiningCtc = Number(employment.joiningCtc ?? 0) || 0;
+              const joiningVariablePay = Number(employment.joiningVariablePay ?? 0) || 0;
+              const joiningFixedPay = Number(employment.joiningFixedPay ?? 0) || 0;
+
+              const joiningMonthlyFixed = joiningFixedPay / 12;
+              const joiningBasic = joiningMonthlyFixed * 0.5;
+              const joiningHra = joiningBasic * 0.4;
+              const joiningConveyance = 2000;
+              const joiningOtherAllowance = Number((employment as any).joiningOtherAllowance ?? 0) || 0;
+              const joiningGrossSalary =
+                joiningBasic + joiningHra + joiningConveyance + joiningOtherAllowance;
+
+              const displayCurrency = (v: number) => (Number.isFinite(v) ? formatCurrency(v) : '-');
 
               return (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
-                    <p className="text-lg font-medium text-gray-900">{joiningAnnual > 0 ? formatCurrency(joiningAnnual) : '-'}</p>
-                    <p className="text-sm text-gray-500">Joining Salary per annum</p>
+                    <p className="text-lg font-medium text-gray-900">{displayCurrency(joiningCtc)}</p>
+                    <p className="text-sm text-gray-500">Joining CTC (₹)</p>
                   </div>
                   <div>
-                    <p className="text-lg font-medium text-gray-900">{joiningMonthly > 0 ? formatCurrency(joiningMonthly) : '-'}</p>
-                    <p className="text-sm text-gray-500">Joining Salary Per Month</p>
+                    <p className="text-lg font-medium text-gray-900">{displayCurrency(joiningVariablePay)}</p>
+                    <p className="text-sm text-gray-500">Joining Variable (₹)</p>
                   </div>
                   <div>
-                    <p className="text-lg font-medium text-gray-900">{joiningBasic > 0 ? formatCurrency(joiningBasic) : '-'}</p>
-                    <p className="text-sm text-gray-500">Joining Basic</p>
+                    <p className="text-lg font-medium text-gray-900">{displayCurrency(joiningFixedPay)}</p>
+                    <p className="text-sm text-gray-500">Joining Fixed (₹)</p>
                   </div>
                   <div>
-                    <p className="text-lg font-medium text-gray-900">{joiningDA > 0 ? formatCurrency(joiningDA) : '-'}</p>
-                    <p className="text-sm text-gray-500">Joining DA (Dearness Allowance)</p>
+                    <p className="text-lg font-medium text-gray-900">{displayCurrency(joiningMonthlyFixed)}</p>
+                    <p className="text-sm text-gray-500">Monthly Fixed (₹)</p>
+                  </div>
+
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{displayCurrency(joiningBasic)}</p>
+                    <p className="text-sm text-gray-500">Basic (₹)</p>
                   </div>
                   <div>
-                    <p className="text-lg font-medium text-gray-900">{joiningHRA > 0 ? formatCurrency(joiningHRA) : '-'}</p>
-                    <p className="text-sm text-gray-500">Joining HRA (House Rent Allowance)</p>
+                    <p className="text-lg font-medium text-gray-900">{displayCurrency(joiningHra)}</p>
+                    <p className="text-sm text-gray-500">HRA (₹)</p>
                   </div>
-                {pfIncluded && (
                   <div>
-                    <p className="text-lg font-medium text-gray-900">{joiningPF > 0 ? formatCurrency(joiningPF) : '-'}</p>
-                    <p className="text-sm text-gray-500">Joining PF (Provident Fund)</p>
+                    <p className="text-lg font-medium text-gray-900">{displayCurrency(joiningConveyance)}</p>
+                    <p className="text-sm text-gray-500">Conveyance Allowance (₹)</p>
                   </div>
-                )}
                   <div>
-                    <p className="text-lg font-medium text-gray-900">{joiningSpecial > 0 ? formatCurrency(joiningSpecial) : '-'}</p>
-                    <p className="text-sm text-gray-500">Joining Special Allowance</p>
+                    <p className="text-lg font-medium text-gray-900">{displayCurrency(joiningOtherAllowance)}</p>
+                    <p className="text-sm text-gray-500">Other Allowance (₹)</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{displayCurrency(joiningGrossSalary)}</p>
+                    <p className="text-sm text-gray-500">Gross Salary (₹)</p>
                   </div>
                 </div>
               );
@@ -1270,77 +1312,66 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {(() => {
-                const annualSalary = Number(employment.salary || 0);
-                const monthlySalary = Number(employment.salaryPerMonth || 0);
-                const basic = Number(employment.basic || 0);
-                const da = Number(employment.da || 0);
-                const hra = Number(employment.hra || 0);
-                const pf = Number(employment.pf || 0);
-                const additionalAllowance = Number(employment.additionalAllowance || 0);
-                const specialAllowance = Number(employment.specialAllowance || 0);
+                const currentCtc = Number(employment.salary ?? 0) || 0;
+                const currentVariablePay = Number(employment.currentVariablePay ?? 0) || 0;
+                const currentFixedPay = Number(employment.currentFixedPay ?? 0) || 0;
+
+                const currentMonthlyFixed = currentFixedPay / 12;
+                const currentBasic = currentMonthlyFixed * 0.5;
+                const currentHra = currentBasic * 0.4;
+                const currentConveyance = 2000;
+                const currentOtherAllowance = Number((employment as any).currentOtherAllowance ?? 0) || 0;
+                const currentGrossSalary =
+                  currentBasic + currentHra + currentConveyance + currentOtherAllowance;
+
+                const displayCurrency = (v: number) => (Number.isFinite(v) ? formatCurrency(v) : '-');
                 return (
                   <>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">{annualSalary > 0 ? formatCurrency(annualSalary) : '-'}</p>
-                <p className="text-sm text-gray-500">Current Salary per annum</p>
+                <p className="text-lg font-medium text-gray-900">{displayCurrency(currentCtc)}</p>
+                <p className="text-sm text-gray-500">Current CTC (₹)</p>
               </div>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">
-                  {monthlySalary > 0
-                    ? formatCurrency(monthlySalary)
-                    : annualSalary > 0
-                      ? formatCurrency(annualSalary / 12)
-                      : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Current Salary per month</p>
+                <p className="text-lg font-medium text-gray-900">{displayCurrency(currentVariablePay)}</p>
+                <p className="text-sm text-gray-500">Variable (₹)</p>
               </div>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">{basic > 0 ? formatCurrency(basic) : '-'}</p>
-                <p className="text-sm text-gray-500">Current Basic</p>
+                <p className="text-lg font-medium text-gray-900">{displayCurrency(currentFixedPay)}</p>
+                <p className="text-sm text-gray-500">Fixed (₹)</p>
               </div>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">{da > 0 ? formatCurrency(da) : '-'}</p>
-                <p className="text-sm text-gray-500">Current DA (Dearness Allowance)</p>
+                <p className="text-lg font-medium text-gray-900">{displayCurrency(currentMonthlyFixed)}</p>
+                <p className="text-sm text-gray-500">Monthly Fixed (₹)</p>
               </div>
 
               <div>
-                <p className="text-lg font-medium text-gray-900">{hra > 0 ? formatCurrency(hra) : '-'}</p>
-                <p className="text-sm text-gray-500">Current HRA (House Rent Allowance)</p>
+                <p className="text-lg font-medium text-gray-900">{displayCurrency(currentBasic)}</p>
+                <p className="text-sm text-gray-500">Basic (₹)</p>
               </div>
 
-              {pf > 0 && (
-                <div>
-                  <p className="text-lg font-medium text-gray-900">{formatCurrency(pf)}</p>
-                  <p className="text-sm text-gray-500">PF (Provident Fund)</p>
-                </div>
-              )}
+              <div>
+                <p className="text-lg font-medium text-gray-900">{displayCurrency(currentHra)}</p>
+                <p className="text-sm text-gray-500">HRA (₹)</p>
+              </div>
 
-              {/* <div className="bg-white rounded-lg shadow p-5">
-                <p className="text-lg font-medium text-gray-900">{employment.medicalAllowance ? formatCurrency(employment.medicalAllowance) : '-'}</p>
-                <p className="text-sm text-gray-500">Medical Allowance</p>
-              </div> */}
+              <div>
+                <p className="text-lg font-medium text-gray-900">{displayCurrency(currentConveyance)}</p>
+                <p className="text-sm text-gray-500">Conveyance Allowance (₹)</p>
+              </div>
 
-              
+              <div>
+                <p className="text-lg font-medium text-gray-900">{displayCurrency(currentOtherAllowance)}</p>
+                <p className="text-sm text-gray-500">Other Allowance (₹)</p>
+              </div>
 
-              
-
-              {additionalAllowance > 0 && (
-                <div>
-                  <p className="text-lg font-medium text-gray-900">{formatCurrency(additionalAllowance)}</p>
-                  <p className="text-sm text-gray-500">Additional Allowance</p>
-                </div>
-              )}
-
-              {specialAllowance > 0 && (
-                <div>
-                  <p className="text-lg font-medium text-gray-900">{formatCurrency(specialAllowance)}</p>
-                  <p className="text-sm text-gray-500">Current Special Allowance</p>
-                </div>
-              )}
+              <div>
+                <p className="text-lg font-medium text-gray-900">{displayCurrency(currentGrossSalary)}</p>
+                <p className="text-sm text-gray-500">Gross Salary (₹)</p>
+              </div>
                   </>
                 );
               })()}

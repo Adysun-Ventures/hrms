@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { FiUser, FiMapPin, FiSave, FiX, FiEye, FiEyeOff, FiPlus } from 'react-icons/fi';
+import { FiUser, FiMapPin, FiCheckCircle, FiX, FiEye, FiEyeOff, FiPlus } from 'react-icons/fi';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { useAuth } from '@/context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
@@ -394,7 +394,7 @@ export default function EditEmployeeProfilePage() {
                     actionButtons={[
                         {
                             label: isSubmitting ? 'Saving...' : 'Save Changes',
-                            icon: <FiSave />,
+                            icon: <FiCheckCircle />,
                             variant: 'success',
                             onClick: handleTopSaveClick,
                             disabled: isSubmitting,
@@ -1229,7 +1229,7 @@ export default function EditEmployeeProfilePage() {
                             className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={isSubmitting}
                         >
-                            <FiSave className="w-4 h-4" />
+                            <FiCheckCircle className="w-4 h-4" />
                             {isSubmitting ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>

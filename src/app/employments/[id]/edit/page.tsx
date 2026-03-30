@@ -4,7 +4,7 @@ import { useState, useEffect, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, useFieldArray } from 'react-hook-form';
-import { FiSave, FiRefreshCw } from 'react-icons/fi';
+import { FiCheckCircle, FiRefreshCw, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { getEmployment, updateEmployment, getEmployees as getEmployeesAuth, checkEmploymentIdUnique, updateEmployeeSelfEmployment } from '@/utils/firebaseUtils';
@@ -889,7 +889,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
           actionButtons={[
             {
               label: 'Save',
-              icon: <FiSave />,
+              icon: <FiCheckCircle />,
               variant: 'success',
               onClick: () => handleSubmit(onSubmit)()
             }
@@ -2079,8 +2079,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
             <div className="flex justify-between items-center gap-4 px-6 py-3">
               <Link
                 href={`/employments/${id}`}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2"
               >
+                <FiX size={16} />
                 Cancel
               </Link>
               <button
@@ -2088,7 +2089,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 disabled={isSubmitting}
                 className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
               >
-                <FiSave />
+                <FiCheckCircle />
                 {isSubmitting ? 'Saving...' : 'Save'}
               </button>
             </div>

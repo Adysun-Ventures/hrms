@@ -715,15 +715,25 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <tbody>
                   <tr>
                     <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {employment.joiningDate
-                        ? formatDateToDayMonYear(employment.joiningDate)
-                        : employment.startDate
-                          ? formatDateToDayMonYear(employment.startDate)
-                          : '-'}{' '}
-                      -{' '}
-                      {employment.endDate
-                        ? formatDateToDayMonYear(employment.endDate)
-                        : '-'}
+                      {(() => {
+                        const joiningText = employment.joiningDate
+                          ? formatDateToDayMonYear(employment.joiningDate)
+                          : employment.startDate
+                            ? formatDateToDayMonYear(employment.startDate)
+                            : '-';
+
+                        const isResigned = Boolean(employment.isResignation) || (employment as any).employmentStatus === 'resigned';
+
+                        const resignText = isResigned
+                          ? (employment.resignationDate
+                              ? formatDateToDayMonYear(employment.resignationDate)
+                              : employment.lastWorkingDate
+                                ? formatDateToDayMonYear(employment.lastWorkingDate)
+                                : '-')
+                          : 'Present';
+
+                        return `${joiningText} to ${resignText}`;
+                      })()}
                     </td>
                     <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
                       {employment.department || '\u00a0'}
@@ -1016,26 +1026,26 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 <p className="text-sm text-gray-500">Location</p>
               </div>
 
-              
-
-              <div>
-                <p className="text-lg font-medium text-gray-900 capitalize">
-                  {employment.employmentType ? (
-                    employment.employmentType.includes('-') ?
-                      employment.employmentType.split('-').map(word =>
-                        word.charAt(0).toUpperCase() + word.slice(1)
-                      ).join(' ') :
-                      employment.employmentType.charAt(0).toUpperCase() + employment.employmentType.slice(1)
-                  ) : employment.contractType ? (
-                    employment.contractType.includes('-') ?
-                      employment.contractType.split('-').map(word =>
-                        word.charAt(0).toUpperCase() + word.slice(1)
-                      ).join(' ') :
-                      employment.contractType.charAt(0).toUpperCase() + employment.contractType.slice(1)
-                  ) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Employment Type</p>
-              </div>
+              {(((employment.employmentType ?? '')).trim() && ((employment.employmentType ?? '')).trim() !== '-') ||
+              (((employment.contractType ?? '')).trim() && ((employment.contractType ?? '')).trim() !== '-') ? (
+                <div>
+                  <p className="text-lg font-medium text-gray-900 capitalize">
+                    {(((employment.employmentType ?? '')).trim() && ((employment.employmentType ?? '')).trim() !== '-') ? (
+                      employment.employmentType.includes('-') ?
+                        employment.employmentType.split('-').map(word =>
+                          word.charAt(0).toUpperCase() + word.slice(1)
+                        ).join(' ') :
+                        employment.employmentType.charAt(0).toUpperCase() + employment.employmentType.slice(1)
+                    ) : (((employment.contractType ?? '')).trim() && ((employment.contractType ?? '')).trim() !== '-') ? (
+                      employment.contractType.includes('-') ?
+                        employment.contractType.split('-').map(word =>
+                          word.charAt(0).toUpperCase() + word.slice(1)
+                        ).join(' ') :
+                        employment.contractType.charAt(0).toUpperCase() + employment.contractType.slice(1)
+                    ) : ''}
+                  </p>
+                </div>
+              ) : null}
 
               <div>
                 <p className="text-lg font-medium text-gray-900">{employment.workSchedule || '-'}</p>

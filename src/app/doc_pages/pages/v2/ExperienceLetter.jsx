@@ -567,6 +567,7 @@ const [searchTerm, setSearchTerm] = useState("");
               onClick={() => window.history.back()}
               className="inline-flex items-center gap-2 px-6 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
             >
+              <FiX size={16} />
               Cancel
             </button>
 

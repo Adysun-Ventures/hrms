@@ -18,7 +18,7 @@ import {
   buildProfessionalReferencesArray,
 } from '@/utils/professionalReferenceEmployment';
 import { Employment, Employee } from '@/types';
-import { FiSave, FiPlus, FiRefreshCw } from 'react-icons/fi';
+import { FiCheckCircle, FiPlus, FiRefreshCw, FiX } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
@@ -1423,8 +1423,9 @@ export default function AddEmploymentPage() {
                 <button
                   type="button"
                   onClick={() => router.push(addEmploymentBackHref)}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2"
                 >
+                  <FiX size={16} />
                   Cancel
                 </button>
                 <button
@@ -1432,7 +1433,7 @@ export default function AddEmploymentPage() {
                   disabled={isSubmitting}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
                 >
-                  <FiSave />
+                  <FiCheckCircle />
                   {isSubmitting ? 'Saving...' : 'Add Employment'}
                 </button>
               </div>

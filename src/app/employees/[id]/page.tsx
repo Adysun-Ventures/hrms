@@ -396,7 +396,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
           {/* 3. Identification Document Section */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Identification Documents</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-lg font-medium text-gray-900">{employee.aadharCard || '-'}</p>
                 <p className="text-sm text-gray-500">Aadhar Card</p>
@@ -410,6 +410,11 @@ export default function EmployeeViewPage({ params }: PageParams) {
               <div>
                 <p className="text-lg font-medium text-gray-900">{(employee as any).voterID || '-'}</p>
                 <p className="text-sm text-gray-500">Voter ID</p>
+              </div>
+
+              <div>
+                <p className="text-lg font-medium text-gray-900">{employee.panCard || '-'}</p>
+                <p className="text-sm text-gray-500">PAN Card</p>
               </div>
             </div>
           </div>

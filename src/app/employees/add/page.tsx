@@ -7,7 +7,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { addEmployee } from '@/utils/firebaseUtils';
 import { getAdminDataForAudit, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere } from '@/utils/firebaseUtils';
 import { Employee } from '@/types';
-import { FiSave, FiX, FiPlus, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiCheckCircle, FiX, FiPlus, FiEye, FiEyeOff } from 'react-icons/fi';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
@@ -239,7 +239,7 @@ export default function AddEmployeePage() {
           actionButtons={[
             {
               label: isSubmitting ? 'Saving...' : 'Save',
-              icon: <FiSave />,
+              icon: <FiCheckCircle />,
               variant: 'success',
               onClick: handleSubmit(onSubmit),
               disabled: isSubmitting
@@ -429,8 +429,8 @@ export default function AddEmployeePage() {
               </h3>
 
               {/* Row 1: Email */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email ID
                   </label>
@@ -1143,8 +1143,9 @@ export default function AddEmployeePage() {
           <div className="flex justify-between items-center gap-4 px-6 py-3">
             <Link
               href="/employees"
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2"
             >
+              <FiX size={16} />
               Cancel
             </Link>
             <button
@@ -1152,7 +1153,7 @@ export default function AddEmployeePage() {
               disabled={isSubmitting}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
             >
-              <FiSave />
+              <FiCheckCircle />
               {isSubmitting ? 'Saving...' : 'Save'}
             </button>
           </div>

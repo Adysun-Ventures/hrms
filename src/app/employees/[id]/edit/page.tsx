@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
-import { FiSave, FiEye, FiEyeOff, FiPlus, FiX } from 'react-icons/fi';
+import { FiCheckCircle, FiEye, FiEyeOff, FiPlus, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { getEmployee, updateEmployee, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere } from '@/utils/firebaseUtils';
 import { Employee } from '@/types';
@@ -22,7 +22,6 @@ export default function EditEmployeePage({ params }: PageParams) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [educationEntries, setEducationEntries] = useState<Array<{
     id: string;
     type: '12th' | 'diploma';
@@ -34,7 +33,7 @@ export default function EditEmployeePage({ params }: PageParams) {
   const router = useRouter();
   const { id } = use(params);
 
-  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<Omit<Employee, 'id'> & { confirmPassword?: string }>();
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<Omit<Employee, 'id'>>();
   const employeeName = watch('name');
   const currentAddressValue = watch('currentAddress');
   const employmentStatus = watch('employmentStatus');
@@ -290,7 +289,7 @@ export default function EditEmployeePage({ params }: PageParams) {
           actionButtons={[
             {
               label: isSubmitting ? 'Saving...' : 'Save',
-              icon: <FiSave />,
+              icon: <FiCheckCircle />,
               variant: 'success',
               onClick: handleSubmit(onSubmit),
               disabled: isSubmitting
@@ -388,7 +387,7 @@ export default function EditEmployeePage({ params }: PageParams) {
             {/* Additional (optional) details */}
             <div className="bg-white p-4 rounded-lg mb-4">
               <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Additional Details</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Date of Birth
@@ -449,8 +448,8 @@ export default function EditEmployeePage({ params }: PageParams) {
             <div className="bg-white p-4 rounded-lg mb-4">
               <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Contact Information</h3>
               {/* Row 1: Email only */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Email ID
                   </label>
@@ -499,41 +498,6 @@ export default function EditEmployeePage({ params }: PageParams) {
                     readOnly={sameAsCurrentAddress}
                     disabled={sameAsCurrentAddress}
                   />
-                </div>
-              </div>
-            </div>
-
-            {/* Password Section */}
-            <div className="bg-white p-4 rounded-lg mb-4">
-              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Login Credentials</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <input 
-                      type={showConfirmPassword ? 'text' : 'password'} 
-                      placeholder="Confirm password" 
-                      {...register('confirmPassword', {
-                        validate: (value) => {
-                          const password = watch('password');
-                          return value === password || 'Passwords do not match';
-                        }
-                      })} 
-                      className="w-full p-2 pr-10 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" 
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                    >
-                      {showConfirmPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-                    </button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-                  )}
                 </div>
               </div>
             </div>
@@ -891,8 +855,9 @@ export default function EditEmployeePage({ params }: PageParams) {
         <div className="flex justify-between items-center gap-4 px-6 py-3">
           <Link
             href={`/employees/${id}`}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 flex items-center gap-2"
           >
+            <FiX size={16} />
             Cancel
           </Link>
           <button
@@ -901,7 +866,7 @@ export default function EditEmployeePage({ params }: PageParams) {
             className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
             onClick={handleSubmit(onSubmit)}
           >
-            <FiSave />
+            <FiCheckCircle />
             {isSubmitting ? 'Saving...' : 'Save'}
           </button>
         </div>

@@ -550,25 +550,26 @@ export default function AddEmployeePage() {
                   )}
                 </div>
 
-                {/* <div>
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     PAN Card
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter PAN number"
+                    placeholder="Enter PAN number (e.g., ABCDE1234F)"
                     {...register('panCard', {
                       pattern: {
                         value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
                         message: 'Please enter a valid PAN number (e.g., ABCDE1234F)'
                       }
                     })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black uppercase"
+                    style={{ textTransform: 'uppercase' }}
                   />
                   {errors.panCard && (
                     <p className="mt-1 text-sm text-red-600">{errors.panCard.message}</p>
                   )}
-                </div> */}
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

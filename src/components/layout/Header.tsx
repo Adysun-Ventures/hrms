@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { FiLogOut, FiUser, FiChevronDown } from 'react-icons/fi';
+import { FiLogOut, FiUser, FiChevronDown, FiFileText } from 'react-icons/fi';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -305,16 +305,28 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
                 My Profile
               </button>
               {currentEmployee && (
-                <button
-                  onClick={() => {
-                    router.push('/employee/employment');
-                    setIsDropdownOpen(false);
-                  }}
-                  className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  <FiUser className="w-4 h-4" />
-                  My Employment
-                </button>
+                <>
+                  <button
+                    onClick={() => {
+                      router.push('/employee/employment');
+                      setIsDropdownOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <FiUser className="w-4 h-4" />
+                    My Employment
+                  </button>
+                  <button
+                    onClick={() => {
+                      router.push('/employee/my-salary');
+                      setIsDropdownOpen(false);
+                    }}
+                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                  >
+                    <FiFileText className="w-4 h-4" />
+                    My Salaries
+                  </button>
+                </>
               )}
               <button
                 onClick={handleLogout}

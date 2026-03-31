@@ -13,7 +13,7 @@ import SearchBar from '@/components/ui/SearchBar';
 import TableHeader from '@/components/ui/TableHeader';
 import Pagination from '@/components/ui/Pagination';
 import { useSalaries, useDeleteSalary, useSalariesByEmployee } from '@/hooks/useSalaries';
-import { getEmployeeNameById } from '@/utils/firebaseUtils';
+import { getEmployeeNameById, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
 import SimpleBreadcrumb from '@/components/ui/SimpleBreadcrumb';
 import { useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -77,6 +77,7 @@ export default function SalariesPage() {
   const [yearFilter, setYearFilter] = useState('all');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [employeeName, setEmployeeName] = useState<string>('');
+  const [resolvedEmploymentId, setResolvedEmploymentId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   
@@ -85,6 +86,25 @@ export default function SalariesPage() {
   const queryClient = useQueryClient();
   const employeeId = searchParams?.get('employeeId') || null;
   const from = searchParams?.get('from') || null;
+
+  // Resolve latest employment id for breadcrumb (avoid Employment list page)
+  useEffect(() => {
+    if (!employeeId) {
+      setResolvedEmploymentId(null);
+      return;
+    }
+
+    (async () => {
+      try {
+        const employments = await getEmploymentsByEmployee(employeeId);
+        const latest = employments?.[0];
+        setResolvedEmploymentId(latest?.id || null);
+      } catch (e) {
+        console.error('Failed to resolve employmentId for salary breadcrumb:', e);
+        setResolvedEmploymentId(null);
+      }
+    })();
+  }, [employeeId]);
 
   // Use appropriate query based on whether we have an employeeId
   const {
@@ -718,7 +738,7 @@ const monthName = getMonthName(f.month);
         ...(employeeId
           ? [
               { label: employeeName || 'Loading...', href: `/employees/${employeeId}` },
-              { label: 'Employment', href: `/employments?employeeId=${employeeId}` },
+              { label: 'Employment', href: resolvedEmploymentId ? `/employments/${resolvedEmploymentId}` : `/employees/${employeeId}` },
               { label: 'Salary', href: `/salaries?employeeId=${employeeId}&from=employment`, isCurrent: true },
             ]
           : [
@@ -771,7 +791,21 @@ const monthName = getMonthName(f.month);
                 : '/salaries/add'
             }
           ]}
-          backButton={{ onClick: () => employeeId ? router.push(`/employees/${employeeId}`) : router.push('/employees') }}
+          backButton={{
+            onClick: () => {
+              if (employeeId) {
+                // If we’re viewing salaries from an employment context and have a resolved employment,
+                // go back to that specific Employment Details page. Otherwise go back to the employee.
+                if (from === 'employment' && resolvedEmploymentId) {
+                  router.push(`/employments/${resolvedEmploymentId}`);
+                } else {
+                  router.push(`/employees/${employeeId}`);
+                }
+              } else {
+                router.push('/employees');
+              }
+            },
+          }}
           headerClassName="px-6 pt-6 pb-6"
         />
 

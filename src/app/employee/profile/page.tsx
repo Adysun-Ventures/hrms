@@ -203,6 +203,12 @@ console.log(employmentData?.[0]?.bankName);
               variant: 'orange' as const,
               href: '/employee/profile/edit'
             },
+            {
+              label: 'My Salaries',
+              icon: <FaRupeeSign />,
+              variant: 'purple' as const,
+              href: '/employee/my-salary'
+            },
             // {
             //   label: 'Change Password',
             //   icon: <FiKey />,

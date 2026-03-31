@@ -91,8 +91,9 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   additionalAllowance: number;
   specialAllowance: number;
 
-  // PF toggle for Joining/Current salary information
-  pfIncluded?: boolean;
+  // PF toggles for Joining/Current salary information
+  joiningPfIncluded?: boolean;
+  currentPfIncluded?: boolean;
 
   // Job details
   jobTitle: string;
@@ -162,7 +163,8 @@ export default function AddEmploymentPage() {
       isResignation: false,
       whereWereYouEmploid: 'Registred Corporate Office(Pune)',
       location: 'Pune',
-      pfIncluded: false,
+      joiningPfIncluded: false,
+      currentPfIncluded: false,
       teamLead: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
       colleague1: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
       colleague3: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
@@ -255,8 +257,7 @@ export default function AddEmploymentPage() {
   const joiningCtcValue = watch('joiningCtc');
   const joiningVariablePayValue = watch('joiningVariablePay');
   const joiningFixedPayValue = watch('joiningFixedPay');
-
-  const pfIncluded = watch('pfIncluded') || false;
+  const joiningPfIncluded = watch('joiningPfIncluded') || false;
 
   useEffect(() => {
     const ctc = Number(joiningCtcValue ?? 0) || 0;
@@ -282,7 +283,7 @@ export default function AddEmploymentPage() {
   const joiningConveyance = 2000;
   const joiningOtherAllowanceCalculated =
     joiningMonthlyFixed - (joiningBasic + joiningHra + joiningConveyance);
-  const joiningPf = pfIncluded ? joiningBasic * 0.12 : 0;
+  const joiningPf = joiningPfIncluded ? joiningBasic * 0.12 : 0;
   const joiningOtherAllowanceValue = watch('joiningOtherAllowance') ?? joiningOtherAllowanceCalculated;
 
   const currentMonthlyFixed = (Number(currentFixedPayValue ?? 0) || 0) / 12;
@@ -291,7 +292,8 @@ export default function AddEmploymentPage() {
   const currentConveyance = 2000;
   const currentOtherAllowanceCalculated =
     currentMonthlyFixed - (currentBasic + currentHra + currentConveyance);
-  const currentPf = pfIncluded ? currentBasic * 0.12 : 0;
+  const currentPfIncluded = watch('currentPfIncluded') || false;
+  const currentPf = currentPfIncluded ? currentBasic * 0.12 : 0;
   const currentOtherAllowanceValue = watch('currentOtherAllowance') ?? currentOtherAllowanceCalculated;
 
   const joiningGrossSalary =
@@ -421,7 +423,8 @@ export default function AddEmploymentPage() {
         colleague1,
         colleague3,
         reportingManagerRef,
-        pfIncluded: _pfIncluded,
+        joiningPfIncluded,
+        currentPfIncluded,
         ...rest
       } = data;
 
@@ -438,7 +441,7 @@ export default function AddEmploymentPage() {
         basic: Number((data as any).basic ?? 0) || 0,
         da: Number((data as any).da ?? 0) || 0,
         hra: Number((data as any).hra ?? 0) || 0,
-        pf: (data as any).pfIncluded
+        pf: (data as any).currentPfIncluded
           ? (((Number((data as any).currentFixedPay ?? 0) / 12) * 0.5) * 0.12)
           : 0,
         medicalAllowance: Number((data as any).medicalAllowance ?? 0) || 0,
@@ -1154,7 +1157,7 @@ export default function AddEmploymentPage() {
                     Joining Salary Information
                   </h2>
                   <Controller
-                    name="pfIncluded"
+                    name="joiningPfIncluded"
                     control={control}
                     render={({ field }) => (
                       <button
@@ -1190,6 +1193,7 @@ export default function AddEmploymentPage() {
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       placeholder="Joining CTC"
                       {...register('joiningCtc', {
                         required: 'Joining CTC is required',
@@ -1209,6 +1213,7 @@ export default function AddEmploymentPage() {
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       placeholder="Joining Variable"
                       {...register('joiningVariablePay', {
                         min: { value: 0, message: 'Amount must be positive' },
@@ -1224,6 +1229,7 @@ export default function AddEmploymentPage() {
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       placeholder="Joining Fixed"
                       {...register('joiningFixedPay', {
                         min: { value: 0, message: 'Amount must be positive' },
@@ -1241,7 +1247,7 @@ export default function AddEmploymentPage() {
                     <input
                       type="number"
                       placeholder="Monthly Fixed"
-                      value={joiningMonthlyFixed}
+                      value={Number.isFinite(joiningMonthlyFixed) ? joiningMonthlyFixed.toFixed(2) : ''}
                       readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
@@ -1254,22 +1260,11 @@ export default function AddEmploymentPage() {
                     <input
                       type="number"
                       placeholder="Basic"
-                      value={joiningBasic}
+                      value={Number.isFinite(joiningBasic) ? joiningBasic.toFixed(2) : ''}
                       readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
                   </div>
-                  {pfIncluded && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
-                      <input
-                        type="number"
-                        value={joiningPf}
-                        readOnly
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                      />
-                    </div>
-                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1278,7 +1273,7 @@ export default function AddEmploymentPage() {
                     <input
                       type="number"
                       placeholder="HRA"
-                      value={joiningHra}
+                      value={Number.isFinite(joiningHra) ? joiningHra.toFixed(2) : ''}
                       readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
@@ -1291,7 +1286,7 @@ export default function AddEmploymentPage() {
                     <input
                       type="number"
                       placeholder="Conveyance Allowance"
-                      value={joiningConveyance}
+                      value={Number.isFinite(joiningConveyance) ? joiningConveyance.toFixed(2) : ''}
                       readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
@@ -1303,6 +1298,7 @@ export default function AddEmploymentPage() {
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       placeholder="Other Allowance"
                       {...register('joiningOtherAllowance', {
                         valueAsNumber: true,
@@ -1318,11 +1314,23 @@ export default function AddEmploymentPage() {
                     <input
                       type="number"
                       placeholder="Gross Salary"
-                      value={joiningGrossSalary}
+                      value={Number.isFinite(joiningGrossSalary) ? joiningGrossSalary.toFixed(2) : ''}
                       readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
                   </div>
+
+                  {joiningPfIncluded && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
+                      <input
+                        type="number"
+                        value={Number.isFinite(joiningPf) ? joiningPf.toFixed(2) : ''}
+                        readOnly
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1333,7 +1341,7 @@ export default function AddEmploymentPage() {
                     Current Salary Information
                   </h2>
                   <Controller
-                    name="pfIncluded"
+                    name="currentPfIncluded"
                     control={control}
                     render={({ field }) => (
                       <button
@@ -1369,6 +1377,7 @@ export default function AddEmploymentPage() {
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       placeholder="Current CTC"
                       {...register('salary', {
                         required: 'Current CTC is required',
@@ -1388,6 +1397,7 @@ export default function AddEmploymentPage() {
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       placeholder="Variable"
                       {...register('currentVariablePay', {
                         min: { value: 0, message: 'Amount must be positive' },
@@ -1403,6 +1413,7 @@ export default function AddEmploymentPage() {
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       placeholder="Fixed"
                       {...register('currentFixedPay', {
                         min: { value: 0, message: 'Amount must be positive' },
@@ -1420,7 +1431,7 @@ export default function AddEmploymentPage() {
                     <input
                       type="number"
                       placeholder="Monthly Fixed"
-                      value={currentMonthlyFixed}
+                      value={Number.isFinite(currentMonthlyFixed) ? currentMonthlyFixed.toFixed(2) : ''}
                       readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
@@ -1433,22 +1444,11 @@ export default function AddEmploymentPage() {
                     <input
                       type="number"
                       placeholder="Basic"
-                      value={currentBasic}
+                      value={Number.isFinite(currentBasic) ? currentBasic.toFixed(2) : ''}
                       readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
                   </div>
-                  {pfIncluded && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
-                      <input
-                        type="number"
-                        value={currentPf}
-                        readOnly
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                      />
-                    </div>
-                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1457,7 +1457,7 @@ export default function AddEmploymentPage() {
                     <input
                       type="number"
                       placeholder="HRA"
-                      value={currentHra}
+                      value={Number.isFinite(currentHra) ? currentHra.toFixed(2) : ''}
                       readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
@@ -1470,7 +1470,7 @@ export default function AddEmploymentPage() {
                     <input
                       type="number"
                       placeholder="Conveyance Allowance"
-                      value={currentConveyance}
+                      value={Number.isFinite(currentConveyance) ? currentConveyance.toFixed(2) : ''}
                       readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
@@ -1482,6 +1482,7 @@ export default function AddEmploymentPage() {
                     </label>
                     <input
                       type="number"
+                      step="0.01"
                       placeholder="Other Allowance"
                       {...register('currentOtherAllowance', {
                         valueAsNumber: true,
@@ -1497,11 +1498,23 @@ export default function AddEmploymentPage() {
                     <input
                       type="number"
                       placeholder="Gross Salary"
-                      value={currentGrossSalary}
+                      value={Number.isFinite(currentGrossSalary) ? currentGrossSalary.toFixed(2) : ''}
                       readOnly
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
                   </div>
+
+                  {currentPfIncluded && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
+                      <input
+                        type="number"
+                        value={Number.isFinite(currentPf) ? currentPf.toFixed(2) : ''}
+                        readOnly
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

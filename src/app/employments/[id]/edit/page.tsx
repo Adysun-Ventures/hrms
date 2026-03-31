@@ -31,8 +31,9 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relie
   benefits: string | string[];
   relievingCtc?: string; // Form input is string, will be converted to number|null
   whereWereYouEmploid?: string;
-  // PF toggle for Joining/Current salary information
-  pfIncluded?: boolean;
+  // PF toggles for Joining/Current salary information
+  joiningPfIncluded?: boolean;
+  currentPfIncluded?: boolean;
   teamLead?: {
     employeeDocId?: string;
     name?: string;
@@ -182,14 +183,15 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     joiningMonthlyFixed - (joiningBasic + joiningHra + joiningConveyance);
   const joiningOtherAllowanceValue = watch('joiningOtherAllowance') ?? joiningOtherAllowanceCalculated;
 
-  const pfIncluded = watch('pfIncluded') || false;
-  const joiningPf = pfIncluded ? joiningBasic * 0.12 : 0;
+  const joiningPfIncluded = watch('joiningPfIncluded') || false;
+  const joiningPf = joiningPfIncluded ? joiningBasic * 0.12 : 0;
 
   const currentMonthlyFixed = (Number(currentFixedPayValue ?? 0) || 0) / 12;
   const currentBasic = currentMonthlyFixed * 0.5;
   const currentHra = currentBasic * 0.4;
   const currentConveyance = 2000;
-  const currentPf = pfIncluded ? currentBasic * 0.12 : 0;
+  const currentPfIncluded = watch('currentPfIncluded') || false;
+  const currentPf = currentPfIncluded ? currentBasic * 0.12 : 0;
   const currentOtherAllowanceCalculated =
     currentMonthlyFixed - (currentBasic + currentHra + currentConveyance);
   const currentOtherAllowanceValue = watch('currentOtherAllowance') ?? currentOtherAllowanceCalculated;
@@ -565,7 +567,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
         reset({
           ...rest,
-          pfIncluded: Number((rest as any).pf ?? 0) > 0,
+          joiningPfIncluded: Number((rest as any).pf ?? 0) > 0,
+          currentPfIncluded: Number((rest as any).pf ?? 0) > 0,
           workSchedule: normalizedWorkSchedule,
           whereWereYouEmploid: normalizedWhereEmployed,
           relievingCtc: relievingCtc ? relievingCtc.toString() : '',
@@ -697,7 +700,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         basic: Number((data as any).basic ?? 0) || 0,
         da: Number((data as any).da ?? 0) || 0,
         hra: Number((data as any).hra ?? 0) || 0,
-        pf: (data as any).pfIncluded
+        pf: (data as any).currentPfIncluded
           ? ((((Number((data as any).currentFixedPay ?? 0) / 12) * 0.5) * 0.12))
           : 0,
         medicalAllowance: Number((data as any).medicalAllowance ?? 0) || 0,
@@ -1700,7 +1703,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   Joining Salary Information
                 </h2>
                 <Controller
-                  name="pfIncluded"
+                  name="joiningPfIncluded"
                   control={control}
                   render={({ field }) => (
                     <button
@@ -1736,6 +1739,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
+                    step="0.01"
                     placeholder="Joining CTC"
                     {...register('joiningCtc', {
                       required: 'Joining CTC is required',
@@ -1755,12 +1759,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
-                      placeholder="Joining Variable"
-                      {...register('joiningVariablePay', {
-                        min: { value: 0, message: 'Amount must be positive' },
-                        valueAsNumber: true,
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    step="0.01"
+                    placeholder="Joining Variable"
+                    {...register('joiningVariablePay', {
+                      min: { value: 0, message: 'Amount must be positive' },
+                      valueAsNumber: true,
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
                 </div>
 
@@ -1770,13 +1775,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
-                      placeholder="Joining Fixed"
-                      {...register('joiningFixedPay', {
+                    step="0.01"
+                    placeholder="Joining Fixed"
+                    {...register('joiningFixedPay', {
                       min: { value: 0, message: 'Amount must be positive' },
                       valueAsNumber: true,
                     })}
-                      readOnly
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    readOnly
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
                 </div>
 
@@ -1787,7 +1793,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <input
                     type="number"
                     placeholder="Monthly Fixed"
-                    value={joiningMonthlyFixed}
+                    value={Number.isFinite(joiningMonthlyFixed) ? joiningMonthlyFixed.toFixed(2) : ''}
                     readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
@@ -1800,22 +1806,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <input
                     type="number"
                     placeholder="Basic"
-                    value={joiningBasic}
+                    value={Number.isFinite(joiningBasic) ? joiningBasic.toFixed(2) : ''}
                     readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
                 </div>
-              {pfIncluded && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
-                  <input
-                    type="number"
-                    value={joiningPf}
-                    readOnly
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                  />
-                </div>
-              )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1824,7 +1819,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <input
                     type="number"
                     placeholder="HRA"
-                    value={joiningHra}
+                    value={Number.isFinite(joiningHra) ? joiningHra.toFixed(2) : ''}
                     readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
@@ -1837,7 +1832,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <input
                     type="number"
                     placeholder="Conveyance Allowance"
-                    value={joiningConveyance}
+                    value={Number.isFinite(joiningConveyance) ? joiningConveyance.toFixed(2) : ''}
                     readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
@@ -1849,11 +1844,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
+                    step="0.01"
                     placeholder="Other Allowance"
                     {...register('joiningOtherAllowance', {
                       valueAsNumber: true,
                     })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus-border-blue-500 text-black"
                   />
                 </div>
 
@@ -1864,11 +1860,23 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <input
                     type="number"
                     placeholder="Gross Salary"
-                    value={joiningGrossSalary}
+                    value={Number.isFinite(joiningGrossSalary) ? joiningGrossSalary.toFixed(2) : ''}
                     readOnly
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus-border-blue-500 text-black bg-gray-50"
                   />
                 </div>
+
+                {joiningPfIncluded && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
+                    <input
+                      type="number"
+                      value={Number.isFinite(joiningPf) ? joiningPf.toFixed(2) : ''}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1879,7 +1887,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   Current Salary Information
                 </h2>
                 <Controller
-                  name="pfIncluded"
+                  name="currentPfIncluded"
                   control={control}
                   render={({ field }) => (
                     <button
@@ -1915,6 +1923,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
+                    step="0.01"
                     placeholder="Current CTC"
                     {...register('salary', {
                       required: 'Current CTC is required',
@@ -1934,6 +1943,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
+                    step="0.01"
                     placeholder="Variable"
                     {...register('currentVariablePay', {
                       min: { value: 0, message: 'Amount must be positive' },
@@ -1949,6 +1959,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
+                    step="0.01"
                     placeholder="Fixed"
                     {...register('currentFixedPay', {
                       min: { value: 0, message: 'Amount must be positive' },
@@ -1966,7 +1977,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <input
                     type="number"
                     placeholder="Monthly Fixed"
-                    value={currentMonthlyFixed}
+                    value={Number.isFinite(currentMonthlyFixed) ? currentMonthlyFixed.toFixed(2) : ''}
                     readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
@@ -1979,22 +1990,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <input
                     type="number"
                     placeholder="Basic"
-                    value={currentBasic}
+                    value={Number.isFinite(currentBasic) ? currentBasic.toFixed(2) : ''}
                     readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
                 </div>
-              {pfIncluded && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
-                  <input
-                    type="number"
-                    value={currentPf}
-                    readOnly
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
-                  />
-                </div>
-              )}
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -2003,7 +2003,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <input
                     type="number"
                     placeholder="HRA"
-                    value={currentHra}
+                    value={Number.isFinite(currentHra) ? currentHra.toFixed(2) : ''}
                     readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
@@ -2016,7 +2016,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <input
                     type="number"
                     placeholder="Conveyance Allowance"
-                    value={currentConveyance}
+                    value={Number.isFinite(currentConveyance) ? currentConveyance.toFixed(2) : ''}
                     readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
@@ -2028,6 +2028,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </label>
                   <input
                     type="number"
+                    step="0.01"
                     placeholder="Other Allowance"
                     {...register('currentOtherAllowance', {
                       valueAsNumber: true,
@@ -2043,11 +2044,23 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <input
                     type="number"
                     placeholder="Gross Salary"
-                    value={currentGrossSalary}
+                    value={Number.isFinite(currentGrossSalary) ? currentGrossSalary.toFixed(2) : ''}
                     readOnly
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                   />
                 </div>
+
+                {currentPfIncluded && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
+                    <input
+                      type="number"
+                      value={Number.isFinite(currentPf) ? currentPf.toFixed(2) : ''}
+                      readOnly
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

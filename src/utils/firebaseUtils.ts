@@ -1,7 +1,7 @@
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, getDoc, query, where, orderBy, limit, runTransaction, serverTimestamp, deleteField, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { Employee, Employment, Salary, SecondaryEducationEntry } from '../types';
 import { toTitleCase } from './stringUtils';
+import { Employee, Employment, Salary, SecondaryEducationEntry } from '../types';
 
 /**
  * Sanitizes data for Firestore by removing undefined values
@@ -807,7 +807,7 @@ export const getEmployeeNameById = async (employeeId: string): Promise<string> =
     
     if (employeeDoc.exists()) {
       const employeeData = employeeDoc.data();
-      return employeeData.name || 'Unknown Employee';
+      return toTitleCase(employeeData.name) || 'Unknown Employee';
     }
     
     return 'Unknown Employee';

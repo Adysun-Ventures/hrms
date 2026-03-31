@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getEmployeeNameById } from '@/utils/firebaseUtils';
+import { toTitleCase } from '@/utils/stringUtils';
 
 interface BreadcrumbItem {
   label: string;
@@ -62,7 +63,10 @@ const SimpleBreadcrumb: React.FC<SimpleBreadcrumbProps> = ({
       };
     }
     return item;
-  });
+  }).map((item) => ({
+    ...item,
+    label: toTitleCase(item.label),
+  }));
 
   if (!resolvedItems || resolvedItems.length === 0) return null;
 

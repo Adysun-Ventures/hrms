@@ -5,6 +5,7 @@ import { FiLogOut, FiUser, FiChevronDown, FiFileText } from 'react-icons/fi';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { toTitleCase } from '@/utils/stringUtils';
 
 interface HeaderProps {
   variant?: 'public' | 'protected';
@@ -107,7 +108,7 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
   const getUserInfo = () => {
     if (currentAdmin) {
       return {
-        name: currentAdmin.name || 'Admin User',
+        name: toTitleCase(currentAdmin.name) || 'Admin User',
         type: 'Admin',
         employeeId: null
       };
@@ -154,7 +155,7 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
       }
       
       return {
-        name: employee.name || currentEmployee.name || 'Employee User',
+        name: toTitleCase(employee.name || currentEmployee.name) || 'Employee User',
         type: 'Employee',
         employeeId: employeeId
       };

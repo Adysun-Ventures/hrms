@@ -191,7 +191,7 @@ export default function SalaryViewPage({ params }: PageParams) {
         ? `/salaries?employeeId=${salary.employeeId}&from=employment`
         : '/salaries',
     },
-    { label: 'View', isCurrent: true },
+    { label: 'View Salary', isCurrent: true },
   ];
 
   const employeeBreadcrumbItems = [

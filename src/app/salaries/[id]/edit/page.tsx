@@ -11,7 +11,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { useSalary, useUpdateSalary } from '@/hooks/useSalaries';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { getEmployeeNameById, getEmploymentsByEmployee, checkExistingSalary } from '@/utils/firebaseUtils';
+import { getEmployeeNameById, getEmploymentsByEmployee, checkExistingSalary, updateEmployment } from '@/utils/firebaseUtils';
 import { calculateMonthlySalary, type MonthlySalaryResult } from '@/utils/monthlySalaryCalculationUtils';
 import { use } from 'react';
 
@@ -41,6 +41,7 @@ type PageParams = {
 
 export default function EditSalaryPage({ params }: PageParams) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPfEnabled, setIsPfEnabled] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [employeeId, setEmployeeId] = useState<string>('');
@@ -135,7 +136,7 @@ export default function EditSalaryPage({ params }: PageParams) {
   // Use calculated values directly for display
   const leavesDeductAmt = calculations.leavesDeductAmt;
   const grossSalary = calculations.grossSalary;
-  const pfDeduct = calculations.pfDeduct || 0;
+  const pfDeduct = isPfEnabled ? (calculations.pfDeduct || 0) : 0;
   const otherDeduction = watch('otherDeduction') || 0;
   const totalDeduction = pfDeduct + (ptDeduct || 200) + leavesDeductAmt + otherDeduction;
   const netSalary = grossSalary - totalDeduction;
@@ -233,6 +234,7 @@ export default function EditSalaryPage({ params }: PageParams) {
         leavesDeductAmt: salaryData.leavesDeductAmt || 0,
         otherDeduction: salaryData.otherDeduction || 0
       });
+      setIsPfEnabled(Number(salaryData.pf || 0) > 0);
     }
   }, [salary, reset, employeeId]);
 
@@ -273,7 +275,7 @@ export default function EditSalaryPage({ params }: PageParams) {
       // Use calculated values (form values may be stale)
       const finalGrossSalary = calculations.grossSalary;
       const finalOtherDeduction = Number(data.otherDeduction || 0) || 0;
-      const finalPfDeduct = calculations.pfDeduct || 0;
+      const finalPfDeduct = isPfEnabled ? (calculations.pfDeduct || 0) : 0;
       const finalTotalDeduction =
         (finalPfDeduct || 0) +
         (data.ptDeduct || calculations.ptDeduct) +
@@ -310,6 +312,16 @@ export default function EditSalaryPage({ params }: PageParams) {
           monthDays: calculations.monthDays
         } as any
       });
+
+      // Keep Employment PF toggle in sync with Salary PF selection.
+      const linkedEmploymentId = employmentId || data.employmentId;
+      if (linkedEmploymentId) {
+        try {
+          await updateEmployment(linkedEmploymentId, { pf: finalPfDeduct });
+        } catch (syncError) {
+          console.error('Failed to sync PF to employment:', syncError);
+        }
+      }
       
       toast.success('Salary updated successfully!', { id: 'update-salary' });
       // Navigate back to employee's salary list if we came from there
@@ -733,7 +745,32 @@ export default function EditSalaryPage({ params }: PageParams) {
 
           {/* Deductions Section */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Deductions</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800">Deductions</h3>
+              <button
+                type="button"
+                onClick={() => setIsPfEnabled((prev) => !prev)}
+                className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-medium border ${
+                  isPfEnabled
+                    ? 'bg-green-100 text-green-700 border-green-300'
+                    : 'bg-gray-100 text-gray-700 border-gray-300'
+                }`}
+              >
+                <span className="mr-2">Is PF</span>
+                <span
+                  className={`h-4 w-8 rounded-full flex items-center ${
+                    isPfEnabled ? 'bg-green-500' : 'bg-gray-400'
+                  }`}
+                >
+                  <span
+                    className={`h-3 w-3 bg-white rounded-full transform transition-transform ${
+                      isPfEnabled ? 'translate-x-4' : 'translate-x-1'
+                    }`}
+                  />
+                </span>
+                <span className="ml-2 text-[11px]">{isPfEnabled ? 'ON' : 'OFF'}</span>
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               {/* PF (DEDUCT) */}
               <div className="md:col-span-3">

@@ -583,13 +583,26 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 })();
               }
             },
-            ...(!isEmployeeUser && hasSalaries ? [{
-              label: 'View Salaries',
-              icon: <FaRupeeSign />,
-              variant: 'purple' as const,
-              href: `/salaries?employeeId=${employment?.employeeId}&from=employment`
-            }
-            ] : []),
+            ...(!isEmployeeUser && hasSalaries
+              ? [
+                  {
+                    label: 'View Salaries',
+                    icon: <FaRupeeSign />,
+                    variant: 'purple' as const,
+                    href: `/salaries?employeeId=${employment?.employeeId}&from=employment`,
+                  },
+                ]
+              : []),
+            ...(isEmployeeUser
+              ? [
+                  {
+                    label: 'My Salaries',
+                    icon: <FaRupeeSign />,
+                    variant: 'purple' as const,
+                    href: '/employee/my-salary',
+                  },
+                ]
+              : []),
           ]}
         />
 
@@ -648,9 +661,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                           return (
                             <>
                               Adysun Ventures Pvt. Ltd.
-                              {"\n"}
                               Workplex, S no 47, Near Bhapkar Petrol Pump, Pune, Maharashtra - 411009
-                              {"\n"}
                               Pune Office (Head Office)
                             </>
                           );
@@ -660,9 +671,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                           return (
                             <>
                               Adysun Ventures Pvt. Ltd.
-                              {"\n"}
                               A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607
-                              {"\n"}
                               Mumbai Office
                             </>
                           );

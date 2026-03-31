@@ -366,6 +366,7 @@ export interface Salary {
   pf: number;
   leavesCount: number;
   leavesDeductAmt: number;
+  otherDeduction?: number;
 
 totalDeduction: number;
 ptDeduct: number;

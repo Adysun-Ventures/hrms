@@ -80,6 +80,11 @@ const EmployeeSidebar = () => {
       name: 'My Employment',
       icon: <FiBriefcase className="w-5 h-5" />
     },
+    {
+      path: '/employee/my-salary',
+      name: 'My Salaries',
+      icon: <FiFileText className="w-5 h-5" />
+    },
     // {
     //   path: '/employee/leaves',
     //   name: 'Leaves',

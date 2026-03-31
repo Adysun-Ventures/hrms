@@ -32,6 +32,7 @@ export interface MonthlySalaryResult {
   hra: number;
   conveyanceAllowance: number;
   otherAllowance: number;
+  pfDeduct?: number;
   
   // Earnings
   grossSalary: number;
@@ -129,18 +130,18 @@ export function calculateMonthlySalary(inputs: MonthlySalaryInputs): MonthlySala
   const perDay = roundToTwoDecimals(perMonth / 30); // Fixed 30-day logic
   const workDays = Math.max(0, monthDays - leavesCount); // Actual month days - leave count
 
-  // Calculate salary components (for display/breakdown)
-  // Based on Excel formulas:
-  // Basic = 0.4 × Per Month
-  // HRA = 0.4 × Basic
-  // Conveyance Allowance = 0.05 × Per Month
-  // Other Allowance = Per Month - (Basic + HRA + Conveyance Allowance)
-  const basic = roundToTwoDecimals(0.4 * perMonth);
+  // Salary components (Monthly Fixed based):
+  // Basic = Monthly Fixed * 0.5
+  // HRA = Basic * 0.4
+  // Conveyance = 2000
+  // Other Allowance = Monthly Fixed - (Basic + HRA + Conveyance)
+  const basic = roundToTwoDecimals(0.5 * perMonth);
   const hra = roundToTwoDecimals(0.4 * basic);
-  const conveyanceAllowance = roundToTwoDecimals(0.05 * perMonth);
-  const otherAllowance = roundToTwoDecimals(
-    perMonth - (basic + hra + conveyanceAllowance)
-  );
+  const conveyanceAllowance = roundToTwoDecimals(2000);
+  const otherAllowance = roundToTwoDecimals(perMonth - (basic + hra + conveyanceAllowance));
+
+  // PF (Provident Fund) deduction based on Basic
+  const pfDeduct = roundToTwoDecimals(basic * 0.12);
 
   // Gross Salary = Per Month (directly, no breakdown)
   // Note: Gross Salary = Basic + HRA + Conveyance Allowance + Other Allowance (should equal Per Month)
@@ -149,9 +150,9 @@ export function calculateMonthlySalary(inputs: MonthlySalaryInputs): MonthlySala
   // Deductions
   const ptDeduct = 200; // Fixed value
   const leavesDeductAmt = roundToTwoDecimals(leavesCount * perDay);
-  const totalDeduction = roundToTwoDecimals(ptDeduct + leavesDeductAmt);
+  const totalDeduction = roundToTwoDecimals(pfDeduct + ptDeduct + leavesDeductAmt);
 
-  // Calculate Net Salary
+  // Calculate Net Salary (excludes "Other Deduction" which comes from UI)
   const netSalary = roundToTwoDecimals(grossSalary - totalDeduction);
 
   return {
@@ -165,6 +166,7 @@ export function calculateMonthlySalary(inputs: MonthlySalaryInputs): MonthlySala
     conveyanceAllowance,
     otherAllowance,
     grossSalary,
+    pfDeduct,
     ptDeduct,
     leavesDeductAmt,
     totalDeduction,

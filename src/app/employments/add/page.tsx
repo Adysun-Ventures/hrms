@@ -91,6 +91,9 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   additionalAllowance: number;
   specialAllowance: number;
 
+  // PF toggle for Joining/Current salary information
+  pfIncluded?: boolean;
+
   // Job details
   jobTitle: string;
   department: string;
@@ -159,6 +162,7 @@ export default function AddEmploymentPage() {
       isResignation: false,
       whereWereYouEmploid: 'Registred Corporate Office(Pune)',
       location: 'Pune',
+      pfIncluded: false,
       teamLead: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
       colleague1: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
       colleague3: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
@@ -252,6 +256,8 @@ export default function AddEmploymentPage() {
   const joiningVariablePayValue = watch('joiningVariablePay');
   const joiningFixedPayValue = watch('joiningFixedPay');
 
+  const pfIncluded = watch('pfIncluded') || false;
+
   useEffect(() => {
     const ctc = Number(joiningCtcValue ?? 0) || 0;
     const variable = Number(joiningVariablePayValue ?? 0) || 0;
@@ -276,6 +282,7 @@ export default function AddEmploymentPage() {
   const joiningConveyance = 2000;
   const joiningOtherAllowanceCalculated =
     joiningMonthlyFixed - (joiningBasic + joiningHra + joiningConveyance);
+  const joiningPf = pfIncluded ? joiningBasic * 0.12 : 0;
   const joiningOtherAllowanceValue = watch('joiningOtherAllowance') ?? joiningOtherAllowanceCalculated;
 
   const currentMonthlyFixed = (Number(currentFixedPayValue ?? 0) || 0) / 12;
@@ -284,6 +291,7 @@ export default function AddEmploymentPage() {
   const currentConveyance = 2000;
   const currentOtherAllowanceCalculated =
     currentMonthlyFixed - (currentBasic + currentHra + currentConveyance);
+  const currentPf = pfIncluded ? currentBasic * 0.12 : 0;
   const currentOtherAllowanceValue = watch('currentOtherAllowance') ?? currentOtherAllowanceCalculated;
 
   const joiningGrossSalary =
@@ -413,6 +421,7 @@ export default function AddEmploymentPage() {
         colleague1,
         colleague3,
         reportingManagerRef,
+        pfIncluded: _pfIncluded,
         ...rest
       } = data;
 
@@ -429,7 +438,9 @@ export default function AddEmploymentPage() {
         basic: Number((data as any).basic ?? 0) || 0,
         da: Number((data as any).da ?? 0) || 0,
         hra: Number((data as any).hra ?? 0) || 0,
-        pf: Number((data as any).pf ?? 0) || 0,
+        pf: (data as any).pfIncluded
+          ? (((Number((data as any).currentFixedPay ?? 0) / 12) * 0.5) * 0.12)
+          : 0,
         medicalAllowance: Number((data as any).medicalAllowance ?? 0) || 0,
         transport: Number((data as any).transport ?? 0) || 0,
         gratuity: Number((data as any).gratuity ?? 0) || 0,
@@ -1138,9 +1149,40 @@ export default function AddEmploymentPage() {
 
               {/* Joining Salary Information (CTC split) */}
               <div className="bg-white p-4 rounded-lg mb-6">
-                <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-cyan-500 pl-2">
-                  Joining Salary Information
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-gray-800 border-l-4 border-cyan-500 pl-2">
+                    Joining Salary Information
+                  </h2>
+                  <Controller
+                    name="pfIncluded"
+                    control={control}
+                    render={({ field }) => (
+                      <button
+                        type="button"
+                        onClick={() => field.onChange(!field.value)}
+                        className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-medium border ${
+                          field.value
+                            ? 'bg-green-100 text-green-700 border-green-300'
+                            : 'bg-gray-100 text-gray-700 border-gray-300'
+                        }`}
+                      >
+                        <span className="mr-2">Is PF</span>
+                        <span
+                          className={`h-4 w-8 rounded-full flex items-center ${
+                            field.value ? 'bg-green-500' : 'bg-gray-400'
+                          }`}
+                        >
+                          <span
+                            className={`h-3 w-3 bg-white rounded-full transform transition-transform ${
+                              field.value ? 'translate-x-4' : 'translate-x-1'
+                            }`}
+                          />
+                        </span>
+                        <span className="ml-2 text-[11px]">{field.value ? 'ON' : 'OFF'}</span>
+                      </button>
+                    )}
+                  />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1217,6 +1259,17 @@ export default function AddEmploymentPage() {
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
                   </div>
+                  {pfIncluded && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
+                      <input
+                        type="number"
+                        value={joiningPf}
+                        readOnly
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1275,9 +1328,40 @@ export default function AddEmploymentPage() {
 
               {/* Current Salary Information (CTC split) */}
               <div className="bg-white p-4 rounded-lg mb-6">
-                <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-green-500 pl-2">
-                  Current Salary Information
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-gray-800 border-l-4 border-green-500 pl-2">
+                    Current Salary Information
+                  </h2>
+                  <Controller
+                    name="pfIncluded"
+                    control={control}
+                    render={({ field }) => (
+                      <button
+                        type="button"
+                        onClick={() => field.onChange(!field.value)}
+                        className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-medium border ${
+                          field.value
+                            ? 'bg-green-100 text-green-700 border-green-300'
+                            : 'bg-gray-100 text-gray-700 border-gray-300'
+                        }`}
+                      >
+                        <span className="mr-2">Is PF</span>
+                        <span
+                          className={`h-4 w-8 rounded-full flex items-center ${
+                            field.value ? 'bg-green-500' : 'bg-gray-400'
+                          }`}
+                        >
+                          <span
+                            className={`h-3 w-3 bg-white rounded-full transform transition-transform ${
+                              field.value ? 'translate-x-4' : 'translate-x-1'
+                            }`}
+                          />
+                        </span>
+                        <span className="ml-2 text-[11px]">{field.value ? 'ON' : 'OFF'}</span>
+                      </button>
+                    )}
+                  />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1354,6 +1438,17 @@ export default function AddEmploymentPage() {
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
                     />
                   </div>
+                  {pfIncluded && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
+                      <input
+                        type="number"
+                        value={currentPf}
+                        readOnly
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                      />
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -4,6 +4,16 @@ import { queryKeys } from '@/lib/queryKeys';
 import { Salary } from '@/types';
 import { getQueryClient } from '@/lib/queryClient';
 
+const hasAdminSession = () =>
+  typeof window !== 'undefined' &&
+  !!localStorage.getItem('adminSessionId') &&
+  !!localStorage.getItem('adminData');
+
+const hasEmployeeSession = () =>
+  typeof window !== 'undefined' &&
+  !!localStorage.getItem('employeeSessionId') &&
+  !!localStorage.getItem('employeeData');
+
 // Salary hooks
 export const useSalaries = (filters?: string) => {
   return useQuery({
@@ -16,7 +26,7 @@ export const useSalary = (id: string) => {
   return useQuery({
     queryKey: queryKeys.salaries.detail(id),
     queryFn: () => getSalary(id),
-    enabled: !!id,
+    enabled: !!id && hasAdminSession(),
   });
 };
 
@@ -24,7 +34,7 @@ export const useSalariesByEmployee = (employeeId: string) => {
   return useQuery({
     queryKey: queryKeys.salaries.byEmployee(employeeId),
     queryFn: () => getSalariesByEmployee(employeeId),
-    enabled: !!employeeId,
+    enabled: !!employeeId && hasAdminSession(),
   });
 };
 
@@ -32,7 +42,7 @@ export const useEmployeeSelfSalariesByEmployee = (employeeId: string) => {
   return useQuery({
     queryKey: queryKeys.salaries.byEmployee(employeeId),
     queryFn: () => getEmployeeSelfSalariesByEmployee(employeeId),
-    enabled: !!employeeId,
+    enabled: !!employeeId && hasEmployeeSession(),
   });
 };
 

@@ -5,15 +5,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiArrowLeft, FiEdit, FiTrash2, FiDollarSign } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { Salary } from '@/types';
 import { formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import TableHeader from '@/components/ui/TableHeader';
-import { useSalary, useDeleteSalary } from '@/hooks/useSalaries';
-import { getEmployeeNameById } from '@/utils/firebaseUtils';
+import { useEmployeeSelfSalariesByEmployee, useSalary } from '@/hooks/useSalaries';
+import { getEmployeeNameById, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import { useSearchParams } from 'next/navigation';
 import { use } from 'react';
 import { FaRupeeSign } from "react-icons/fa";
+import { useAuth } from '@/context/AuthContext';
 
 
 type PageParams = {
@@ -22,13 +24,37 @@ type PageParams = {
 
 export default function SalaryViewPage({ params }: PageParams) {
   const [employeeName, setEmployeeName] = useState<string>('Loading...');
+  const [resolvedEmploymentId, setResolvedEmploymentId] = useState<string | null>(null);
   
   const router = useRouter();
   const searchParams = useSearchParams();
   const employeeId = searchParams?.get('employeeId');
+
+  const { currentUserData } = useAuth();
+  const isEmployeeView = currentUserData?.userType === 'employee';
   
   const { id } = use(params);
-  const { data: salary, isLoading, isError } = useSalary(id);
+
+  // Admin-safe (requires admin session)
+  const {
+    data: adminSalary,
+    isLoading: isAdminLoading,
+    isError: isAdminError,
+  } = useSalary(id);
+
+  // Employee-safe (requires employee session)
+  const {
+    data: selfSalaries,
+    isLoading: isSelfLoading,
+    isError: isSelfError,
+  } = useEmployeeSelfSalariesByEmployee(employeeId || '');
+
+  const selfSalary =
+    selfSalaries?.find((s: any) => s.id === id) || null;
+
+  const salary = adminSalary || selfSalary;
+  const isLoading = isAdminLoading || isSelfLoading;
+  const isError = (isAdminError || isSelfError) && !salary;
 
   // Fetch employee name from Firebase when salary is loaded
   useEffect(() => {
@@ -46,6 +72,28 @@ export default function SalaryViewPage({ params }: PageParams) {
     fetchEmployeeName();
   }, [salary]);
 
+  // Breadcrumb fallback: some existing salary documents may not store `employmentId`.
+  // If missing, resolve the latest employment for this employee and use its id.
+  useEffect(() => {
+    const salaryEmploymentId = salary?.employmentId;
+    if (salaryEmploymentId) {
+      setResolvedEmploymentId(null);
+      return;
+    }
+    const targetEmployeeId = salary?.employeeId || employeeId;
+    if (!targetEmployeeId) return;
+
+    (async () => {
+      try {
+        const employments = await getEmploymentsByEmployee(targetEmployeeId);
+        const latest = employments?.[0];
+        if (latest?.id) setResolvedEmploymentId(latest.id);
+      } catch (e) {
+        console.error('Failed to resolve employmentId for breadcrumb fallback:', e);
+      }
+    })();
+  }, [salary?.employmentId, salary?.employeeId, employeeId]);
+
   const getMonthName = (month: number) => {
     const months = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December'];
@@ -60,11 +108,21 @@ export default function SalaryViewPage({ params }: PageParams) {
 
   if (isLoading) {
     return (
-      <DashboardLayout breadcrumbItems={[
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Employees', href: '/employees' },
-        { label: 'Loading...', isCurrent: true }
-      ]}>
+      <DashboardLayout
+        breadcrumbItems={
+          isEmployeeView
+            ? [
+                { label: 'Dashboard', href: '/employee-dashboard' },
+                { label: 'My Salaries', href: '/employee/my-salary' },
+                { label: 'Loading...', isCurrent: true },
+              ]
+            : [
+                { label: 'Dashboard', href: '/dashboard' },
+                { label: 'Employees', href: '/employees' },
+                { label: 'Loading...', isCurrent: true },
+              ]
+        }
+      >
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 rounded w-1/3"></div>
@@ -81,17 +139,27 @@ export default function SalaryViewPage({ params }: PageParams) {
 
   if (isError || !salary) {
     return (
-      <DashboardLayout breadcrumbItems={[
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Employees', href: '/employees' },
-        { label: 'Salary', href: '/salaries', isCurrent: true }
-      ]}>
+      <DashboardLayout
+        breadcrumbItems={
+          isEmployeeView
+            ? [
+                { label: 'Dashboard', href: '/employee-dashboard' },
+                { label: 'My Salaries', href: '/employee/my-salary' },
+                { label: 'Error', isCurrent: true },
+              ]
+            : [
+                { label: 'Dashboard', href: '/dashboard' },
+                { label: 'Employees', href: '/employees' },
+                { label: 'Salary', href: '/salaries', isCurrent: true },
+              ]
+        }
+      >
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-4">
           <p>Failed to load salary data. Please try refreshing the page.</p>
         </div>
         <div className="mt-4">
           <Link 
-            href={employeeId ? `/salaries?employeeId=${employeeId}` : '/salaries'} 
+            href={isEmployeeView ? '/employee/my-salary' : (employeeId ? `/salaries?employeeId=${employeeId}` : '/salaries')} 
             className="text-blue-600 hover:underline flex items-center gap-1"
           >
             <FiArrowLeft size={16} /> Back to {employeeId ? `${employeeName}'s Salaries` : 'Salaries'}
@@ -103,15 +171,39 @@ export default function SalaryViewPage({ params }: PageParams) {
   console.log('Salary Data:', salary); // Debug log to check salary data structure
               
 
+  const adminBreadcrumbItems = [
+    { label: 'Dashboard', href: '/dashboard' },
+    { label: 'Employees', href: '/employees' },
+    {
+      label: employeeName,
+      href: salary?.employeeId ? `/employees/${salary.employeeId}` : undefined,
+    },
+    {
+      label: 'Employment',
+      href:
+        salary?.employmentId || resolvedEmploymentId
+          ? `/employments/${salary?.employmentId || resolvedEmploymentId}`
+          : '/employments',
+    },
+    {
+      label: 'Salary',
+      href: salary?.employeeId
+        ? `/salaries?employeeId=${salary.employeeId}&from=employment`
+        : '/salaries',
+    },
+    { label: 'View', isCurrent: true },
+  ];
+
+  const employeeBreadcrumbItems = [
+    { label: 'Dashboard', href: '/employee-dashboard' },
+    { label: 'My Salaries', href: '/employee/my-salary' },
+    { label: 'View Salary', isCurrent: true },
+  ];
+
   return (
-    <DashboardLayout breadcrumbItems={[
-      { label: 'Dashboard', href: '/dashboard' },
-      { label: 'Employees', href: '/employees' },
-      { label: employeeName, href: salary?.employeeId ? `/employees/${salary.employeeId}` : undefined },
-      { label: 'Employment', href: salary?.employeeId ? `/employments?employeeId=${salary.employeeId}` : '/employments' },
-      { label: 'Salary', href: salary?.employeeId ? `/salaries?employeeId=${salary.employeeId}&from=employment` : '/salaries' },
-      { label: 'View', isCurrent: true }
-    ]}>
+    <DashboardLayout
+      breadcrumbItems={isEmployeeView ? employeeBreadcrumbItems : adminBreadcrumbItems}
+    >
       <Toaster position="top-center" />
       
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -128,17 +220,25 @@ export default function SalaryViewPage({ params }: PageParams) {
           showFilter={false}
           headerClassName="px-6 py-6"
           backButton={{ 
-            href: salary?.employeeId ? `/salaries?employeeId=${salary.employeeId}` : '/salaries', 
+            href: isEmployeeView
+              ? '/employee/my-salary'
+              : salary?.employeeId
+                ? `/salaries?employeeId=${salary.employeeId}`
+                : '/salaries', 
             label: 'Back' 
           }}
-          actionButtons={[
-            { 
-              label: 'Edit Salary', 
-              icon: <FiEdit />, 
-              variant: 'orange' as const, 
-              href: `/salaries/${id}/edit?employeeId=${salary?.employeeId}` 
-            }
-          ]}
+          actionButtons={
+            adminSalary
+              ? [
+                  {
+                    label: 'Edit Salary',
+                    icon: <FiEdit />,
+                    variant: 'orange' as const,
+                    href: `/salaries/${id}/edit?employeeId=${salary?.employeeId}`,
+                  },
+                ]
+              : []
+          }
         />
 
         <div className="px-6 pb-6">

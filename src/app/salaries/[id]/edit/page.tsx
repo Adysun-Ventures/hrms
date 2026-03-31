@@ -31,6 +31,7 @@ type SalaryFormData = {
   otherAllowance: number;
   ptDeduct: number;
   leavesDeductAmt: number;
+  otherDeduction: number;
   variablePay: number;
 };
 
@@ -134,8 +135,10 @@ export default function EditSalaryPage({ params }: PageParams) {
   // Use calculated values directly for display
   const leavesDeductAmt = calculations.leavesDeductAmt;
   const grossSalary = calculations.grossSalary;
-  const totalDeduction = (ptDeduct || 200) + leavesDeductAmt;
-  const netSalary = calculations.netSalary;
+  const pfDeduct = calculations.pfDeduct || 0;
+  const otherDeduction = watch('otherDeduction') || 0;
+  const totalDeduction = pfDeduct + (ptDeduct || 200) + leavesDeductAmt + otherDeduction;
+  const netSalary = grossSalary - totalDeduction;
 
   // Update form values in real-time when calculations change
   useEffect(() => {
@@ -227,7 +230,8 @@ export default function EditSalaryPage({ params }: PageParams) {
         conveyanceAllowance: salaryData.conveyanceAllowance || 0,
         otherAllowance: salaryData.otherAllowance || 0,
         ptDeduct: salaryData.ptDeduct || 200,
-        leavesDeductAmt: salaryData.leavesDeductAmt || 0
+        leavesDeductAmt: salaryData.leavesDeductAmt || 0,
+        otherDeduction: salaryData.otherDeduction || 0
       });
     }
   }, [salary, reset, employeeId]);
@@ -268,8 +272,14 @@ export default function EditSalaryPage({ params }: PageParams) {
 
       // Use calculated values (form values may be stale)
       const finalGrossSalary = calculations.grossSalary;
-      const finalTotalDeduction = calculations.totalDeduction;
-      const finalNetSalary = calculations.netSalary;
+      const finalOtherDeduction = Number(data.otherDeduction || 0) || 0;
+      const finalPfDeduct = calculations.pfDeduct || 0;
+      const finalTotalDeduction =
+        (finalPfDeduct || 0) +
+        (data.ptDeduct || calculations.ptDeduct) +
+        calculations.leavesDeductAmt +
+        finalOtherDeduction;
+      const finalNetSalary = finalGrossSalary - finalTotalDeduction;
       
       await updateSalaryMutation.mutateAsync({
         id: id,
@@ -290,6 +300,8 @@ export default function EditSalaryPage({ params }: PageParams) {
           otherAllowance: calculations.otherAllowance,
           ptDeduct: data.ptDeduct || calculations.ptDeduct,
           leavesDeductAmt: calculations.leavesDeductAmt,
+          pf: finalPfDeduct,
+          otherDeduction: finalOtherDeduction,
           grossSalary: finalGrossSalary,
           totalDeduction: finalTotalDeduction,
           variablePay: calculations.variablePay,
@@ -462,10 +474,10 @@ export default function EditSalaryPage({ params }: PageParams) {
               )}
             </div>
 
-            {/* Work Days - Auto-calculated */}
+            {/* Working Days - Auto-calculated */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Work Days 
+                Working Days 
               </label>
               <input
                 type="number"
@@ -586,6 +598,20 @@ export default function EditSalaryPage({ params }: PageParams) {
                   <p className="mt-1 text-sm text-red-600">{errors.fixedPay.message}</p>
                 )}
               </div>
+
+              {/* Monthly Fixed (read-only) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Monthly Fixed (₹)
+                </label>
+                <input
+                  type="number"
+                  value={Number((Number(fixedPay || 0) / 12).toFixed(2))}
+                  readOnly
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                />
+              </div>
             </div>
           </div>
 
@@ -667,10 +693,10 @@ export default function EditSalaryPage({ params }: PageParams) {
                 )}
               </div>
 
-              {/* Other Allowance */}
+              {/* Other Allowance (editable) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Other Allowance <span className="text-xs text-gray-500">(Auto-calculated)</span>
+                  Other Allowance
                 </label>
                 <input
                   type="number"
@@ -680,10 +706,7 @@ export default function EditSalaryPage({ params }: PageParams) {
                     min: { value: 0, message: 'Other allowance cannot be negative' },
                     valueAsNumber: true
                   })}
-                  value={calculations.otherAllowance}
-                  disabled
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
                 {errors.otherAllowance && (
@@ -711,9 +734,25 @@ export default function EditSalaryPage({ params }: PageParams) {
           {/* Deductions Section */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Deductions</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+              {/* PF (DEDUCT) */}
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  PF (DEDUCT) <span className="text-xs text-gray-500">(Auto-calculated)</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={pfDeduct}
+                  disabled
+                  readOnly
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                  placeholder="0.00"
+                />
+              </div>
+
               {/* PT (DEDUCT) */}
-              <div>
+              <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <span className="text-red-500 mr-1">*</span>PT (DEDUCT) 
                 </label>
@@ -734,7 +773,7 @@ export default function EditSalaryPage({ params }: PageParams) {
               </div>
 
               {/* Leaves Deduct Amt - Auto-calculated */}
-              <div>
+              <div className="md:col-span-3">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Leaves Deduct Amt <span className="text-xs text-gray-500">(Auto-calculated)</span>
                 </label>
@@ -756,37 +795,60 @@ export default function EditSalaryPage({ params }: PageParams) {
                   <p className="mt-1 text-sm text-red-600">{errors.leavesDeductAmt.message}</p>
                 )}
               </div>
+
+              {/* Other Deduction */}
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Other Deduction (₹)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('otherDeduction', {
+                    min: { value: 0, message: 'Other deduction cannot be negative' },
+                    valueAsNumber: true,
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+                {errors.otherDeduction && (
+                  <p className="mt-1 text-sm text-red-600">{errors.otherDeduction.message}</p>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Calculated Total Deduction */}
-          <div className="mb-6 p-4 bg-red-50 rounded-md">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-semibold text-gray-700">
-                Total Deduction (B)
-              </label>
-              <span className="text-lg font-bold text-red-700">
-                ₹{totalDeduction.toFixed(2)}
-              </span>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+            {/* Calculated Total Deduction */}
+            <div className="md:col-span-6 p-4 bg-red-50 rounded-md">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Total Deduction (B)
+                </label>
+                <span className="text-lg font-bold text-red-700">
+                  ₹{totalDeduction.toFixed(2)}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                PF (DEDUCT) + PT (DEDUCT) + Leaves Deduct Amt + Other Deduction
+              </p>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              PT (DEDUCT) + Leaves Deduct Amt
-            </p>
-          </div>
 
-          {/* Calculated Net Salary */}
-          <div className="mb-6 p-4 bg-green-50 rounded-md">
-            <div className="flex items-center justify-between">
-              <label className="block text-sm font-semibold text-gray-700">
-                Net Salary (InHand)
-              </label>
-              <span className="text-lg font-bold text-green-700">
-                ₹{formatINR(netSalary)}
-              </span>
+            {/* Calculated Net Salary */}
+            <div className="md:col-span-6 p-4 bg-green-50 rounded-md">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Net Salary (InHand)
+                </label>
+                <span className="text-lg font-bold text-green-700">
+                  ₹{formatINR(netSalary)}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Gross Salary (A) - Total Deduction (B)
+              </p>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Gross Salary (A) - Total Deduction (B)
-            </p>
           </div>
 
           <div className="mt-8 flex justify-between py-3">

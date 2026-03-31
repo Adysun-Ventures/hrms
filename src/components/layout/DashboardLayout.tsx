@@ -1,8 +1,12 @@
+'use client';
+
 import { ReactNode } from 'react';
 import Sidebar from './Sidebar';
+import EmployeeSidebar from './EmployeeSidebar';
 import Header from './Header';
 import SimpleBreadcrumb from '../ui/SimpleBreadcrumb';
 import AuthGuard from '../auth/AuthGuard';
+import { useAuth } from '@/context/AuthContext';
 
 interface BreadcrumbItem {
   label: string;
@@ -24,11 +28,14 @@ const DashboardLayout = ({
   showBreadcrumb = true,
   allowedUserTypes = ['admin', 'employee']
 }: DashboardLayoutProps) => {
+  const { currentUserData } = useAuth();
+  const isEmployee = currentUserData?.userType === 'employee';
+
   return (
     <AuthGuard allowedUserTypes={allowedUserTypes}>
       <div className="min-h-screen bg-gray-50">
-        <Sidebar />
-        <Header />
+        {isEmployee ? <EmployeeSidebar /> : <Sidebar />}
+        <Header variant="protected" />
         <main className="pt-16 lg:pl-64 min-h-screen">
           <div className="p-4 md:p-6">
             {showBreadcrumb && breadcrumbItems.length > 0 && (

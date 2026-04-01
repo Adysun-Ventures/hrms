@@ -93,7 +93,8 @@ const EmployeeSidebar = () => {
     {
       path: '/employee/documents',
       name: 'My Document',
-      icon: <FiFileText className="w-5 h-5" />
+      icon: <FiFileText className="w-5 h-5" />,
+      disabled: true,
     },
     {
       path: '/employee/company-information',
@@ -143,17 +144,27 @@ const EmployeeSidebar = () => {
             <ul className="space-y-2">
               {menuItems.map((item) => (
                 <li key={item.path}>
-                  <Link
-                    href={item.path}
-                    className={`flex items-center gap-3 p-3 rounded-md transition-colors ${
-                      isActive(item.path)
-                        ? 'bg-blue-600 text-white'
-                        : 'hover:bg-gray-700'
-                    }`}
-                  >
-                    {item.icon}
-                    <span>{item.name}</span>
-                  </Link>
+                  {item.disabled ? (
+                    <div
+                      aria-disabled="true"
+                      className="flex items-center gap-3 p-3 rounded-md text-gray-400 cursor-not-allowed opacity-70"
+                    >
+                      {item.icon}
+                      <span>{item.name}</span>
+                    </div>
+                  ) : (
+                    <Link
+                      href={item.path}
+                      className={`flex items-center gap-3 p-3 rounded-md transition-colors ${
+                        isActive(item.path)
+                          ? 'bg-blue-600 text-white'
+                          : 'hover:bg-gray-700'
+                      }`}
+                    >
+                      {item.icon}
+                      <span>{item.name}</span>
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

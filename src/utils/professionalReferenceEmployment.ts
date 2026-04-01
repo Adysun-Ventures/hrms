@@ -27,6 +27,13 @@ export const PROFESSIONAL_REFERENCE_DIRECTORY: Record<
     designation: 'Sr. Software Developer',
     location: 'Pune',
   },
+  'Niranjan Kapase': {
+    employeeId: 'ADV49',
+    mobileNo: '7058370509',
+    email: 'niranjan.kapase@adysunventures.com',
+    designation: 'Sr. Backend Engg',
+    location: 'Pune',
+  },
 };
 
 /** Names shown in Professional Reference dropdowns (Add/Edit employment). */
@@ -34,6 +41,7 @@ export const PROFESSIONAL_REFERENCE_NAME_OPTIONS = [
   'Viraj Kadam',
   'Rohit Kore',
   'Nagesh Chavan',
+  'Niranjan Kapase',
 ] as const;
 
 export function hydrateRefFromDirectory(ref: any): any {
@@ -94,12 +102,14 @@ export function buildProfessionalReferencesArray(data: {
   teamLead?: any;
   colleague1?: any;
   colleague3?: any;
+  colleague4?: any;
   reportingManagerRef?: any;
 }) {
   return [
     toProfessionalReference(hydrateRefFromDirectory(data.teamLead)),
     toProfessionalReference(hydrateRefFromDirectory(data.colleague1)),
     toProfessionalReference(hydrateRefFromDirectory(data.colleague3)),
+    toProfessionalReference(hydrateRefFromDirectory(data.colleague4)),
     toProfessionalReference(hydrateRefFromDirectory(data.reportingManagerRef)),
   ];
 }

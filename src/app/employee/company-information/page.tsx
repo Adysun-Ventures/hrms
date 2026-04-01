@@ -11,6 +11,7 @@ export default function EmployeeCompanyInformationPage() {
       role: 'Team Leader',
       name: 'Viraj Kadam',
       employeeId: 'ADV09',
+      mobileNo: '9579537523',
       email: 'viraj.kadam@adysunventures.com',
       designation: 'Project Manager',
       location: 'Pune',
@@ -19,6 +20,7 @@ export default function EmployeeCompanyInformationPage() {
       role: 'Colleague 1',
       name: 'Rohit Kore',
       employeeId: 'ADV66',
+      mobileNo: '9579537523',
       email: 'rohit.kore@adysunventures.com',
       designation: 'Sr. Software Engg',
       location: 'Pune',
@@ -27,8 +29,18 @@ export default function EmployeeCompanyInformationPage() {
       role: 'Colleague 2',
       name: 'Nagesh Chavan',
       employeeId: 'ADV47',
+      mobileNo: '9579537523',
       email: 'nagesh.chavan@adysunventures.com',
       designation: 'Sr. Software Developer',
+      location: 'Pune',
+    },
+    {
+      role: 'Colleague 3',
+      name: 'Niranjan Kapase',
+      employeeId: 'ADV49',
+      mobileNo: '7058370509',
+      email: 'niranjan.kapase@adysunventures.com',
+      designation: 'Sr. Backend Engg',
       location: 'Pune',
     },
   ];
@@ -194,6 +206,7 @@ A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607`,
                       <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Role</th>
                       <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Name</th>
                       <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Employee Id</th>
+                      <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Mobile No</th>
                       <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Email</th>
                       <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Designation</th>
                       <th className="border border-gray-200 px-3 py-2 text-left font-semibold">Location</th>
@@ -207,6 +220,7 @@ A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607`,
                         </th>
                         <td className="border border-gray-200 px-3 py-2">{r.name || '-'}</td>
                         <td className="border border-gray-200 px-3 py-2">{r.employeeId || '-'}</td>
+                        <td className="border border-gray-200 px-3 py-2">{r.mobileNo || '-'}</td>
                         <td className="border border-gray-200 px-3 py-2">{r.email || '-'}</td>
                         <td className="border border-gray-200 px-3 py-2">{r.designation || '-'}</td>
                         <td className="border border-gray-200 px-3 py-2">{r.location || '-'}</td>

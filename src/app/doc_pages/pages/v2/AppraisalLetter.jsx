@@ -27,8 +27,10 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import toast, { Toaster } from "react-hot-toast";
 import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import { Combobox } from "@headlessui/react";
+import { useAuth } from "@/context/AuthContext";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
+import { formatDateToDayMonYear } from "@/utils/documentUtils";
 
 /* ---------------- COMPANY DATA ---------------- */
 const COMPANY_DATA = {
@@ -49,12 +51,7 @@ const Watermark = ({ logoSrc }) => (
   </View>
 );
 
-const formatDate = (d) =>
-  new Date(d).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  });
+const formatDate = (d) => formatDateToDayMonYear(d) || "";
 const toTitleCase = (str) => {
   return str
     ?.toLowerCase()
@@ -228,7 +225,15 @@ async function buildAppraisalLetterDocx(employee, currentCTC, percentIncrease, r
       : []),
     new Paragraph({ text: "We appreciate your continuous hard work and commitment and we believe you will continue to excel and contribute towards the company's success." }),
     new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Effective: " }), new TextRun({ text: formattedEffective })] }),
+    new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
+    new Paragraph({
+      text:
+        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.",
+    }),
+    new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCase(employeeName), bold: true })] }),
+    new Paragraph({ text: "Signature: ________________________________" }),
+    new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Document Generate Date: " }), new TextRun({ text: today })] }),
     new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
     new Paragraph({ text: COMPANY_DATA.hrDesignation }),
     new Paragraph({ text: COMPANY_DATA.hrEmail }),
@@ -244,6 +249,7 @@ const AppraisalLetterPDF = ({
   revisedCTC,
   effectiveDate,
   documentGenerateDate,
+  signPlace,
   oldDesignation,
   newDesignation
 }) => {
@@ -336,11 +342,26 @@ const AppraisalLetterPDF = ({
           Thank you for being an integral part of our team. We look forward to seeing your continued growth and success.
         </Text>
 
+        <Text style={{ marginBottom: 10, fontWeight: "bold", textDecoration: "underline" }}>
+          Acknowledgement and Acceptance
+        </Text>
+        <Text style={{ marginBottom: 10 }}>
+          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.
+        </Text>
+        <Text style={{ marginBottom: 6 }}>
+          Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCase(employeeName)}</Text>
+        </Text>
+        <Text style={{ marginBottom: 10 }}>Signature: ________________________________</Text>
+
         {/* SIGN */}
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 40 }}>
           <View>
-            {/* <Text><Text style={{ fontWeight: "bold" }}>Place:</Text> Pune</Text> */}
-            <Text style={{ marginTop: 4 }}><Text style={{ fontWeight: "bold" }}>Effective:</Text> {formattedEffective}</Text>
+            <Text style={{ marginTop: 4 }}>
+              <Text style={{ fontWeight: "bold" }}>Place:</Text> {signPlace || "-"}
+            </Text>
+            <Text style={{ marginTop: 4 }}>
+              <Text style={{ fontWeight: "bold" }}>Date:</Text> {today}
+            </Text>
           </View>
 
           <View style={{ width: "45%", textAlign: "right" }}>
@@ -361,6 +382,9 @@ const AppraisalLetterPDF = ({
 
 /* ---------------- MAIN COMPONENT ---------------- */
 export default function AppraisalLetterV2() {
+  const { currentUserData } = useAuth();
+  const selfEmployeeId = currentUserData?.userType === "employee" ? currentUserData?.id : null;
+
   const [candidates, setCandidates] = useState([]);
   const [employee, setEmployee] = useState(null);
   const [currentCTC, setCurrentCTC] = useState("");
@@ -378,10 +402,20 @@ export default function AppraisalLetterV2() {
   useEffect(() => {
     async function load() {
       const qs = await getDocs(collection(db, "employees"));
-      setCandidates(qs.docs.map(d => ({ id: d.id, ...d.data() })));
+      const list = qs.docs.map(d => ({ id: d.id, ...d.data() }));
+      const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+      setCandidates(visible);
+
+      if (selfEmployeeId && visible.length > 0) {
+        const selfEmp = visible[0];
+        setEmployee(selfEmp);
+        const selfEmployment = await getEmploymentForEmployee(selfEmp.id);
+        setEmployment(selfEmployment || {});
+        autoFillFromEmployment(selfEmployment);
+      }
     }
     load();
-  }, []);
+  }, [selfEmployeeId]);
 
   const getEmploymentForEmployee = async (employeeId) => {
     if (!employeeId) return null;
@@ -431,6 +465,7 @@ export default function AppraisalLetterV2() {
     employee &&
     currentCTC &&
     percentIncrease &&
+    Number(percentIncrease) > 0 &&
     revisedCTC &&
     effectiveDate &&
     documentGenerateDate
@@ -455,11 +490,13 @@ export default function AppraisalLetterV2() {
     setRevisedCTC(v);
     setPercentIncrease(calcPercent(currentCTC, v));
   };
+  const invalidPercent = percentIncrease !== "" && Number(percentIncrease) <= 0;
 
   const generate = () => {
     if (!employee) return toast.error("Select employee");
     if (!currentCTC) return toast.error("Enter current CTC");
     if (!percentIncrease) return toast.error("Enter % increase");
+    if (invalidPercent) return toast.error("% increase must be greater than 0");
     if (!revisedCTC) return toast.error("Revised CTC missing");
     if (!effectiveDate) return toast.error("Select effective date");
     if (!documentGenerateDate) return toast.error("Select document generate date");
@@ -487,7 +524,10 @@ export default function AppraisalLetterV2() {
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <TableHeader
           title="Increment Letter"
-          backButton={{ href: "/dashboard/documents", label: "Back" }}
+          backButton={{
+            href: selfEmployeeId ? "/employee/documents" : "/dashboard/documents",
+            label: "Back",
+          }}
           searchValue=""
           onSearchChange={() => {}}
           showStats={false}
@@ -516,6 +556,7 @@ export default function AppraisalLetterV2() {
             <div className="bg-white p-4 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 
+                {!selfEmployeeId && (
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">
                     Employee <span className="text-red-500">*</span>
@@ -584,6 +625,7 @@ export default function AppraisalLetterV2() {
                 </Combobox>
                 
                 </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">
@@ -604,11 +646,16 @@ export default function AppraisalLetterV2() {
                   </label>
                   <input
                     type="number"
-                    className="w-full p-2 border rounded-md"
+                    className={`w-full p-2 border rounded-md ${invalidPercent ? "border-red-500" : ""}`}
                     placeholder="Enter percentage increase"
                     value={percentIncrease}
                     onChange={(e) => onPercentChange(e.target.value)}
+                    min={0.01}
+                    step={0.01}
                   />
+                  {invalidPercent && (
+                    <p className="mt-1 text-xs text-red-600">% Increase must be greater than 0</p>
+                  )}
                 </div>
 
                 <div>
@@ -725,6 +772,7 @@ export default function AppraisalLetterV2() {
                     revisedCTC={revisedCTC}
                     effectiveDate={effectiveDate}
                     documentGenerateDate={documentGenerateDate}
+                    signPlace={employment?.location || "Pune"}
                     oldDesignation={oldDesignation}
                     newDesignation={newDesignation}
                   />
@@ -747,6 +795,7 @@ export default function AppraisalLetterV2() {
                 revisedCTC={revisedCTC}
                 effectiveDate={effectiveDate}
                 documentGenerateDate={documentGenerateDate}
+                signPlace={employment?.location || "Pune"}
                 oldDesignation={oldDesignation}
                 newDesignation={newDesignation}
               />

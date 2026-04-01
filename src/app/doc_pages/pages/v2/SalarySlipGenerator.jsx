@@ -13,6 +13,8 @@ import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 import { Combobox } from "@headlessui/react";
+import { useAuth } from "@/context/AuthContext";
+import { formatDateToDayMonYear } from "@/utils/documentUtils";
 
 const DEFAULT_COMPANY_NAME = 'Adysun Ventures Pvt. Ltd.';
 
@@ -100,13 +102,13 @@ const primaryName = (v) => {
 };
 
 const getEmployeeNameText = (names, txt) => txt || normalize(names).join(', ') || 'Employee Name';
-const formatDisplayDate = (d) => new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
+const formatDisplayDate = (d) => formatDateToDayMonYear(d);
 const getSalarySlipMonthLabel = (d) => {
   const date = new Date(d);
   if (isNaN(date)) return "-";
   return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 };
-const getSalarySlipMonthUpper = (d) => new Date(d).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}).toUpperCase();
+const getSalarySlipMonthUpper = (d) => formatDateToDayMonYear(d);
 
 const getTotalEarnings = (f) =>
   (f.basicSalary||0)+(f.da||0)+(f.conveyanceAllowance||0)+(f.otherAllowance||0)+(f.medicalAllowance||0)+(f.cca||0);
@@ -590,6 +592,16 @@ return (
       This document is digitally generated and does not require signature.
     </Text>
 
+    {/* Bottom-left place and date */}
+    <View style={{ marginTop: 10 }}>
+      <Text style={{ fontSize: 10 }}>
+        <Text style={{ fontWeight: "bold" }}>Place:</Text> {f.location || "-"}
+      </Text>
+      <Text style={{ fontSize: 10, marginTop: 2 }}>
+        <Text style={{ fontWeight: "bold" }}>Date:</Text> {formatDisplayDate(f.payDate)}
+      </Text>
+    </View>
+
     {/* PUSH FOOTER TO BOTTOM */}
     <View style={{ flexGrow: 1 }} />
 
@@ -622,6 +634,9 @@ const SalarySlipPDF = ({ formData }) => {
 
 // === MAIN COMPONENT START ===
 function SalarySlipGeneratorV2() {
+  const { currentUserData } = useAuth();
+  const selfEmployeeId = currentUserData?.userType === "employee" ? currentUserData?.id : null;
+
   const [candidates, setCandidates] = useState([]);
   const [employments, setEmployments] = useState({});
   const [showPDF, setShowPDF] = useState(false);
@@ -681,10 +696,11 @@ function SalarySlipGeneratorV2() {
     try {
       const snap = await getDocs(collection(db, 'employees'));
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      setCandidates(list);
+      const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+      setCandidates(visible);
 
       const empMap = {};
-      for (const emp of list) {
+      for (const emp of visible) {
         const q = query(collection(db, 'employments'), where('employeeId', '==', emp.id));
         const eSnap = await getDocs(q);
         if (!eSnap.empty) {
@@ -694,13 +710,20 @@ function SalarySlipGeneratorV2() {
         }
       }
       setEmployments(empMap);
+
+      if (selfEmployeeId && visible.length > 0) {
+        const selfEmp = visible[0];
+        const selfEmployment = empMap[selfEmp.id] || null;
+        setEmployee(selfEmp);
+        setEmployment(selfEmployment);
+      }
     } catch (err) {
       console.error(err);
       toast.error("Error fetching employees");
     }
   };
 
-  useEffect(()=>{ fetchCandidates(); },[]);
+  useEffect(()=>{ fetchCandidates(); },[selfEmployeeId]);
 
   // === SALARY CALC WITH PF TICK LOGIC LIKE OFFERLETTER ===
   const calculateSalary = (lpa, leaves = 0, month, enablePF = false) => {
@@ -884,6 +907,7 @@ return (
 
         {/* Employee Name */}
 {/* Employee Name */}
+{!selfEmployeeId && (
 <div>
   <label className="block text-sm font-medium text-slate-800 mb-1">
     Employee <span className="text-red-500">*</span>
@@ -988,6 +1012,7 @@ return (
     </div>
   </Combobox>
 </div>
+)}
 
 
         {/* Month */}

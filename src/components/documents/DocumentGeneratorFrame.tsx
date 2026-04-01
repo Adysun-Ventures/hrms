@@ -1,18 +1,16 @@
+'use client';
+
 import React from 'react';
-import Link from 'next/link';
-import { FiArrowLeft } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import dynamic from 'next/dynamic';
 
 
 // Dynamically import v2 document components with no SSR for all documents
 const OfferLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/OfferLetter'), { ssr: false });
-const AppointmentLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/AppointmentLetter'), { ssr: false });
 const RelievingLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/RelievingLetter'), { ssr: false });
 const AppraisalLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/AppraisalLetter'), { ssr: false });
 const SalarySlipGeneratorV2 = dynamic(() => import('@/app/doc_pages/pages/v2/SalarySlipGenerator'), { ssr: false });
-const BankStatementV2 = dynamic(() => import('@/app/doc_pages/pages/v2/BankStatement'), { ssr: false });
-const ManageBankV2 = dynamic(() => import('@/app/doc_pages/pages/v2/ManageBank'), { ssr: false });
 const ExperienceLetterV2Page = dynamic(() => import('@/app/doc_pages/pages/v2/ExperienceLetter'), { ssr: false });
 const JoiningLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/JoiningLetter'), { ssr: false });
 
@@ -26,6 +24,7 @@ interface DocumentGeneratorFrameProps {
   backPath: string;
   backLabel: string;
   breadcrumbItems?: { label: string; href?: string; isCurrent?: boolean }[];
+  role?: 'admin' | 'employee';
 }
 
 const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
@@ -34,7 +33,8 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
   description,
   backPath,
   backLabel,
-  breadcrumbItems = []
+  breadcrumbItems = [],
+  role = 'admin',
 }) => {
   // Render the appropriate document component based on type
   const renderDocumentComponent = () => {
@@ -44,8 +44,6 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
       switch (documentType) {
         case 'v2/offer-letter':
           return <OfferLetterV2 />;
-        case 'v2/appointment-letter':
-          return <AppointmentLetterV2 />;
         case 'v2/relieving-letter':
           return <RelievingLetterV2 />;
         case 'v2/appraisal-letter':
@@ -54,10 +52,6 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
         case 'v2/salary-slip':
         case 'v2/payslip': // Backward compatibility
           return <SalarySlipGeneratorV2 />;
-        case 'v2/bank-statement':
-          return <BankStatementV2 />;
-        case 'v2/manage-bank':
-          return <ManageBankV2 />;
         case 'v2/experience-letter':
           return <ExperienceLetterV2Page/>;
         case 'v2/joining-letter':
@@ -70,8 +64,6 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
       switch (documentType) {
         case 'offer-letter':
           return <OfferLetterV2 />;
-        case 'appointment-letter':
-          return <AppointmentLetterV2 />;
         case 'relieving-letter':
           return <RelievingLetterV2 />;
         case 'appraisal-letter':
@@ -87,15 +79,17 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
     }
   };
 
-  return (
-    <DashboardLayout breadcrumbItems={breadcrumbItems}>
-      {/* <div className="bg-white rounded-lg shadow-sm p-4"> */}
-        <div className="document-container w-full">
-          {renderDocumentComponent()}
-        </div>
-      {/* </div> */}
-    </DashboardLayout>
+  const content = (
+    <div className="document-container w-full">
+      {renderDocumentComponent()}
+    </div>
   );
+
+  if (role === 'employee') {
+    return <EmployeeLayout breadcrumbItems={breadcrumbItems}>{content}</EmployeeLayout>;
+  }
+
+  return <DashboardLayout breadcrumbItems={breadcrumbItems}>{content}</DashboardLayout>;
 };
 
 export default DocumentGeneratorFrame; 

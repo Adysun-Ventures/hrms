@@ -17,12 +17,9 @@ const Home = dynamic(() => import('@/app/doc_pages/pages/Home'), { ssr: false })
 
 // V2 Document Components
 const OfferLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/OfferLetter'), { ssr: false });
-const AppointmentLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/AppointmentLetter'), { ssr: false });
 const RelievingLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/RelievingLetter'), { ssr: false });
 const AppraisalLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/AppraisalLetter'), { ssr: false });
 const SalarySlipGeneratorV2 = dynamic(() => import('@/app/doc_pages/pages/v2/SalarySlipGenerator'), { ssr: false });
-const BankStatementV2 = dynamic(() => import('@/app/doc_pages/pages/v2/BankStatement'), { ssr: false });
-const ManageBankV2 = dynamic(() => import('@/app/doc_pages/pages/v2/ManageBank'), { ssr: false });
 const ExperienceLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/ExperienceLetter'), { ssr: false });
 
 // Document generator wrapper component
@@ -41,8 +38,6 @@ const DocumentGeneratorPage = () => {
       switch (docType) {
         case 'offer-letter':
           return <OfferLetterV2 />;
-        case 'appointment-letter':
-          return <AppointmentLetterV2 />;
         case 'relieving-letter':
           return <RelievingLetterV2 />;
         case 'appraisal-letter':
@@ -51,10 +46,6 @@ const DocumentGeneratorPage = () => {
         case 'salary-slip':
         case 'payslip': // Backward compatibility
           return <SalarySlipGeneratorV2 />;
-        case 'bank-statement':
-          return <BankStatementV2 />;
-        case 'manage-bank':
-          return <ManageBankV2 />;
         case 'experience-letter':
           return <ExperienceLetterV2 />;
         case 'home':

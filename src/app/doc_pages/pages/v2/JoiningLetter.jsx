@@ -29,6 +29,8 @@ import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import { Combobox } from "@headlessui/react";
+import { useAuth } from "@/context/AuthContext";
+import { formatDateToDayMonYear } from "@/utils/documentUtils";
 
 /* ---------------- COMPANY DATA ---------------- */
 const COMPANY_DATA = {
@@ -86,11 +88,7 @@ const normalizeDateForInput = (value) => {
 const formatDate = (d) => {
   if (!d) return "";
   try {
-    return new Date(d).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric"
-    });
+    return formatDateToDayMonYear(d);
   } catch (e) {
     return d;
   }
@@ -247,6 +245,14 @@ async function buildJoiningLetterDocx(employee, designation, department, reporti
     new Paragraph({ text: "We warmly welcome you to our organization and look forward to your valuable contribution." }),
     new Paragraph({ text: "Kindly acknowledge and accept this letter." }),
     new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
+    new Paragraph({
+      text:
+        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.",
+    }),
+    new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCase(name), bold: true })] }),
+    new Paragraph({ text: "Signature: ________________________________" }),
+    new Paragraph({ text: "" }),
     new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: signPlace || "" })] }),
     new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: issueDate })] }),
     new Paragraph({ children: [new TextRun({ text: toTitleCase(name), bold: true })] }),
@@ -363,6 +369,17 @@ const JoiningLetterPDF = ({
           Kindly acknowledge and accept this letter.
         </Text>
 
+        <Text style={{ marginBottom: 10, fontWeight: "bold", textDecoration: "underline" }}>
+          Acknowledgement and Acceptance
+        </Text>
+        <Text style={{ marginBottom: 10 }}>
+          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.
+        </Text>
+        <Text style={{ marginBottom: 6 }}>
+          Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCase(employeeName)}</Text>
+        </Text>
+        <Text style={{ marginBottom: 10 }}>Signature: ________________________________</Text>
+
         {/* SIGN SECTION */}
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 40 }}>
           <View style={{ width: "45%" }}>
@@ -394,6 +411,9 @@ const JoiningLetterPDF = ({
 /* ---------------- MAIN COMPONENT ---------------- */
 
 export default function JoiningLetterV2() {
+  const { currentUserData } = useAuth();
+  const selfEmployeeId = currentUserData?.userType === "employee" ? currentUserData?.id : null;
+
   const [candidates, setCandidates] = useState([]);
   const [employee, setEmployee] = useState(null);
 
@@ -425,10 +445,20 @@ export default function JoiningLetterV2() {
   useEffect(() => {
     async function loadData() {
       const qs = await getDocs(collection(db, "employees"));
-      setCandidates(qs.docs.map((d) => ({ id: d.id, ...d.data() })));
+      const list = qs.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+      setCandidates(visible);
+
+      if (selfEmployeeId && visible.length > 0) {
+        const selfEmp = visible[0];
+        setEmployee(selfEmp);
+        const selfEmployment = await getEmploymentForEmployee(selfEmp.id);
+        setEmployment(selfEmployment || {});
+        autoFillDatesFromEmployment(selfEmployment);
+      }
     }
     loadData();
-  }, []);
+  }, [selfEmployeeId]);
 
   const getEmploymentForEmployee = async (employeeId) => {
     if (!employeeId) return null;
@@ -516,7 +546,10 @@ export default function JoiningLetterV2() {
       <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6">
         <TableHeader
           title="Joining Letter"
-          backButton={{ href: "/dashboard/documents", label: "Back" }}
+          backButton={{
+            href: selfEmployeeId ? "/employee/documents" : "/dashboard/documents",
+            label: "Back",
+          }}
           searchValue=""
           onSearchChange={() => {}}
           showStats={false}
@@ -544,6 +577,7 @@ export default function JoiningLetterV2() {
             <div className="bg-white p-4 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
+                {!selfEmployeeId && (
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">
                     Employee <span className="text-red-500">*</span>
@@ -612,6 +646,7 @@ export default function JoiningLetterV2() {
                 </Combobox>
                 
                 </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">

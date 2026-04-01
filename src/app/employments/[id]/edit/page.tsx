@@ -61,6 +61,15 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relie
     designation?: string;
     location?: string;
   };
+  colleague4?: {
+    employeeDocId?: string;
+    name?: string;
+    employeeId?: string;
+    mobileNo?: string;
+    email?: string;
+    designation?: string;
+    location?: string;
+  };
   reportingManagerRef?: {
     employeeDocId?: string;
     name?: string;
@@ -220,11 +229,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   // ---------------- PROFESSIONAL REFERENCE (Team Lead / Colleagues) ----------------
   // Professional Reference: dropdown shows saved Name.
   // Dependent fields should be prefilled from stored Professional Reference strings.
-  type ProfessionalRefKey = 'teamLead' | 'colleague1' | 'colleague3' | 'reportingManagerRef';
+  type ProfessionalRefKey = 'teamLead' | 'colleague1' | 'colleague3' | 'colleague4' | 'reportingManagerRef';
 
   const professionalRefTeamLeadName = watch('teamLead.name') || '';
   const professionalRefColleague1Name = watch('colleague1.name') || '';
   const professionalRefColleague3Name = watch('colleague3.name') || '';
+  const professionalRefColleague4Name = watch('colleague4.name') || '';
   const professionalRefReportingManagerName = watch('reportingManagerRef.name') || '';
   const showProfessionalReferenceExtraFields = false;
 
@@ -274,6 +284,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     autoFillProfessionalReferenceFromDirectory('colleague3', professionalRefColleague3Name);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [professionalRefColleague3Name]);
+
+  useEffect(() => {
+    if (!professionalRefColleague4Name) return;
+    autoFillProfessionalReferenceFromDirectory('colleague4', professionalRefColleague4Name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [professionalRefColleague4Name]);
 
   useEffect(() => {
     if (!professionalRefReportingManagerName) return;
@@ -474,6 +490,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         const ref1 = proRefs[1];
         const ref2 = proRefs[2];
         const ref3 = proRefs[3];
+        const ref4 = proRefs[4];
 
         const teamLeadNameDesig = parseNameAndDesignationFromProfessionalReference(ref0?.nameDesignation);
         const teamLeadEmailMobile = parseEmailAndMobileFromProfessionalReference(ref0?.emailAndMobile);
@@ -484,8 +501,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         const colleague3NameDesig = parseNameAndDesignationFromProfessionalReference(ref2?.nameDesignation);
         const colleague3EmailMobile = parseEmailAndMobileFromProfessionalReference(ref2?.emailAndMobile);
 
-        const reportingManagerNameDesig = parseNameAndDesignationFromProfessionalReference(ref3?.nameDesignation);
-        const reportingManagerEmailMobile = parseEmailAndMobileFromProfessionalReference(ref3?.emailAndMobile);
+        const colleague4NameDesig = parseNameAndDesignationFromProfessionalReference(ref3?.nameDesignation);
+        const colleague4EmailMobile = parseEmailAndMobileFromProfessionalReference(ref3?.emailAndMobile);
+
+        const reportingManagerSource = ref4 || ref3;
+        const reportingManagerNameDesig = parseNameAndDesignationFromProfessionalReference(reportingManagerSource?.nameDesignation);
+        const reportingManagerEmailMobile = parseEmailAndMobileFromProfessionalReference(reportingManagerSource?.emailAndMobile);
 
         /** Parsed label junk like "Name" (no real person) is not a valid dropdown value. */
         const hasSubstantiveProRefData = (
@@ -536,7 +557,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         const ref0Vacant = isProRefSlotVacant(ref0, teamLeadNameDesig, teamLeadEmailMobile);
         const ref1Vacant = isProRefSlotVacant(ref1, colleague1NameDesig, colleague1EmailMobile);
         const ref2Vacant = isProRefSlotVacant(ref2, colleague3NameDesig, colleague3EmailMobile);
-        const ref3Vacant = isProRefSlotVacant(ref3, reportingManagerNameDesig, reportingManagerEmailMobile);
+        const ref3Vacant = isProRefSlotVacant(ref3, colleague4NameDesig, colleague4EmailMobile);
+        const ref4Vacant = isProRefSlotVacant(reportingManagerSource, reportingManagerNameDesig, reportingManagerEmailMobile);
 
         const emptyProRefForm = {
           name: '',
@@ -619,7 +641,22 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   location: colleague3EmailMobile.place || dir?.location || '',
                 };
               })(),
-          reportingManagerRef: ref3Vacant
+          colleague4: ref3Vacant
+            ? { ...emptyProRefForm }
+            : (() => {
+                const dn = pickDirectoryDropdownName(colleague4NameDesig);
+                const dir = dn ? directoryRowForMerge(dn) : null;
+                return {
+                  name: dn,
+                  employeeDocId: '',
+                  employeeId: colleague4NameDesig.employeeId || dir?.employeeId || '',
+                  mobileNo: colleague4EmailMobile.mobileNo || dir?.mobileNo || '',
+                  email: colleague4EmailMobile.email || dir?.email || '',
+                  designation: colleague4NameDesig.designation || dir?.designation || '',
+                  location: colleague4EmailMobile.place || dir?.location || '',
+                };
+              })(),
+          reportingManagerRef: ref4Vacant
             ? { ...emptyProRefForm }
             : (() => {
                 const dn = pickDirectoryDropdownName(reportingManagerNameDesig);
@@ -731,6 +768,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         teamLead: data.teamLead,
         colleague1: data.colleague1,
         colleague3: data.colleague3,
+        colleague4: data.colleague4,
         reportingManagerRef: data.reportingManagerRef,
       });
 
@@ -1339,6 +1377,89 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         </label>
                         <input
                           {...register('colleague3.location' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Colleague 3 */}
+                  <div>
+                    <h3 className="text-md font-medium text-gray-700 mb-3">
+                      Colleague 3
+                    </h3>
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <select
+                          {...register('colleague4.name' as const, {
+                            onChange: (e) => {
+                              autoFillProfessionalReferenceFromDirectory('colleague4', e.target.value);
+                            },
+                          })}
+                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        >
+                          <option value="">Select</option>
+                          {PROFESSIONAL_REFERENCE_NAME_OPTIONS.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Employee Id
+                        </label>
+                        <input
+                          {...register('colleague4.employeeId' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Mobile No
+                        </label>
+                        <input
+                          {...register('colleague4.mobileNo' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Email
+                        </label>
+                        <input
+                          {...register('colleague4.email' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Designation
+                        </label>
+                        <input
+                          {...register('colleague4.designation' as const)}
+                          readOnly
+                          className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Place
+                        </label>
+                        <input
+                          {...register('colleague4.location' as const)}
                           readOnly
                           className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                         />

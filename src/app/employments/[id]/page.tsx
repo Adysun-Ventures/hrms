@@ -946,7 +946,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   </tr>
                 </thead>
                 <tbody>
-                  {([0, 1, 2, 3] as const).map((idx) => {
+                  {([0, 1, 2, 3, 4] as const).map((idx) => {
                     const role =
                       idx === 0
                         ? 'Team Leader'
@@ -954,7 +954,9 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                           ? 'Colleague 1'
                           : idx === 2
                             ? 'Colleague 2'
-                            : 'Reporting Manager';
+                            : idx === 3
+                              ? 'Colleague 3'
+                              : 'Reporting Manager';
                     const ref = employment.professionalReferences?.[idx];
                     const nd = parseNameAndDesignation(ref?.nameDesignation);
                     const em = parseEmailAndMobile(ref?.emailAndMobile);

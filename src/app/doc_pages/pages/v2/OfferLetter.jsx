@@ -25,6 +25,8 @@ import {
   WidthType,
 } from 'docx';
 import { createAdysunDocx } from '@/utils/docxAdysun';
+import { useAuth } from '@/context/AuthContext';
+import { formatDateToDayMonYear } from '@/utils/documentUtils';
 
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -273,8 +275,8 @@ const OfferLetterPDF = ({ employee, employment, enablePF, designationOverride, d
   const joiningDate = employment?.joiningDate || employment?.startDate || '';
   const annualCTC = Number(employment?.salary || 0);
   const letterDate = (documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate))
-    ? new Date(documentGenerateDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-    : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    ? formatDateToDayMonYear(documentGenerateDate)
+    : formatDateToDayMonYear(new Date());
 
   const signPlace = employeeSignPlace || employment?.location || '';
 
@@ -568,8 +570,8 @@ async function buildOfferLetterDocx(employee, employment, enablePF, designationO
   const joiningDate = employment?.joiningDate || employment?.startDate || '';
   const letterDate =
     documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate)
-      ? new Date(documentGenerateDate).toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' })
-      : new Date().toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      ? formatDateToDayMonYear(documentGenerateDate)
+      : formatDateToDayMonYear(new Date());
   const signPlace = employeeSignPlace || employee?.location || employment?.location || '';
   const annualCTC = Number(employment?.salary || 0);
 
@@ -659,6 +661,10 @@ async function buildOfferLetterDocx(employee, employment, enablePF, designationO
 
 /* ---------------- MAIN COMPONENT ---------------- */
 function OfferLetterV2() {
+  const { currentUserData } = useAuth();
+  const isEmployeeUser = currentUserData?.userType === 'employee';
+  const selfEmployeeId = isEmployeeUser ? currentUserData?.id : null;
+
   const [candidates, setCandidates] = useState([]);
   const [employments, setEmployments] = useState({});
   const [employee, setEmployee] = useState(null);
@@ -678,19 +684,34 @@ function OfferLetterV2() {
 
   const [pdfKey, setPdfKey] = useState(0);
 
-  useEffect(() => { fetchEmployees(); }, []);
+  useEffect(() => { fetchEmployees(); }, [selfEmployeeId]);
 
   const fetchEmployees = async () => {
     const qs = await getDocs(collection(db, 'employees'));
     const list = qs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setCandidates(list);
+    const visibleList = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+    setCandidates(visibleList);
 
     const map = {};
-    for (const emp of list) {
+    for (const emp of visibleList) {
       const qSnap = await getDocs(query(collection(db, 'employments'), where('employeeId', '==', emp.id)));
       if (!qSnap.empty) map[emp.id] = qSnap.docs[0].data();
     }
     setEmployments(map);
+
+    if (selfEmployeeId && visibleList.length > 0) {
+      const selfEmp = visibleList[0];
+      const nextEmployment = map[selfEmp.id] || null;
+      setEmployee(selfEmp);
+      setEmployment(nextEmployment);
+      setDesignationOverride(nextEmployment?.jobTitle || nextEmployment?.designation || '');
+      setEmployeeSignPlace(nextEmployment?.location || '');
+      const joiningDateForDoc = normalizeDateForInput(
+        nextEmployment?.joiningDate || nextEmployment?.startDate || ''
+      );
+      if (joiningDateForDoc) setDocumentGenerateDate(joiningDateForDoc);
+      setPdfKey((k) => k + 1);
+    }
   };
 
   const normalizeDateForInput = (value) => {
@@ -727,7 +748,10 @@ function OfferLetterV2() {
       <div className="bg-white rounded-lg shadow-lg mb-8">
         <TableHeader
           title="Offer Letter"
-          backButton={{ href: '/dashboard/documents', label: 'Back' }}
+          backButton={{
+            href: isEmployeeUser ? '/employee/documents' : '/dashboard/documents',
+            label: 'Back',
+          }}
           searchValue=""
           onSearchChange={() => {}}
           showStats={false}
@@ -758,6 +782,7 @@ function OfferLetterV2() {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
+{!isEmployeeUser && (
 <div>
   <label className="block text-sm font-medium text-slate-800 mb-1">
     Employee <span className="text-red-500">*</span>
@@ -836,6 +861,7 @@ function OfferLetterV2() {
   </div>
 </Combobox>
 </div>
+)}
 
               <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1">

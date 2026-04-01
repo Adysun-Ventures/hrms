@@ -30,6 +30,8 @@ import { Combobox } from '@headlessui/react';
 // ⬇️ GLOBAL HEADER IMPORT
 import GlobalPDFHeader from '@/components/components/docComponents/docHeader.jsx';
 import GlobalPDFFooter from '@/components/components/docComponents/docFooter';
+import { useAuth } from '@/context/AuthContext';
+import { formatDateToDayMonYear } from '@/utils/documentUtils';
 
 /* ---------------- COMPANY DATA ---------------- */
 const COMPANY_DATA = {
@@ -71,11 +73,7 @@ const toTitleCase = (str) => {
 const formatDate = (d) => {
   if (!d) return "";
   try {
-    return new Date(d).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric"
-    });
+    return formatDateToDayMonYear(d);
   } catch (e) {
     return d;
   }
@@ -228,6 +226,14 @@ async function buildExperienceLetterDocx(employee, employment, employeeSignDate,
     new Paragraph({ text: `Based on overall performance, we found ${shortName} to be sincere, reliable, and responsible.` }),
     new Paragraph({ text: `We wish ${shortName} all the best for future career opportunities.` }),
     new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
+    new Paragraph({
+      text:
+        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.",
+    }),
+    new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCase(employeeName), bold: true })] }),
+    new Paragraph({ text: "Signature: ________________________________" }),
+    new Paragraph({ text: "" }),
     new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: employeeSignPlace || "" })] }),
     new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: formatDate(employeeSignDate) })] }),
     new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
@@ -293,6 +299,17 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
           We wish {shortName} all the best for future career opportunities.
         </Text>
 
+        <Text style={{ marginBottom: 10, fontWeight: "bold", textDecoration: "underline" }}>
+          Acknowledgement and Acceptance
+        </Text>
+        <Text style={{ marginBottom: 10 }}>
+          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.
+        </Text>
+        <Text style={{ marginBottom: 6 }}>
+          Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCase(employeeName)}</Text>
+        </Text>
+        <Text style={{ marginBottom: 10 }}>Signature: ________________________________</Text>
+
         {/* FOOTER SIGN */}
         <View style={{ marginTop: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
@@ -317,6 +334,9 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
 
 /* ---------------- MAIN COMPONENT ---------------- */
 function expLetterV2() {
+  const { currentUserData } = useAuth();
+  const selfEmployeeId = currentUserData?.userType === 'employee' ? currentUserData?.id : null;
+
   const [candidates, setCandidates] = useState([]);
   const [employments, setEmployments] = useState({});
   const [employee, setEmployee] = useState(null);
@@ -329,19 +349,28 @@ function expLetterV2() {
   const[todaysDate,setTodaysDate]=useState('');
 const [searchTerm, setSearchTerm] = useState("");
 
-  useEffect(() => { fetchEmployees(); }, []);
+  useEffect(() => { fetchEmployees(); }, [selfEmployeeId]);
 
   const fetchEmployees = async () => {
     const qs = await getDocs(collection(db, "employees"));
     const list = qs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setCandidates(list);
+    const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+    setCandidates(visible);
 
     const map = {};
-    for (const emp of list) {
+    for (const emp of visible) {
       const qSnap = await getDocs(query(collection(db, 'employments'), where('employeeId', '==', emp.id)));
       if (!qSnap.empty) map[emp.id] = qSnap.docs[0].data();
     }
     setEmployments(map);
+
+    if (selfEmployeeId && visible.length > 0) {
+      const selfEmp = visible[0];
+      const nextEmployment = map[selfEmp.id] || null;
+      setEmployee(selfEmp);
+      setEmployment(nextEmployment);
+      autoFillFromEmployment(nextEmployment);
+    }
   };
 
   const autoFillFromEmployment = (empEmployment) => {
@@ -399,7 +428,10 @@ const [searchTerm, setSearchTerm] = useState("");
       <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
         <TableHeader
           title="Experience Letter"
-          backButton={{ href: '/dashboard/documents', label: 'Back' }}
+          backButton={{
+            href: selfEmployeeId ? '/employee/documents' : '/dashboard/documents',
+            label: 'Back',
+          }}
           searchValue=""
           onSearchChange={() => {}}
           showStats={false}
@@ -433,6 +465,7 @@ const [searchTerm, setSearchTerm] = useState("");
             <div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
+                {!selfEmployeeId && (
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">
                     Employee <span className="text-red-500">*</span>
@@ -497,6 +530,7 @@ const [searchTerm, setSearchTerm] = useState("");
                 </Combobox>
                 
                 </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Document Generate Date

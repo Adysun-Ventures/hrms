@@ -29,6 +29,8 @@ import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 import { Combobox } from "@headlessui/react";
+import { useAuth } from "@/context/AuthContext";
+import { formatDateToDayMonYear } from "@/utils/documentUtils";
 
 /* ---------------- COMPANY DATA ---------------- */
 const COMPANY_DATA = {
@@ -55,11 +57,7 @@ const Watermark = ({ logoSrc }) => {
 const formatDate = (d) => {
   if (!d) return "";
   try {
-    return new Date(d).toLocaleDateString("en-IN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric"
-    });
+    return formatDateToDayMonYear(d);
   } catch (err) {
     return d;
   }
@@ -205,6 +203,14 @@ async function buildRelievingLetterDocx(employee, employment, employeeSignDate, 
     new Paragraph({ children: [new TextRun({ text: "We hereby confirm that you have been formally relieved from your services effective end of day " }), new TextRun({ text: relievingDate, bold: true }), new TextRun({ text: "." })] }),
     new Paragraph({ text: "Further, you have completed all required exit formalities including handover of company assets, documentation, access rights and clearance." }),
     new Paragraph({ text: "" }),
+    new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
+    new Paragraph({
+      text:
+        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.",
+    }),
+    new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCaseRelief(employeeName), bold: true })] }),
+    new Paragraph({ text: "Signature: ________________________________" }),
+    new Paragraph({ text: "" }),
     new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: employeeSignPlace || "" })] }),
     new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: signDate })] }),
     new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
@@ -335,11 +341,16 @@ const RelievingLetterPDF = ({
           Further, you have completed all required exit formalities including handover of company assets, documentation, access rights and clearance.
         </Text>
 
-        
-
-        
-
-        
+        <Text style={{ marginBottom: 10, fontWeight: "bold", textDecoration: "underline" }}>
+          Acknowledgement and Acceptance
+        </Text>
+        <Text style={{ marginBottom: 10 }}>
+          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.
+        </Text>
+        <Text style={{ marginBottom: 6 }}>
+          Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCaseRelief(employeeName)}</Text>
+        </Text>
+        <Text style={{ marginBottom: 10 }}>Signature: ________________________________</Text>
 
 
         {/* SIGN SECTION */}
@@ -377,6 +388,9 @@ const RelievingLetterPDF = ({
 
 /* ---------------- MAIN UI COMPONENT ---------------- */
 function RelievingLetterV2() {
+  const { currentUserData } = useAuth();
+  const selfEmployeeId = currentUserData?.userType === "employee" ? currentUserData?.id : null;
+
   const [candidates, setCandidates] = useState([]);
   const [employments, setEmployments] = useState({});
   const [employee, setEmployee] = useState(null);
@@ -392,7 +406,7 @@ function RelievingLetterV2() {
 
   useEffect(() => {
     fetchEmployees();
-  }, []);
+  }, [selfEmployeeId]);
 
   const normalizeDateForInput = (value) => {
     if (!value) return "";
@@ -406,12 +420,19 @@ function RelievingLetterV2() {
   const fetchEmployees = async () => {
     const qs = await getDocs(collection(db, "employees"));
     const list = qs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setCandidates(list);
+    const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+    setCandidates(visible);
 
     const map = {};
     const es = await getDocs(collection(db, "employments"));
     es.forEach(d => map[d.data().employeeId] = d.data());
     setEmployments(map);
+
+    if (selfEmployeeId && visible.length > 0) {
+      const selfEmp = visible[0];
+      setEmployee(selfEmp);
+      setEmployment(map[selfEmp.id] || null);
+    }
   };
 
   const handleSelect = (e) => {
@@ -436,7 +457,10 @@ function RelievingLetterV2() {
       <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
         <TableHeader
           title="Relieving Letter"
-          backButton={{ href: "/dashboard/documents", label: "Back" }}
+          backButton={{
+            href: selfEmployeeId ? "/employee/documents" : "/dashboard/documents",
+            label: "Back",
+          }}
           searchValue=""
           onSearchChange={() => {}}
           showStats={false}
@@ -471,6 +495,7 @@ function RelievingLetterV2() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
                 {/* Employee */}
+                {!selfEmployeeId && (
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">
                     Employee <span className="text-red-500">*</span>
@@ -560,6 +585,7 @@ function RelievingLetterV2() {
                 </Combobox>
                 
                 </div>
+                )}
                 
 
                 {/* Sign Date */}

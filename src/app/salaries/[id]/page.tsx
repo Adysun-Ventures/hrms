@@ -228,16 +228,18 @@ export default function SalaryViewPage({ params }: PageParams) {
             label: 'Back' 
           }}
           actionButtons={
-            adminSalary
-              ? [
-                  {
-                    label: 'Edit Salary',
-                    icon: <FiEdit />,
-                    variant: 'orange' as const,
-                    href: `/salaries/${id}/edit?employeeId=${salary?.employeeId}`,
-                  },
-                ]
-              : []
+            isEmployeeView
+              ? []
+              : adminSalary
+                ? [
+                    {
+                      label: 'Edit Salary',
+                      icon: <FiEdit />,
+                      variant: 'orange' as const,
+                      href: `/salaries/${id}/edit?employeeId=${salary?.employeeId}`,
+                    },
+                  ]
+                : []
           }
         />
 

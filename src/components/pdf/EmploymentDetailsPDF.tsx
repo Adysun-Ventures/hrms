@@ -408,31 +408,41 @@ export default function EmploymentDetailsPDF({ employment }: EmploymentDetailsPD
 
   // Salary summary calculations (must match existing Employment page)
   const joiningAnnual = Number(employment.joiningCtc || 0);
-  const currentPfAmount = Number(employment.pf || (employment as any).employerPF || 0);
-  const includePf = currentPfAmount > 0;
+  // PF is stored independently for Joining vs Current salary:
+  // - `employerPF` => Joining PF
+  // - `pf` => Current PF
+  // Backward compatible fallback: if `employerPF` is missing, reuse `pf` for joining.
+  const currentPfAmount = Number(employment.pf ?? 0);
+  const joiningPfAmount = Number((employment as any).employerPF ?? employment.pf ?? 0);
+  const includeJoiningPf = joiningPfAmount > 0;
+  const includeCurrentPf = currentPfAmount > 0;
 
   const joiningInHand =
     joiningAnnual > 0
       ? (() => {
           const joiningMonthly = Math.round(joiningAnnual / 12);
           const joiningBasic = Math.round(joiningMonthly * 0.4);
-          const joiningPfMonthly = includePf ? Math.round(joiningBasic * 0.12) : 0;
+          const joiningPfMonthly = includeJoiningPf
+            ? Math.round(Math.min(joiningBasic, 15000) * 0.12)
+            : 0;
           return joiningMonthly - joiningPfMonthly;
         })()
       : 0;
 
   const currentAnnual = Number(employment.salary || 0);
   const currentInHand = Number((employment as any).inHandCtc || 0);
-  const isPf = includePf ? 'Yes' : 'No';
+  // This column in the salary summary represents Current PF.
+  const isPf = includeCurrentPf ? 'Yes' : 'No';
 
   // Joining salary breakdown (must match existing Employment page)
   const joiningMonthly = joiningAnnual > 0 ? Math.round(joiningAnnual / 12) : 0;
   const joiningBasic = joiningMonthly > 0 ? Math.round(joiningMonthly * 0.4) : 0;
   const joiningDA = joiningBasic > 0 ? Math.round(joiningBasic * 0.1) : 0;
   const joiningHRA = joiningBasic > 0 ? Math.round(joiningBasic * 0.5) : 0;
-  const pfAmount = Number(employment.pf || (employment as any).employerPF || 0);
+  const pfAmount = joiningPfAmount;
   const pfIncluded = pfAmount > 0;
-  const joiningPF = pfIncluded && joiningBasic > 0 ? Math.round(joiningBasic * 0.12) : 0;
+  const joiningPF =
+    pfIncluded && joiningBasic > 0 ? Math.round(Math.min(joiningBasic, 15000) * 0.12) : 0;
   const joiningMedicalAllowance = joiningMonthly > 0 ? 1250 : 0;
   const joiningTransportAllowance = joiningMonthly > 0 ? 1600 : 0;
   const joiningCalculated =

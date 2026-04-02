@@ -102,14 +102,12 @@ export function buildProfessionalReferencesArray(data: {
   teamLead?: any;
   colleague1?: any;
   colleague3?: any;
-  colleague4?: any;
   reportingManagerRef?: any;
 }) {
   return [
     toProfessionalReference(hydrateRefFromDirectory(data.teamLead)),
     toProfessionalReference(hydrateRefFromDirectory(data.colleague1)),
     toProfessionalReference(hydrateRefFromDirectory(data.colleague3)),
-    toProfessionalReference(hydrateRefFromDirectory(data.colleague4)),
     toProfessionalReference(hydrateRefFromDirectory(data.reportingManagerRef)),
   ];
 }

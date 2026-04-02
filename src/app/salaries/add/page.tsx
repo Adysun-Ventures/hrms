@@ -65,6 +65,10 @@ export default function AddSalaryPage() {
   const searchParams = useSearchParams();
   const employeeId = searchParams?.get('employeeId');
   const from = searchParams?.get('from');
+
+  const employmentBreadcrumbHref = employmentId
+    ? `/employments/${employmentId}`
+    : `/employments?employeeId=${employeeId}`;
   
   const createSalaryMutation = useCreateSalary();
   const queryClient = useQueryClient();
@@ -224,6 +228,11 @@ export default function AddSalaryPage() {
 
             // Determine Fixed Pay from inHandCtc
             const fixedPayValue = latestEmployment.inHandCtc || 0;
+            // Determine Variable Pay from employment "Current Salary information" variable
+            const variablePayValue = latestEmployment.currentVariablePay || 0;
+            // PF is stored as a numeric amount on Employment; treat `> 0` as enabled.
+            const pfEnabledValue =
+              Number(latestEmployment.pf ?? (latestEmployment as any).employerPF ?? 0) > 0;
 
             // Pre-fill CTC only if value exists and is greater than 0
             if (ctcValue > 0) {
@@ -236,6 +245,12 @@ export default function AddSalaryPage() {
               setValue('fixedPay', fixedPayValue, { shouldValidate: false, shouldDirty: false });
               toast.success('Fixed Pay pre-filled from employment record', { duration: 3000 });
             }
+
+            setIsPfEnabled(pfEnabledValue);
+
+            // Pre-fill Variable Pay from employment record (Fixed Pay auto-calc uses ctc - variablePay).
+            setValue('variablePay', variablePayValue, { shouldValidate: false, shouldDirty: false });
+            toast.success('Variable Pay pre-filled from employment record', { duration: 3000 });
           } else {
             // If no employment found, show error
             toast.error('No employment record found for this employee. Please create an employment record first.');
@@ -377,6 +392,7 @@ export default function AddSalaryPage() {
 
   return (
     <DashboardLayout
+      allowedUserTypes={['admin']}
       breadcrumbItems={
         employeeId
           ? [
@@ -388,7 +404,7 @@ export default function AddSalaryPage() {
               },
               {
                 label: 'Employment',
-                href: `/employments?employeeId=${employeeId}`,
+                href: employmentBreadcrumbHref,
               },
               {
                 label: 'Salaries',

@@ -732,6 +732,7 @@ const monthName = getMonthName(f.month);
 
   return (
     <DashboardLayout
+      allowedUserTypes={['admin']}
       breadcrumbItems={[
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'Employees', href: '/employees' },

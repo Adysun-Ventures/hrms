@@ -45,6 +45,17 @@ const EmployeeSidebar = () => {
       return normalizedPathname === '/employee-dashboard';
     }
 
+    // "My Salaries" is rendered for both:
+    // - the list page: `/employee/my-salary`
+    // - the view page: `/salaries/:id` (employee route)
+    if (normalizedItemPath === '/employee/my-salary') {
+      return (
+        normalizedPathname === '/employee/my-salary' ||
+        normalizedPathname.startsWith('/employee/my-salary') ||
+        normalizedPathname.startsWith('/salaries/')
+      );
+    }
+
     // "My Employment" lives under `/employments/:id` and `/employments/:id/edit`
     // but the sidebar route is `/employee/employment`. Match both.
     if (normalizedItemPath === '/employee/employment' || itemLast === 'employment') {

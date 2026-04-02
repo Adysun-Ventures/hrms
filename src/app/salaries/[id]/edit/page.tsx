@@ -345,11 +345,14 @@ export default function EditSalaryPage({ params }: PageParams) {
 
   if (isSalaryLoading) {
     return (
-      <DashboardLayout breadcrumbItems={[
+      <DashboardLayout
+        allowedUserTypes={['admin']}
+        breadcrumbItems={[
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'Salaries', href: '/salaries' },
         { label: 'Loading...', isCurrent: true }
-      ]}>
+      ]}
+      >
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 rounded w-1/3"></div>
@@ -366,7 +369,7 @@ export default function EditSalaryPage({ params }: PageParams) {
 
   if (!salary) {
     return (
-      <DashboardLayout>
+      <DashboardLayout allowedUserTypes={['admin']}>
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4">
           <p>Salary not found</p>
         </div>
@@ -382,19 +385,27 @@ export default function EditSalaryPage({ params }: PageParams) {
     );
   }
 
+  const breadcrumbEmployeeId = employeeId || (salary as any).employeeId || '';
+  const breadcrumbEmploymentId = employmentId || (salary as any).employmentId || '';
+
   return (
-    <DashboardLayout breadcrumbItems={[
-      { label: 'Dashboard', href: '/dashboard' },
-      { label: 'Employee', href: '/employees' },
-      ...(employeeId ? [
-        { label: employeeName || 'Loading...', href: `/employees/${employeeId}` },
-        { label: 'Salaries', href: `/salaries?employeeId=${employeeId}` },
-        { label: 'Edit Salary', isCurrent: true }
-      ] : [
-        { label: 'Salaries', href: '/salaries' },
-        { label: 'Edit Salary', isCurrent: true }
-      ])
-    ]}>
+    <DashboardLayout
+      allowedUserTypes={['admin']}
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Employees', href: '/employees' },
+        { label: employeeName || 'Loading...', href: breadcrumbEmployeeId ? `/employees/${breadcrumbEmployeeId}` : undefined },
+        {
+          label: 'Employment',
+          href: breadcrumbEmploymentId ? `/employments/${breadcrumbEmploymentId}` : undefined,
+        },
+        {
+          label: 'Salary',
+          href: breadcrumbEmployeeId ? `/salaries?employeeId=${breadcrumbEmployeeId}` : '/salaries',
+        },
+        { label: 'Edit Salary', isCurrent: true },
+      ]}
+    >
       <Toaster position="top-center" />
       
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">

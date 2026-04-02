@@ -27,15 +27,6 @@ export default function CommonDocumentGenerator({ role }: { role: DocumentRole }
 
   return (
     <div className="pt-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800">Document Generator</h1>
-        <p className="text-slate-800">
-          {role === 'admin'
-            ? 'Generate HR documents with selectable text'
-            : 'Generate your documents with selectable text'}
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {templates.map((doc) => (
           <Link

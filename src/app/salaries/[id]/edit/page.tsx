@@ -196,6 +196,16 @@ export default function EditSalaryPage({ params }: PageParams) {
           if (employments && employments.length > 0) {
             const latestEmployment = employments[0];
             setEmploymentId(latestEmployment.id);
+
+            // Keep edit behavior aligned with Add Salary:
+            // - prefill Variable Pay from employment currentVariablePay
+            // - PF toggle follows employment PF enablement
+            setValue('employmentId', latestEmployment.id, { shouldValidate: false, shouldDirty: false });
+            setValue('variablePay', Number((latestEmployment as any).currentVariablePay ?? 0) || 0, {
+              shouldValidate: false,
+              shouldDirty: false,
+            });
+            setIsPfEnabled(Number((latestEmployment as any).pf ?? (latestEmployment as any).employerPF ?? 0) > 0);
           }
         } catch (error) {
           console.error('Error fetching employee data:', error);
@@ -205,7 +215,7 @@ export default function EditSalaryPage({ params }: PageParams) {
     };
 
     fetchEmployeeData();
-  }, [employeeId]);
+  }, [employeeId, setValue]);
 
   // Form reset logic - load existing salary data
   useEffect(() => {
@@ -224,6 +234,7 @@ export default function EditSalaryPage({ params }: PageParams) {
         year: salary.year || new Date().getFullYear(),
         ctc: salaryData.ctc || 0,
         fixedPay: salaryData.fixedPay || 0,
+        variablePay: salaryData.variablePay || 0,
         workDays: salaryData.workDays || 0,
         leavesCount: salaryData.leavesCount ?? salaryData.totalLeaves ?? 0,
         basic: salaryData.basic || salary.basicSalary || 0,

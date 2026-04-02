@@ -12,19 +12,11 @@ import { FiDownload, FiEye } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import { Toaster } from 'react-hot-toast';
 import { pdf } from '@react-pdf/renderer';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import GlobalPDFHeader from '@/components/components/docComponents/docHeader';
-import GlobalPDFFooter from '@/components/components/docComponents/docFooter';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { saveAs } from 'file-saver';
 import { Salary } from '@/types';
-
-const pdfStyles = StyleSheet.create({
-  page: { padding: 30, fontSize: 12 },
-  heading: { fontSize: 18, marginBottom: 20, fontWeight: 'bold' },
-  section: { marginBottom: 10 },
-});
+import { SalarySlipPDF } from '@/app/doc_pages/pages/v2/SalarySlipGenerator';
 
 const getMonthName = (month: number | string) => {
   const monthIndex = Number(month);
@@ -157,36 +149,49 @@ export default function EmployeeMySalaryPage() {
         (employmentData as any)?.employeeName ||
         'Unknown Employee';
 
-      const earningsData = [
-        { label: 'Basic', amount: (f as any).basic || 0 },
-        { label: 'HRA', amount: (f as any).hra || 0 },
-        { label: 'Conveyance Allowance', amount: (f as any).conveyanceAllowance || 0 },
-        { label: 'Other Allowance', amount: (f as any).otherAllowance || 0 },
-      ];
-
-      const deductionsData = [
-        { label: 'PT', amount: (f as any).ptDeduct || 0 },
-        { label: 'Leave Deduction', amount: (f as any).leavesDeductAmt || 0 },
-        { label: 'Other Deduction', amount: (f as any).otherDeductions || 0 },
-      ];
-
       const safeName = employeeName.replace(/\s+/g, '_');
       const monthName = getMonthName((f as any).month);
 
-      const blob = await pdf(
-        <Document>
-          <Page size="A4" style={pdfStyles.page}>
-            <GlobalPDFHeader />
-            <View style={pdfStyles.section}>
-              <Text style={pdfStyles.heading}>Salary Details</Text>
-              <Text>
-                {employeeName} - {monthName} {(f as any).year}
-              </Text>
-            </View>
-            <GlobalPDFFooter />
-          </Page>
-        </Document>,
-      ).toBlob();
+      const pf = Number((f as any).pf ?? 0) || 0;
+      const pt = Number((f as any).ptDeduct ?? 200) || 0;
+      const leavesDeduction = Number((f as any).leavesDeductAmt ?? 0) || 0;
+      const otherDeduction = Number((f as any).otherDeduction ?? (f as any).otherDeductions ?? 0) || 0;
+      const payYear = Number((f as any).year) || new Date().getFullYear();
+      const payMonth1 = Number((f as any).month) || 1;
+      const monthIndex0 = Math.max(0, Math.min(11, payMonth1 - 1));
+
+      const slipFormData: any = {
+        companyName: (f as any).companyName || 'Adysun Ventures Pvt. Ltd.',
+        employeeName: [(employeeName || '').trim()].filter(Boolean),
+        employeeNameText: employeeName,
+        employeeId: (f as any).employmentId || (f as any).employeeId || salary.employeeId,
+        designation: (f as any).jobTitle || (f as any).designation || '',
+        department: (f as any).department || '',
+        payDate: `${payYear}-${String(payMonth1).padStart(2, '0')}-01`,
+        location: (f as any).location || '',
+        payableDays: String((f as any).workDays ?? (f as any).payableDays ?? 0),
+        leaves: String((f as any).leavesCount ?? (f as any).totalLeaves ?? 0),
+        month: String(monthIndex0),
+        year: String(payYear),
+        panNumber: (f as any).panNumber || '',
+        bankName: (f as any).bankName || '',
+        accountNo: (f as any).accountNo || '',
+        ifscCode: (f as any).ifscCode || '',
+        basicSalary: Number((f as any).basic ?? (f as any).basicSalary ?? 0) || 0,
+        da: Number((f as any).hra ?? (f as any).da ?? 0) || 0,
+        conveyanceAllowance: Number((f as any).conveyanceAllowance ?? 0) || 0,
+        otherAllowance: Number((f as any).otherAllowance ?? 0) || 0,
+        medicalAllowance: Number((f as any).medicalAllowance ?? 0) || 0,
+        cca: Number((f as any).cca ?? 0) || 0,
+        professionalTax: pt,
+        otherDeductions: otherDeduction,
+        leavesDeduction,
+        pfEmployee: pf,
+        enablePF: pf > 0,
+        companyLogo: (f as any).companyLogo || '/assets/adysunventures_logo.png',
+      };
+
+      const blob = await pdf(<SalarySlipPDF formData={slipFormData} />).toBlob();
 
       saveAs(blob, `${safeName}_Salary_${monthName}_${(f as any).year}.pdf`);
     } catch (error) {

@@ -140,8 +140,10 @@ export function calculateMonthlySalary(inputs: MonthlySalaryInputs): MonthlySala
   const conveyanceAllowance = roundToTwoDecimals(2000);
   const otherAllowance = roundToTwoDecimals(perMonth - (basic + hra + conveyanceAllowance));
 
-  // PF (Provident Fund) deduction based on Basic
-  const pfDeduct = roundToTwoDecimals(basic * 0.12);
+  // PF (Provident Fund) deduction based on formula:
+  // PF = 12% of MIN(Basic, 15000)
+  const pfBasis = Math.min(basic, 15000);
+  const pfDeduct = roundToTwoDecimals(pfBasis * 0.12);
 
   // Gross Salary = Per Month (directly, no breakdown)
   // Note: Gross Salary = Basic + HRA + Conveyance Allowance + Other Allowance (should equal Per Month)

@@ -57,14 +57,6 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
     designation?: string;
     location?: string;
   };
-  colleague4?: {
-    name?: string;
-    employeeId?: string;
-    mobileNo?: string;
-    email?: string;
-    designation?: string;
-    location?: string;
-  };
   reportingManagerRef?: {
     name?: string;
     employeeId?: string;
@@ -176,7 +168,6 @@ export default function AddEmploymentPage() {
       teamLead: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
       colleague1: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
       colleague3: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
-      colleague4: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
       reportingManagerRef: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
     }
   });
@@ -200,12 +191,11 @@ export default function AddEmploymentPage() {
   }, [derivedLocation, setValue]);
 
   // ---------------- Professional Reference (same behavior as Edit Employment) ----------------
-  type ProfessionalRefKey = 'teamLead' | 'colleague1' | 'colleague3' | 'colleague4' | 'reportingManagerRef';
+  type ProfessionalRefKey = 'teamLead' | 'colleague1' | 'colleague3' | 'reportingManagerRef';
 
   const professionalRefTeamLeadName = watch('teamLead.name') || '';
   const professionalRefColleague1Name = watch('colleague1.name') || '';
   const professionalRefColleague3Name = watch('colleague3.name') || '';
-  const professionalRefColleague4Name = watch('colleague4.name') || '';
   const professionalRefReportingManagerName = watch('reportingManagerRef.name') || '';
   const showProfessionalReferenceExtraFields = false;
 
@@ -256,12 +246,6 @@ export default function AddEmploymentPage() {
   }, [professionalRefColleague3Name]);
 
   useEffect(() => {
-    if (!professionalRefColleague4Name) return;
-    autoFillProfessionalReferenceFromDirectory('colleague4', professionalRefColleague4Name);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [professionalRefColleague4Name]);
-
-  useEffect(() => {
     if (!professionalRefReportingManagerName) return;
     autoFillProfessionalReferenceFromDirectory('reportingManagerRef', professionalRefReportingManagerName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -299,7 +283,7 @@ export default function AddEmploymentPage() {
   const joiningConveyance = 2000;
   const joiningOtherAllowanceCalculated =
     joiningMonthlyFixed - (joiningBasic + joiningHra + joiningConveyance);
-  const joiningPf = joiningPfIncluded ? joiningBasic * 0.12 : 0;
+  const joiningPf = joiningPfIncluded ? Math.min(joiningBasic, 15000) * 0.12 : 0;
   const joiningOtherAllowanceValue = watch('joiningOtherAllowance') ?? joiningOtherAllowanceCalculated;
 
   const currentMonthlyFixed = (Number(currentFixedPayValue ?? 0) || 0) / 12;
@@ -309,7 +293,7 @@ export default function AddEmploymentPage() {
   const currentOtherAllowanceCalculated =
     currentMonthlyFixed - (currentBasic + currentHra + currentConveyance);
   const currentPfIncluded = watch('currentPfIncluded') || false;
-  const currentPf = currentPfIncluded ? currentBasic * 0.12 : 0;
+  const currentPf = currentPfIncluded ? Math.min(currentBasic, 15000) * 0.12 : 0;
   const currentOtherAllowanceValue = watch('currentOtherAllowance') ?? currentOtherAllowanceCalculated;
 
   const joiningGrossSalary =
@@ -438,7 +422,6 @@ export default function AddEmploymentPage() {
         teamLead,
         colleague1,
         colleague3,
-        colleague4,
         reportingManagerRef,
         joiningPfIncluded,
         currentPfIncluded,
@@ -458,8 +441,20 @@ export default function AddEmploymentPage() {
         basic: Number((data as any).basic ?? 0) || 0,
         da: Number((data as any).da ?? 0) || 0,
         hra: Number((data as any).hra ?? 0) || 0,
+        // Store PF independently for Joining vs Current salary.
+        // - `employerPF` => Joining PF
+        // - `pf` => Current PF
+        employerPF: (data as any).joiningPfIncluded
+          ? ((Math.min(
+              ((Number((data as any).joiningFixedPay ?? 0) / 12) * 0.5),
+              15000
+            ) * 0.12))
+          : 0,
         pf: (data as any).currentPfIncluded
-          ? (((Number((data as any).currentFixedPay ?? 0) / 12) * 0.5) * 0.12)
+          ? ((Math.min(
+              ((Number((data as any).currentFixedPay ?? 0) / 12) * 0.5),
+              15000
+            ) * 0.12))
           : 0,
         medicalAllowance: Number((data as any).medicalAllowance ?? 0) || 0,
         transport: Number((data as any).transport ?? 0) || 0,
@@ -482,7 +477,6 @@ export default function AddEmploymentPage() {
           teamLead,
           colleague1,
           colleague3,
-          colleague4,
           reportingManagerRef,
         }),
         // Add audit fields
@@ -922,70 +916,7 @@ export default function AddEmploymentPage() {
                     </div>
                   </div>
 
-                  <div>
-                    <h3 className="text-md font-medium text-gray-700 mb-3">Colleague 3</h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <select
-                          {...register('colleague4.name' as const, {
-                            onChange: (e) => {
-                              autoFillProfessionalReferenceFromDirectory('colleague4', e.target.value);
-                            },
-                          })}
-                          className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                        >
-                          <option value="">Select</option>
-                          {PROFESSIONAL_REFERENCE_NAME_OPTIONS.map((name) => (
-                            <option key={name} value={name}>
-                              {name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div className={showProfessionalReferenceExtraFields ? 'contents' : 'hidden'}>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Employee Id</label>
-                          <input
-                            {...register('colleague4.employeeId' as const)}
-                            readOnly
-                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Mobile No</label>
-                          <input
-                            {...register('colleague4.mobileNo' as const)}
-                            readOnly
-                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                          <input
-                            {...register('colleague4.email' as const)}
-                            readOnly
-                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
-                          <input
-                            {...register('colleague4.designation' as const)}
-                            readOnly
-                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Place</label>
-                          <input
-                            {...register('colleague4.location' as const)}
-                            readOnly
-                            className="w-full p-2 border border-gray-300 rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  
 
                   <div>
                     <h3 className="text-md font-medium text-gray-700 mb-3">Reporting Manager</h3>

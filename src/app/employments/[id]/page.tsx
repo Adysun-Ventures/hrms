@@ -773,9 +773,15 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             </div>
 
             {(() => {
-              const currentPfAmount = Number(employment.pf || (employment as any).employerPF || 0);
-              const includePf = currentPfAmount > 0;
-              const isPf = includePf ? 'Yes' : 'No';
+              // PF is stored independently for Joining vs Current salary:
+              // - `employerPF` => Joining PF
+              // - `pf` => Current PF
+              // Backward compatible fallback: if `employerPF` is missing, reuse `pf`.
+              const joiningPfAmount = Number((employment as any).employerPF ?? employment.pf ?? 0);
+              const currentPfAmount = Number(employment.pf ?? 0);
+
+              const joiningIsPf = joiningPfAmount > 0 ? 'Yes' : 'No';
+              const currentIsPf = currentPfAmount > 0 ? 'Yes' : 'No';
 
               const joiningCtc = Number(employment.joiningCtc ?? 0) || 0;
               const joiningVariablePay = Number(employment.joiningVariablePay ?? 0) || 0;
@@ -839,7 +845,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                             {currencyOrDash(joiningGrossSalary)}
                           </td>
                           <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                            {isPf}
+                            {joiningIsPf}
                           </td>
                         </tr>
                       </tbody>
@@ -882,7 +888,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                             {currencyOrDash(currentGrossSalary)}
                           </td>
                           <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                            {isPf}
+                            {currentIsPf}
                           </td>
                         </tr>
                       </tbody>
@@ -946,52 +952,56 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   </tr>
                 </thead>
                 <tbody>
-                  {([0, 1, 2, 3, 4] as const).map((idx) => {
-                    const role =
-                      idx === 0
-                        ? 'Team Leader'
-                        : idx === 1
-                          ? 'Colleague 1'
-                          : idx === 2
-                            ? 'Colleague 2'
-                            : idx === 3
-                              ? 'Colleague 3'
-                              : 'Reporting Manager';
-                    const ref = employment.professionalReferences?.[idx];
-                    const nd = parseNameAndDesignation(ref?.nameDesignation);
-                    const em = parseEmailAndMobile(ref?.emailAndMobile);
-                    const refEmployeeId = parseProfessionalReferenceEmployeeId(ref?.nameDesignation);
-                    const refPlace = parseProfessionalReferencePlace(ref?.emailAndMobile);
+                  {(() => {
+                    const proRefs = employment.professionalReferences || [];
+                    // Backward compatible:
+                    // - Older records: [teamLead, colleague1, colleague2(colleague3), colleague3(colleague4), reportingManager]
+                    // - Newer records: [teamLead, colleague1, colleague2(colleague3), reportingManager]
+                    const reportingManagerIndex = proRefs.length >= 5 ? 4 : 3;
+                    const rows = [
+                      { idx: 0, role: 'Team Leader' },
+                      { idx: 1, role: 'Colleague 1' },
+                      { idx: 2, role: 'Colleague 2' },
+                      { idx: reportingManagerIndex, role: 'Reporting Manager' },
+                    ];
 
-                    return (
-                      <tr key={idx}>
-                        <th
-                          scope="row"
-                          className="border border-gray-800 px-3 py-3 text-left font-medium align-top bg-gray-50/80 whitespace-nowrap"
-                        >
-                          {role}
-                        </th>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {nd.name}
-                        </td>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {refEmployeeId}
-                        </td>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {em.email}
-                        </td>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {em.mobile}
-                        </td>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {nd.designation}
-                        </td>
-                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                          {refPlace}
-                        </td>
-                      </tr>
-                    );
-                  })}
+                    return rows.map(({ idx, role }) => {
+                      const ref = employment.professionalReferences?.[idx];
+                      const nd = parseNameAndDesignation(ref?.nameDesignation);
+                      const em = parseEmailAndMobile(ref?.emailAndMobile);
+                      const refEmployeeId = parseProfessionalReferenceEmployeeId(ref?.nameDesignation);
+                      const refPlace = parseProfessionalReferencePlace(ref?.emailAndMobile);
+
+                      return (
+                        <tr key={idx}>
+                          <th
+                            scope="row"
+                            className="border border-gray-800 px-3 py-3 text-left font-medium align-top bg-gray-50/80 whitespace-nowrap"
+                          >
+                            {role}
+                          </th>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {nd.name}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {refEmployeeId}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {em.email}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {em.mobile}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {nd.designation}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {refPlace}
+                          </td>
+                        </tr>
+                      );
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>

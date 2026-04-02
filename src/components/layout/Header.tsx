@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { FiLogOut, FiUser, FiChevronDown, FiFileText } from 'react-icons/fi';
+import { FiLogOut, FiUser, FiChevronDown, FiFileText, FiBriefcase } from 'react-icons/fi';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -314,7 +314,7 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
                     }}
                     className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
                   >
-                    <FiUser className="w-4 h-4" />
+                    <FiBriefcase className="w-4 h-4" />
                     My Employment
                   </button>
                   <button

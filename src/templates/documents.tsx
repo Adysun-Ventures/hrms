@@ -62,8 +62,8 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
   },
   {
     key: 'increment-letter',
-    title: 'Increment / Appraisal Letter',
-    description: 'Generate increment/appraisal letters',
+    title: 'Increment Letter',
+    description: 'Generate increment letters',
     adminHref: '/dashboard/documents/v2/increment-letter',
     employeeHref: '/employee/documents/increment-letter',
     roles: ['admin', 'employee'],

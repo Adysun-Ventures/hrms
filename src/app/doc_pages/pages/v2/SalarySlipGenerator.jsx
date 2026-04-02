@@ -627,7 +627,7 @@ const resolveSalarySlipLayout = (f) => {
   return name.includes('adysun') ? 'adysun' : 'default';
 };
 
-const SalarySlipPDF = ({ formData }) => {
+export const SalarySlipPDF = ({ formData }) => {
   const Layout = layoutRegistry[resolveSalarySlipLayout(formData)] || DefaultSalarySlipLayout;
   return <Document><Layout formData={formData} /></Document>;
 };
@@ -640,7 +640,6 @@ function SalarySlipGeneratorV2() {
   const [candidates, setCandidates] = useState([]);
   const [employments, setEmployments] = useState({});
   const [showPDF, setShowPDF] = useState(false);
-  const [showDocPreview, setShowDocPreview] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [employee, setEmployee] = useState(null);
   const [employment, setEmployment] = useState(null);
@@ -861,12 +860,6 @@ function SalarySlipGeneratorV2() {
   const memoPDF = React.useMemo(()=> <SalarySlipPDF formData={formData}/>, [formData]);
   const handleGenerate = ()=> {
     setShowPDF(true);
-    setShowDocPreview(true);
-  };
-
-  const formatMoney2 = (n) => {
-    const num = Number(n || 0);
-    return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
 return (
@@ -963,7 +956,6 @@ return (
             setEmployment(null);
             setSearchTerm("");
             setShowPDF(false);
-            setShowDocPreview(false);
             setFormData(prev => ({
               ...prev,
               employeeName: [],
@@ -1165,148 +1157,6 @@ return (
       </div>
     )}
 
-    {/* DOCX PREVIEW (HTML) */}
-    {showDocPreview && (
-      <div className="bg-white rounded-lg shadow-lg p-4 mb-8">
-        <div className="mb-6">
-          <h3 className="text-xl font-bold text-gray-800">DOCX Preview</h3>
-        </div>
-
-        <div className="border rounded-lg p-6">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-orange-600 text-2xl font-bold">ADYSUN VENTURES PVT. LTD.</div>
-              <div className="text-sm mt-1">info@adysunventures.com | hr@adysunventures.com | www.AdysunVentures.com</div>
-              <div className="text-sm">Adysun Ventures, WorkPlex, S no 47, near Bhapkar petrol pump</div>
-              <div className="text-sm">Pune - Satara Rd, Bibwewadi, Pune, Maharashtra 411009</div>
-            </div>
-            <div className="shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={formData.companyLogo} alt="Logo" className="w-20 h-20 object-contain" />
-            </div>
-          </div>
-
-          <div className="mt-4 border-t border-black" />
-
-          <div className="mt-4 text-center font-semibold">
-            Salary Slip&nbsp;&nbsp;{MONTH_NAMES[Number(formData.month)]} {formData.year}
-          </div>
-
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full border border-black text-sm">
-              <tbody>
-                <tr className="border-b border-black">
-                  <td className="w-[35%] font-semibold p-2 border-r border-black">Employee Name</td>
-                  <td className="p-2" colSpan={3}>{getEmployeeNameText(formData.employeeName, formData.employeeNameText) || '-'}</td>
-                </tr>
-                <tr className="border-b border-black">
-                  <td className="font-semibold p-2 border-r border-black">Employee Code</td>
-                  <td className="p-2" colSpan={3}>{formData.employeeId || '-'}</td>
-                </tr>
-                <tr className="border-b border-black">
-                  <td className="font-semibold p-2 border-r border-black">Designation</td>
-                  <td className="p-2" colSpan={3}>{formData.designation || '-'}</td>
-                </tr>
-                <tr className="border-b border-black">
-                  <td className="font-semibold p-2 border-r border-black">Department</td>
-                  <td className="p-2" colSpan={3}>{formData.department || '-'}</td>
-                </tr>
-                <tr className="border-b border-black">
-                  <td className="font-semibold p-2 border-r border-black">Bank Name</td>
-                  <td className="p-2">{formData.bankName || '-'}</td>
-                  <td className="font-semibold p-2 border-x border-black">IFSC</td>
-                  <td className="p-2">{formData.ifscCode || '-'}</td>
-                </tr>
-                <tr className="border-b border-black">
-                  <td className="font-semibold p-2 border-r border-black">Bank Account No</td>
-                  <td className="p-2" colSpan={3}>{formData.accountNo || '-'}</td>
-                </tr>
-                <tr className="border-b border-black">
-                  <td className="font-semibold p-2 border-r border-black">Pan No</td>
-                  <td className="p-2" colSpan={3}>{formData.panNumber || '-'}</td>
-                </tr>
-                <tr className="border-b border-black">
-                  <td className="font-semibold p-2 border-r border-black">Leaves</td>
-                  <td className="p-2" colSpan={3}>{formData.leaves || 0}</td>
-                </tr>
-                <tr>
-                  <td className="font-semibold p-2 border-r border-black">Effective Work Days</td>
-                  <td className="p-2" colSpan={3}>{formData.payableDays ? `${formData.payableDays} Days` : '-'}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full border border-black text-sm">
-              <thead className="bg-gray-100">
-                <tr className="border-b border-black">
-                  <th className="p-2 text-left border-r border-black">Earnings</th>
-                  <th className="p-2 text-right border-r border-black">Amount (₹)</th>
-                  <th className="p-2 text-left border-r border-black">Deductions</th>
-                  <th className="p-2 text-right">Amount (₹)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(() => {
-                  const earn = [
-                    ['Basic', formatMoney2(formData.basicSalary || 0)],
-                    ['HRA', formatMoney2(formData.da || 0)],
-                    ['Conveyance Allowance', formatMoney2(formData.conveyanceAllowance || 0)],
-                    ['Other Allowance', formatMoney2(formData.otherAllowance || 0)],
-                  ];
-
-                  const ded = [
-                    ['PT', formatMoney2(formData.professionalTax || 0)],
-                    ...(formData.enablePF ? [['PF (Employee)', formatMoney2(formData.pfEmployee || 0)]] : []),
-                    ['Leave Deduction', formatMoney2(formData.leavesDeduction || 0)],
-                    ['Other Deductions', formatMoney2(formData.otherDeductions || 0)],
-                  ];
-
-                  const max = Math.max(earn.length, ded.length);
-                  const rows = [];
-                  for (let i = 0; i < max; i++) {
-                    const e = earn[i] || ['', ''];
-                    const d = ded[i] || ['', ''];
-                    rows.push(
-                      <tr key={i} className="border-b border-gray-300 last:border-b-0">
-                        <td className="p-2 border-r border-gray-300">{e[0]}</td>
-                        <td className="p-2 text-right border-r border-gray-300">{e[1]}</td>
-                        <td className="p-2 border-r border-gray-300">{d[0]}</td>
-                        <td className="p-2 text-right">{d[1]}</td>
-                      </tr>
-                    );
-                  }
-                  return rows;
-                })()}
-
-                <tr className="bg-gray-100 border-t border-black">
-                  <td className="p-2 font-semibold border-r border-black">Gross Salary</td>
-                  <td className="p-2 text-right font-semibold border-r border-black">{formatMoney2(getTotalEarnings(formData))}</td>
-                  <td className="p-2 font-semibold border-r border-black">Total Deductions</td>
-                  <td className="p-2 text-right font-semibold">{formatMoney2(getTotalDeductions(formData))}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full border border-black text-sm bg-gray-100">
-              <tbody>
-                <tr>
-                  <td className="p-2 font-semibold border-r border-black">Net Salary (A - B)</td>
-                  <td className="p-2 text-right font-semibold">{formatMoney2(getNetSalary(formData))}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-6 text-center font-semibold">
-            This document is digitally generated and does not require signature.
-          </div>
-        </div>
-      </div>
-    )}
   </div>
 );
 

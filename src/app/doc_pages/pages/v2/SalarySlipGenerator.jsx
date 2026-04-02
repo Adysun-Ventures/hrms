@@ -658,6 +658,10 @@ function SalarySlipGeneratorV2() {
     month: new Date().getMonth().toString(),
     year: new Date().getFullYear().toString(),
     panNumber: "",
+    ctc: 0,
+    variablePay: 0,
+    fixedPay: 0,
+    otherAllowanceOverride: null,
     basicSalary: 0,
     da: 0,
     conveyanceAllowance: 0,
@@ -814,6 +818,8 @@ function SalarySlipGeneratorV2() {
         }
 
         const ctc = sal?sal/100000:0;
+        const variablePay = Number(row?.currentVariablePay ?? row?.variablePay ?? 0) || 0;
+        const fixedPay = Number(sal || 0) - Number(variablePay || 0);
         const parts = calculateSalary(ctc, formData.leaves, formData.month, formData.enablePF);
 
         setFormData(prev=>({
@@ -828,6 +834,9 @@ function SalarySlipGeneratorV2() {
           bankName:bank,
           accountNo:acc,
           ifscCode:ifsc,
+          ctc: sal,
+          variablePay,
+          fixedPay,
           ...parts
         }));
       } else {
@@ -840,6 +849,27 @@ function SalarySlipGeneratorV2() {
       return;
     }
 
+    if (name === "ctc" || name === "variablePay") {
+      const nextValue = Number(value || 0) || 0;
+      const nextCtc = name === "ctc" ? nextValue : (Number(formData.ctc || 0) || 0);
+      const nextVariable = name === "variablePay" ? nextValue : (Number(formData.variablePay || 0) || 0);
+      const parts = calculateSalary(nextCtc / 100000, formData.leaves, formData.month, formData.enablePF);
+      setFormData(prev => ({
+        ...prev,
+        [name]: nextValue,
+        fixedPay: nextCtc - nextVariable,
+        otherAllowanceOverride: null,
+        ...parts,
+      }));
+      return;
+    }
+
+    if (name === "otherAllowance") {
+      const next = Number(value || 0) || 0;
+      setFormData((prev) => ({ ...prev, otherAllowanceOverride: next, otherAllowance: next }));
+      return;
+    }
+
     if (name === "leaves" || name === "month") {
       const upd = { ...formData, [name]:value };
       const p = primaryName(formData.employeeName);
@@ -849,7 +879,7 @@ function SalarySlipGeneratorV2() {
         const sal = row?(row.salary||row.ctc||0):(emp.salary||0);
         const ctc=sal?sal/100000:0;
         const parts = calculateSalary(ctc, upd.leaves, upd.month, formData.enablePF);
-        setFormData({...upd,...parts});
+        setFormData({ ...upd, ...parts, otherAllowanceOverride: null });
       } else setFormData(upd);
       return;
     }
@@ -857,10 +887,161 @@ function SalarySlipGeneratorV2() {
     setFormData(prev=>({...prev, [name]:value}));
   };
 
-  const memoPDF = React.useMemo(()=> <SalarySlipPDF formData={formData}/>, [formData]);
+  // Employee dashboard: auto-fill salary slip generator for self user
+  useEffect(() => {
+    if (!selfEmployeeId) return;
+    if (!employee) return;
+
+    const row = employments[employee.id] || {};
+    const salary = row.salary || row.ctc || employee.salary || 0;
+    const ctcInLpa = salary ? salary / 100000 : 0;
+    const variablePay = Number(row?.currentVariablePay ?? row?.variablePay ?? 0) || 0;
+    const fixedPay = Number(salary || 0) - Number(variablePay || 0);
+
+    const calc = calculateSalary(ctcInLpa, formData.leaves, formData.month, formData.enablePF);
+
+    const nextEmployeeId = row?.employmentId || employee.employeeId || employee.id;
+    const alreadySet =
+      formData.employeeId === nextEmployeeId &&
+      Number(formData.ctc || 0) === Number(salary || 0) &&
+      Number(formData.variablePay || 0) === Number(variablePay || 0);
+    if (alreadySet) return;
+
+    setFormData((prev) => ({
+      ...prev,
+      employeeName: [employee.name],
+      employeeNameText: employee.name,
+      employeeId: nextEmployeeId,
+      designation: row.jobTitle || row.designation || '',
+      department: row.department || '',
+      location: row.location || '',
+      panNumber: row.panNumber || '',
+      bankName: row.bankName || '',
+      accountNo: row.accountNo || '',
+      ifscCode: row.ifscCode || '',
+      ctc: salary,
+      variablePay,
+      fixedPay,
+      otherAllowanceOverride: null,
+      ...calc,
+    }));
+  }, [selfEmployeeId, employee, employments, formData.leaves, formData.month, formData.enablePF]);
+
+  const monthlyFixedCalc = (Number(formData.fixedPay || 0) || 0) / 12;
+  const basicCalc = monthlyFixedCalc * 0.5;
+  const hraCalc = basicCalc * 0.4;
+  const conveyanceCalc = 2000;
+  const otherAllowanceCalc = monthlyFixedCalc - (basicCalc + hraCalc + conveyanceCalc);
+  const otherAllowanceValue =
+    formData.otherAllowanceOverride == null
+      ? otherAllowanceCalc
+      : Number(formData.otherAllowanceOverride || 0) || 0;
+  const grossSalaryCalc = basicCalc + hraCalc + conveyanceCalc + otherAllowanceValue;
+  const ptCalc = 200;
+  const payableDaysCalc =
+    (getDaysInMonth(Number(formData.month)) - (Number(formData.leaves || 0) || 0));
+  const pfCalc = formData.enablePF ? (Math.min(basicCalc, 15000) * 0.12) : 0;
+
+  const effectiveFormData = React.useMemo(() => {
+    const nextBasic = Number(basicCalc.toFixed(2));
+    const nextHra = Number(hraCalc.toFixed(2));
+    const nextConvey = Number(conveyanceCalc.toFixed(2));
+    const nextOther = Number(otherAllowanceValue.toFixed(2));
+    const nextPt = Number(ptCalc);
+    const nextPf = Number(pfCalc.toFixed(2));
+    const nextPayable = String(Math.max(0, Math.trunc(payableDaysCalc)));
+
+    return {
+      ...formData,
+      basicSalary: nextBasic,
+      da: nextHra,
+      conveyanceAllowance: nextConvey,
+      otherAllowance: nextOther,
+      medicalAllowance: 0,
+      cca: 0,
+      professionalTax: nextPt,
+      pfEmployee: formData.enablePF ? nextPf : 0,
+      payableDays: nextPayable,
+    };
+  }, [
+    formData,
+    basicCalc,
+    hraCalc,
+    conveyanceCalc,
+    otherAllowanceValue,
+    ptCalc,
+    pfCalc,
+    payableDaysCalc,
+  ]);
+
+  const memoPDF = React.useMemo(() => <SalarySlipPDF formData={effectiveFormData} />, [effectiveFormData]);
   const handleGenerate = ()=> {
     setShowPDF(true);
   };
+
+  // Keep PDF values in sync with the computed/override other allowance.
+  useEffect(() => {
+    const next = Number(otherAllowanceValue.toFixed(2));
+    if (Number(formData.otherAllowance || 0) === next) return;
+    setFormData((prev) => ({ ...prev, otherAllowance: next }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otherAllowanceValue]);
+
+  // Keep document/PDF earnings fields in sync with the visible calculations.
+  useEffect(() => {
+    const nextBasic = Number(basicCalc.toFixed(2));
+    const nextHra = Number(hraCalc.toFixed(2));
+    const nextConvey = Number(conveyanceCalc.toFixed(2));
+    const nextOther = Number(otherAllowanceValue.toFixed(2));
+
+    if (
+      Number(formData.basicSalary || 0) === nextBasic &&
+      Number(formData.da || 0) === nextHra &&
+      Number(formData.conveyanceAllowance || 0) === nextConvey &&
+      Number(formData.otherAllowance || 0) === nextOther
+    ) {
+      return;
+    }
+
+    setFormData((prev) => ({
+      ...prev,
+      basicSalary: nextBasic,
+      da: nextHra,
+      conveyanceAllowance: nextConvey,
+      otherAllowance: nextOther,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [basicCalc, hraCalc, conveyanceCalc, otherAllowanceValue]);
+
+  // Keep deduction fields in sync with the formula values.
+  useEffect(() => {
+    const nextPt = ptCalc;
+    if (
+      Number(formData.professionalTax || 0) === Number(nextPt)
+    ) {
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      professionalTax: nextPt,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ptCalc]);
+
+  useEffect(() => {
+    const nextPf = Number(pfCalc.toFixed(2));
+    if (!formData.enablePF && Number(formData.pfEmployee || 0) === 0) return;
+    if (Number(formData.pfEmployee || 0) === nextPf) return;
+    setFormData((prev) => ({ ...prev, pfEmployee: formData.enablePF ? nextPf : 0 }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pfCalc, formData.enablePF]);
+
+  useEffect(() => {
+    const nextPayable = String(Math.max(0, Math.trunc(payableDaysCalc)));
+    if (String(formData.payableDays || '') === nextPayable) return;
+    setFormData((prev) => ({ ...prev, payableDays: nextPayable }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payableDaysCalc]);
 
 return (
   <div className="w-full pt-6">
@@ -917,6 +1098,8 @@ return (
       const row = employments[emp.id] || {};
       const salary = row.salary || row.ctc || emp.salary || 0;
       const ctcInLpa = salary ? salary / 100000 : 0;
+      const variablePay = Number(row?.currentVariablePay ?? row?.variablePay ?? 0) || 0;
+      const fixedPay = Number(salary || 0) - Number(variablePay || 0);
 
       const calc = calculateSalary(
         ctcInLpa,
@@ -937,6 +1120,9 @@ return (
         bankName: row.bankName || "",
         accountNo: row.accountNo || "",
         ifscCode: row.ifscCode || "",
+        ctc: salary,
+        variablePay,
+        fixedPay,
         ...calc
       }));
     }}
@@ -968,6 +1154,9 @@ return (
               bankName: '',
               accountNo: '',
               ifscCode: '',
+              ctc: 0,
+              variablePay: 0,
+              fixedPay: 0,
             }));
           }}
           className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
@@ -1052,7 +1241,127 @@ return (
   </select>
 </div>
 
-        
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            CTC
+          </label>
+          <input
+            type="number"
+            name="ctc"
+            value={formData.ctc ?? 0}
+            onChange={handleInputChange}
+            className="w-full p-2.5 border border-gray-300 rounded-md"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Variable
+          </label>
+          <input
+            type="number"
+            name="variablePay"
+            value={formData.variablePay ?? 0}
+            onChange={handleInputChange}
+            className="w-full p-2.5 border border-gray-300 rounded-md"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Fixed
+          </label>
+          <input
+            readOnly
+            value={formData.fixedPay ?? 0}
+            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Monthly Fixed
+          </label>
+          <input
+            readOnly
+            value={monthlyFixedCalc.toFixed(2)}
+            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Basic
+          </label>
+          <input
+            readOnly
+            value={basicCalc.toFixed(2)}
+            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            HRA
+          </label>
+          <input
+            readOnly
+            value={hraCalc.toFixed(2)}
+            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Conveyance Allowance
+          </label>
+          <input
+            readOnly
+            value={conveyanceCalc}
+            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Other Allowance
+          </label>
+          <input
+            type="number"
+            name="otherAllowance"
+            step="0.01"
+            value={otherAllowanceValue.toFixed(2)}
+            onChange={handleInputChange}
+            onBlur={(e) => {
+              const v = Number(e.target.value || 0) || 0;
+              const vv = Number(v.toFixed(2));
+              setFormData((prev) => ({ ...prev, otherAllowanceOverride: vv, otherAllowance: vv }));
+            }}
+            className="w-full p-2.5 border border-gray-300 rounded-md"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Gross Salary
+          </label>
+          <input
+            readOnly
+            value={grossSalaryCalc.toFixed(2)}
+            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            PT (Deduct)
+          </label>
+          <input
+            readOnly
+            value={ptCalc}
+            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+          />
+        </div>
 
         {/* Leaves */}
         <div className="form-group">
@@ -1070,14 +1379,13 @@ return (
           />
         </div>
 
-        {/* Payable Days */}
         <div className="form-group">
           <label className="block mb-2 text-sm font-medium text-gray-700">
             Payable Days
           </label>
           <input
             readOnly
-            value={formData.payableDays}
+            value={Math.max(0, Math.trunc(payableDaysCalc))}
             className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>
@@ -1101,6 +1409,19 @@ return (
             </label>
           </div>
         </div>
+
+        {formData.enablePF && (
+          <div className="form-group">
+            <label className="block mb-2 text-sm font-medium text-gray-700">
+              PF Amount
+            </label>
+            <input
+              readOnly
+              value={Number(pfCalc || 0).toFixed(2)}
+              className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+            />
+          </div>
+        )}
 
       </div>
 

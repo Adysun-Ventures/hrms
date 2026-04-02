@@ -19,9 +19,7 @@ import { useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { FaRupeeSign } from "react-icons/fa";
 import { pdf } from '@react-pdf/renderer';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import GlobalPDFHeader from '@/components/components/docComponents/docHeader';
-import GlobalPDFFooter from '@/components/components/docComponents/docFooter';
+import { SalarySlipPDF } from '@/app/doc_pages/pages/v2/SalarySlipGenerator';
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/firebase/config";
 import { saveAs } from "file-saver";
@@ -64,11 +62,6 @@ const EmployeeNameDisplay = ({ employeeId }: { employeeId: string }) => {
 
   return <span>{employeeName}</span>;
 };
-const pdfStyles = StyleSheet.create({
-  page: { padding: 30, fontSize: 12 },
-  heading: { fontSize: 18, marginBottom: 20, fontWeight: 'bold' },
-  section: { marginBottom: 10 }
-});
 
 
 export default function SalariesPage() {
@@ -216,10 +209,11 @@ const handleDownload = async (salary: Salary) => {
     }
 
     // ===== 3️⃣ FINAL MERGED OBJECT =====
+    // Ensure salary fields take precedence over employment/employee data.
     const f: any = {
-      ...salary,
       ...employeeData,
-      ...employmentData
+      ...employmentData,
+      ...salary,
     };
 
     console.log(employeeData,employmentData )
@@ -232,172 +226,65 @@ const handleDownload = async (salary: Salary) => {
       employmentData?.employeeName ||
       "Unknown Employee";
 
-    // ===== Earnings =====
+    const safeName = employeeName.replace(/\s+/g, "_");
+    const monthName = getMonthName(f.month);
+
+    const payYear = Number(f.year) || new Date().getFullYear();
+    const payMonth1 = Number(f.month) || 1;
+    const monthIndex0 = Math.max(0, Math.min(11, payMonth1 - 1));
+    const leavesCount = Number(f.leavesCount ?? 0) || 0;
+    const payableDays = Math.max(0, (new Date(payYear, payMonth1, 0).getDate()) - leavesCount);
+
+    const pf = Number(f.pf ?? 0) || 0;
+    const pt = Number(f.ptDeduct ?? 200) || 0;
+    const otherDeduction = Number(f.otherDeduction ?? f.otherDeductions ?? 0) || 0;
+
     const earningsData = [
-      { label: 'Basic', amount: f.basic || 0 },
-      { label: 'HRA', amount: f.hra || 0 },
-      { label: 'Conveyance Allowance', amount: f.conveyanceAllowance || 0 },
-      { label: 'Other Allowance', amount: f.otherAllowance || 0 },
+      { label: 'Basic', amount: Number(f.basic ?? 0) || 0 },
+      { label: 'HRA', amount: Number(f.hra ?? 0) || 0 },
+      { label: 'Conveyance Allowance', amount: Number(f.conveyanceAllowance ?? 0) || 0 },
+      { label: 'Other Allowance', amount: Number(f.otherAllowance ?? 0) || 0 },
     ];
-
-    // ===== Deductions =====
     const deductionsData = [
-      { label: 'PT', amount: f.ptDeduct || 0 },
-      { label: 'Leave Deduction', amount: f.leavesDeductAmt || 0 },
-      { label: 'Other Deduction', amount: f.otherDeductions || 0 },
-    ];
-    const tableBox = {
-  width: "100%",
-  borderWidth: 0.75,
-  borderColor: "#000",
-  marginBottom: 10
-};
-const safeName = employeeName.replace(/\s+/g, "_");
-const monthName = getMonthName(f.month);
+      { label: 'PT', amount: pt },
+      { label: 'PF (Employee)', amount: pf },
+      { label: 'Other Deductions', amount: otherDeduction },
+      { label: 'Leave Deduction', amount: Number(f.leavesDeductAmt ?? 0) || 0 },
+    ].filter((d) => d.label !== 'PF (Employee)' || pf > 0);
 
-    // ===== PDF =====
-    const blob = await pdf(
-      <Document>
-        <Page size="A4" style={{
-          paddingTop: 18 * 2.83,
-          paddingBottom: 18 * 2.83,
-          paddingLeft: 10 * 2.83,
-          paddingRight: 10 * 2.83,
-          fontFamily: "Helvetica",
-          fontSize: 9,
-          display: "flex",
-          flexDirection: "column"
-        }}>
+    const slipFormData: any = {
+      companyName: f.companyName || 'Adysun Ventures Pvt. Ltd.',
+      employeeName: [(employeeName || '').trim()].filter(Boolean),
+      employeeNameText: employeeName,
+      employeeId: f.employmentId || f.employeeId || salary.employeeId,
+      designation: f.jobTitle || f.designation || '',
+      department: f.department || '',
+      payDate: `${payYear}-${String(payMonth1).padStart(2, '0')}-01`,
+      location: f.location || '',
+      payableDays: String(f.payableDays ?? payableDays),
+      leaves: String(leavesCount),
+      month: String(monthIndex0),
+      year: String(payYear),
+      panNumber: f.panNumber || '',
+      bankName: f.bankName || '',
+      accountNo: f.accountNo || '',
+      ifscCode: f.ifscCode || '',
+      basicSalary: Number(f.basic ?? 0) || 0,
+      da: Number(f.hra ?? 0) || 0,
+      conveyanceAllowance: Number(f.conveyanceAllowance ?? 0) || 0,
+      otherAllowance: Number(f.otherAllowance ?? 0) || 0,
+      medicalAllowance: 0,
+      cca: 0,
+      professionalTax: pt,
+      otherDeductions: otherDeduction,
+      leavesDeduction: Number(f.leavesDeductAmt ?? 0) || 0,
+      pfEmployee: pf,
+      enablePF: pf > 0,
+      companyLogo: f.companyLogo || '/assets/adysunventures_logo.png',
+    };
 
-          <GlobalPDFHeader />
-
-          <View style={{ borderBottomWidth: 1, marginBottom: 10 }} />
-
-          <Text style={{
-            fontSize: 10,
-            fontWeight: "bold",
-            textAlign: "center",
-            marginBottom: 8
-          }}>
-            Salary Slip {getMonthName(f.month)} {f.year}
-          </Text>
-
-          {/* ===== DETAILS ===== */}
-          <View style={ tableBox }>
-            {[
-              { label: "Employee Name", value: employeeName },
-              { label: "Employee ID", value: f.employeeId },
-              { label: "Designation", value: f.jobTitle || "-" },
-              { label: "Bank Name", value: f.bankName || "-" },
-              { label: "Account No", value: f.accountNo || "-" },
-              { label: "IFSC Code", value: f.ifscCode || "-" },
-              {label:"Pan Number", value: f.panNumber || "-"},
-              
-              { label: "Leaves", value: f.leavesCount },
-              { label: "Work Days", value: f.workDays },
-              
-            ].map((row, idx) => (
-              <View key={row.label} style={{
-                flexDirection: "row",
-                borderBottomWidth: 0.6
-
-              }}>
-                <Text style={{
-                  width: "60%",
-                  padding: 4,
-                  borderRightWidth: 0.6,
-                  fontWeight: "bold"
-                }}>
-                  {row.label}
-                </Text>
-
-                <Text style={{ width: "60%", padding: 4 }}>
-                  {row.value ?? "-"}
-                </Text>
-              </View>
-            ))}
-          </View>
-
-          {/* ===== EARNINGS + DEDUCTIONS ===== */}
-          <View style={{ flexDirection: "row", borderWidth: 0.75, marginBottom: 10 }}>
-
-            {/* Earnings */}
-            <View style={{ width: "50%", borderRightWidth: 0.75 }}>
-              <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderBottomWidth: 0.75 }}>
-                <Text style={{ width: "60%", padding: 4, fontWeight: "bold", borderRightWidth: 0.75 }}>Earnings (A)</Text>
-                <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>Amount</Text>
-              </View>
-
-              {earningsData.map(item => (
-                <View key={item.label} style={{ flexDirection: "row", borderBottomWidth: 0.6,borderRightWidth: 0.75 }}>
-                  <Text style={{ width: "60%", padding: 4 ,borderRightWidth: 0.75}} wrap={false}>{item.label}</Text>
-                  <Text style={{ width: "40%", padding: 4, textAlign: "right" }}> {item.amount}</Text>
-                </View>
-              ))}
-
-              <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8" }}>
-                <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Gross Salary</Text>
-                <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
-                   {f.grossSalary || f.totalSalary || 0}
-                </Text>
-              </View>
-            </View>
-
-            {/* Deductions */}
-            <View style={{ width: "50%" }}>
-              <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderBottomWidth: 0.75 ,borderRightWidth: 0.75 }}>
-                <Text style={{ width: "60%", padding: 4, fontWeight: "bold",borderRightWidth: 0.75 }}>Deductions (B)</Text>
-                <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>Amount</Text>
-              </View>
-
-              {deductionsData.map(item => (
-                <View key={item.label} style={{ flexDirection: "row", borderBottomWidth: 0.6,borderRightWidth: 0.75 }}>
-                  <Text style={{ width: "60%", padding: 4 ,borderRightWidth: 0.75}} wrap={false}>{item.label}</Text>
-                  <Text style={{ width: "40%", padding: 4, textAlign: "right" }}> {item.amount}</Text>
-                </View>
-              ))}
-
-              <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8",marginTop:18.5 }}>
-                <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Total Deductions</Text>
-                <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
-                   {f.totalDeduction || 0}
-                </Text>
-              </View>
-            </View>
-
-          </View>
-
-          {/* Net */}
-          <View style={{ borderWidth: 0.75, backgroundColor: "#e8e8e8" }}>
-            <View style={{ flexDirection: "row" }}>
-              <Text style={{ width: "50%", padding: 4, fontWeight: "bold", borderRightWidth: 0.75 }}>
-                Net Salary (A - B)
-              </Text>
-              <Text style={{ width: "50%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
-                 {f.netSalary || f.inhandSalary || 0}
-              </Text>
-            </View>
-          </View>
-
-          <Text style={{ textAlign: "center", marginTop: 10, fontWeight: "bold" }}>
-            This document is digitally generated and does not require signature.
-          </Text>
-
-          <View style={{ flexGrow: 1 }} />
-          <View style={{ borderBottomWidth: 1, marginBottom: 8 }} />
-
-          <GlobalPDFFooter />
-
-        </Page>
-      </Document>
-    ).toBlob();
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Salary-${safeName}-${monthName}-${f.year}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const blob = await pdf(<SalarySlipPDF formData={slipFormData} />).toBlob();
+    saveAs(blob, `Salary-${safeName}-${monthName}-${f.year}.pdf`);
 
     toast.success("PDF Downloaded");
 

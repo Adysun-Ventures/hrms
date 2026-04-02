@@ -2,7 +2,7 @@ import React from 'react';
 import DocumentGeneratorFrame from '@/components/documents/DocumentGeneratorFrame';
 
 export default function EmployeeOfferLetterPage() {
-  return (
+    return (
     <DocumentGeneratorFrame
       role="employee"
       documentType="v2/offer-letter"
@@ -10,7 +10,7 @@ export default function EmployeeOfferLetterPage() {
       description="Generate and download your offer letter"
       backPath="/employee/documents"
       backLabel="Back to Documents"
-      breadcrumbItems={[
+    breadcrumbItems={[
         { label: 'Dashboard', href: '/employee-dashboard' },
         { label: 'Documents', href: '/employee/documents' },
         { label: 'Offer Letter', isCurrent: true },

@@ -38,6 +38,12 @@ const getMonthName = (month: number | string) => {
   return months[monthIndex - 1] || 'Unknown';
 };
 
+const getDaysInMonth = (month1to12: number, year: number) => {
+  const m = Math.min(12, Math.max(1, Number(month1to12) || 1));
+  const y = Number(year) || new Date().getFullYear();
+  return new Date(y, m, 0).getDate();
+};
+
 export default function EmployeeMySalaryPage() {
   const router = useRouter();
   const { currentUserData } = useAuth();
@@ -136,10 +142,11 @@ export default function EmployeeMySalaryPage() {
         employmentData = rows[0];
       }
 
+      // Ensure salary fields take precedence over employment/employee data.
       const f: any = {
-        ...salary,
         ...employeeData,
         ...employmentData,
+        ...salary,
       };
 
       const employeeName =
@@ -154,11 +161,12 @@ export default function EmployeeMySalaryPage() {
 
       const pf = Number((f as any).pf ?? 0) || 0;
       const pt = Number((f as any).ptDeduct ?? 200) || 0;
-      const leavesDeduction = Number((f as any).leavesDeductAmt ?? 0) || 0;
       const otherDeduction = Number((f as any).otherDeduction ?? (f as any).otherDeductions ?? 0) || 0;
       const payYear = Number((f as any).year) || new Date().getFullYear();
       const payMonth1 = Number((f as any).month) || 1;
       const monthIndex0 = Math.max(0, Math.min(11, payMonth1 - 1));
+      const leavesCount = Number((f as any).leavesCount ?? 0) || 0;
+      const payableDays = Math.max(0, getDaysInMonth(payMonth1, payYear) - leavesCount);
 
       const slipFormData: any = {
         companyName: (f as any).companyName || 'Adysun Ventures Pvt. Ltd.',
@@ -169,23 +177,24 @@ export default function EmployeeMySalaryPage() {
         department: (f as any).department || '',
         payDate: `${payYear}-${String(payMonth1).padStart(2, '0')}-01`,
         location: (f as any).location || '',
-        payableDays: String((f as any).workDays ?? (f as any).payableDays ?? 0),
-        leaves: String((f as any).leavesCount ?? (f as any).totalLeaves ?? 0),
+        payableDays: String((f as any).payableDays ?? payableDays),
+        leaves: String(leavesCount),
         month: String(monthIndex0),
         year: String(payYear),
         panNumber: (f as any).panNumber || '',
         bankName: (f as any).bankName || '',
         accountNo: (f as any).accountNo || '',
         ifscCode: (f as any).ifscCode || '',
-        basicSalary: Number((f as any).basic ?? (f as any).basicSalary ?? 0) || 0,
-        da: Number((f as any).hra ?? (f as any).da ?? 0) || 0,
+        // Use Add Salary page fields (basic/hra/...) for document accuracy
+        basicSalary: Number((f as any).basic ?? 0) || 0,
+        da: Number((f as any).hra ?? 0) || 0,
         conveyanceAllowance: Number((f as any).conveyanceAllowance ?? 0) || 0,
         otherAllowance: Number((f as any).otherAllowance ?? 0) || 0,
-        medicalAllowance: Number((f as any).medicalAllowance ?? 0) || 0,
-        cca: Number((f as any).cca ?? 0) || 0,
+        medicalAllowance: 0,
+        cca: 0,
         professionalTax: pt,
         otherDeductions: otherDeduction,
-        leavesDeduction,
+        leavesDeduction: Number((f as any).leavesDeductAmt ?? 0) || 0,
         pfEmployee: pf,
         enablePF: pf > 0,
         companyLogo: (f as any).companyLogo || '/assets/adysunventures_logo.png',

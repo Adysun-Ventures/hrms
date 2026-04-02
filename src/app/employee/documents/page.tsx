@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { FiFileText, FiDownload } from 'react-icons/fi';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 
@@ -60,11 +61,10 @@ export default function EmployeeDocumentsPage() {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {documents.map((doc, index) => (
-            <div 
+            <Link
               key={index} 
-              role="button"
-              aria-disabled="true"
-              className="block bg-white p-6 rounded-lg border border-gray-100 opacity-60 cursor-not-allowed"
+              href={doc.path}
+              className="block bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-100"
             >
               <div className="flex items-center mb-3">
                 <div className="p-2 bg-blue-50 rounded-lg text-blue-600 mr-3">
@@ -73,7 +73,7 @@ export default function EmployeeDocumentsPage() {
                 <h2 className="text-lg font-semibold text-slate-800">{doc.title}</h2>
               </div>
               <p className="text-slate-800 text-sm">{doc.description}</p>
-            </div>
+            </Link>
           ))}
         </div>
 

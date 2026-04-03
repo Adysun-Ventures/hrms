@@ -12,8 +12,9 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword
 } from 'firebase/auth';
-import { auth } from '../firebase/config';
+import { auth, db } from '../firebase/config';
 import { checkAdminByPhone, createAdminSession, checkUserByPhone } from '../utils/firebaseUtils';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 // Extend Window interface to include recaptchaVerifier
 declare global {
@@ -82,6 +83,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const restoreSessions = async () => {
       try {
+        type EmploymentMinimal = {
+          isResignation?: boolean;
+          is_resigned?: boolean;
+          employmentStatus?: string | null;
+        };
+
+        const hasActiveEmployment = async (employeeId: string) => {
+          const q = query(collection(db, 'employments'), where('employeeId', '==', employeeId));
+          const snap = await getDocs(q);
+          if (snap.empty) return false;
+
+          const employments = snap.docs.map((d) => d.data() as EmploymentMinimal);
+
+          // Active = not resigned and not ended.
+          return employments.some((emp) => {
+            const isResigned =
+              emp.isResignation === true ||
+              emp.is_resigned === true ||
+              emp.employmentStatus === 'resigned';
+
+            const isInactive = emp.employmentStatus === 'inactive';
+            return !isResigned && !isInactive;
+          });
+        };
+
         // Check for admin session
         const adminSessionId = localStorage.getItem('adminSessionId');
         const adminData = localStorage.getItem('adminData');
@@ -107,7 +133,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // (status might have changed after last login)
           try {
             const latest = await checkUserByPhone(employeeUser.phone);
-            if (!latest || latest.userType !== 'employee' || latest.status !== 'active' || latest.is_resigned) {
+            const activeEmployment = latest?.id ? await hasActiveEmployment(latest.id) : false;
+
+            if (
+              !latest ||
+              latest.userType !== 'employee' ||
+              !activeEmployment
+            ) {
               localStorage.removeItem('employeeSessionId');
               localStorage.removeItem('employeeData');
               document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
@@ -146,6 +178,52 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return unsubscribe;
   }, []);
+
+  // If an employee becomes resigned/inactive after login, block further access by validating
+  // their current employment records and auto-logging them out when no active employment exists.
+  useEffect(() => {
+    const validateEmployeeEmployment = async () => {
+      if (!currentUserData || currentUserData.userType !== 'employee') return;
+
+      type EmploymentMinimal = {
+        isResignation?: boolean;
+        is_resigned?: boolean;
+        employmentStatus?: string | null;
+      };
+
+      try {
+        const q = query(
+          collection(db, 'employments'),
+          where('employeeId', '==', currentUserData.id)
+        );
+        const snap = await getDocs(q);
+        if (snap.empty) {
+          void logout();
+          return;
+        }
+
+        const employments = snap.docs.map((d) => d.data() as EmploymentMinimal);
+        const hasActiveEmployment = employments.some((emp) => {
+          const isResigned =
+            emp.isResignation === true ||
+            emp.is_resigned === true ||
+            emp.employmentStatus === 'resigned';
+
+          const isInactive = emp.employmentStatus === 'inactive';
+          return !isResigned && !isInactive;
+        });
+
+        if (!hasActiveEmployment) {
+          void logout();
+        }
+      } catch (e) {
+        // If validation fails, keep the session (don't lock out due to transient errors).
+        console.warn('Employment validation failed:', e);
+      }
+    };
+
+    void validateEmployeeEmployment();
+  }, [currentUserData]);
 
   const signInWithCredentials = async (phoneNumber: string, password: string) => {
     try {
@@ -188,14 +266,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } else if (userData.userType === 'employee') {
         // Employee authentication
-        // Check if employee is resigned
-        if (userData.is_resigned) {
-          console.log('❌ Employee account is resigned!');
-          throw new Error('This account has been resigned. Please contact administrator.');
-        }
-        
-        if (userData.status === 'active' && !userData.is_resigned && userData.password === password) {
+        if (userData.password === password) {
           console.log('✅ Employee password match successful!');
+
+          // Block login if employee has no active employment
+          type EmploymentMinimal = {
+            isResignation?: boolean;
+            is_resigned?: boolean;
+            employmentStatus?: string | null;
+          };
+
+          const q = query(collection(db, 'employments'), where('employeeId', '==', userData.id));
+          const snap = await getDocs(q);
+          const employments = snap.docs.map((d) => d.data() as EmploymentMinimal);
+
+          const hasActiveEmployment = employments.some((emp) => {
+            const isResigned =
+              emp.isResignation === true ||
+              emp.is_resigned === true ||
+              emp.employmentStatus === 'resigned';
+
+            const isInactive = emp.employmentStatus === 'inactive';
+            return !isResigned && !isInactive;
+          });
+
+          if (!hasActiveEmployment) {
+            throw new Error('Your employment is inactive/resigned. Please contact administrator.');
+          }
           
           // Store employee data in localStorage for persistence
           localStorage.setItem('employeeSessionId', userData.id);

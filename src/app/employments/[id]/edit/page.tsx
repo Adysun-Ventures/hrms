@@ -748,6 +748,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         reportingManagerRef: data.reportingManagerRef,
       });
 
+      // No longer capture lastSalaryDate from UI; remove it from payload to keep schema clean.
+      delete formattedData.lastSalaryDate;
+
       // Only include optional fields if they have values (not empty strings or undefined)
       if (data.endDate && data.endDate.trim()) {
         formattedData.endDate = data.endDate;
@@ -1518,34 +1521,31 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Drawn Salary
+                        Last Drawn CTC
                       </label>
                       <input
                         type="number"
-                        {...register('lastDrawnSalary', {
-                          min: { value: 0, message: 'Salary must be positive' }
+                        {...register('lastSalaryAmount', {
+                          min: { value: 0, message: 'CTC must be positive' },
+                          valueAsNumber: true,
                         })}
                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter last drawn salary"
+                        placeholder="Enter last drawn CTC"
                       />
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Salary Date
+                        Last Drawn In Hand
                       </label>
-                      <Controller
-                        name="lastSalaryDate"
-                        control={control}
-                        render={({ field }) => (
-                          <CustomDateInput
-                            name="lastSalaryDate"
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Select last salary date"
-                            className="px-3 py-2"
-                          />
-                        )}
+                      <input
+                        type="number"
+                        {...register('lastDrawnSalary', {
+                          min: { value: 0, message: 'In-hand must be positive' },
+                          valueAsNumber: true,
+                        })}
+                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Enter last drawn in-hand"
                       />
                     </div>
 

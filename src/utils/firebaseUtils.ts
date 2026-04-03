@@ -1537,8 +1537,9 @@ export const checkUserByPhone = async (phoneNumber: string) => {
     
     // Then check if it's an employee
     const employeeData = await checkEmployeeByPhone(phoneNumber);
-    if (employeeData && employeeData.status === 'active') {
-      console.log('✅ Found active employee');
+    if (employeeData) {
+      // Do not block here by `employees.status`; employee access is validated using their employment record.
+      console.log('✅ Found employee');
       return { ...employeeData, userType: 'employee' as const };
     }
     

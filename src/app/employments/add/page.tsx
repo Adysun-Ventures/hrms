@@ -486,6 +486,9 @@ export default function AddEmploymentPage() {
         updatedBy: auditId,
       };
 
+      // UI no longer captures lastSalaryDate for resignation details.
+      delete (formattedData as any).lastSalaryDate;
+
       const created = await addEmployment(formattedData);
       toast.success('Employment record created successfully!', { id: 'add-employment' });
 
@@ -1065,18 +1068,7 @@ export default function AddEmploymentPage() {
                     />
                   </div> */}
 
-                  {/* <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Resignation
-                    </label>
-                    <select
-                      {...register('isResignation')}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    >
-                      <option value="false">No</option>
-                      <option value="true">Yes</option>
-                    </select>
-                  </div> */}
+                  {/* Resignation section removed for employee add flow */}
                 </div>
               </div>
 

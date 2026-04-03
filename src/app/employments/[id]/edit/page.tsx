@@ -738,6 +738,20 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
       };
 
+      // Keep employment resignation fields consistent in Firestore.
+      // If Is Resigned is ON -> mark this employment as resigned.
+      // If OFF -> mark as working and clear resignation-only fields.
+      if (data.isResignation) {
+        formattedData.employmentStatus = 'resigned';
+        formattedData.is_resigned = true;
+      } else {
+        formattedData.employmentStatus = 'working';
+        formattedData.is_resigned = false;
+        formattedData.resignationDate = '';
+        formattedData.lastWorkingDate = '';
+        formattedData.reasonForLeaving = '';
+      }
+
       // `pfIncluded` is UI-only toggle; store the numeric `pf` only.
       delete formattedData.pfIncluded;
 

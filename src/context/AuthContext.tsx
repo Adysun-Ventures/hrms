@@ -83,31 +83,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const restoreSessions = async () => {
       try {
-        type EmploymentMinimal = {
-          isResignation?: boolean;
-          is_resigned?: boolean;
-          employmentStatus?: string | null;
-        };
-
-        const hasActiveEmployment = async (employeeId: string) => {
-          const q = query(collection(db, 'employments'), where('employeeId', '==', employeeId));
-          const snap = await getDocs(q);
-          if (snap.empty) return false;
-
-          const employments = snap.docs.map((d) => d.data() as EmploymentMinimal);
-
-          // Active = not resigned and not ended.
-          return employments.some((emp) => {
-            const isResigned =
-              emp.isResignation === true ||
-              emp.is_resigned === true ||
-              emp.employmentStatus === 'resigned';
-
-            const isInactive = emp.employmentStatus === 'inactive';
-            return !isResigned && !isInactive;
-          });
-        };
-
         // Check for admin session
         const adminSessionId = localStorage.getItem('adminSessionId');
         const adminData = localStorage.getItem('adminData');
@@ -129,24 +104,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('🔍 Restoring employee session from localStorage');
           const employeeUser = JSON.parse(employeeData);
 
-          // Security: if employee is inactive/resigned, do not restore session
-          // (status might have changed after last login)
+          // Restore employee session, but block if status is explicitly "Resigned"
           try {
             const latest = await checkUserByPhone(employeeUser.phone);
-            const activeEmployment = latest?.id ? await hasActiveEmployment(latest.id) : false;
 
             if (
               !latest ||
-              latest.userType !== 'employee' ||
-              !activeEmployment
+              latest.userType !== 'employee'
             ) {
               localStorage.removeItem('employeeSessionId');
               localStorage.removeItem('employeeData');
               document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             } else {
-              setCurrentEmployee(latest);
-              setCurrentAdmin(null);
-              setCurrentUserData(latest);
+              // Block only if any employment record is resigned.
+              // If the employee has no employment records, allow login.
+              const empId = (latest as any).id;
+              const qEmp = query(collection(db, 'employments'), where('employeeId', '==', empId));
+              const snapEmp = await getDocs(qEmp);
+              const employments = snapEmp.docs.map((d) => d.data() as any);
+
+              const hasResignedEmployment = employments.some((emp: any) => {
+                const status = String(emp?.employmentStatus ?? '').trim().toLowerCase();
+                const isResigned =
+                  emp?.isResignation === true ||
+                  emp?.is_resigned === true ||
+                  emp?.is_resigned === 'true' ||
+                  status === 'resigned';
+                return isResigned;
+              });
+
+              if (hasResignedEmployment) {
+                localStorage.removeItem('employeeSessionId');
+                localStorage.removeItem('employeeData');
+                document.cookie =
+                  'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+              } else {
+                setCurrentEmployee(latest);
+                setCurrentAdmin(null);
+                setCurrentUserData(latest);
+              }
             }
           } catch (e) {
             // If validation fails, clear session for safety
@@ -179,51 +175,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return unsubscribe;
   }, []);
 
-  // If an employee becomes resigned/inactive after login, block further access by validating
-  // their current employment records and auto-logging them out when no active employment exists.
-  useEffect(() => {
-    const validateEmployeeEmployment = async () => {
-      if (!currentUserData || currentUserData.userType !== 'employee') return;
-
-      type EmploymentMinimal = {
-        isResignation?: boolean;
-        is_resigned?: boolean;
-        employmentStatus?: string | null;
-      };
-
-      try {
-        const q = query(
-          collection(db, 'employments'),
-          where('employeeId', '==', currentUserData.id)
-        );
-        const snap = await getDocs(q);
-        if (snap.empty) {
-          void logout();
-          return;
-        }
-
-        const employments = snap.docs.map((d) => d.data() as EmploymentMinimal);
-        const hasActiveEmployment = employments.some((emp) => {
-          const isResigned =
-            emp.isResignation === true ||
-            emp.is_resigned === true ||
-            emp.employmentStatus === 'resigned';
-
-          const isInactive = emp.employmentStatus === 'inactive';
-          return !isResigned && !isInactive;
-        });
-
-        if (!hasActiveEmployment) {
-          void logout();
-        }
-      } catch (e) {
-        // If validation fails, keep the session (don't lock out due to transient errors).
-        console.warn('Employment validation failed:', e);
-      }
-    };
-
-    void validateEmployeeEmployment();
-  }, [currentUserData]);
+  // Note: no employment-status-based auto-logout.
 
   const signInWithCredentials = async (phoneNumber: string, password: string) => {
     try {
@@ -269,29 +221,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (userData.password === password) {
           console.log('✅ Employee password match successful!');
 
-          // Block login if employee has no active employment
-          type EmploymentMinimal = {
-            isResignation?: boolean;
-            is_resigned?: boolean;
-            employmentStatus?: string | null;
-          };
+          // Block ONLY when any employment record is resigned.
+          // If the employee has no employment records, allow login.
+          const qEmp = query(collection(db, 'employments'), where('employeeId', '==', userData.id));
+          const snapEmp = await getDocs(qEmp);
+          const employments = snapEmp.docs.map((d) => d.data() as any);
 
-          const q = query(collection(db, 'employments'), where('employeeId', '==', userData.id));
-          const snap = await getDocs(q);
-          const employments = snap.docs.map((d) => d.data() as EmploymentMinimal);
-
-          const hasActiveEmployment = employments.some((emp) => {
+          const hasResignedEmployment = employments.some((emp: any) => {
+            const status = String(emp?.employmentStatus ?? '').trim().toLowerCase();
             const isResigned =
-              emp.isResignation === true ||
-              emp.is_resigned === true ||
-              emp.employmentStatus === 'resigned';
-
-            const isInactive = emp.employmentStatus === 'inactive';
-            return !isResigned && !isInactive;
+              emp?.isResignation === true ||
+              emp?.is_resigned === true ||
+              emp?.is_resigned === 'true' ||
+              status === 'resigned';
+            return isResigned;
           });
 
-          if (!hasActiveEmployment) {
-            throw new Error('Your employment is inactive/resigned. Please contact administrator.');
+          if (hasResignedEmployment) {
+            throw new Error('Your employment is marked as Resigned. Please contact administrator.');
           }
           
           // Store employee data in localStorage for persistence
@@ -306,8 +253,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setCurrentUserData(userData);
           return { employee: userData, userType: 'employee' };
         } else {
-          console.log('❌ Employee password mismatch or inactive!');
-          throw new Error('Invalid password or inactive account');
+          console.log('❌ Employee password mismatch!');
+          throw new Error('Invalid phone or password.');
         }
       } else {
         console.log('❌ Unknown user type');

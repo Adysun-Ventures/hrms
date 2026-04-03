@@ -1040,13 +1040,23 @@ export const checkEmployeeByPhone = async (phoneNumber: string) => {
   try {
     // Remove +91 prefix if present and clean the phone number
     const cleanPhone = phoneNumber.replace(/^\+91/, '');
-    
-    const q = query(collection(db, 'employees'), where('phone', '==', cleanPhone));
+
+    // Support both stored formats: "9876543210" and "+919876543210"
+    const q = query(
+      collection(db, 'employees'),
+      where('phone', 'in', [cleanPhone, `+91${cleanPhone}`])
+    );
     const querySnapshot = await getDocs(q);
     
     if (!querySnapshot.empty) {
       const employeeDoc = querySnapshot.docs[0];
       const employeeData = employeeDoc.data();
+
+      const normalizedIsResigned =
+        employeeData.is_resigned === true ||
+        employeeData.is_resigned === 'true' ||
+        employeeData.is_resigned === 1;
+
       return { 
         id: employeeDoc.id, 
         name: employeeData.name || '',
@@ -1054,7 +1064,8 @@ export const checkEmployeeByPhone = async (phoneNumber: string) => {
         phone: employeeData.phone || '',
         password: employeeData.password || '', // Assuming employees have password field
         status: employeeData.status || 'inactive',
-        is_resigned: employeeData.is_resigned || false,
+        employmentStatus: employeeData.employmentStatus || '',
+        is_resigned: normalizedIsResigned,
         createdAt: employeeData.createdAt,
         isEmployee: true,
         isAdmin: false,

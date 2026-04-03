@@ -59,6 +59,9 @@ export default function CustomDateInput({
       const hiddenInput = document.getElementById(`hidden-${safeName}`) as HTMLInputElement;
       if (hiddenInput) {
         hiddenInput.focus();
+        // Best-effort: open the native date picker when supported.
+        // (Some browsers require focus + showPicker for consistent behavior.)
+        (hiddenInput as any).showPicker?.();
       }
     }
   };
@@ -87,6 +90,8 @@ export default function CustomDateInput({
         value={value || ''}
         onChange={handleDateChange}
         className="absolute inset-0 opacity-0 cursor-pointer"
+        onClick={handleDisplayClick}
+        onFocus={handleDisplayClick}
         required={required}
         disabled={disabled}
         min={min}

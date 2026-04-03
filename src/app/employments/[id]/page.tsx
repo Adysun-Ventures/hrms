@@ -1158,20 +1158,20 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
                   <div>
                     <p className="text-lg font-medium text-gray-900">
-                      {employment.lastSalaryDate
-                        ? formatDateToDayMonYear(employment.lastSalaryDate)
-                        : '-'}
-                    </p>
-                    <p className="text-sm text-gray-500">Last Salary Date</p>
-                  </div>
-
-                  <div>
-                    <p className="text-lg font-medium text-gray-900">
                       {employment.lastDrawnSalary
                         ? formatCurrency(employment.lastDrawnSalary)
                         : '-'}
                     </p>
-                    <p className="text-sm text-gray-500">Last Drawn Salary</p>
+                    <p className="text-sm text-gray-500">Last Drawn In Hand</p>
+                  </div>
+
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">
+                      {employment.lastSalaryAmount
+                        ? formatCurrency(employment.lastSalaryAmount)
+                        : '-'}
+                    </p>
+                    <p className="text-sm text-gray-500">Last Drawn CTC</p>
                   </div>
 
                   <div>

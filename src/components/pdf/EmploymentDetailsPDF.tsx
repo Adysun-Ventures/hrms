@@ -462,9 +462,6 @@ export default function EmploymentDetailsPDF({ employment }: EmploymentDetailsPD
   const resignationDateText = employment.resignationDate
     ? formatDateToDayMonYear(employment.resignationDate)
     : '-';
-  const lastSalaryDateText = employment.lastSalaryDate
-    ? formatDateToDayMonYear(employment.lastSalaryDate)
-    : '-';
   const lastWorkingDateText = employment.lastWorkingDate
     ? formatDateToDayMonYear(employment.lastWorkingDate)
     : '-';
@@ -753,14 +750,16 @@ export default function EmploymentDetailsPDF({ employment }: EmploymentDetailsPD
                       <Text style={styles.labelText}>Resignation Date</Text>
                     </View>
                     <View style={styles.cardItem}>
-                      <Text style={styles.valueText}>{lastSalaryDateText}</Text>
-                      <Text style={styles.labelText}>Last Salary Date</Text>
-                    </View>
-                    <View style={styles.cardItem}>
                       <Text style={styles.valueText}>
                         {employment.lastDrawnSalary ? formatCurrency(employment.lastDrawnSalary) : '-'}
                       </Text>
-                      <Text style={styles.labelText}>Last Drawn Salary</Text>
+                      <Text style={styles.labelText}>Last Drawn In Hand</Text>
+                    </View>
+                    <View style={styles.cardItem}>
+                      <Text style={styles.valueText}>
+                        {employment.lastSalaryAmount ? formatCurrency(employment.lastSalaryAmount) : '-'}
+                      </Text>
+                      <Text style={styles.labelText}>Last Drawn CTC</Text>
                     </View>
                     <View style={styles.cardItem}>
                       <Text style={styles.valueText}>{lastWorkingDateText}</Text>

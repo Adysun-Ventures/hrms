@@ -197,14 +197,8 @@ export default function EditSalaryPage({ params }: PageParams) {
             const latestEmployment = employments[0];
             setEmploymentId(latestEmployment.id);
 
-            // Keep edit behavior aligned with Add Salary:
-            // - prefill Variable Pay from employment currentVariablePay
-            // - PF toggle follows employment PF enablement
+            // Edit Salary: Variable Pay comes from the salary document (reset below), not employment.
             setValue('employmentId', latestEmployment.id, { shouldValidate: false, shouldDirty: false });
-            setValue('variablePay', Number((latestEmployment as any).currentVariablePay ?? 0) || 0, {
-              shouldValidate: false,
-              shouldDirty: false,
-            });
             setIsPfEnabled(Number((latestEmployment as any).pf ?? (latestEmployment as any).employerPF ?? 0) > 0);
           }
         } catch (error) {
@@ -224,17 +218,24 @@ export default function EditSalaryPage({ params }: PageParams) {
         setEmployeeId(salary.employeeId);
       }
       
-      // Extract values from existing salary record
+      // Extract values from existing salary record (Variable Pay from DB field, else CTC − Fixed)
       const salaryData = salary as any;
-      
+      const ctcDb = Number(salaryData.ctc) || 0;
+      const fixedDb = Number(salaryData.fixedPay) || 0;
+      const storedVar = salaryData.variablePay;
+      const variablePayFromDb =
+        storedVar !== undefined && storedVar !== null && String(storedVar).trim() !== ''
+          ? Number(storedVar)
+          : Math.round((ctcDb - fixedDb) * 100) / 100;
+
       reset({
         employeeId: salary.employeeId || employeeId || '',
         employmentId: salary.employmentId || '',
         month: salary.month || 1,
         year: salary.year || new Date().getFullYear(),
-        ctc: salaryData.ctc || 0,
-        fixedPay: salaryData.fixedPay || 0,
-        variablePay: salaryData.variablePay || 0,
+        ctc: ctcDb,
+        fixedPay: fixedDb,
+        variablePay: Number.isFinite(variablePayFromDb) ? variablePayFromDb : 0,
         workDays: salaryData.workDays || 0,
         leavesCount: salaryData.leavesCount ?? salaryData.totalLeaves ?? 0,
         basic: salaryData.basic || salary.basicSalary || 0,

@@ -12,7 +12,6 @@ import {
   Text,
   View,
   Image,
-  Link,
 } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
 import {
@@ -24,7 +23,6 @@ import {
   TableCell,
   AlignmentType,
   WidthType,
-  ExternalHyperlink,
 } from 'docx';
 import { createAdysunDocx } from '@/utils/docxAdysun';
 import { useAuth } from '@/context/AuthContext';
@@ -78,19 +76,6 @@ const balancedStyles = {
     marginBottom: 2,
   }
 };
-
-/** Google Calendar “add event” URL for an all-day joining date (YYYY-MM-DD). */
-function buildGoogleCalendarJoiningUrl(isoDate, eventTitle) {
-  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
-    return 'https://calendar.google.com/calendar';
-  }
-  const [y, m, d] = isoDate.split('-').map(Number);
-  const start = `${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}`;
-  const endDt = new Date(y, m - 1, d + 1);
-  const end = `${endDt.getFullYear()}${String(endDt.getMonth() + 1).padStart(2, '0')}${String(endDt.getDate()).padStart(2, '0')}`;
-  const text = encodeURIComponent(eventTitle || 'Joining date');
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}`;
-}
 
 function normalizeJoiningToIso(value) {
   if (!value) return '';
@@ -236,10 +221,10 @@ const Row = ({ label, m, a }) => (
     <View style={[offerLetterStyles.tableCell, { flex: 4 }]}>
       <Text>{label}</Text>
     </View>
-    <View style={[offerLetterStyles.tableCell, { flex: 3 }]}>
+    <View style={[offerLetterStyles.tableCell, { flex: 3, textAlign: 'right' }]}>
       <Text>{m.toLocaleString('en-IN')}</Text>
     </View>
-    <View style={[offerLetterStyles.tableCellLast, { flex: 3 }]}>
+    <View style={[offerLetterStyles.tableCellLast, { flex: 3, textAlign: 'right' }]}>
       <Text>{a.toLocaleString('en-IN')}</Text>
     </View>
   </View>
@@ -251,10 +236,10 @@ const RowBold = ({ label, m, a }) => (
     <View style={[offerLetterStyles.tableCellBold, { flex: 4 }]}>
       <Text>{label}</Text>
     </View>
-    <View style={[offerLetterStyles.tableCellBold, { flex: 3 }]}>
+    <View style={[offerLetterStyles.tableCellBold, { flex: 3, textAlign: 'right' }]}>
       <Text>{m.toLocaleString('en-IN')}</Text>
     </View>
-    <View style={[offerLetterStyles.tableCellBoldLast, { flex: 3 }]}>
+    <View style={[offerLetterStyles.tableCellBoldLast, { flex: 3, textAlign: 'right' }]}>
       <Text>{a.toLocaleString('en-IN')}</Text>
     </View>
   </View>
@@ -266,14 +251,111 @@ const RowBoldGray = ({ label, m, a }) => (
     <View style={[offerLetterStyles.tableCellBold, { flex: 4 }]}>
       <Text>{label}</Text>
     </View>
-    <View style={[offerLetterStyles.tableCellBold, { flex: 3 }]}>
+    <View style={[offerLetterStyles.tableCellBold, { flex: 3, textAlign: 'right' }]}>
       <Text>{m.toLocaleString('en-IN')}</Text>
     </View>
-    <View style={[offerLetterStyles.tableCellBoldLast, { flex: 3 }]}>
+    <View style={[offerLetterStyles.tableCellBoldLast, { flex: 3, textAlign: 'right' }]}>
       <Text>{a.toLocaleString('en-IN')}</Text>
     </View>
   </View>
 );
+
+const RowSectionHeader = ({ label }) => (
+  <View style={offerLetterStyles.tableRow}>
+    <View style={[offerLetterStyles.tableCellBold, { flex: 4 }]}>
+      <Text>{label}</Text>
+    </View>
+    <View style={[offerLetterStyles.tableCellBold, { flex: 3 }]}>
+      <Text> </Text>
+    </View>
+    <View style={[offerLetterStyles.tableCellBoldLast, { flex: 3 }]}>
+      <Text> </Text>
+    </View>
+  </View>
+);
+
+const RowVariableAnnual = ({ label, annual }) => (
+  <View style={offerLetterStyles.tableRow}>
+    <View style={[offerLetterStyles.tableCell, { flex: 4 }]}>
+      <Text>{label}</Text>
+    </View>
+    <View style={[offerLetterStyles.tableCell, { flex: 3 }]}>
+      <Text> </Text>
+    </View>
+    <View style={[offerLetterStyles.tableCellLast, { flex: 3, textAlign: 'right' }]}>
+      <Text>{annual.toLocaleString('en-IN')}</Text>
+    </View>
+  </View>
+);
+
+/**
+ * CTC table from employment joining package (joiningCtc, joiningFixed/variable split).
+ * Matches Add Employment: fixed = joiningCtc − joiningVariable (annual), Basic/HRA/Conv/Other from monthly fixed.
+ */
+function computeOfferLetterCtcBreakdown(employment, enablePF) {
+  const annualCTC = Number(employment?.joiningCtc ?? employment?.salary ?? 0);
+  const variableAnnual = Math.round(Number(employment?.joiningVariablePay ?? 0));
+  const fixedStored = Number(employment?.joiningFixedPay ?? 0);
+  const fixedAnnual =
+    fixedStored > 0 ? fixedStored : Math.max(0, annualCTC - variableAnnual);
+
+  const monthlyFixed = fixedAnnual / 12;
+  const basicM = Math.round(monthlyFixed * 0.5);
+  const hraM = Math.round(basicM * 0.4);
+  const conveyM = 2000;
+  const otherOverride = employment?.joiningOtherAllowance;
+  const otherM =
+    otherOverride != null && otherOverride !== ''
+      ? Math.round(Number(otherOverride))
+      : Math.round(monthlyFixed - basicM - hraM - conveyM);
+
+  const basicA = basicM * 12;
+  const hraA = hraM * 12;
+  const conveyA = conveyM * 12;
+  const otherA = Math.max(0, fixedAnnual - basicA - hraA - conveyA);
+
+  const grossM = basicM + hraM + conveyM + otherM;
+  const grossA = basicA + hraA + conveyA + otherA;
+
+  const ptM = 200;
+  const ptA = 2400;
+  const pfBasisM = Math.min(basicM, 15000);
+  const pfM = enablePF ? Math.round(pfBasisM * 0.12) : 0;
+  const pfA = pfM * 12;
+
+  const totalDedM = ptM + pfM;
+  const totalDedA = ptA + pfA;
+
+  const netM = grossM - totalDedM;
+  const netA = grossA - totalDedA;
+
+  const totalCtcM = Math.round(annualCTC / 12);
+  const totalCtcA = annualCTC;
+
+  return {
+    basicM,
+    basicA,
+    hraM,
+    hraA,
+    conveyM,
+    conveyA,
+    otherM,
+    otherA,
+    grossM,
+    grossA,
+    ptM,
+    ptA,
+    pfM,
+    pfA,
+    totalDedM,
+    totalDedA,
+    netM,
+    netA,
+    variableAnnual,
+    totalCtcM,
+    totalCtcA,
+  };
+}
 
 /* ---------------- PDF DOCUMENT COMPONENT ---------------- */
 const OfferLetterPDF = ({
@@ -316,32 +398,14 @@ const OfferLetterPDF = ({
   const effectiveDateFormatted = effectiveIso
     ? formatDateToDayMonYear(effectiveIso)
     : joiningDateFormatted;
-  const joiningCalendarUrl = buildGoogleCalendarJoiningUrl(
-    joiningIso,
-    `Joining – ${name || 'Employee'}`
-  );
-  const annualCTC = Number(employment?.salary || 0);
   const letterDate = (documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate))
     ? formatDateToDayMonYear(documentGenerateDate)
     : formatDateToDayMonYear(new Date());
 
   const signPlace = employeeSignPlace || employment?.location || '';
 
+  const ctc = computeOfferLetterCtcBreakdown(employment, enablePF);
 
-  /* Salary Computation */
-  const basic = Math.round(annualCTC * 0.5);
-  const hra = Math.round(basic * 0.5);
-  const medical = 13200;
-  const convey = 15000;
-  const other = 3000;
-  const sumFixed = basic + hra + medical + convey + other;
-  const epi = Math.max(annualCTC - sumFixed, 0);
-  const gross = sumFixed + epi;
-
-  const pt = 2500;
-  const pf = enablePF ? Math.round(basic * 0.12) : 0;
-  const net = gross - (pt + pf);
-  const monthly = n => Math.round(n / 12);
   const toTitleCase = (str) => {
   return str
     ?.toLowerCase()
@@ -407,23 +471,15 @@ const OfferLetterPDF = ({
         <Text >results-driven work ethic</Text>.
       </Text>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 }}>
-        <Text>
-          You are hereby appointed to the position of{' '}
-          <Text style={{ fontWeight: 'bold' }}>{designation}</Text> effective from{' '}
-          <Text style={{ fontWeight: 'bold' }}>{effectiveDateFormatted}</Text>. You are expected to
-          demonstrate professional conduct, punctuality and adhere to organizational policies at all
-          times. This appointment will be considered null and void should you fail to commence
-          duties on or before your joining date of{' '}
-        </Text>
-        <Link
-          src={joiningCalendarUrl}
-          style={{ color: '#1a73e8', textDecoration: 'underline' }}
-        >
-          <Text style={{ fontWeight: 'bold' }}>{joiningDateFormatted}</Text>
-        </Link>
-        <Text>.</Text>
-      </View>
+      <Text style={{ marginBottom: 12 }}>
+        You are hereby appointed to the position of{' '}
+        <Text style={{ fontWeight: 'bold' }}>{designation}</Text> effective from{' '}
+        <Text style={{ fontWeight: 'bold' }}>{effectiveDateFormatted}</Text>. You are expected to
+        demonstrate professional conduct, punctuality and adhere to organizational policies at all
+        times. This appointment will be considered null and void should you fail to commence duties
+        on or before your joining date.
+        {/* <Text style={{ fontWeight: 'bold' }}>{joiningDateFormatted}</Text>. */}
+      </Text>
 
       <Text>
         At <Text style={{ fontWeight: "bold" }}>{COMPANY_DATA.name}</Text>, we believe that{" "}
@@ -525,41 +581,48 @@ const OfferLetterPDF = ({
       <Watermark logoSrc={COMPANY_DATA.logo} />
 
       <Text style={[balancedStyles.sectionTitle, { fontSize: 14, fontWeight: "bold" }]}>
-        CTC Breakdown (Annual & Monthly)
+        CTC Breakdown – Annual and Monthly
       </Text>
 
       <View style={{ marginTop: 10 }}>
-        
-        {/* TABLE HEADER */}
         <View style={offerLetterStyles.tableRow}>
           <View style={[offerLetterStyles.tableCellBold, { flex: 4, backgroundColor: "#e0e0e0" }]}>
             <Text>Component</Text>
           </View>
-          <View style={[offerLetterStyles.tableCellBold, { flex: 3, backgroundColor: "#e0e0e0" }]}>
+          <View style={[offerLetterStyles.tableCellBold, { flex: 3, backgroundColor: "#e0e0e0", textAlign: 'center' }]}>
             <Text>Monthly (₹)</Text>
           </View>
-          <View style={[offerLetterStyles.tableCellBoldLast, { flex: 3, backgroundColor: "#e0e0e0" }]}>
+          <View style={[offerLetterStyles.tableCellBoldLast, { flex: 3, backgroundColor: "#e0e0e0", textAlign: 'center' }]}>
             <Text>Annual (₹)</Text>
           </View>
         </View>
 
-        {/* ORIGINAL ROW LOGIC UNTOUCHED */}
-        <Row label="Basic" m={monthly(basic)} a={basic} />
-        <Row label="HRA" m={monthly(hra)} a={hra} />
-        <Row label="Medical Allowance" m={monthly(medical)} a={medical} />
-        <Row label="Conveyance" m={monthly(convey)} a={convey} />
-        <Row label="Other Allowances" m={monthly(other)} a={other} />
-        <Row label="EPI Allowance" m={monthly(epi)} a={epi} />
-        <RowBold label="Gross Salary (A)" m={monthly(gross)} a={gross} />
-        <Row label="Professional Tax (PT)" m={monthly(pt)} a={pt} />
-
-        {enablePF && <Row label="Employee PF (12% Basic)" m={monthly(pf)} a={pf} />}
-
-        <RowBoldGray label="Net Salary" m={monthly(net)} a={net} />
-        <RowBoldGray label="Total CTC" m={monthly(annualCTC)} a={annualCTC} />
+        <Row label="Basic Salary" m={ctc.basicM} a={ctc.basicA} />
+        <Row label="HRA" m={ctc.hraM} a={ctc.hraA} />
+        <Row label="Conveyance Allowance" m={ctc.conveyM} a={ctc.conveyA} />
+        <Row label="Other Allowances" m={ctc.otherM} a={ctc.otherA} />
+        <RowBold label="Gross Salary" m={ctc.grossM} a={ctc.grossA} />
+        <RowSectionHeader label="Deductions" />
+        <Row label="Professional Tax" m={ctc.ptM} a={ctc.ptA} />
+        {enablePF && (
+          <Row label="Employee PF (12% of MIN(Basic, ₹15,000))" m={ctc.pfM} a={ctc.pfA} />
+        )}
+        <RowBold label="Total Deductions" m={ctc.totalDedM} a={ctc.totalDedA} />
+        <RowBoldGray label="Net In-Hand Salary" m={ctc.netM} a={ctc.netA} />
+        <RowSectionHeader label="Additional Benefits" />
+        <RowVariableAnnual label="Ann. Perfr. Incentive (Variable)" annual={ctc.variableAnnual} />
+        <RowBoldGray label="Total CTC" m={ctc.totalCtcM} a={ctc.totalCtcA} />
 
         <Text style={{ marginTop: 8, fontSize: 11 }}>
-          {enablePF ? "PF deduction applied." : "No PF deduction applied."}
+          {enablePF ? (
+            'Note: Provident Fund (PF) is included in deductions as shown above.'
+          ) : (
+            <>
+              Note: There is currently{' '}
+              <Text style={{ fontWeight: 'bold' }}>no deduction for Provident Fund (PF)</Text>
+              .
+            </>
+          )}
         </Text>
 
         <View style={{ borderBottom: "1px solid #000", marginVertical: 8 }} />
@@ -641,26 +704,12 @@ async function buildOfferLetterDocx(
   const effectiveDateFormatted = effectiveIso
     ? formatDateToDayMonYear(effectiveIso)
     : joiningDateFormatted;
-  const joiningCalendarUrl = buildGoogleCalendarJoiningUrl(joiningIso, `Joining – ${name || 'Employee'}`);
   const letterDate =
     documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate)
       ? formatDateToDayMonYear(documentGenerateDate)
       : formatDateToDayMonYear(new Date());
   const signPlace = employeeSignPlace || employee?.location || employment?.location || '';
-  const annualCTC = Number(employment?.salary || 0);
-
-  const basic = Math.round(annualCTC * 0.5);
-  const hra = Math.round(basic * 0.5);
-  const medical = 13200;
-  const convey = 15000;
-  const other = 3000;
-  const sumFixed = basic + hra + medical + convey + other;
-  const epi = Math.max(annualCTC - sumFixed, 0);
-  const gross = sumFixed + epi;
-  const pt = 2500;
-  const pf = enablePF ? Math.round(basic * 0.12) : 0;
-  const net = gross - (pt + pf);
-  const monthly = (n) => Math.round(n / 12);
+  const ctc = computeOfferLetterCtcBreakdown(employment, enablePF);
   const fmt = (n) => n.toLocaleString('en-IN');
 
   const tableRow = (label, m, a, bold = false) =>
@@ -669,6 +718,24 @@ async function buildOfferLetterDocx(
         new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: label, bold })] })] }),
         new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: fmt(m), bold })] })] }),
         new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: fmt(a), bold })] })] }),
+      ],
+    });
+
+  const tableRowSection = (label) =>
+    new TableRow({
+      children: [
+        new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: label, bold: true })] })] }),
+        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: '' })] }),
+        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: '' })] }),
+      ],
+    });
+
+  const tableRowVariableAnnual = (label, annual) =>
+    new TableRow({
+      children: [
+        new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: label })] })] }),
+        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: '' })] }),
+        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: fmt(annual) })] })] }),
       ],
     });
 
@@ -694,21 +761,12 @@ async function buildOfferLetterDocx(
         new TextRun({ text: ' effective from ' }),
         new TextRun({ text: effectiveDateFormatted, bold: true }),
         new TextRun({ text: '. Your joining date is ' }),
-        new ExternalHyperlink({
-          children: [
-            new TextRun({
-              text: joiningDateFormatted,
-              underline: {},
-              color: '0563C1',
-            }),
-          ],
-          link: joiningCalendarUrl,
-        }),
+        new TextRun({ text: joiningDateFormatted, bold: true }),
         new TextRun({ text: '.' }),
       ],
     }),
     new Paragraph({ text: '' }),
-    new Paragraph({ children: [new TextRun({ text: 'CTC Breakdown (Annual & Monthly)', bold: true, underline: {} })] }),
+    new Paragraph({ children: [new TextRun({ text: 'CTC Breakdown – Annual and Monthly', bold: true, underline: {} })] }),
     new Paragraph({ text: '' }),
     new Table({
       width: { size: 100, type: WidthType.PERCENTAGE },
@@ -716,22 +774,35 @@ async function buildOfferLetterDocx(
         new TableRow({
           children: [
             new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ children: [new TextRun({ text: 'Component', bold: true })] })] }),
-            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'Monthly (₹)', bold: true })] })] }),
-            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'Annual (₹)', bold: true })] })] }),
+            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Monthly (₹)', bold: true })] })] }),
+            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Annual (₹)', bold: true })] })] }),
           ],
         }),
-        tableRow('Basic', monthly(basic), basic),
-        tableRow('HRA', monthly(hra), hra),
-        tableRow('Medical Allowance', monthly(medical), medical),
-        tableRow('Conveyance', monthly(convey), convey),
-        tableRow('Other Allowances', monthly(other), other),
-        tableRow('EPI Allowance', monthly(epi), epi),
-        tableRow('Gross Salary (A)', monthly(gross), gross, true),
-        tableRow('Professional Tax (PT)', monthly(pt), pt),
-        ...(enablePF ? [tableRow('Employee PF (12% Basic)', monthly(pf), pf)] : []),
-        tableRow('Net Salary', monthly(net), net, true),
-        tableRow('Total CTC', monthly(annualCTC), annualCTC, true),
+        tableRow('Basic Salary', ctc.basicM, ctc.basicA),
+        tableRow('HRA', ctc.hraM, ctc.hraA),
+        tableRow('Conveyance Allowance', ctc.conveyM, ctc.conveyA),
+        tableRow('Other Allowances', ctc.otherM, ctc.otherA),
+        tableRow('Gross Salary', ctc.grossM, ctc.grossA, true),
+        tableRowSection('Deductions'),
+        tableRow('Professional Tax (est.)', ctc.ptM, ctc.ptA),
+        ...(enablePF
+          ? [tableRow('Employee PF (12% of MIN(Basic, ₹15,000))', ctc.pfM, ctc.pfA)]
+          : []),
+        tableRow('Total Deductions', ctc.totalDedM, ctc.totalDedA, true),
+        tableRow('Net In-Hand Salary', ctc.netM, ctc.netA, true),
+        tableRowSection('Additional Benefits'),
+        tableRowVariableAnnual('Ann. Perfr. Incentive (Variable)', ctc.variableAnnual),
+        tableRow('Total CTC', ctc.totalCtcM, ctc.totalCtcA, true),
       ],
+    }),
+    new Paragraph({
+      children: enablePF
+        ? [new TextRun({ text: 'Note: Provident Fund (PF) is included in deductions as shown above.', italics: true })]
+        : [
+            new TextRun({ text: 'Note: There is currently ', italics: true }),
+            new TextRun({ text: 'no deduction for Provident Fund (PF)', bold: true, italics: true }),
+            new TextRun({ text: '.', italics: true }),
+          ],
     }),
     new Paragraph({ text: '' }),
     new Paragraph({ children: [new TextRun({ text: 'Acknowledgement and Acceptance', bold: true, underline: {} })] }),
@@ -1019,9 +1090,9 @@ function OfferLetterV2() {
                 >
                   Same as joining date
                 </button>
-                <p className="mt-1 text-xs text-slate-500">
+                {/* <p className="mt-1 text-xs text-slate-500">
                   In the PDF, the joining date is a hyperlink (opens Google Calendar with that date).
-                </p>
+                </p> */}
               </div>
 
               <div>

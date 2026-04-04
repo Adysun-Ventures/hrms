@@ -299,7 +299,7 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
           We wish {shortName} all the best for future career opportunities.
         </Text>
 
-        <Text style={{ marginBottom: 10, fontWeight: "bold", textDecoration: "underline" }}>
+        {/* <Text style={{ marginBottom: 10, fontWeight: "bold", textDecoration: "underline" }}>
           Acknowledgement and Acceptance
         </Text>
         <Text style={{ marginBottom: 10 }}>
@@ -308,13 +308,13 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
         <Text style={{ marginBottom: 6 }}>
           Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCase(employeeName)}</Text>
         </Text>
-        <Text style={{ marginBottom: 10 }}>Signature: ________________________________</Text>
+        <Text style={{ marginBottom: 10 }}>Signature: ________________________________</Text> */}
 
         {/* FOOTER SIGN */}
         <View style={{ marginTop: 40, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
           <View>
             <Text>Place: {employeeSignPlace}</Text>
-            <Text>Date: {formatDate(employeeSignDate)}</Text>
+            <Text>Date: {formatDate(todaysDate)}</Text>
           </View>
 
           <View style={{ width: '45%', textAlign: 'right' }}>

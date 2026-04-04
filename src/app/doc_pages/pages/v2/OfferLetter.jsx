@@ -11,7 +11,8 @@ import {
   PDFViewer,
   Text,
   View,
-  Image
+  Image,
+  Link,
 } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
 import {
@@ -23,6 +24,7 @@ import {
   TableCell,
   AlignmentType,
   WidthType,
+  ExternalHyperlink,
 } from 'docx';
 import { createAdysunDocx } from '@/utils/docxAdysun';
 import { useAuth } from '@/context/AuthContext';
@@ -76,6 +78,28 @@ const balancedStyles = {
     marginBottom: 2,
   }
 };
+
+/** Google Calendar “add event” URL for an all-day joining date (YYYY-MM-DD). */
+function buildGoogleCalendarJoiningUrl(isoDate, eventTitle) {
+  if (!isoDate || !/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+    return 'https://calendar.google.com/calendar';
+  }
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const start = `${y}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}`;
+  const endDt = new Date(y, m - 1, d + 1);
+  const end = `${endDt.getFullYear()}${String(endDt.getMonth() + 1).padStart(2, '0')}${String(endDt.getDate()).padStart(2, '0')}`;
+  const text = encodeURIComponent(eventTitle || 'Joining date');
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${start}/${end}`;
+}
+
+function normalizeJoiningToIso(value) {
+  if (!value) return '';
+  const s = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
 
 const MONTH_OPTIONS = [
   { value: "01", label: "Jan" },
@@ -252,7 +276,15 @@ const RowBoldGray = ({ label, m, a }) => (
 );
 
 /* ---------------- PDF DOCUMENT COMPONENT ---------------- */
-const OfferLetterPDF = ({ employee, employment, enablePF, designationOverride, documentGenerateDate, employeeSignPlace }) => {
+const OfferLetterPDF = ({
+  employee,
+  employment,
+  enablePF,
+  designationOverride,
+  documentGenerateDate,
+  effectiveDate,
+  employeeSignPlace,
+}) => {
   if (!employee || !employment) {
     return (
       <Document>
@@ -272,7 +304,22 @@ const OfferLetterPDF = ({ employee, employment, enablePF, designationOverride, d
     employment?.jobTitle ||
     employment?.designation ||
     '';
-  const joiningDate = employment?.joiningDate || employment?.startDate || '';
+  const joiningRaw = employment?.joiningDate || employment?.startDate || '';
+  const joiningIso = normalizeJoiningToIso(joiningRaw);
+  const joiningDateFormatted = joiningIso
+    ? formatDateToDayMonYear(joiningIso)
+    : joiningRaw || '—';
+  const effectiveIso =
+    effectiveDate && /^\d{4}-\d{2}-\d{2}$/.test(String(effectiveDate).trim())
+      ? String(effectiveDate).trim()
+      : joiningIso;
+  const effectiveDateFormatted = effectiveIso
+    ? formatDateToDayMonYear(effectiveIso)
+    : joiningDateFormatted;
+  const joiningCalendarUrl = buildGoogleCalendarJoiningUrl(
+    joiningIso,
+    `Joining – ${name || 'Employee'}`
+  );
   const annualCTC = Number(employment?.salary || 0);
   const letterDate = (documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate))
     ? formatDateToDayMonYear(documentGenerateDate)
@@ -360,16 +407,23 @@ const OfferLetterPDF = ({ employee, employment, enablePF, designationOverride, d
         <Text >results-driven work ethic</Text>.
       </Text>
 
-      <Text style={{ marginBottom: 12 }}>
-        You are hereby appointed to the position of{" "}
-        <Text style={{ fontWeight: "bold" }}>{designation}</Text> effective from{" "}
-        <Text  style={{ fontWeight: "bold" }}>{joiningDate}</Text>. You are expected to
-        demonstrate <Text >professional conduct,
-        punctuality</Text> and adhere to organizational policies at all times. This
-        appointment will be considered <Text >null and
-        void</Text> should you fail to commence duties on or before the specified
-        joining date.
-      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 12 }}>
+        <Text>
+          You are hereby appointed to the position of{' '}
+          <Text style={{ fontWeight: 'bold' }}>{designation}</Text> effective from{' '}
+          <Text style={{ fontWeight: 'bold' }}>{effectiveDateFormatted}</Text>. You are expected to
+          demonstrate professional conduct, punctuality and adhere to organizational policies at all
+          times. This appointment will be considered null and void should you fail to commence
+          duties on or before your joining date of{' '}
+        </Text>
+        <Link
+          src={joiningCalendarUrl}
+          style={{ color: '#1a73e8', textDecoration: 'underline' }}
+        >
+          <Text style={{ fontWeight: 'bold' }}>{joiningDateFormatted}</Text>
+        </Link>
+        <Text>.</Text>
+      </View>
 
       <Text>
         At <Text style={{ fontWeight: "bold" }}>{COMPANY_DATA.name}</Text>, we believe that{" "}
@@ -557,7 +611,15 @@ const toTitleCaseDocx = (str) => {
   return str?.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || '';
 };
 
-async function buildOfferLetterDocx(employee, employment, enablePF, designationOverride, documentGenerateDate, employeeSignPlace) {
+async function buildOfferLetterDocx(
+  employee,
+  employment,
+  enablePF,
+  designationOverride,
+  documentGenerateDate,
+  effectiveDate,
+  employeeSignPlace
+) {
   const name = employee?.name || '';
   const rawAddress = employee?.currentAddress || employee?.permanentAddress || '';
   const fullAddress = rawAddress ? rawAddress.split(/[,;\n]+/).map(v => v.trim()).filter(Boolean) : [];
@@ -567,7 +629,19 @@ async function buildOfferLetterDocx(employee, employment, enablePF, designationO
     employment?.jobTitle ||
     employment?.designation ||
     '';
-  const joiningDate = employment?.joiningDate || employment?.startDate || '';
+  const joiningRaw = employment?.joiningDate || employment?.startDate || '';
+  const joiningIso = normalizeJoiningToIso(joiningRaw);
+  const joiningDateFormatted = joiningIso
+    ? formatDateToDayMonYear(joiningIso)
+    : joiningRaw || '—';
+  const effectiveIso =
+    effectiveDate && /^\d{4}-\d{2}-\d{2}$/.test(String(effectiveDate).trim())
+      ? String(effectiveDate).trim()
+      : joiningIso;
+  const effectiveDateFormatted = effectiveIso
+    ? formatDateToDayMonYear(effectiveIso)
+    : joiningDateFormatted;
+  const joiningCalendarUrl = buildGoogleCalendarJoiningUrl(joiningIso, `Joining – ${name || 'Employee'}`);
   const letterDate =
     documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate)
       ? formatDateToDayMonYear(documentGenerateDate)
@@ -617,7 +691,20 @@ async function buildOfferLetterDocx(employee, employment, enablePF, designationO
         new TextRun({ text: COMPANY_DATA.name, bold: true }),
         new TextRun({ text: '. You are hereby appointed to the position of ' }),
         new TextRun({ text: designation, bold: true }),
-        new TextRun({ text: ` effective from ${joiningDate}.` }),
+        new TextRun({ text: ' effective from ' }),
+        new TextRun({ text: effectiveDateFormatted, bold: true }),
+        new TextRun({ text: '. Your joining date is ' }),
+        new ExternalHyperlink({
+          children: [
+            new TextRun({
+              text: joiningDateFormatted,
+              underline: {},
+              color: '0563C1',
+            }),
+          ],
+          link: joiningCalendarUrl,
+        }),
+        new TextRun({ text: '.' }),
       ],
     }),
     new Paragraph({ text: '' }),
@@ -674,6 +761,7 @@ function OfferLetterV2() {
   const [searchTerm, setSearchTerm] = useState("");
   const [designationOverride, setDesignationOverride] = useState("");
   const [documentGenerateDate, setDocumentGenerateDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [effectiveDate, setEffectiveDate] = useState('');
   const [employeeSignPlace, setEmployeeSignPlace] = useState("");
   
 
@@ -709,7 +797,12 @@ function OfferLetterV2() {
       const joiningDateForDoc = normalizeDateForInput(
         nextEmployment?.joiningDate || nextEmployment?.startDate || ''
       );
-      if (joiningDateForDoc) setDocumentGenerateDate(joiningDateForDoc);
+      if (joiningDateForDoc) {
+        setDocumentGenerateDate(joiningDateForDoc);
+        setEffectiveDate(joiningDateForDoc);
+      } else {
+        setEffectiveDate('');
+      }
       setPdfKey((k) => k + 1);
     }
   };
@@ -730,6 +823,10 @@ function OfferLetterV2() {
     setEmployment(nextEmployment);
     setDesignationOverride(nextEmployment?.jobTitle || nextEmployment?.designation || "");
     setEmployeeSignPlace(nextEmployment?.location || "");
+    const joiningForEffective = normalizeDateForInput(
+      nextEmployment?.joiningDate || nextEmployment?.startDate || ''
+    );
+    setEffectiveDate(joiningForEffective || '');
     setPdfKey(k => k + 1);
   };
 
@@ -807,6 +904,7 @@ function OfferLetterV2() {
       selectedEmployment?.joiningDate || selectedEmployment?.startDate || ''
     );
     setDocumentGenerateDate(joiningDateForDoc || new Date().toISOString().slice(0, 10));
+    setEffectiveDate(joiningDateForDoc || '');
   }}
 >
   <div className="relative">
@@ -828,6 +926,7 @@ function OfferLetterV2() {
           setDesignationOverride('');
           setEmployeeSignPlace('');
           setDocumentGenerateDate(new Date().toISOString().slice(0, 10));
+          setEffectiveDate('');
         }}
         className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
         aria-label="Clear employee selection"
@@ -897,6 +996,32 @@ function OfferLetterV2() {
                 >
                   Use Joining Date
                 </button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-800 mb-1">
+                  Effective date
+                </label>
+                <DateDropdown value={effectiveDate} onChange={setEffectiveDate} />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const joiningDateForDoc = normalizeDateForInput(
+                      employment?.joiningDate || employment?.startDate || ''
+                    );
+                    if (!joiningDateForDoc) {
+                      toast.error('Joining date is not available for selected employee');
+                      return;
+                    }
+                    setEffectiveDate(joiningDateForDoc);
+                  }}
+                  className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                >
+                  Same as joining date
+                </button>
+                <p className="mt-1 text-xs text-slate-500">
+                  In the PDF, the joining date is a hyperlink (opens Google Calendar with that date).
+                </p>
               </div>
 
               <div>
@@ -989,6 +1114,7 @@ function OfferLetterV2() {
                     enablePF={enablePF}
                     designationOverride={designationOverride}
                     documentGenerateDate={documentGenerateDate}
+                    effectiveDate={effectiveDate}
                     employeeSignPlace={employeeSignPlace}
                   />
                 }
@@ -1013,6 +1139,7 @@ function OfferLetterV2() {
                 enablePF={enablePF}
                 designationOverride={designationOverride}
                 documentGenerateDate={documentGenerateDate}
+                effectiveDate={effectiveDate}
                 employeeSignPlace={employeeSignPlace}
               />
             </PDFViewer>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { FiDownload, FiX } from "react-icons/fi";
 import TableHeader from "@/components/ui/TableHeader";
 
@@ -100,6 +100,29 @@ const toTitleCase = (str) => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
+
+/** Prefer employment reporting fields (string or reportingManagerRef.name). */
+function reportingManagerFromEmployment(emp) {
+  if (!emp) return "";
+  const ref = emp.reportingManagerRef;
+  const refName =
+    ref && typeof ref === "object" && ref.name != null
+      ? String(ref.name).trim()
+      : "";
+  return (
+    String(emp.reportingManager || "").trim() ||
+    String(emp.reportingAuthority || "").trim() ||
+    refName
+  );
+}
+
+const REPORTING_MANAGER_DROPDOWN_OPTIONS = [
+  "Viraj Kadam",
+  "Rohit Kore",
+  "Vishal Konale",
+  "Prachi Jadhav",
+  "Deepak Kadam",
+];
 
 const Watermark = ({ logoSrc }) => (
   <View style={offerLetterStyles.watermark}>
@@ -442,6 +465,14 @@ export default function JoiningLetterV2() {
 
   const [showPDF, setShowPDF] = useState(false);
 
+  const reportingManagerSelectOptions = useMemo(() => {
+    const base = [...REPORTING_MANAGER_DROPDOWN_OPTIONS];
+    if (reportingManager && !base.includes(reportingManager)) {
+      return [reportingManager, ...base];
+    }
+    return base;
+  }, [reportingManager]);
+
   useEffect(() => {
     async function loadData() {
       const qs = await getDocs(collection(db, "employees"));
@@ -496,6 +527,12 @@ export default function JoiningLetterV2() {
     if (departmentFromEmployment) setDepartment(departmentFromEmployment);
     if (designationFromEmployment) setDesignation(designationFromEmployment);
     if (annualCtcFromEmployment) setAnnualCTC(String(annualCtcFromEmployment));
+
+    const reportingManagerFromEmp = reportingManagerFromEmployment(empEmployment);
+    if (reportingManagerFromEmp) setReportingManager(reportingManagerFromEmp);
+
+    const locationFromEmployment = String(empEmployment?.location || "").trim();
+    if (locationFromEmployment) setWorkLocation(locationFromEmployment);
   };
 
   const canGenerate = Boolean(
@@ -590,6 +627,8 @@ export default function JoiningLetterV2() {
                     setEmployee(nextEmployee);
                     if (!nextEmployee?.id) {
                       setEmployment(null);
+                      setReportingManager("");
+                      setWorkLocation("");
                       return;
                     }
                     const nextEmployment = await getEmploymentForEmployee(nextEmployee.id);
@@ -612,6 +651,8 @@ export default function JoiningLetterV2() {
                           setEmployee(null);
                           setEmployment(null);
                           setSearchTerm("");
+                          setReportingManager("");
+                          setWorkLocation("");
                         }}
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                         aria-label="Clear selected employee"
@@ -684,11 +725,11 @@ export default function JoiningLetterV2() {
                     onChange={(e) => setReportingManager(e.target.value)}
                   >
                     <option value="">Select Reporting Manager</option>
-                    <option value="Viraj Kadam">Viraj Kadam</option>
-                    <option value="Rohit Kore">Rohit Kore</option>
-                    <option value="Vishal Konale">Vishal Konale</option>
-                    <option value="Prachi Jadhav">Prachi Jadhav</option>
-                    <option value="Deepak Kadam">Deepak Kadam</option>
+                    {reportingManagerSelectOptions.map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

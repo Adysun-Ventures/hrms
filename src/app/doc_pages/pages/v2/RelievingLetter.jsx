@@ -345,7 +345,7 @@ const RelievingLetterPDF = ({
           Acknowledgement and Acceptance
         </Text>
         <Text style={{ marginBottom: 10 }}>
-          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.
+          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this Relieving Letter. I accept the relieving of employment with Adysun Ventures Private Limited.
         </Text>
         <Text style={{ marginBottom: 6 }}>
           Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCaseRelief(employeeName)}</Text>

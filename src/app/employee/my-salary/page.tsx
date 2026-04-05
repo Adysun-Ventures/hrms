@@ -181,7 +181,9 @@ export default function EmployeeMySalaryPage() {
         leaves: String(leavesCount),
         month: String(monthIndex0),
         year: String(payYear),
-        panNumber: (f as any).panNumber || '',
+        panNumber:
+          String((f as any).panCard || (f as any).panNumber || (f as any).pan || '')
+            .trim() || '',
         bankName: (f as any).bankName || '',
         accountNo: (f as any).accountNo || '',
         ifscCode: (f as any).ifscCode || '',

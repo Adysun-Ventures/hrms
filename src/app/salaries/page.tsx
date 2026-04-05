@@ -265,7 +265,9 @@ const handleDownload = async (salary: Salary) => {
       leaves: String(leavesCount),
       month: String(monthIndex0),
       year: String(payYear),
-      panNumber: f.panNumber || '',
+      panNumber:
+        String(f.panCard || f.panNumber || f.pan || '')
+          .trim() || '',
       bankName: f.bankName || '',
       accountNo: f.accountNo || '',
       ifscCode: f.ifscCode || '',
@@ -318,7 +320,7 @@ const handleDownload = async (salary: Salary) => {
               ["Bank Name", f.bankName || "-"],
               ["Account No", f.accountNo || "-"],
               ["IFSC Code", f.ifscCode || "-"],
-              ["Pan Number", f.panNumber || "-"],
+              ["Pan Number", String(f.panCard || f.panNumber || f.pan || "").trim() || "-"],
               ["Leaves", String(f.leavesCount ?? 0)],
               ["Work Days", String(f.workDays ?? 0)],
             ].map(

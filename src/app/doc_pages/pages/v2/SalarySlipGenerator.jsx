@@ -804,18 +804,18 @@ function SalarySlipGeneratorV2() {
 
       if (emp) {
         const row = employments[emp.id];
-        let sal=0,des="",dep="",loc="",pan="",bank="",acc="",ifsc="";
+        let sal=0,des="",dep="",loc="",bank="",acc="",ifsc="";
 
         if (row) {
           sal = row.salary||row.ctc||0;
           des=row.jobTitle||row.designation||"";
           dep=row.department||"";
           loc=row.location||"";
-          pan=row.panNumber||"";
           bank=row.bankName||"";
           acc=row.accountNo||"";
           ifsc=row.ifscCode||"";
         }
+        const pan = String(emp.panCard || row?.panNumber || emp.panNumber || emp.pan || "").trim();
 
         const ctc = sal?sal/100000:0;
         const variablePay = Number(row?.currentVariablePay ?? row?.variablePay ?? 0) || 0;
@@ -915,7 +915,7 @@ function SalarySlipGeneratorV2() {
       designation: row.jobTitle || row.designation || '',
       department: row.department || '',
       location: row.location || '',
-      panNumber: row.panNumber || '',
+      panNumber: String(employee.panCard || row.panNumber || employee.panNumber || employee.pan || '').trim(),
       bankName: row.bankName || '',
       accountNo: row.accountNo || '',
       ifscCode: row.ifscCode || '',
@@ -1116,7 +1116,7 @@ return (
         designation: row.jobTitle || row.designation || "",
         department: row.department || "",
         location: row.location || "",
-        panNumber: row.panNumber || "",
+        panNumber: String(emp.panCard || row.panNumber || emp.panNumber || emp.pan || "").trim(),
         bankName: row.bankName || "",
         accountNo: row.accountNo || "",
         ifscCode: row.ifscCode || "",

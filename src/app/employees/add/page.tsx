@@ -558,6 +558,7 @@ export default function AddEmployeePage() {
                     type="text"
                     placeholder="Enter PAN number (e.g., ABCDE1234F)"
                     {...register('panCard', {
+                      setValueAs: (value) => String(value || '').trim().toUpperCase(),
                       pattern: {
                         value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/,
                         message: 'Please enter a valid PAN number (e.g., ABCDE1234F)'

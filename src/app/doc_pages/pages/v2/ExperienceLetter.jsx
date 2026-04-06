@@ -223,8 +223,8 @@ async function buildExperienceLetterDocx(employee, employment, employeeSignDate,
       ],
     }),
     new Paragraph({ text: `During the tenure, ${shortName} performed duties with dedication and professionalism.` }),
-    new Paragraph({ text: `Based on overall performance, we found ${shortName} to be sincere, reliable, and responsible.` }),
-    new Paragraph({ text: `We wish ${shortName} all the best for future career opportunities.` }),
+    new Paragraph({ text: `Based on your overall performance, we found ${shortName} to be sincere, reliable, and responsible.` }),
+    new Paragraph({ text: `We wish ${shortName} all the best in his future career opportunities.` }),
     new Paragraph({ text: "" }),
     new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
     new Paragraph({
@@ -292,11 +292,11 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
         </Text>
 
         <Text style={{ marginBottom: 10 }}>
-          Based on overall performance, we found {shortName} to be sincere, reliable, and responsible.
+          Based on your overall performance, we found {shortName} to be sincere, reliable, and responsible.
         </Text>
 
         <Text style={{ marginBottom: 10 }}>
-          We wish {shortName} all the best for future career opportunities.
+          We wish {shortName} all the best in his future career opportunities.
         </Text>
 
         {/* <Text style={{ marginBottom: 10, fontWeight: "bold", textDecoration: "underline" }}>

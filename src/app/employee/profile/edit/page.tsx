@@ -658,6 +658,7 @@ export default function EditEmployeeProfilePage() {
                                         type="text"
                                         placeholder="Enter PAN number"
                                         {...register('panCard', {
+                                            setValueAs: (value) => String(value || '').trim().toUpperCase(),
                                             pattern: { value: /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, message: 'Please enter a valid PAN number (e.g., ABCDE1234F)' }
                                         })}
                                         className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"

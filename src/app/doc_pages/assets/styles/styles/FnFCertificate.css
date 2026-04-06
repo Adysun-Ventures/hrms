@@ -1,0 +1,145 @@
+.fnf-certificate-page {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #000000;
+    padding: 40px 60px;
+    background: white;
+    height: 297mm;
+    width: 210mm;
+    margin: 0 auto;
+    position: relative;
+    box-sizing: border-box;
+    page-break-after: always;
+}
+
+/* Header / Logo */
+.logo-section {
+    margin-bottom: 40px;
+}
+
+.company-logo {
+    height: 40px;
+    margin-bottom: 4px;
+}
+
+.brilliance {
+    font-size: 10px;
+    color: #666;
+}
+
+/* Date */
+.letter-date {
+    margin-bottom: 30px;
+}
+
+/* Title */
+.letter-title {
+    text-align: center;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* Employee Info */
+.employee-details {
+    margin-bottom: 20px;
+}
+
+.employee-details p {
+    margin-bottom: 5px;
+}
+
+/* Section Styling */
+.section {
+    margin: 20px 0;
+}
+
+.section h3 {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.section p {
+    text-align: justify;
+    margin-bottom: 10px;
+}
+
+/* Thin Gray Divider */
+.divider {
+    height: 0.5px;
+    background-color: #e0e0e0;
+    margin: 10px 0;
+}
+
+/* Settlement Table */
+.settlement-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.settlement-table th,
+.settlement-table td {
+    text-align: left;
+    padding: 6px 0;
+    font-size: 12px;
+}
+
+.settlement-table tr {
+    border-bottom: 0.5px solid #e0e0e0;
+}
+
+.settlement-table .amount {
+    text-align: right;
+}
+
+/* Net Pay Highlight */
+.net-pay {
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+/* Footer */
+.footer {
+    position: absolute;
+    bottom: 40px;
+    left: 60px;
+    right: 60px;
+    text-align: left;
+    padding-top: 20px;
+}
+
+/* Signature Section */
+.signature-section {
+    margin-top: 60px;
+}
+
+.signatures {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+}
+
+.employee-sign,
+.company-sign {
+    display: flex;
+    flex-direction: column;
+}
+
+.company-sign {
+    align-items: flex-end;
+}
+
+.signature-image {
+    width: 150px;
+    margin: 10px 0;
+}
+
+.sign-name {
+    margin-top: 10px;
+}
+
+.designation {
+    font-size: 12px;
+    margin-top: 5px;
+}

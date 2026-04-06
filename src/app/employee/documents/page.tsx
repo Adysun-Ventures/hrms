@@ -37,6 +37,12 @@ const documents = [
     path: '/employee/documents/relieving-letter', 
     icon: <FiFileText size={24} /> 
   },
+  {
+    title: 'FNF Certificate',
+    description: 'View and download your full and final settlement certificate',
+    path: '/employee/documents/fnf-certificate',
+    icon: <FiFileText size={24} />
+  },
   { 
     title: 'Joining Letter', 
     description: 'View and download your joining letter',

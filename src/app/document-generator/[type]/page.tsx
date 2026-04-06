@@ -21,6 +21,7 @@ const RelievingLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/Relievi
 const AppraisalLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/AppraisalLetter'), { ssr: false });
 const SalarySlipGeneratorV2 = dynamic(() => import('@/app/doc_pages/pages/v2/SalarySlipGenerator'), { ssr: false });
 const ExperienceLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/ExperienceLetter'), { ssr: false });
+const FnfCertificateV2 = dynamic(() => import('@/app/doc_pages/pages/v2/FnfCertificate'), { ssr: false });
 
 // Document generator wrapper component
 const DocumentGeneratorPage = () => {
@@ -48,6 +49,8 @@ const DocumentGeneratorPage = () => {
           return <SalarySlipGeneratorV2 />;
         case 'experience-letter':
           return <ExperienceLetterV2 />;
+        case 'fnf-certificate':
+          return <FnfCertificateV2 />;
         case 'home':
         default:
           return <Home />;

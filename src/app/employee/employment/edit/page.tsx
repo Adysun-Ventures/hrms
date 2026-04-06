@@ -211,7 +211,9 @@ export default function EmployeeEmploymentEditPage() {
               <input
                 className="w-full p-2 border rounded-md"
                 value={form.panNumber}
-                onChange={(e) => setForm((p) => ({ ...p, panNumber: e.target.value }))}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, panNumber: String(e.target.value || '').trim().toUpperCase() }))
+                }
               />
             </div>
           </div>

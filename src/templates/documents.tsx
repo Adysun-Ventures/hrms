@@ -9,7 +9,8 @@ export type DocumentTemplateKey =
   | 'salary-slip'
   | 'relieving-letter'
   | 'increment-letter'
-  | 'experience-letter';
+  | 'experience-letter'
+  | 'fnf-certificate';
 
 export type DocumentTemplate = {
   key: DocumentTemplateKey;
@@ -75,6 +76,15 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     description: 'Generate experience letters',
     adminHref: '/dashboard/documents/v2/experience-letter',
     employeeHref: '/employee/documents/experience-letter',
+    roles: ['admin', 'employee'],
+    icon: <FiFileText size={24} />,
+  },
+  {
+    key: 'fnf-certificate',
+    title: 'FNF Certificate',
+    description: 'Generate full and final settlement certificates',
+    adminHref: '/dashboard/documents/v2/fnf-certificate',
+    employeeHref: '/employee/documents/fnf-certificate',
     roles: ['admin', 'employee'],
     icon: <FiFileText size={24} />,
   },

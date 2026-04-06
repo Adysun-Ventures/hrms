@@ -229,7 +229,14 @@ export default function SalaryViewPage({ params }: PageParams) {
           }}
           actionButtons={
             isEmployeeView
-              ? []
+              ? [
+                  {
+                    label: 'Edit Salary',
+                    icon: <FiEdit />,
+                    variant: 'orange' as const,
+                    href: `/salaries/${id}/edit?from=employee`,
+                  },
+                ]
               : adminSalary
                 ? [
                     {

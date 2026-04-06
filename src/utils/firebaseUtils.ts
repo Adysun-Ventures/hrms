@@ -996,6 +996,67 @@ export const updateSalary = async (id: string, salaryData: Partial<Salary>) => {
   }
 };
 
+// Employee-safe salary detail fetch (self only)
+export const getSalaryEmployeeSelf = async (id: string) => {
+  try {
+    const employeeAudit = getEmployeeDataForAudit();
+    const salaryDoc = await getDoc(doc(db, 'salaries', id));
+
+    if (!salaryDoc.exists()) {
+      throw new Error('Salary not found');
+    }
+
+    const salaryData = salaryDoc.data() as Salary;
+    if (salaryData.employeeId !== employeeAudit.employeeId) {
+      throw new Error('Access denied. You can only view your own salary record.');
+    }
+
+    return { id: salaryDoc.id, ...salaryData } as Salary;
+  } catch (error) {
+    console.error('Error getting salary (self):', error);
+    throw error;
+  }
+};
+
+// Employee-safe salary update (self only)
+export const updateSalaryEmployeeSelf = async (id: string, salaryData: Partial<Salary>) => {
+  try {
+    const employeeAudit = getEmployeeDataForAudit();
+    const salaryRef = doc(db, 'salaries', id);
+    const salaryDoc = await getDoc(salaryRef);
+
+    if (!salaryDoc.exists()) {
+      throw new Error('Salary not found');
+    }
+
+    const existingSalary = salaryDoc.data() as Salary;
+    if (existingSalary.employeeId !== employeeAudit.employeeId) {
+      throw new Error('Access denied. You can only update your own salary record.');
+    }
+
+    if (
+      salaryData.employeeId &&
+      String(salaryData.employeeId).trim() !== String(employeeAudit.employeeId).trim()
+    ) {
+      throw new Error('Access denied. You can only update your own salary record.');
+    }
+
+    const salaryWithAudit = {
+      ...salaryData,
+      updatedAt: new Date().toISOString(),
+      updatedBy: employeeAudit.employeeId,
+      updatedByType: 'employee',
+    } as any;
+
+    const sanitizedData = sanitizeForFirestore(salaryWithAudit);
+    await updateDoc(salaryRef, sanitizedData);
+    console.log('✅ Salary (self) updated successfully:', id);
+  } catch (error) {
+    console.error('Error updating salary (self):', error);
+    throw error;
+  }
+};
+
 export const deleteSalary = async (id: string) => {
   try {
     // Get salary data before deletion for logging

@@ -8,7 +8,7 @@ import { useEmployeeSelfSalariesByEmployee } from '@/hooks/useSalaries';
 import TableHeader from '@/components/ui/TableHeader';
 import Pagination from '@/components/ui/Pagination';
 import { ActionButton } from '@/components/ui/ActionButton';
-import { FiDownload, FiEye, FiPlus } from 'react-icons/fi';
+import { FiDownload, FiEdit, FiEye, FiPlus } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import { Toaster } from 'react-hot-toast';
 import { pdf } from '@react-pdf/renderer';
@@ -328,6 +328,12 @@ export default function EmployeeMySalaryPage() {
                         title="View Salary Details"
                         colorClass="bg-blue-100 text-blue-600 hover:text-blue-900"
                         href={`/salaries/${salary.id}?employeeId=${employeeId}`}
+                      />
+                      <ActionButton
+                        icon={<FiEdit className="w-5 h-5" />}
+                        title="Edit Salary"
+                        colorClass="bg-yellow-100 text-yellow-700 hover:text-yellow-900"
+                        href={`/salaries/${salary.id}/edit?from=employee`}
                       />
                     </div>
                   </td>

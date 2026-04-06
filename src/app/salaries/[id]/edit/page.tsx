@@ -5,19 +5,21 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { FiArrowLeft, FiCheckCircle, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import TableHeader from '@/components/ui/TableHeader';
 import { Salary } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
-import { useSalary, useUpdateSalary } from '@/hooks/useSalaries';
+import { useEmployeeSelfSalary, useEmployeeUpdateSalary, useSalary, useUpdateSalary } from '@/hooks/useSalaries';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { getEmployeeNameById, getEmploymentsByEmployee, checkExistingSalary, updateEmployment } from '@/utils/firebaseUtils';
+import { getEmployeeNameById, getEmploymentsByEmployee, getEmploymentsByEmployeeSelf, checkExistingSalary, updateEmployment } from '@/utils/firebaseUtils';
 import {
   calculateMonthlySalary,
   getProfessionalTaxByMonth,
   type MonthlySalaryResult,
 } from '@/utils/monthlySalaryCalculationUtils';
 import { use } from 'react';
+import { useAuth } from '@/context/AuthContext';
 
 // Simplify the SalaryFormData type
 type SalaryFormData = {
@@ -54,10 +56,27 @@ export default function EditSalaryPage({ params }: PageParams) {
   const [hasPeriodChanges, setHasPeriodChanges] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { currentUserData } = useAuth();
+  const isEmployeeUser = currentUserData?.userType === 'employee';
   const { id } = use(params);
+  const from = searchParams?.get('from');
+  const Layout: any = isEmployeeUser ? EmployeeLayout : DashboardLayout;
 
-  const { data: salary, isLoading: isSalaryLoading } = useSalary(id);
-  const updateSalaryMutation = useUpdateSalary();
+  const {
+    data: adminSalary,
+    isLoading: isAdminSalaryLoading,
+  } = useSalary(id);
+  const {
+    data: selfSalary,
+    isLoading: isSelfSalaryLoading,
+  } = useEmployeeSelfSalary(id);
+  const salary = isEmployeeUser ? selfSalary : adminSalary;
+  const isSalaryLoading = isEmployeeUser ? isSelfSalaryLoading : isAdminSalaryLoading;
+
+  const updateSalaryMutationAdmin = useUpdateSalary();
+  const updateSalaryMutationEmployee = useEmployeeUpdateSalary();
+  const updateSalaryMutation = isEmployeeUser ? updateSalaryMutationEmployee : updateSalaryMutationAdmin;
   
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<SalaryFormData>({
     mode: 'onChange', // Enable real-time validation and updates
@@ -194,7 +213,9 @@ export default function EditSalaryPage({ params }: PageParams) {
           setEmployeeName(name);
 
           // Fetch latest employment for potential pre-fill
-          const employments = await getEmploymentsByEmployee(employeeId);
+          const employments = isEmployeeUser
+            ? await getEmploymentsByEmployeeSelf(employeeId)
+            : await getEmploymentsByEmployee(employeeId);
           if (employments && employments.length > 0) {
             const latestEmployment = employments[0];
             setEmploymentId(latestEmployment.id);
@@ -211,7 +232,7 @@ export default function EditSalaryPage({ params }: PageParams) {
     };
 
     fetchEmployeeData();
-  }, [employeeId, setValue]);
+  }, [employeeId, isEmployeeUser, setValue]);
 
   // Form reset logic - load existing salary data
   useEffect(() => {
@@ -329,7 +350,7 @@ export default function EditSalaryPage({ params }: PageParams) {
 
       // Keep Employment PF toggle in sync with Salary PF selection.
       const linkedEmploymentId = employmentId || data.employmentId;
-      if (linkedEmploymentId) {
+      if (linkedEmploymentId && !isEmployeeUser) {
         try {
           await updateEmployment(linkedEmploymentId, { pf: finalPfDeduct });
         } catch (syncError) {
@@ -339,7 +360,11 @@ export default function EditSalaryPage({ params }: PageParams) {
       
       toast.success('Salary updated successfully!', { id: 'update-salary' });
       // Navigate back to employee's salary list if we came from there
-      router.push(employeeId ? `/salaries?employeeId=${employeeId}` : `/salaries/${id}`);
+      if (isEmployeeUser || from === 'employee') {
+        router.push('/employee/my-salary');
+      } else {
+        router.push(employeeId ? `/salaries?employeeId=${employeeId}` : `/salaries/${id}`);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to update salary', { id: 'update-salary' });
       setIsSubmitting(false);
@@ -359,11 +384,11 @@ export default function EditSalaryPage({ params }: PageParams) {
 
   if (isSalaryLoading) {
     return (
-      <DashboardLayout
-        allowedUserTypes={['admin']}
+      <Layout
+        allowedUserTypes={isEmployeeUser ? ['employee'] : ['admin']}
         breadcrumbItems={[
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Salaries', href: '/salaries' },
+        { label: 'Dashboard', href: isEmployeeUser ? '/employee-dashboard' : '/dashboard' },
+        { label: isEmployeeUser ? 'My Salary' : 'Salaries', href: isEmployeeUser ? '/employee/my-salary' : '/salaries' },
         { label: 'Loading...', isCurrent: true }
       ]}
       >
@@ -377,25 +402,25 @@ export default function EditSalaryPage({ params }: PageParams) {
             </div>
           </div>
         </div>
-      </DashboardLayout>
+      </Layout>
     );
   }
 
   if (!salary) {
     return (
-      <DashboardLayout allowedUserTypes={['admin']}>
+      <Layout allowedUserTypes={isEmployeeUser ? ['employee'] : ['admin']}>
         <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4">
           <p>Salary not found</p>
         </div>
         <div className="mt-4">
           <Link 
-            href={employeeId ? `/salaries?employeeId=${employeeId}` : '/salaries'} 
+            href={isEmployeeUser ? '/employee/my-salary' : (employeeId ? `/salaries?employeeId=${employeeId}` : '/salaries')} 
             className="text-blue-600 hover:underline flex items-center gap-1"
           >
-            <FiArrowLeft size={16} /> Back to {employeeId ? `${employeeId}'s Salaries` : 'Salaries'}
+            <FiArrowLeft size={16} /> Back to {isEmployeeUser ? 'My Salary' : (employeeId ? `${employeeId}'s Salaries` : 'Salaries')}
           </Link>
         </div>
-      </DashboardLayout>
+      </Layout>
     );
   }
 
@@ -403,20 +428,27 @@ export default function EditSalaryPage({ params }: PageParams) {
   const breadcrumbEmploymentId = employmentId || (salary as any).employmentId || '';
 
   return (
-    <DashboardLayout
-      allowedUserTypes={['admin']}
+    <Layout
+      allowedUserTypes={isEmployeeUser ? ['employee'] : ['admin']}
       breadcrumbItems={[
-        { label: 'Dashboard', href: '/dashboard' },
-        { label: 'Employees', href: '/employees' },
-        { label: employeeName || 'Loading...', href: breadcrumbEmployeeId ? `/employees/${breadcrumbEmployeeId}` : undefined },
-        {
-          label: 'Employment',
-          href: breadcrumbEmploymentId ? `/employments/${breadcrumbEmploymentId}` : undefined,
-        },
-        {
-          label: 'Salary',
-          href: breadcrumbEmployeeId ? `/salaries?employeeId=${breadcrumbEmployeeId}` : '/salaries',
-        },
+        ...(isEmployeeUser
+          ? [
+              { label: 'Dashboard', href: '/employee-dashboard' },
+              { label: 'My Salary', href: '/employee/my-salary' },
+            ]
+          : [
+              { label: 'Dashboard', href: '/dashboard' },
+              { label: 'Employees', href: '/employees' },
+              { label: employeeName || 'Loading...', href: breadcrumbEmployeeId ? `/employees/${breadcrumbEmployeeId}` : undefined },
+              {
+                label: 'Employment',
+                href: breadcrumbEmploymentId ? `/employments/${breadcrumbEmploymentId}` : undefined,
+              },
+              {
+                label: 'Salary',
+                href: breadcrumbEmployeeId ? `/salaries?employeeId=${breadcrumbEmployeeId}` : '/salaries',
+              },
+            ]),
         { label: 'Edit Salary', isCurrent: true },
       ]}
     >
@@ -436,9 +468,11 @@ export default function EditSalaryPage({ params }: PageParams) {
           showFilter={false}
           headerClassName="px-6 py-6"
           backButton={{ 
-            href: employeeId 
-              ? `/salaries?employeeId=${employeeId}` 
-              : `/salaries/${id}`
+            href: isEmployeeUser
+              ? '/employee/my-salary'
+              : (employeeId 
+                  ? `/salaries?employeeId=${employeeId}` 
+                  : `/salaries/${id}`)
           }}
           actionButtons={[
             {
@@ -915,7 +949,7 @@ export default function EditSalaryPage({ params }: PageParams) {
 
           <div className="mt-8 flex justify-between py-3">
             <Link
-              href={employeeId ? `/salaries?employeeId=${employeeId}` : `/salaries/${id}`}
+              href={isEmployeeUser ? '/employee/my-salary' : (employeeId ? `/salaries?employeeId=${employeeId}` : `/salaries/${id}`)}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2"
             >
               <FiX className="w-4 h-4" />
@@ -932,6 +966,6 @@ export default function EditSalaryPage({ params }: PageParams) {
           </div>
         </form>
       </div>
-    </DashboardLayout>
+    </Layout>
   );
 } 

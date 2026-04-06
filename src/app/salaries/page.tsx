@@ -234,6 +234,14 @@ const handleDownload = async (salary: Salary) => {
     const monthIndex0 = Math.max(0, Math.min(11, payMonth1 - 1));
     const leavesCount = Number(f.leavesCount ?? 0) || 0;
     const payableDays = Math.max(0, (new Date(payYear, payMonth1, 0).getDate()) - leavesCount);
+    const employeeCode =
+      String(
+        f.employmentId ||
+        employmentData?.employmentId ||
+        f.employeeCode ||
+        employeeData?.employeeId ||
+        ''
+      ).trim();
 
     const pf = Number(f.pf ?? 0) || 0;
     const pt = Number(f.ptDeduct ?? 200) || 0;
@@ -256,7 +264,7 @@ const handleDownload = async (salary: Salary) => {
       companyName: f.companyName || 'Adysun Ventures Pvt. Ltd.',
       employeeName: [(employeeName || '').trim()].filter(Boolean),
       employeeNameText: employeeName,
-      employeeId: f.employmentId || f.employeeId || salary.employeeId,
+      employeeId: employeeCode,
       designation: f.jobTitle || f.designation || '',
       department: f.department || '',
       payDate: `${payYear}-${String(payMonth1).padStart(2, '0')}-01`,

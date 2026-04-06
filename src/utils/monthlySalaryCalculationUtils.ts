@@ -60,6 +60,15 @@ export function daysInMonth(year: number, month: number): number {
 }
 
 /**
+ * Professional Tax by month.
+ * February => 300, all other months => 200.
+ * @param month - 1-12
+ */
+export function getProfessionalTaxByMonth(month: number): number {
+  return Number(month) === 2 ? 300 : 200;
+}
+
+/**
  * Validates input values for salary calculation
  * @param inputs - Input values to validate
  * @returns true if valid, throws error if invalid
@@ -102,7 +111,7 @@ function roundToTwoDecimals(value: number): number {
  * - Per Day = Per Month / 30 (uses fixed 30-day logic)
  * - Work Days = Month Days - Leave Count
  * - Gross Salary = Per Month (directly, no breakdown)
- * - PT (DEDUCT) = 200 (fixed)
+ * - PT (DEDUCT) = 300 for February, else 200
  * - Leaves Deduct Amt = Leave Count × Per Day
  * - Total Deduction = PT (DEDUCT) + Leaves Deduct Amt
  * - Net Salary = Gross Salary - Total Deduction
@@ -150,7 +159,7 @@ export function calculateMonthlySalary(inputs: MonthlySalaryInputs): MonthlySala
   const grossSalary = perMonth;
 
   // Deductions
-  const ptDeduct = 200; // Fixed value
+  const ptDeduct = getProfessionalTaxByMonth(month);
   const leavesDeductAmt = roundToTwoDecimals(leavesCount * perDay);
   const totalDeduction = roundToTwoDecimals(pfDeduct + ptDeduct + leavesDeductAmt);
 

@@ -7,11 +7,22 @@ import { FiArrowLeft, FiCheckCircle, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TableHeader from '@/components/ui/TableHeader';
 import toast, { Toaster } from 'react-hot-toast';
-import { useCreateSalary } from '@/hooks/useSalaries';
+import { useCreateSalary, useEmployeeCreateSalary } from '@/hooks/useSalaries';
 import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import { getEmployeeNameById, getEmploymentsByEmployee, checkExistingSalary, updateEmployment } from '@/utils/firebaseUtils';
-import { calculateMonthlySalary, type MonthlySalaryResult } from '@/utils/monthlySalaryCalculationUtils';
+import {
+  getEmployeeNameById,
+  getEmploymentsByEmployee,
+  getEmploymentsByEmployeeSelf,
+  checkExistingSalary,
+  updateEmployment,
+} from '@/utils/firebaseUtils';
+import { useAuth } from '@/context/AuthContext';
+import {
+  calculateMonthlySalary,
+  getProfessionalTaxByMonth,
+  type MonthlySalaryResult,
+} from '@/utils/monthlySalaryCalculationUtils';
 
 // Simplify the Salary interface to only include essential fields
 export interface Salary {
@@ -57,22 +68,27 @@ type SalaryFormData = {
 };
 
 export default function AddSalaryPage() {
+  const { currentUserData } = useAuth();
+  const isEmployeeUser = currentUserData?.userType === 'employee';
   const [isLoading, setIsLoading] = useState(false);
   const [isPfEnabled, setIsPfEnabled] = useState(true);
   const [employeeName, setEmployeeName] = useState<string>('');
   const [employmentId, setEmploymentId] = useState<string>('');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const employeeId = searchParams?.get('employeeId');
+  const queryEmployeeId = searchParams?.get('employeeId');
   const from = searchParams?.get('from');
+  const employeeId = queryEmployeeId || (isEmployeeUser ? currentUserData?.id : null);
 
   const employmentBreadcrumbHref = employmentId
     ? `/employments/${employmentId}`
     : `/employments?employeeId=${employeeId}`;
   
-  const createSalaryMutation = useCreateSalary();
+  const createSalaryMutation = isEmployeeUser ? useEmployeeCreateSalary() : useCreateSalary();
   const queryClient = useQueryClient();
   
+  const ptDefaultForMonth = getProfessionalTaxByMonth(new Date().getMonth() + 1);
+
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<SalaryFormData>({
     mode: 'onChange', // Enable real-time validation and updates
     defaultValues: {
@@ -88,11 +104,16 @@ export default function AddSalaryPage() {
       hra: 0,
       conveyanceAllowance: 0,
       otherAllowance: 0,
-      ptDeduct: 200, // Default PT deduction
+      ptDeduct: ptDefaultForMonth,
       leavesDeductAmt: 0,
       otherDeduction: 0,
     }
   });
+
+  useEffect(() => {
+    if (!employeeId) return;
+    setValue('employeeId', employeeId, { shouldValidate: false, shouldDirty: false });
+  }, [employeeId, setValue]);
 
   // Watch input values for real-time calculation
   const ctc = watch('ctc') || 0;
@@ -100,7 +121,7 @@ export default function AddSalaryPage() {
   const year = Number(watch('year')) || new Date().getFullYear();
   const month = Number(watch('month')) || new Date().getMonth() + 1;
   const leavesCount = watch('leavesCount') || 0;
-  const ptDeduct = watch('ptDeduct') || 200;
+  const ptDeduct = watch('ptDeduct') || getProfessionalTaxByMonth(month);
   const otherDeduction = watch('otherDeduction') || 0;
   const variablePay = watch('variablePay') || 0;
   const formatINR = (num: number) => {
@@ -144,7 +165,7 @@ export default function AddSalaryPage() {
           conveyanceAllowance: 0,
           otherAllowance: 0,
           grossSalary: 0,
-          ptDeduct: 200,
+          ptDeduct: getProfessionalTaxByMonth(numMonth),
           leavesDeductAmt: 0,
           totalDeduction: 0,
           netSalary: 0,
@@ -163,7 +184,7 @@ export default function AddSalaryPage() {
       conveyanceAllowance: 0,
       otherAllowance: 0,
       grossSalary: 0,
-      ptDeduct: 200,
+      ptDeduct: getProfessionalTaxByMonth(numMonth),
       leavesDeductAmt: 0,
       totalDeduction: 0,
       netSalary: 0,
@@ -186,10 +207,8 @@ export default function AddSalaryPage() {
     setValue('otherAllowance', calculations.otherAllowance, { shouldValidate: false, shouldDirty: false });
     setValue('leavesDeductAmt', calculations.leavesDeductAmt, { shouldValidate: false, shouldDirty: false });
     
-    // Set PT deduction to default if not already set
-    if (!ptDeduct || ptDeduct === 0) {
-      setValue('ptDeduct', calculations.ptDeduct, { shouldValidate: false, shouldDirty: false });
-    }
+    // Keep PT deduction aligned with selected month rule.
+    setValue('ptDeduct', calculations.ptDeduct, { shouldValidate: false, shouldDirty: false });
   }, [calculations, setValue, ptDeduct]);
 
   useEffect(()=>{
@@ -213,7 +232,9 @@ export default function AddSalaryPage() {
           setEmployeeName(name);
 
           // Fetch latest employment
-          const employments = await getEmploymentsByEmployee(employeeId);
+          const employments = isEmployeeUser
+            ? await getEmploymentsByEmployeeSelf(employeeId)
+            : await getEmploymentsByEmployee(employeeId);
           if (employments && employments.length > 0) {
             // Get the latest employment
             const latestEmployment = employments[0];
@@ -252,9 +273,12 @@ export default function AddSalaryPage() {
             setValue('variablePay', variablePayValue, { shouldValidate: false, shouldDirty: false });
             toast.success('Variable Pay pre-filled from employment record', { duration: 3000 });
           } else {
-            // If no employment found, show error
-            toast.error('No employment record found for this employee. Please create an employment record first.');
-            router.push('/employments/add?employeeId=' + employeeId);
+            if (isEmployeeUser) {
+              toast.error('No employment record found for your profile. Please contact HR/Admin.');
+            } else {
+              toast.error('No employment record found for this employee. Please create an employment record first.');
+              router.push('/employments/add?employeeId=' + employeeId);
+            }
           }
         } catch (error) {
           console.error('Error fetching employee data:', error);
@@ -264,7 +288,7 @@ export default function AddSalaryPage() {
     };
 
     fetchEmployeeData();
-  }, [employeeId, setValue, router]);
+  }, [employeeId, setValue, router, isEmployeeUser]);
 
   useEffect(() => {
   const autoFixed = Number(ctc || 0) - Number(variablePay || 0);
@@ -361,7 +385,9 @@ export default function AddSalaryPage() {
       }
       
       // Navigate back to the appropriate page
-      if (employeeId) {
+      if (isEmployeeUser) {
+        router.push('/employee/my-salary');
+      } else if (employeeId) {
         if (from === 'employment') {
           router.push(`/salaries?employeeId=${employeeId}&from=employment`);
         } else {
@@ -392,9 +418,15 @@ export default function AddSalaryPage() {
 
   return (
     <DashboardLayout
-      allowedUserTypes={['admin']}
+      allowedUserTypes={['admin', 'employee']}
       breadcrumbItems={
-        employeeId
+        isEmployeeUser
+          ? [
+              { label: 'Dashboard', href: '/employee-dashboard' },
+              { label: 'My Salaries', href: '/employee/my-salary' },
+              { label: 'Add Salary', isCurrent: true },
+            ]
+          : employeeId
           ? [
               { label: 'Dashboard', href: '/dashboard' },
               { label: 'Employees', href: '/employees' },
@@ -435,7 +467,9 @@ export default function AddSalaryPage() {
           showFilter={false}
           headerClassName="px-6 py-6"
           backButton={{
-            href: employeeId
+            href: isEmployeeUser
+              ? '/employee/my-salary'
+              : employeeId
               ? from === 'employment'
                 ? `/salaries?employeeId=${employeeId}&from=employment`
                 : `/salaries?employeeId=${employeeId}`
@@ -914,7 +948,7 @@ export default function AddSalaryPage() {
 
           <div className="mt-8 flex justify-between py-3">
             <Link
-              href={employeeId ? `/salaries?employeeId=${employeeId}` : '/salaries'}
+              href={isEmployeeUser ? '/employee/my-salary' : (employeeId ? `/salaries?employeeId=${employeeId}` : '/salaries')}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 flex items-center gap-2"
             >
               <FiX className="w-4 h-4" />

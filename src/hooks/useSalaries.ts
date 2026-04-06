@@ -1,5 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getSalaries, getSalary, addSalary, updateSalary, deleteSalary, getSalariesByEmployee, getEmployeeSelfSalariesByEmployee } from '@/utils/firebaseUtils';
+import {
+  getSalaries,
+  getSalary,
+  addSalary,
+  addSalaryEmployeeSelf,
+  updateSalary,
+  deleteSalary,
+  getSalariesByEmployee,
+  getEmployeeSelfSalariesByEmployee,
+} from '@/utils/firebaseUtils';
 import { queryKeys } from '@/lib/queryKeys';
 import { Salary } from '@/types';
 import { getQueryClient } from '@/lib/queryClient';
@@ -79,6 +88,27 @@ export const useCreateSalary = () => {
     },
     onError: (error) => {
       console.error('❌ Error creating salary:', error);
+    },
+  });
+};
+
+// Employee-safe create salary (self only)
+export const useEmployeeCreateSalary = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: addSalaryEmployeeSelf,
+    onSuccess: async (_, variables) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.salaries.all });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.salaries.lists() });
+      if (variables.employeeId) {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.salaries.byEmployee(variables.employeeId),
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('❌ Error creating salary (self):', error);
     },
   });
 };

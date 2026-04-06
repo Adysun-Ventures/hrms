@@ -7,7 +7,7 @@ import { PDFViewer, PDFDownloadLink, Document, Page, Text, View, Image, StyleShe
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { CompanyHeader, Watermark } from '@/components/pdf/PDFComponents';
-import { formatIndianCurrency, numberToWords } from '@/components/pdf/SalaryUtils';
+import { numberToWords } from '@/components/pdf/SalaryUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
@@ -109,6 +109,15 @@ const getSalarySlipMonthLabel = (d) => {
   return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 };
 const getSalarySlipMonthUpper = (d) => formatDateToDayMonYear(d);
+const getEmployeeCodeForSlip = (employmentRow, employeeRow) =>
+  String(
+    employmentRow?.employmentId ||
+    employeeRow?.employeeCode ||
+    employeeRow?.employeeId ||
+    ''
+  ).trim();
+const getProfessionalTaxForSalarySlipMonth = (monthZeroBased) =>
+  Number(monthZeroBased) === 1 ? 300 : 200;
 
 const getTotalEarnings = (f) =>
   (f.basicSalary||0)+(f.da||0)+(f.conveyanceAllowance||0)+(f.otherAllowance||0)+(f.medicalAllowance||0)+(f.cca||0);
@@ -118,6 +127,30 @@ const getTotalDeductions = (f) =>
 
 const getNetSalary = (f)=>
   getTotalEarnings(f)-getTotalDeductions(f);
+
+const formatCurrency = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return '0.00';
+  return num.toFixed(2);
+};
+
+// Mask bank account number: show `xxxx` + last 5 digits.
+const maskAccountNo = (value) => {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '-';
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '-';
+  if (digits.length <= 5) return digits;
+  return `xxxxxxx${digits.slice(-5)}`;
+};
+
+// Mask PAN: show `xxxxxxx` + last 5 characters.
+const maskPanNo = (value) => {
+  const raw = String(value ?? '').trim().toUpperCase();
+  if (!raw) return '-';
+  if (raw.length <= 5) return raw;
+  return `xxxxx${raw.slice(-5)}`;
+};
 
 // === SYSTEM PDF COMPONENTS (DEFAULT + ADYSUN) WILL COME IN CHUNK 2 ===
 // === DEFAULT PDF LAYOUT WITH PF CONDITIONAL ROW ===
@@ -155,8 +188,8 @@ const DefaultSalarySlipLayout = ({ formData }) => {
             <Text style={defaultSalarySlipStyles.infoValue}>{f.designation || '-'}</Text>
           </View>
           <View style={defaultSalarySlipStyles.infoRow}>
-            <Text style={defaultSalarySlipStyles.infoLabel}>PAN</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{f.panNumber || '-'}</Text>
+            <Text style={defaultSalarySlipStyles.infoLabel}>PAN No.</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{maskPanNo(f.panNumber)}</Text>
           </View>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>Location</Text>
@@ -179,7 +212,7 @@ const DefaultSalarySlipLayout = ({ formData }) => {
           </View>
           <View style={defaultSalarySlipStyles.infoRow}>
             <Text style={defaultSalarySlipStyles.infoLabel}>Bank A/C No:</Text>
-            <Text style={defaultSalarySlipStyles.infoValue}>{f.accountNo || '-'}</Text>
+            <Text style={defaultSalarySlipStyles.infoValue}>{maskAccountNo(f.accountNo)}</Text>
           </View>
         </View>
       </View>
@@ -202,7 +235,7 @@ const DefaultSalarySlipLayout = ({ formData }) => {
             <View style={defaultSalarySlipStyles.item} key={item.label}>
               <Text style={defaultSalarySlipStyles.itemName}>{item.label}</Text>
               <Text style={defaultSalarySlipStyles.itemAmount}>
-                Rs. {formatIndianCurrency(item.value || 0)}
+                Rs. {formatCurrency(item.value || 0)}
               </Text>
             </View>
           ))}
@@ -210,7 +243,7 @@ const DefaultSalarySlipLayout = ({ formData }) => {
           <View style={defaultSalarySlipStyles.totalRow}>
             <Text style={defaultSalarySlipStyles.totalLabel}>Gross Salary</Text>
             <Text style={defaultSalarySlipStyles.totalAmount}>
-              Rs. {formatIndianCurrency(getTotalEarnings(f))}
+              Rs. {formatCurrency(getTotalEarnings(f))}
             </Text>
           </View>
         </View>
@@ -223,25 +256,25 @@ const DefaultSalarySlipLayout = ({ formData }) => {
 
           <View style={defaultSalarySlipStyles.item}>
             <Text style={defaultSalarySlipStyles.itemName}>Professional Tax</Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(f.professionalTax || 0)}</Text>
+            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatCurrency(f.professionalTax || 0)}</Text>
           </View>
 
           {f.enablePF && (
             <View style={defaultSalarySlipStyles.item}>
               <Text style={defaultSalarySlipStyles.itemName}>PF (Employee)</Text>
-              <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(f.pfEmployee || 0)}</Text>
+              <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatCurrency(f.pfEmployee || 0)}</Text>
             </View>
           )}
 
           <View style={defaultSalarySlipStyles.item}>
             <Text style={defaultSalarySlipStyles.itemName}>Other Deductions</Text>
-            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatIndianCurrency(f.otherDeductions || 0)}</Text>
+            <Text style={defaultSalarySlipStyles.itemAmount}>Rs. {formatCurrency(f.otherDeductions || 0)}</Text>
           </View>
 
           <View style={defaultSalarySlipStyles.item}>
   <Text style={defaultSalarySlipStyles.itemName}>Leave Deduction</Text>
   <Text style={defaultSalarySlipStyles.itemAmount}>
-    Rs. {formatIndianCurrency(f.leavesDeduction || 0)}
+    Rs. {formatCurrency(f.leavesDeduction || 0)}
   </Text>
 </View>
 
@@ -249,7 +282,7 @@ const DefaultSalarySlipLayout = ({ formData }) => {
           <View style={defaultSalarySlipStyles.totalRow}>
             <Text style={defaultSalarySlipStyles.totalLabel}>Total Deductions</Text>
             <Text style={defaultSalarySlipStyles.totalAmount}>
-              Rs. {formatIndianCurrency(getTotalDeductions(f))}
+              Rs. {formatCurrency(getTotalDeductions(f))}
             </Text>
           </View>
         </View>
@@ -259,7 +292,7 @@ const DefaultSalarySlipLayout = ({ formData }) => {
         <View style={defaultSalarySlipStyles.netPayRow}>
           <Text style={defaultSalarySlipStyles.netPayLabel}>Net Pay</Text>
           <Text style={defaultSalarySlipStyles.netPayAmount}>
-            Rs. {formatIndianCurrency(getNetSalary(f))}
+            Rs. {formatCurrency(getNetSalary(f))}
           </Text>
         </View>
         <Text style={defaultSalarySlipStyles.netPayWords}>
@@ -320,11 +353,11 @@ const years = Array.from(
     { label: 'Designation', value: toTitleCase(f.designation) },
     { label: 'Department', value: f.department },
     { label: 'Bank Name', value: f.bankName },
-    { label: 'Bank Account No', value: f.accountNo },
+    { label: 'Bank Account Number', value: maskAccountNo(f.accountNo) },
     // { label: 'IFSC Code', value: f.ifscCode },
-    { label: 'Pan No', value: f.panNumber },
+    { label: 'PAN No.', value: maskPanNo(f.panNumber) },
     { label: 'Leaves', value: f.leaves || 0},
-    { label: 'Effective Work Days', value: `${f.payableDays} Days` },
+    { label: 'Effective Working Days', value: `${f.payableDays} Days` },
   ];
    const MONTH_NAMES = [
   "January","February","March","April","May","June",
@@ -528,7 +561,7 @@ return (
           <View key={item.label} style={{ flexDirection: "row", borderBottomWidth: 0.6, borderBottomColor: "#bfbfbf" }}>
             <Text style={{ width: "60%", padding: 4 ,borderRightWidth: 0.6, borderRightColor: "#000" }}>{item.label}</Text>
             <Text style={{ width: "40%", padding: 4, textAlign: "right" }}>
-              {formatIndianCurrency(item.amount)}
+              {formatCurrency(item.amount)}
             </Text>
           </View>
         ))}
@@ -536,7 +569,7 @@ return (
         <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderTopWidth: 0.75, borderTopColor: "#000" }}>
           <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Gross Salary</Text>
           <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
-            {formatIndianCurrency(getTotalEarnings(f))}
+            {formatCurrency(getTotalEarnings(f))}
           </Text>
         </View>
       </View>
@@ -552,7 +585,7 @@ return (
           <View key={item.label} style={{ flexDirection: "row", borderBottomWidth: 0.6, borderBottomColor: "#bfbfbf" }}>
             <Text style={{ width: "60%", padding: 4, borderRightWidth: 0.6, borderRightColor: "#000" }}>{item.label}</Text>
             <Text style={{ width: "40%", padding: 4, textAlign: "right" }}>
-              {formatIndianCurrency(item.amount)}
+              {formatCurrency(item.amount)}
             </Text>
           </View>
         ))}
@@ -561,7 +594,7 @@ return (
           
           <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Total Deductions</Text>
           <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
-            {formatIndianCurrency(getTotalDeductions(f))}
+            {formatCurrency(getTotalDeductions(f))}
           </Text>
         </View>
       </View>
@@ -582,25 +615,25 @@ return (
           Net Salary (A - B)
         </Text>
         <Text style={{ width: "50%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
-          {formatIndianCurrency(getNetSalary(f))}
+          {formatCurrency(getNetSalary(f))}
         </Text>
       </View>
     </View>
 
     {/* DIGITAL NOTICE CENTERED */}
     <Text style={{ fontSize: 10, textAlign: "center", marginTop: 10, fontWeight: "bold" }}>
-      This document is digitally generated and does not require signature.
+      This document is digitally generated and does not require a signature.
     </Text>
 
     {/* Bottom-left place and date */}
-    <View style={{ marginTop: 10 }}>
+    {/* <View style={{ marginTop: 10 }}>
       <Text style={{ fontSize: 10 }}>
         <Text style={{ fontWeight: "bold" }}>Place:</Text> {f.location || "-"}
       </Text>
       <Text style={{ fontSize: 10, marginTop: 2 }}>
         <Text style={{ fontWeight: "bold" }}>Date:</Text> {formatDisplayDate(f.payDate)}
       </Text>
-    </View>
+    </View> */}
 
     {/* PUSH FOOTER TO BOTTOM */}
     <View style={{ flexGrow: 1 }} />
@@ -738,24 +771,22 @@ function SalarySlipGeneratorV2() {
   const annual = l * 100000;
   const monthly = annual / 12;
 
-  // Basic unchanged by leaves
-  const basic = Math.round(monthly * 0.5);
-  const da = Math.round(basic * 0.2);
+  // Pure decimal components (no rounding here)
+  const basic = monthly * 0.5;
+  const da = basic * 0.2;
   const convey = 1600;
   const medical = 1250;
   const cca = 500;
 
-  // Other allowance = remainder after fixed allowances
   const other = Math.max(0, monthly - basic - da - convey - medical - cca);
 
-  // Leaves deduction calculation
   const perDay = monthly / days;
-  const leavesDeduction = Math.round(perDay * lv);
+  const leavesDeduction = perDay * lv;
 
-  const pt = 200;
-  const pf = enablePF ? Math.round(basic * 0.12) : 0;
+  const pt = getProfessionalTaxForSalarySlipMonth(m);
+  const pf = enablePF ? (Math.min(basic, 15000) * 0.12) : 0;
 
-  const totalEarnings = basic + da + convey + other + medical + cca;
+  const totalEarnings = basic + da + convey + medical + cca + other;
   const totalDeductions = pt + pf + leavesDeduction;
   const net = totalEarnings - totalDeductions;
 
@@ -826,7 +857,7 @@ function SalarySlipGeneratorV2() {
           ...prev,
           employeeName:names,
           employeeNameText:p,
-          employeeId: row?.employmentId || emp.employeeId || emp.id,
+          employeeId: getEmployeeCodeForSlip(row, emp),
           designation:des,
           department:dep,
           location:loc,
@@ -900,7 +931,7 @@ function SalarySlipGeneratorV2() {
 
     const calc = calculateSalary(ctcInLpa, formData.leaves, formData.month, formData.enablePF);
 
-    const nextEmployeeId = row?.employmentId || employee.employeeId || employee.id;
+    const nextEmployeeId = getEmployeeCodeForSlip(row, employee);
     const alreadySet =
       formData.employeeId === nextEmployeeId &&
       Number(formData.ctc || 0) === Number(salary || 0) &&
@@ -911,7 +942,7 @@ function SalarySlipGeneratorV2() {
       ...prev,
       employeeName: [employee.name],
       employeeNameText: employee.name,
-      employeeId: nextEmployeeId,
+      employeeId: getEmployeeCodeForSlip(row, employee),
       designation: row.jobTitle || row.designation || '',
       department: row.department || '',
       location: row.location || '',
@@ -937,42 +968,35 @@ function SalarySlipGeneratorV2() {
       ? otherAllowanceCalc
       : Number(formData.otherAllowanceOverride || 0) || 0;
   const grossSalaryCalc = basicCalc + hraCalc + conveyanceCalc + otherAllowanceValue;
-  const ptCalc = 200;
+  const ptCalc = getProfessionalTaxForSalarySlipMonth(Number(formData.month));
   const payableDaysCalc =
-    (getDaysInMonth(Number(formData.month)) - (Number(formData.leaves || 0) || 0));
+    getDaysInMonth(Number(formData.month)) - (Number(formData.leaves || 0) || 0);
   const pfCalc = formData.enablePF ? (Math.min(basicCalc, 15000) * 0.12) : 0;
 
-  const effectiveFormData = React.useMemo(() => {
-    const nextBasic = Number(basicCalc.toFixed(2));
-    const nextHra = Number(hraCalc.toFixed(2));
-    const nextConvey = Number(conveyanceCalc.toFixed(2));
-    const nextOther = Number(otherAllowanceValue.toFixed(2));
-    const nextPt = Number(ptCalc);
-    const nextPf = Number(pfCalc.toFixed(2));
-    const nextPayable = String(Math.max(0, Math.trunc(payableDaysCalc)));
-
-    return {
+  const effectiveFormData = React.useMemo(
+    () => ({
       ...formData,
-      basicSalary: nextBasic,
-      da: nextHra,
-      conveyanceAllowance: nextConvey,
-      otherAllowance: nextOther,
+      basicSalary: basicCalc,
+      da: hraCalc,
+      conveyanceAllowance: conveyanceCalc,
+      otherAllowance: otherAllowanceValue,
       medicalAllowance: 0,
       cca: 0,
-      professionalTax: nextPt,
-      pfEmployee: formData.enablePF ? nextPf : 0,
-      payableDays: nextPayable,
-    };
-  }, [
-    formData,
-    basicCalc,
-    hraCalc,
-    conveyanceCalc,
-    otherAllowanceValue,
-    ptCalc,
-    pfCalc,
-    payableDaysCalc,
-  ]);
+      professionalTax: ptCalc,
+      pfEmployee: formData.enablePF ? pfCalc : 0,
+      payableDays: String(payableDaysCalc),
+    }),
+    [
+      formData,
+      basicCalc,
+      hraCalc,
+      conveyanceCalc,
+      otherAllowanceValue,
+      ptCalc,
+      pfCalc,
+      payableDaysCalc,
+    ],
+  );
 
   const memoPDF = React.useMemo(() => <SalarySlipPDF formData={effectiveFormData} />, [effectiveFormData]);
   const handleGenerate = ()=> {
@@ -981,34 +1005,28 @@ function SalarySlipGeneratorV2() {
 
   // Keep PDF values in sync with the computed/override other allowance.
   useEffect(() => {
-    const next = Number(otherAllowanceValue.toFixed(2));
-    if (Number(formData.otherAllowance || 0) === next) return;
-    setFormData((prev) => ({ ...prev, otherAllowance: next }));
+    if (Number(formData.otherAllowance || 0) === Number(otherAllowanceValue)) return;
+    setFormData((prev) => ({ ...prev, otherAllowance: otherAllowanceValue }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [otherAllowanceValue]);
 
   // Keep document/PDF earnings fields in sync with the visible calculations.
   useEffect(() => {
-    const nextBasic = Number(basicCalc.toFixed(2));
-    const nextHra = Number(hraCalc.toFixed(2));
-    const nextConvey = Number(conveyanceCalc.toFixed(2));
-    const nextOther = Number(otherAllowanceValue.toFixed(2));
-
     if (
-      Number(formData.basicSalary || 0) === nextBasic &&
-      Number(formData.da || 0) === nextHra &&
-      Number(formData.conveyanceAllowance || 0) === nextConvey &&
-      Number(formData.otherAllowance || 0) === nextOther
+      Number(formData.basicSalary || 0) === Number(basicCalc) &&
+      Number(formData.da || 0) === Number(hraCalc) &&
+      Number(formData.conveyanceAllowance || 0) === Number(conveyanceCalc) &&
+      Number(formData.otherAllowance || 0) === Number(otherAllowanceValue)
     ) {
       return;
     }
 
     setFormData((prev) => ({
       ...prev,
-      basicSalary: nextBasic,
-      da: nextHra,
-      conveyanceAllowance: nextConvey,
-      otherAllowance: nextOther,
+      basicSalary: basicCalc,
+      da: hraCalc,
+      conveyanceAllowance: conveyanceCalc,
+      otherAllowance: otherAllowanceValue,
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [basicCalc, hraCalc, conveyanceCalc, otherAllowanceValue]);
@@ -1016,9 +1034,7 @@ function SalarySlipGeneratorV2() {
   // Keep deduction fields in sync with the formula values.
   useEffect(() => {
     const nextPt = ptCalc;
-    if (
-      Number(formData.professionalTax || 0) === Number(nextPt)
-    ) {
+    if (Number(formData.professionalTax || 0) === Number(nextPt)) {
       return;
     }
     setFormData((prev) => ({
@@ -1037,7 +1053,7 @@ function SalarySlipGeneratorV2() {
   }, [pfCalc, formData.enablePF]);
 
   useEffect(() => {
-    const nextPayable = String(Math.max(0, Math.trunc(payableDaysCalc)));
+    const nextPayable = String(payableDaysCalc);
     if (String(formData.payableDays || '') === nextPayable) return;
     setFormData((prev) => ({ ...prev, payableDays: nextPayable }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1112,7 +1128,7 @@ return (
         ...prev,
         employeeName: [emp.name],
         employeeNameText: emp.name,
-        employeeId: row?.employmentId || emp.employeeId || emp.id,
+        employeeId: getEmployeeCodeForSlip(row, emp),
         designation: row.jobTitle || row.designation || "",
         department: row.department || "",
         location: row.location || "",
@@ -1385,7 +1401,7 @@ return (
           </label>
           <input
             readOnly
-            value={Math.max(0, Math.trunc(payableDaysCalc))}
+            value={payableDaysCalc}
             className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>

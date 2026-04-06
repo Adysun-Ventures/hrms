@@ -12,7 +12,11 @@ import { useSalary, useUpdateSalary } from '@/hooks/useSalaries';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { getEmployeeNameById, getEmploymentsByEmployee, checkExistingSalary, updateEmployment } from '@/utils/firebaseUtils';
-import { calculateMonthlySalary, type MonthlySalaryResult } from '@/utils/monthlySalaryCalculationUtils';
+import {
+  calculateMonthlySalary,
+  getProfessionalTaxByMonth,
+  type MonthlySalaryResult,
+} from '@/utils/monthlySalaryCalculationUtils';
 import { use } from 'react';
 
 // Simplify the SalaryFormData type
@@ -65,7 +69,7 @@ export default function EditSalaryPage({ params }: PageParams) {
   const year = Number(watch('year')) || new Date().getFullYear();
   const month = Number(watch('month')) || new Date().getMonth() + 1;
   const leavesCount = watch('leavesCount') || 0;
-  const ptDeduct = watch('ptDeduct') || 200;
+  const ptDeduct = watch('ptDeduct') || getProfessionalTaxByMonth(month);
   const variablePay = watch('variablePay') || 0;
   const formatINR = (num: number) => {
   return new Intl.NumberFormat('en-IN', {
@@ -107,7 +111,7 @@ export default function EditSalaryPage({ params }: PageParams) {
           conveyanceAllowance: 0,
           otherAllowance: 0,
           grossSalary: 0,
-          ptDeduct: 200,
+          ptDeduct: getProfessionalTaxByMonth(numMonth),
           leavesDeductAmt: 0,
           totalDeduction: 0,
           netSalary: 0,
@@ -126,7 +130,7 @@ export default function EditSalaryPage({ params }: PageParams) {
       conveyanceAllowance: 0,
       otherAllowance: 0,
       grossSalary: 0,
-      ptDeduct: 200,
+      ptDeduct: getProfessionalTaxByMonth(numMonth),
       leavesDeductAmt: 0,
       totalDeduction: 0,
       netSalary: 0,
@@ -150,10 +154,8 @@ export default function EditSalaryPage({ params }: PageParams) {
     setValue('otherAllowance', calculations.otherAllowance, { shouldValidate: false, shouldDirty: false });
     setValue('leavesDeductAmt', calculations.leavesDeductAmt, { shouldValidate: false, shouldDirty: false });
     
-    // Set PT deduction to default if not already set
-    if (!ptDeduct || ptDeduct === 0) {
-      setValue('ptDeduct', calculations.ptDeduct, { shouldValidate: false, shouldDirty: false });
-    }
+    // Keep PT deduction aligned with selected month rule.
+    setValue('ptDeduct', calculations.ptDeduct, { shouldValidate: false, shouldDirty: false });
   }, [calculations, setValue, ptDeduct]);
   useEffect(()=>{
       //Fixed pay results
@@ -242,7 +244,7 @@ export default function EditSalaryPage({ params }: PageParams) {
         hra: salaryData.hra || 0,
         conveyanceAllowance: salaryData.conveyanceAllowance || 0,
         otherAllowance: salaryData.otherAllowance || 0,
-        ptDeduct: salaryData.ptDeduct || 200,
+        ptDeduct: salaryData.ptDeduct || getProfessionalTaxByMonth(Number(salary.month || 1)),
         leavesDeductAmt: salaryData.leavesDeductAmt || 0,
         otherDeduction: salaryData.otherDeduction || 0
       });

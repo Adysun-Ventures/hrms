@@ -751,6 +751,37 @@ export const getEmploymentsByEmployee = async (employeeId: string) => {
   }
 }; 
 
+// Employee-safe: fetch employments for self only
+export const getEmploymentsByEmployeeSelf = async (employeeId: string) => {
+  try {
+    const employeeSessionId = localStorage.getItem('employeeSessionId');
+    const employeeData = localStorage.getItem('employeeData');
+    if (!employeeSessionId || !employeeData) {
+      throw new Error('No employee session found. Please log in as employee first.');
+    }
+    const currentEmployee = JSON.parse(employeeData);
+    if (currentEmployee.id !== employeeId) {
+      throw new Error('Access denied. You can only view your own data.');
+    }
+
+    const q = query(collection(db, 'employments'), where('employeeId', '==', employeeId));
+    const querySnapshot = await getDocs(q);
+    const employments: Employment[] = [];
+    querySnapshot.forEach((d) => {
+      employments.push({ id: d.id, ...d.data() } as Employment);
+    });
+    employments.sort((a: any, b: any) => {
+      const ad = new Date(a.startDate || a.joiningDate || 0).getTime();
+      const bd = new Date(b.startDate || b.joiningDate || 0).getTime();
+      return bd - ad;
+    });
+    return employments;
+  } catch (error) {
+    console.error('Error getting employments by employee (self):', error);
+    throw error;
+  }
+};
+
 /**
  * Get admin data from localStorage for audit purposes
  * @returns Admin data object or throws error if not found
@@ -768,6 +799,26 @@ export const getAdminDataForAudit = () => {
     adminId: admin.id,
     adminName: admin.name,
     currentTimestamp: new Date().toISOString()
+  };
+};
+
+/**
+ * Get employee data from localStorage for audit purposes
+ * @returns Employee data object or throws error if not found
+ */
+export const getEmployeeDataForAudit = () => {
+  const employeeSessionId = localStorage.getItem('employeeSessionId');
+  const employeeData = localStorage.getItem('employeeData');
+
+  if (!employeeSessionId || !employeeData) {
+    throw new Error('No employee session found. Please log in as employee first.');
+  }
+
+  const employee = JSON.parse(employeeData);
+  return {
+    employeeId: employee.id,
+    employeeName: employee.name,
+    currentTimestamp: new Date().toISOString(),
   };
 };
 
@@ -873,6 +924,43 @@ export const addSalary = async (salaryData: Omit<Salary, 'id'>) => {
     return docRef.id;
   } catch (error) {
     console.error('Error adding salary:', error);
+    throw error;
+  }
+};
+
+// Employee-safe: employee can create salary for self only (no admin session)
+export const addSalaryEmployeeSelf = async (salaryData: Omit<Salary, 'id'>) => {
+  try {
+    const employeeAudit = getEmployeeDataForAudit();
+
+    if (!salaryData.employeeId) {
+      throw new Error('Employee ID is required to create a salary record');
+    }
+    if (salaryData.employeeId !== employeeAudit.employeeId) {
+      throw new Error('Access denied. You can only create salary for yourself.');
+    }
+
+    const employeeDoc = await getDoc(doc(db, 'employees', salaryData.employeeId));
+    if (!employeeDoc.exists()) {
+      throw new Error('Employee not found. Please contact HR/Admin.');
+    }
+
+    const salaryWithAudit = {
+      ...salaryData,
+      createdAt: new Date().toISOString(),
+      createdBy: employeeAudit.employeeId,
+      createdByType: 'employee',
+      updatedAt: new Date().toISOString(),
+      updatedBy: employeeAudit.employeeId,
+      updatedByType: 'employee',
+    } as any;
+
+    const sanitizedData = sanitizeForFirestore(salaryWithAudit);
+    const docRef = await addDoc(collection(db, 'salaries'), sanitizedData);
+    console.log('✅ Salary (self) added successfully for employee:', salaryData.employeeId, 'Salary ID:', docRef.id);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding salary (self):', error);
     throw error;
   }
 };

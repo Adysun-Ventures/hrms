@@ -8,7 +8,7 @@ import { useEmployeeSelfSalariesByEmployee } from '@/hooks/useSalaries';
 import TableHeader from '@/components/ui/TableHeader';
 import Pagination from '@/components/ui/Pagination';
 import { ActionButton } from '@/components/ui/ActionButton';
-import { FiDownload, FiEye } from 'react-icons/fi';
+import { FiDownload, FiEye, FiPlus } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import { Toaster } from 'react-hot-toast';
 import { pdf } from '@react-pdf/renderer';
@@ -167,12 +167,20 @@ export default function EmployeeMySalaryPage() {
       const monthIndex0 = Math.max(0, Math.min(11, payMonth1 - 1));
       const leavesCount = Number((f as any).leavesCount ?? 0) || 0;
       const payableDays = Math.max(0, getDaysInMonth(payMonth1, payYear) - leavesCount);
+      const employeeCode =
+        String(
+          (f as any).employmentId ||
+          (employmentData as any)?.employmentId ||
+          (f as any).employeeCode ||
+          (employeeData as any)?.employeeId ||
+          ''
+        ).trim();
 
       const slipFormData: any = {
         companyName: (f as any).companyName || 'Adysun Ventures Pvt. Ltd.',
         employeeName: [(employeeName || '').trim()].filter(Boolean),
         employeeNameText: employeeName,
-        employeeId: (f as any).employmentId || (f as any).employeeId || salary.employeeId,
+        employeeId: employeeCode,
         designation: (f as any).jobTitle || (f as any).designation || '',
         department: (f as any).department || '',
         payDate: `${payYear}-${String(payMonth1).padStart(2, '0')}-01`,
@@ -228,6 +236,14 @@ export default function EmployeeMySalaryPage() {
           title="My Salary"
           total={filteredSalaries.length}
           backButton={{ href: '/employee-dashboard', label: 'Back' }}
+          actionButtons={[
+            {
+              label: 'Add Salary',
+              icon: <FiPlus className="w-4 h-4" />,
+              variant: 'success',
+              onClick: () => router.push('/salaries/add?from=employee'),
+            },
+          ]}
           searchPlaceholder="Search by month/year"
           searchValue={searchTerm}
           onSearchChange={(e) => setSearchTerm(e.target.value)}

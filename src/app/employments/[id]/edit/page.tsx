@@ -7,7 +7,7 @@ import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { FiCheckCircle, FiRefreshCw, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
-import { getEmployment, updateEmployment, getEmployees as getEmployeesAuth, checkEmploymentIdUnique, updateEmployeeSelfEmployment } from '@/utils/firebaseUtils';
+import { getEmployment, getEmployee, updateEmployment, getEmployees as getEmployeesAuth, checkEmploymentIdUnique, updateEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { Employment, Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
@@ -77,6 +77,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [breadcrumbEmployeeName, setBreadcrumbEmployeeName] = useState<string>('');
   // Salary breakdown sections removed as requested.
   const [originalEmployment, setOriginalEmployment] = useState<Employment | null>(null);
   const generatedEmploymentIdsRef = useRef<Set<string>>(new Set());
@@ -120,9 +121,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
     toast.error('Could not generate unique Employment ID. Try again.');
   };
-  const breadcrumbEmployeeName =
-    employees.find((e) => e.id === breadcrumbEmployeeId)?.name || '';
-
   // Dynamic increments field array
   const {
     fields: incrementFields,
@@ -432,6 +430,16 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         // Fetch employment data
         const employmentData = await getEmployment(id);
         setOriginalEmployment(employmentData);
+        if (employmentData?.employeeId) {
+          try {
+            const employeeData = await getEmployee(employmentData.employeeId);
+            setBreadcrumbEmployeeName(employeeData?.name || '');
+          } catch {
+            setBreadcrumbEmployeeName('');
+          }
+        } else {
+          setBreadcrumbEmployeeName('');
+        }
 
         // Reset form with employment data (excluding audit fields)
         const {
@@ -903,15 +911,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
           : [
             { label: 'Dashboard', href: '/dashboard' },
             { label: 'Employees', href: '/employees' },
-            ...(breadcrumbEmployeeId
-              ? [
-                {
-                  label: breadcrumbEmployeeName || 'Employee',
-                  href: `/employees/${breadcrumbEmployeeId}`,
-                },
-                { label: 'Employment', href: `/employments/${id}` },
-              ]
-              : [{ label: 'Employments', href: '/employments' }]),
+            {
+              label: breadcrumbEmployeeName || 'Employee',
+              ...(breadcrumbEmployeeId ? { href: `/employees/${breadcrumbEmployeeId}` } : {}),
+            },
+            { label: 'Employment', href: `/employments/${id}` },
             { label: 'Edit Employment', isCurrent: true },
           ]
       }

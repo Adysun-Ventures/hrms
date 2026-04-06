@@ -96,7 +96,7 @@ const JoiningDateDisplay = ({ employeeId }: { employeeId: string }) => {
 };
 
 
-// Component to display current package (CTC) from employment record
+// Component to display Current CTC from Employment "Current Salary Information"
 const CurrentPackageDisplay = ({ employeeId }: { employeeId: string }) => {
   const { data: employments = [] } = useEmploymentsByEmployee(employeeId);
 
@@ -107,10 +107,11 @@ const CurrentPackageDisplay = ({ employeeId }: { employeeId: string }) => {
     return <span className="text-gray-400">-</span>;
   }
 
-  // Priority: incrementedCtc > joiningCtc > salary
-  const currentPackage = employment.incrementedCtc 
-    || employment.joiningCtc 
-    || employment.salary;
+  // Current CTC should come from employment current salary info.
+  // Prefer explicit current CTC field (`salary`), then derive from current fixed + variable.
+  const currentPackage =
+    Number((employment as any).salary ?? 0) ||
+    (Number((employment as any).currentFixedPay ?? 0) + Number((employment as any).currentVariablePay ?? 0));
 
   if (!currentPackage) {
     return <span className="text-gray-400">-</span>;
@@ -666,7 +667,7 @@ useEffect(() => {
 
 
                   <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
-                    Curr. Package
+                    Current CTC
                   </th>
                   <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
                     Total Sal. Cr.

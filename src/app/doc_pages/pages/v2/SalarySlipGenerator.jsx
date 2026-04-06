@@ -113,12 +113,24 @@ const getEmployeeCodeForSlip = (employmentRow) =>
   String(employmentRow?.employmentId || '').trim();
 const getProfessionalTaxForSalarySlipMonth = (monthZeroBased) =>
   Number(monthZeroBased) === 1 ? 300 : 200;
+const toNumber = (value) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : 0;
+};
 
 const getTotalEarnings = (f) =>
-  (f.basicSalary||0)+(f.da||0)+(f.conveyanceAllowance||0)+(f.otherAllowance||0)+(f.medicalAllowance||0)+(f.cca||0);
+  toNumber(f.basicSalary) +
+  toNumber(f.da) +
+  toNumber(f.conveyanceAllowance) +
+  toNumber(f.otherAllowance) +
+  toNumber(f.medicalAllowance) +
+  toNumber(f.cca);
 
 const getTotalDeductions = (f) =>
-  (f.professionalTax||0)+(f.otherDeductions||0)+(f.pfEmployee||0)+(f.leavesDeduction||0);
+  toNumber(f.professionalTax) +
+  toNumber(f.otherDeductions) +
+  toNumber(f.pfEmployee) +
+  toNumber(f.leavesDeduction);
 
 const getNetSalary = (f)=>
   getTotalEarnings(f)-getTotalDeductions(f);
@@ -307,18 +319,18 @@ const AdysunSalarySlipLayout = ({ formData }) => {
   const f = formData || {};
 
   const earningsData = [
-    { label: 'Basic', amount: f.basicSalary || 0 },
-    { label: 'HRA', amount: f.da || 0 },
-    { label: 'Conveyance Allowance', amount: f.conveyanceAllowance || 0 },
-    { label: 'Other Allowance', amount: (f.otherAllowance||0)+(f.medicalAllowance||0)+(f.cca||0) },
+    { label: 'Basic', amount: toNumber(f.basicSalary) },
+    { label: 'HRA', amount: toNumber(f.da) },
+    { label: 'Conveyance Allowance', amount: toNumber(f.conveyanceAllowance) },
+    { label: 'Other Allowance', amount: toNumber(f.otherAllowance) + toNumber(f.medicalAllowance) + toNumber(f.cca) },
   ];
 
   const deductionsData = [
-    { label: 'PT', amount: f.professionalTax || 0 },
+    { label: 'PT', amount: toNumber(f.professionalTax) },
 
-    ...(f.enablePF ? [{ label: 'PF (Employee)', amount: f.pfEmployee || 0 }] : []),
-    { label: 'Leave Deduction', amount: f.leavesDeduction || 0 },
-    { label: 'Other Deductions', amount: f.otherDeductions || 0 },
+    ...(f.enablePF ? [{ label: 'PF (Employee)', amount: toNumber(f.pfEmployee) }] : []),
+    { label: 'Leave Deduction', amount: toNumber(f.leavesDeduction) },
+    { label: 'Other Deductions', amount: toNumber(f.otherDeductions) },
   ];
 
   const footerLines = [
@@ -796,7 +808,6 @@ function SalarySlipGeneratorV2() {
     professionalTax: pt,
     pfEmployee: pf,
     leavesDeduction,
-    otherDeductions: 0,
     payableDays: days - lv,
     amountInWords: `Rupees ${numberToWords(net)} Only`,
   };
@@ -912,7 +923,8 @@ function SalarySlipGeneratorV2() {
       return;
     }
 
-    setFormData(prev=>({...prev, [name]:value}));
+    const nextValue = type === "number" ? toNumber(value) : value;
+    setFormData(prev=>({...prev, [name]: nextValue}));
   };
 
   // Employee dashboard: auto-fill salary slip generator for self user
@@ -1367,6 +1379,7 @@ return (
             className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>
+        
 
         <div className="form-group">
           <label className="block mb-2 text-sm font-medium text-gray-700">
@@ -1376,6 +1389,19 @@ return (
             readOnly
             value={ptCalc}
             className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="block mb-2 text-sm font-medium text-gray-700">
+            Other Deductions
+          </label>
+          <input
+            type="number"
+            name="otherDeductions"
+            value={formData.otherDeductions ?? 0}
+            onChange={handleInputChange}
+            className="w-full p-2.5 border border-gray-300 rounded-md"
           />
         </div>
 

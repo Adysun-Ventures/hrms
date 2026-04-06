@@ -6,10 +6,10 @@ import Link from 'next/link';
 import { FiUser, FiEdit, FiTrash2, FiArrowLeft, FiBriefcase, FiDollarSign, FiBook } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Employee } from '@/types';
-import { formatDateToDayMonYear } from '@/utils/documentUtils';
+import { formatDateToDayMonYear, formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import { useEmployee, useDeleteEmployee } from '@/hooks/useEmployees';
 import { useEmploymentsByEmployee } from '@/hooks/useEmployments';
-import { getAdminNameById } from '@/utils/firebaseUtils';
+import { getAdminNameById, getEmployeeNameById } from '@/utils/firebaseUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { useQueryClient } from '@tanstack/react-query';
@@ -130,16 +130,23 @@ export default function EmployeeViewPage({ params }: PageParams) {
     const fetchAdminNames = async () => {
       if (employee) {
         try {
-          // Fetch created by admin name
+          const resolveActorName = async (actorId?: string) => {
+            if (!actorId) return '';
+            const adminName = await getAdminNameById(actorId);
+            if (adminName && adminName !== 'Unknown Admin') return adminName;
+            const employeeName = await getEmployeeNameById(actorId);
+            if (employeeName && employeeName !== 'Unknown Employee') return employeeName;
+            return 'Unknown';
+          };
+
           if (employee.createdBy) {
-            const createdByAdminName = await getAdminNameById(employee.createdBy);
-            setCreatedByAdmin(createdByAdminName);
+            const createdByName = await resolveActorName(employee.createdBy);
+            setCreatedByAdmin(createdByName);
           }
-          
-          // Fetch updated by admin name
+
           if (employee.updatedBy) {
-            const updatedByAdminName = await getAdminNameById(employee.updatedBy);
-            setUpdatedByAdmin(updatedByAdminName);
+            const updatedByName = await resolveActorName(employee.updatedBy);
+            setUpdatedByAdmin(updatedByName);
           }
         } catch (error) {
           console.error('Error fetching admin names:', error);
@@ -651,7 +658,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
               
               <div>
                 <p className="text-lg font-medium text-gray-900">
-                  {employee.createdAt ? formatDateToDayMonYear(employee.createdAt) : '-'}
+                  {employee.createdAt ? formatDateToDayMonYearWithTime(employee.createdAt) : '-'}
                 </p>
                 <p className="text-sm text-gray-500">Created At</p>
               </div>
@@ -663,7 +670,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
               
               <div>
                 <p className="text-lg font-medium text-gray-900">
-                  {employee.updatedAt ? formatDateToDayMonYear(employee.updatedAt) : '-'}
+                  {employee.updatedAt ? formatDateToDayMonYearWithTime(employee.updatedAt) : '-'}
                 </p>
                 <p className="text-sm text-gray-500">Updated At</p>
               </div>

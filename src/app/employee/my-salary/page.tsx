@@ -167,12 +167,11 @@ export default function EmployeeMySalaryPage() {
       const monthIndex0 = Math.max(0, Math.min(11, payMonth1 - 1));
       const leavesCount = Number((f as any).leavesCount ?? 0) || 0;
       const payableDays = Math.max(0, getDaysInMonth(payMonth1, payYear) - leavesCount);
+      // Employee Code in slip should be Employment ID (human-readable), never raw employee doc id.
       const employeeCode =
         String(
-          (f as any).employmentId ||
           (employmentData as any)?.employmentId ||
-          (f as any).employeeCode ||
-          (employeeData as any)?.employeeId ||
+          (f as any).employmentId ||
           ''
         ).trim();
 

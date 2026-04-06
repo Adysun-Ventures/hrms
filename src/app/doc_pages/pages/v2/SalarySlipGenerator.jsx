@@ -109,13 +109,8 @@ const getSalarySlipMonthLabel = (d) => {
   return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
 };
 const getSalarySlipMonthUpper = (d) => formatDateToDayMonYear(d);
-const getEmployeeCodeForSlip = (employmentRow, employeeRow) =>
-  String(
-    employmentRow?.employmentId ||
-    employeeRow?.employeeCode ||
-    employeeRow?.employeeId ||
-    ''
-  ).trim();
+const getEmployeeCodeForSlip = (employmentRow) =>
+  String(employmentRow?.employmentId || '').trim();
 const getProfessionalTaxForSalarySlipMonth = (monthZeroBased) =>
   Number(monthZeroBased) === 1 ? 300 : 200;
 
@@ -349,7 +344,7 @@ const years = Array.from(
   label: 'Employee Name', 
   value: toTitleCase(getEmployeeNameText(f.employeeName, f.employeeNameText)) 
 },
-    { label: 'Employee Code', value: f.employeeId },
+    { label: 'Employee Code', value: f.employmentId || f.employeeId },
     { label: 'Designation', value: toTitleCase(f.designation) },
     { label: 'Department', value: f.department },
     { label: 'Bank Name', value: f.bankName },
@@ -682,6 +677,7 @@ function SalarySlipGeneratorV2() {
     employeeName: [],
     employeeNameText: '',
     employeeId: "",
+    employmentId: "",
     designation: "",
     department: "",
     payDate: new Date().toISOString().split('T')[0],
@@ -857,7 +853,8 @@ function SalarySlipGeneratorV2() {
           ...prev,
           employeeName:names,
           employeeNameText:p,
-          employeeId: getEmployeeCodeForSlip(row, emp),
+          employeeId: getEmployeeCodeForSlip(row),
+          employmentId: String(row?.employmentId || ''),
           designation:des,
           department:dep,
           location:loc,
@@ -931,7 +928,7 @@ function SalarySlipGeneratorV2() {
 
     const calc = calculateSalary(ctcInLpa, formData.leaves, formData.month, formData.enablePF);
 
-    const nextEmployeeId = getEmployeeCodeForSlip(row, employee);
+    const nextEmployeeId = getEmployeeCodeForSlip(row);
     const alreadySet =
       formData.employeeId === nextEmployeeId &&
       Number(formData.ctc || 0) === Number(salary || 0) &&
@@ -942,7 +939,8 @@ function SalarySlipGeneratorV2() {
       ...prev,
       employeeName: [employee.name],
       employeeNameText: employee.name,
-      employeeId: getEmployeeCodeForSlip(row, employee),
+      employeeId: getEmployeeCodeForSlip(row),
+      employmentId: String(row?.employmentId || ''),
       designation: row.jobTitle || row.designation || '',
       department: row.department || '',
       location: row.location || '',
@@ -1128,7 +1126,8 @@ return (
         ...prev,
         employeeName: [emp.name],
         employeeNameText: emp.name,
-        employeeId: getEmployeeCodeForSlip(row, emp),
+        employeeId: getEmployeeCodeForSlip(row),
+        employmentId: String(row?.employmentId || ''),
         designation: row.jobTitle || row.designation || "",
         department: row.department || "",
         location: row.location || "",
@@ -1163,6 +1162,7 @@ return (
               employeeName: [],
               employeeNameText: '',
               employeeId: '',
+              employmentId: '',
               designation: '',
               department: '',
               location: '',

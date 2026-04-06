@@ -234,14 +234,12 @@ const handleDownload = async (salary: Salary) => {
     const monthIndex0 = Math.max(0, Math.min(11, payMonth1 - 1));
     const leavesCount = Number(f.leavesCount ?? 0) || 0;
     const payableDays = Math.max(0, (new Date(payYear, payMonth1, 0).getDate()) - leavesCount);
-    const employeeCode =
-      String(
-        f.employmentId ||
-        employmentData?.employmentId ||
-        f.employeeCode ||
-        employeeData?.employeeId ||
-        ''
-      ).trim();
+    // Employee Code in slip should be Employment ID (human-readable), never raw employee doc id.
+    const employeeCode = String(
+      employmentData?.employmentId ||
+      f.employmentId ||
+      ''
+    ).trim();
 
     const pf = Number(f.pf ?? 0) || 0;
     const pt = Number(f.ptDeduct ?? 200) || 0;

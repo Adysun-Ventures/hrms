@@ -31,6 +31,12 @@ const documents = [
     path: '/dashboard/documents/v2/relieving-letter', 
     icon: <FiFileText size={24} /> 
   },
+  {
+    title: 'FNF Certificate (v2)',
+    description: 'Generate full and final settlement certificates',
+    path: '/dashboard/documents/v2/fnf-certificate',
+    icon: <FiFileText size={24} />
+  },
   { 
     title: 'Increment Letter (v2)',
     description: 'Generate selectable text increment letters',

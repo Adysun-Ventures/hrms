@@ -13,6 +13,7 @@ const AppraisalLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/Apprais
 const SalarySlipGeneratorV2 = dynamic(() => import('@/app/doc_pages/pages/v2/SalarySlipGenerator'), { ssr: false });
 const ExperienceLetterV2Page = dynamic(() => import('@/app/doc_pages/pages/v2/ExperienceLetter'), { ssr: false });
 const JoiningLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/JoiningLetter'), { ssr: false });
+const FnfCertificateV2 = dynamic(() => import('@/app/doc_pages/pages/v2/FnfCertificate'), { ssr: false });
 
 // Legacy v1 components when needed
 const IncrementLetterV1 = dynamic(() => import('@/app/doc_pages/pages/IncrementLetter'), { ssr: false });
@@ -56,6 +57,8 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
           return <ExperienceLetterV2Page/>;
         case 'v2/joining-letter':
           return <JoiningLetterV2/>;
+        case 'v2/fnf-certificate':
+          return <FnfCertificateV2 />;
         default:
           return <div>V2 document type not found</div>;
       }

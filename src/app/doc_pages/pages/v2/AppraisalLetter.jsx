@@ -214,11 +214,19 @@ async function buildAppraisalLetterDocx(employee, currentCTC, percentIncrease, r
       ? [
           new Paragraph({
             children: [
-              new TextRun({ text: "Designation update: " }),
-              new TextRun({ text: oldDesignation || "-", bold: true }),
-              new TextRun({ text: " to " }),
-              new TextRun({ text: newDesignation || "-", bold: true }),
-              new TextRun({ text: "." }),
+              ...(oldDesignation && newDesignation && oldDesignation === newDesignation
+                ? [
+                    new TextRun({ text: "Designation remains unchanged: " }),
+                    new TextRun({ text: oldDesignation || "-", bold: true }),
+                    new TextRun({ text: "." }),
+                  ]
+                : [
+                    new TextRun({ text: "Designation update: " }),
+                    new TextRun({ text: oldDesignation || "-", bold: true }),
+                    new TextRun({ text: " to " }),
+                    new TextRun({ text: newDesignation || "-", bold: true }),
+                    new TextRun({ text: "." }),
+                  ]),
             ],
           }),
         ]
@@ -228,7 +236,7 @@ async function buildAppraisalLetterDocx(employee, currentCTC, percentIncrease, r
     new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
     new Paragraph({
       text:
-        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.",
+        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this increment letter. I accept the terms of this increment letter with Adysun Ventures Private Limited.",
     }),
     new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCase(employeeName), bold: true })] }),
     new Paragraph({ text: "Signature: ________________________________" }),
@@ -325,8 +333,17 @@ const AppraisalLetterPDF = ({
 
         {(oldDesignation || newDesignation) && (
           <Text style={{ marginBottom: 10 }}>
-            Designation update: <Text style={{ fontWeight: "bold" }}>{oldDesignation || "-"}</Text> to{" "}
-            <Text style={{ fontWeight: "bold" }}>{newDesignation || "-"}</Text>.
+            {oldDesignation && newDesignation && oldDesignation === newDesignation ? (
+              <>
+                Designation remains unchanged:{" "}
+                <Text style={{ fontWeight: "bold" }}>{oldDesignation || "-"}</Text>.
+              </>
+            ) : (
+              <>
+                Designation update: <Text style={{ fontWeight: "bold" }}>{oldDesignation || "-"}</Text> to{" "}
+                <Text style={{ fontWeight: "bold" }}>{newDesignation || "-"}</Text>.
+              </>
+            )}
           </Text>
         )}
 
@@ -346,7 +363,7 @@ const AppraisalLetterPDF = ({
           Acknowledgement and Acceptance
         </Text>
         <Text style={{ marginBottom: 10 }}>
-          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.
+          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this increment letter. I accept the terms of this increment letter with Adysun Ventures Private Limited.
         </Text>
         <Text style={{ marginBottom: 6 }}>
           Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCase(employeeName)}</Text>

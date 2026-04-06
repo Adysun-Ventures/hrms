@@ -255,14 +255,14 @@ async function buildJoiningLetterDocx(employee, designation, department, reporti
       children: [
         new TextRun({ text: "We are pleased to confirm your joining with " }),
         new TextRun({ text: COMPANY_DATA.name, bold: true }),
-        new TextRun({ text: ". You will be joining us as " }),
+        new TextRun({ text: ". You will be joining us as a " }),
         new TextRun({ text: designation || "", bold: true }),
         ...(department ? [new TextRun({ text: ` in the ${department} department` })] : []),
         new TextRun({ text: ` effective from ${formattedJoiningDate}.` }),
       ],
     }),
     new Paragraph({ children: [new TextRun({ text: `Your place of posting shall be ${workLocation || ""} and you will be reporting to ${reportingManager || ""}.` })] }),
-    new Paragraph({ children: [new TextRun({ text: "Your annual Cost to Company (CTC) will be " }), new TextRun({ text: formattedCTC, bold: true }), new TextRun({ text: "." })] }),
+    new Paragraph({ children: [new TextRun({ text: "Your annual Cost to Company (CTC) will be " }), new TextRun({ text: `₹${formattedCTC}`, bold: true }), new TextRun({ text: "." })] }),
     new Paragraph({ children: [new TextRun({ text: `You will be on probation for a period of ${probation || ""}, during which your performance will be assessed.` })] }),
     new Paragraph({ children: [new TextRun({ text: "Your working hours will be 10:00 AM - 7:00 PM, Monday to Friday." })] }),
     new Paragraph({ text: "We warmly welcome you to our organization and look forward to your valuable contribution." }),
@@ -271,7 +271,7 @@ async function buildJoiningLetterDocx(employee, designation, department, reporti
     new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
     new Paragraph({
       text:
-        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.",
+        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this joining letter. I accept the offer of employment with Adysun Ventures Private Limited.",
     }),
     new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCase(name), bold: true })] }),
     new Paragraph({ text: "Signature: ________________________________" }),
@@ -356,7 +356,7 @@ const JoiningLetterPDF = ({
         <Text style={{ marginBottom: 10 }}>
           We are pleased to confirm your joining with{" "}
           <Text style={{ fontWeight: "bold" }}>{COMPANY_DATA.name}</Text>. You will be joining us
-          as <Text style={{ fontWeight: "bold" }}>{designation}</Text>
+          as a <Text style={{ fontWeight: "bold" }}>{designation}</Text>
           {department ? <> in the <Text style={{ fontWeight: "bold" }}>{department}</Text> department</> : null}
           {" "}effective from <Text style={{ fontWeight: "bold" }}>{formattedJoiningDate}</Text>.
         </Text>
@@ -369,7 +369,7 @@ const JoiningLetterPDF = ({
 
         <Text style={{ marginBottom: 10 }}>
           Your annual Cost to Company (CTC) will be{" "}
-          <Text style={{ fontWeight: "bold" }}> {formattedCTC}</Text>.
+          <Text style={{ fontWeight: "bold" }}> ₹{formattedCTC}</Text>.
         </Text>
 
         <Text style={{ marginBottom: 10 }}>
@@ -396,7 +396,7 @@ const JoiningLetterPDF = ({
           Acknowledgement and Acceptance
         </Text>
         <Text style={{ marginBottom: 10 }}>
-          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.
+          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this joining letter. I accept the offer of employment with Adysun Ventures Private Limited.
         </Text>
         <Text style={{ marginBottom: 6 }}>
           Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCase(employeeName)}</Text>

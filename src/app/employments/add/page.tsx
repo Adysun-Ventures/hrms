@@ -1576,6 +1576,7 @@ export default function AddEmploymentPage() {
                       maxLength={11}
                       {...register('ifscCode', {
                         required: 'IFSC code is required',
+                        setValueAs: (value) => String(value || '').trim().toUpperCase(),
                         pattern: {
                           value: /^[A-Z]{4}0[A-Z0-9]{6}$/,
                           message: 'Invalid IFSC format. Must be 11 characters: 4 letters + 0 + 6 alphanumeric (e.g., HDFC0000001)'

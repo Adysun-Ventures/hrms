@@ -200,13 +200,13 @@ async function buildRelievingLetterDocx(employee, employment, employeeSignDate, 
       ? [new Paragraph({ children: [new TextRun({ text: "You served in the role of " }), new TextRun({ text: designation, bold: true }), new TextRun({ text: "." })] })]
       : []),
     new Paragraph({ text: "During your tenure with the company, you performed your duties responsibly and professionally, and maintained a positive attitude towards work and colleagues." }),
-    new Paragraph({ children: [new TextRun({ text: "We hereby confirm that you have been formally relieved from your services effective end of day " }), new TextRun({ text: relievingDate, bold: true }), new TextRun({ text: "." })] }),
-    new Paragraph({ text: "Further, you have completed all required exit formalities including handover of company assets, documentation, access rights and clearance." }),
+    new Paragraph({ children: [new TextRun({ text: "We hereby confirm that you have been formally relieved from your employment effective end of day " }), new TextRun({ text: relievingDate, bold: true }), new TextRun({ text: "." })] }),
+    new Paragraph({ text: "Further, you have completed all required exit formalities including handover of company assets, documentation, access rights, and clearance." }),
     new Paragraph({ text: "" }),
     new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
     new Paragraph({
       text:
-        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.",
+        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this Relieving Letter. I acknowledge the relieving of my employment with Adysun Ventures Private Limited.",
     }),
     new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCaseRelief(employeeName), bold: true })] }),
     new Paragraph({ text: "Signature: ________________________________" }),
@@ -333,19 +333,19 @@ const RelievingLetterPDF = ({
         </Text>
 
         <Text style={{ marginBottom: 10 }}>
-          We hereby confirm that you have been formally relieved from your services effective end of day{" "}
+          We hereby confirm that you have been formally relieved from your employment effective end of day{" "}
           <Text style={{ fontWeight: "bold" }}>{relievingDate}</Text>.
         </Text>
 
         <Text style={{ marginBottom: 10 }}>
-          Further, you have completed all required exit formalities including handover of company assets, documentation, access rights and clearance.
+          Further, you have completed all required exit formalities including handover of company assets, documentation, access rights, and clearance.
         </Text>
 
         <Text style={{ marginBottom: 10, fontWeight: "bold", textDecoration: "underline" }}>
           Acknowledgement and Acceptance
         </Text>
         <Text style={{ marginBottom: 10 }}>
-          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this Relieving Letter. I accept the relieving of employment with Adysun Ventures Private Limited.
+          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this Relieving Letter. I acknowledge the relieving of my employment with Adysun Ventures Private Limited.
         </Text>
         <Text style={{ marginBottom: 6 }}>
           Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCaseRelief(employeeName)}</Text>
@@ -517,13 +517,18 @@ function RelievingLetterV2() {
                     const resignDate = normalizeDateForInput(
                       selectedEmployment?.resignationDate ||
                       selectedEmployment?.resignedDate ||
+                      ""
+                    );
+                    const relievingDate = normalizeDateForInput(
                       selectedEmployment?.lastWorkingDate ||
+                      selectedEmployment?.endDate ||
+                      resignDate ||
                       ""
                     );
 
                     setEmployeeSignDate(joiningDateForDoc || "");
                     setEmployeeResignDate(resignDate || "");
-                    setEmployeeRelievingDate(resignDate || "");
+                    setEmployeeRelievingDate(relievingDate || "");
                     setDesignationOverride(
                       selectedEmployment?.jobTitle || selectedEmployment?.designation || ""
                     );

@@ -476,7 +476,7 @@ const OfferLetterPDF = ({
         <Text style={{ fontWeight: 'bold' }}>{designation}</Text> effective from{' '}
         <Text style={{ fontWeight: 'bold' }}>{effectiveDateFormatted}</Text>. You are expected to
         demonstrate professional conduct, punctuality and adhere to organizational policies at all
-        times. This appointment will be considered null and void should you fail to commence duties
+        times. This appointment will be considered null and void if you fail to commence duties
         on or before your joining date.
         {/* <Text style={{ fontWeight: 'bold' }}>{joiningDateFormatted}</Text>. */}
       </Text>

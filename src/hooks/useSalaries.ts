@@ -5,9 +5,11 @@ import {
   addSalary,
   addSalaryEmployeeSelf,
   updateSalary,
+  updateSalaryEmployeeSelf,
   deleteSalary,
   getSalariesByEmployee,
   getEmployeeSelfSalariesByEmployee,
+  getSalaryEmployeeSelf,
 } from '@/utils/firebaseUtils';
 import { queryKeys } from '@/lib/queryKeys';
 import { Salary } from '@/types';
@@ -52,6 +54,14 @@ export const useEmployeeSelfSalariesByEmployee = (employeeId: string) => {
     queryKey: queryKeys.salaries.byEmployee(employeeId),
     queryFn: () => getEmployeeSelfSalariesByEmployee(employeeId),
     enabled: !!employeeId && hasEmployeeSession(),
+  });
+};
+
+export const useEmployeeSelfSalary = (id: string) => {
+  return useQuery({
+    queryKey: queryKeys.salaries.detail(id),
+    queryFn: () => getSalaryEmployeeSelf(id),
+    enabled: !!id && hasEmployeeSession(),
   });
 };
 
@@ -142,6 +152,27 @@ export const useUpdateSalary = () => {
     },
     onError: (error) => {
       console.error('Error updating salary:', error);
+    },
+  });
+};
+
+export const useEmployeeUpdateSalary = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Salary> }) =>
+      updateSalaryEmployeeSelf(id, data),
+    onSuccess: (_, { id, data }) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.salaries.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.salaries.lists() });
+      if (data.employeeId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.salaries.byEmployee(data.employeeId),
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Error updating salary (self):', error);
     },
   });
 };

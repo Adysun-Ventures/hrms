@@ -298,6 +298,12 @@ export default function EmployeeViewPage({ params }: PageParams) {
               }
             ]),
             { label: 'Edit Employee', icon: <FiEdit />, variant: 'orange' as const, href: `/employees/${id}/edit` },
+            {
+              label: 'Login Logs',
+              icon: <FiBook />,
+              variant: 'primary' as const,
+              href: `/employees/${id}/login-logs`,
+            },
             { 
               label: 'Delete Employee', 
               icon: <FiTrash2 />, 
@@ -308,7 +314,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
           ]}
         />
 
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-2">
           {/* Personal Details Section */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -653,40 +659,14 @@ export default function EmployeeViewPage({ params }: PageParams) {
               </div>
             )}
           </div>
-          <div className="border-t border-gray-200 my-2" />
-
-          {/* Audit Trail Section */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FiBook className="mr-2" /> Audit Trail
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-lg font-medium text-gray-900">{createdByAdmin || 'Unknown'}</p>
-                <p className="text-sm text-gray-500">Created By</p>
-              </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">
-                  {employee.createdAt ? formatDateToDayMonYearWithTime(employee.createdAt) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Created At</p>
-              </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">{updatedByAdmin || 'Unknown'}</p>
-                <p className="text-sm text-gray-500">Updated By</p>
-              </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">
-                  {employee.updatedAt ? formatDateToDayMonYearWithTime(employee.updatedAt) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Updated At</p>
-              </div>
-            </div>
+          <div className=" border-gray-200 flex items-center justify-between gap-4">
+            <p className="text-sm font-normal text-gray-700">
+              Created By {createdByAdmin || 'Unknown'} On {employee.createdAt ? formatDateToDayMonYearWithTime(employee.createdAt) : '-'}
+            </p>
+            <p className="text-sm font-normal text-gray-700 text-right">
+              Updated By {updatedByAdmin || 'Unknown'} On {employee.updatedAt ? formatDateToDayMonYearWithTime(employee.updatedAt) : '-'}
+            </p>
           </div>
-          <div className="border-t border-gray-200 my-2" />
         </div>
       </div>
     </DashboardLayout>

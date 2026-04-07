@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FiArrowLeft, FiEdit, FiUser, FiBriefcase, FiCalendar, FiDollarSign, FiMapPin, FiTrendingUp, FiDownload } from 'react-icons/fi';
+import { FiArrowLeft, FiEdit, FiUser, FiBriefcase, FiCalendar, FiDollarSign, FiMapPin, FiTrendingUp, FiDownload, FiBook } from 'react-icons/fi';
 import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
@@ -13,11 +13,12 @@ import TableHeader from '@/components/ui/TableHeader';
 import { useEmployment, useDeleteEmployment } from '@/hooks/useEmployments';
 import { useEmployee, useEmployeeSelf } from '@/hooks/useEmployees';
 import { useEmployeeSelfSalariesByEmployee, useSalariesByEmployee } from '@/hooks/useSalaries';
-import { formatDateToDayMonYear } from '@/utils/documentUtils';
+import { formatDateToDayMonYear, formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import { useAuth } from '@/context/AuthContext';
 import EmploymentDetailsPDF from '@/components/pdf/EmploymentDetailsPDF';
 import { pdf } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
+import { getAdminNameById, getEmployeeNameById } from '@/utils/firebaseUtils';
 
 function professionalReferenceCell(
   refs: ProfessionalReference[] | undefined,
@@ -199,6 +200,8 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
   const { currentUserData } = useAuth();
   const { id } = use(params);
   const [employmentFullPagePdfLoading, setEmploymentFullPagePdfLoading] = useState(false);
+  const [createdByName, setCreatedByName] = useState<string>('');
+  const [updatedByName, setUpdatedByName] = useState<string>('');
 
   const isEmployeeUser = currentUserData?.userType === 'employee';
   const Layout: any = isEmployeeUser ? EmployeeLayout : DashboardLayout;
@@ -256,6 +259,25 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
     currentUserData?.userType === 'admin' ? adminEmployeeSalaries : selfEmployeeSalaries;
   const hasSalaries = employeeSalaries.length > 0;
 
+  useEffect(() => {
+    const resolveActorName = async (actorId?: string) => {
+      if (!actorId) return 'Unknown';
+      const adminName = await getAdminNameById(actorId);
+      if (adminName && adminName !== 'Unknown Admin') return adminName;
+      const employeeName = await getEmployeeNameById(actorId);
+      if (employeeName && employeeName !== 'Unknown Employee') return employeeName;
+      return 'Unknown';
+    };
+
+    const fetchAuditNames = async () => {
+      if (!employment) return;
+      setCreatedByName(await resolveActorName((employment as any).createdBy));
+      setUpdatedByName(await resolveActorName((employment as any).updatedBy));
+    };
+
+    fetchAuditNames();
+  }, [employment]);
+
   const hasIncrementDetails = (() => {
     const arr = employment?.increments;
     if (Array.isArray(arr) && arr.length > 0) return true;
@@ -273,6 +295,27 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
       incrementedCtc > 0 ||
       incrementedInHandCtc > 0
     );
+  })();
+
+  const incrementRows = (() => {
+    const arr = employment?.increments;
+    if (Array.isArray(arr) && arr.length > 0) return arr;
+    if (
+      employment?.incrementDate ||
+      employment?.newSalary ||
+      employment?.incrementedCtc ||
+      employment?.incrementedInHandCtc
+    ) {
+      return [
+        {
+          incrementDate: employment.incrementDate,
+          newSalary: employment.newSalary,
+          incrementedCtc: employment.incrementedCtc,
+          incrementedInHandCtc: employment.incrementedInHandCtc,
+        },
+      ];
+    }
+    return [];
   })();
 
   // Calculate real attendance statistics
@@ -616,7 +659,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           ]}
         />
 
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-2">
           <div className="employment-view-pdf-capture space-y-0">
           <div className="mb-8">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
@@ -861,6 +904,53 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                       </tbody>
                     </table>
                   </div>
+
+                  {hasIncrementDetails && (
+                    <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
+                      <table className="w-full min-w-[860px] border-collapse text-sm text-gray-900">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12%]">
+                              Sr. No
+                            </th>
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
+                              Increment Date
+                            </th>
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
+                              Incremented Salary
+                            </th>
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
+                              Incremented CTC
+                            </th>
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
+                              Incremented In-hand CTC
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {incrementRows.map((inc: any, idx: number) => (
+                            <tr key={inc.id || idx}>
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                                {idx + 1}
+                              </td>
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                                {inc.incrementDate ? formatDateToDayMonYear(inc.incrementDate) : '-'}
+                              </td>
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                                {inc.newSalary ? formatCurrency(Number(inc.newSalary)) : '-'}
+                              </td>
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                                {inc.incrementedCtc ? formatCurrency(Number(inc.incrementedCtc)) : '-'}
+                              </td>
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                                {inc.incrementedInHandCtc ? formatCurrency(Number(inc.incrementedInHandCtc)) : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
                   <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
                     <table className="w-full min-w-[720px] border-collapse text-sm text-gray-900">
@@ -1449,6 +1539,16 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               </div>
 
             </div>
+          </div>
+          {/* <div className="border-t border-gray-200 my-2" /> */}
+
+          <div className="mt-6 pt-3 border-gray-200 flex items-center justify-between gap-4">
+            <p className="text-sm font-normal text-gray-700">
+              Created By {createdByName || 'Unknown'} On {employment?.createdAt ? formatDateToDayMonYearWithTime(employment.createdAt) : '-'}
+            </p>
+            <p className="text-sm font-normal text-gray-700 text-right">
+              Updated By {updatedByName || 'Unknown'} On {employment?.updatedAt ? formatDateToDayMonYearWithTime(employment.updatedAt) : '-'}
+            </p>
           </div>
           </div>
         </div>

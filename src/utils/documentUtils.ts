@@ -163,11 +163,8 @@ export function formatDateToDayMonYearWithTime(date: string | Date | null | unde
   if (!date) return '-';
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '-';
-  
-  // Convert to Indian timezone (IST - UTC+5:30)
-  const indianTime = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
-  
-  return indianTime.toLocaleDateString('en-GB', {
+
+  return d.toLocaleDateString('en-GB', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -187,11 +184,8 @@ export function formatTimeOnly(date: string | Date | null | undefined): string {
   if (!date) return '-';
   const d = typeof date === 'string' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '-';
-  
-  // Convert to Indian timezone (IST - UTC+5:30)
-  const indianTime = new Date(d.getTime() + (5.5 * 60 * 60 * 1000));
-  
-  return indianTime.toLocaleTimeString('en-GB', {
+
+  return d.toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: true,

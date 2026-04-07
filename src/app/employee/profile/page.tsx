@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FiUser, FiMapPin, FiBriefcase, FiShield, FiEdit, FiArrowRight, FiBook } from 'react-icons/fi';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { useAuth } from '@/context/AuthContext';
-import { formatDateToDayMonYear } from '@/utils/documentUtils';
+import { formatDateToDayMonYear, formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { getAdminNameById, getEmployeeNameById, getEmployeeSelf,getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
@@ -154,11 +154,11 @@ console.log(employmentData?.[0]?.bankName);
 
     try {
       if (date.toDate) {
-        return formatDateToDayMonYear(date.toDate());
+        return formatDateToDayMonYearWithTime(date.toDate());
       } else if (typeof date === 'string') {
-        return formatDateToDayMonYear(new Date(date));
+        return formatDateToDayMonYearWithTime(new Date(date));
       } else {
-        return formatDateToDayMonYear(date);
+        return formatDateToDayMonYearWithTime(date);
       }
     } catch (error) {
       console.error('Error formatting date:', error);
@@ -239,7 +239,7 @@ console.log(employmentData?.[0]?.bankName);
           }}
         />
 
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-2">
           {/* Basic Information */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -496,36 +496,14 @@ console.log(employmentData?.[0]?.bankName);
 
           <div className="border-t border-gray-200 my-2" />
 
-          {/* Account Information */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FiShield className="mr-2" /> Account Information
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{createdByName || "Admin"}</p>
-                <p className="text-sm text-gray-500">Created By</p>
-              </div>
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{getUserCreatedAt()}</p>
-                <p className="text-sm text-gray-500">Created On</p>
-              </div>
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{updatedByName}</p>
-                <p className="text-sm text-gray-500">Updated By</p>
-              </div>
-
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">{getUserUpdatedAt()}</p>
-                <p className="text-sm text-gray-500">Updated On</p>
-              </div>
-            </div>
+          <div className="mt-6 pt-3 border-t border-gray-200 flex items-center justify-between gap-4">
+            <p className="text-sm font-normal text-gray-700">
+              Created By {createdByName || 'Admin'} On {getUserCreatedAt()}
+            </p>
+            <p className="text-sm font-normal text-gray-700 text-right">
+              Updated By {updatedByName || 'Unknown'} On {getUserUpdatedAt()}
+            </p>
           </div>
-
-          <div className="border-t border-gray-200 my-2" />
         </div>
       </div>
 

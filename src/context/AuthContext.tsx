@@ -13,7 +13,13 @@ import {
   createUserWithEmailAndPassword
 } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
-import { checkAdminByPhone, createAdminSession, checkUserByPhone } from '../utils/firebaseUtils';
+import {
+  checkAdminByPhone,
+  createAdminSession,
+  checkUserByPhone,
+  createLoginLog,
+  closeLoginLog,
+} from '../utils/firebaseUtils';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
 // Extend Window interface to include recaptchaVerifier
@@ -78,6 +84,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentEmployee, setCurrentEmployee] = useState<EmployeeUser | null>(null);
   const [currentUserData, setCurrentUserData] = useState<CurrentUser>(null);
   const [loading, setLoading] = useState(true);
+
+  const getDeviceType = (ua: string) => {
+    const s = ua.toLowerCase();
+    if (/tablet|ipad/.test(s)) return 'Tablet';
+    if (/mobile|android|iphone/.test(s)) return 'Mobile';
+    return 'Desktop';
+  };
+
+  const getBrowserNameVersion = (ua: string) => {
+    const patterns = [
+      { name: 'Edge', regex: /Edg\/([\d.]+)/ },
+      { name: 'Chrome', regex: /Chrome\/([\d.]+)/ },
+      { name: 'Firefox', regex: /Firefox\/([\d.]+)/ },
+      { name: 'Safari', regex: /Version\/([\d.]+).*Safari/ },
+    ];
+    for (const p of patterns) {
+      const match = ua.match(p.regex);
+      if (match?.[1]) return `${p.name} ${match[1]}`;
+    }
+    return 'Unknown';
+  };
+
+  const fetchClientNetworkMeta = async () => {
+    try {
+      const res = await fetch('https://ipapi.co/json/');
+      if (!res.ok) return { ipAddress: '-', city: '-' };
+      const data = await res.json();
+      return {
+        ipAddress: data?.ip || '-',
+        city: data?.city || '-',
+      };
+    } catch {
+      return { ipAddress: '-', city: '-' };
+    }
+  };
 
   // Restore sessions from localStorage on component mount
   useEffect(() => {
@@ -177,10 +218,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Create a custom session for the admin
           const sessionId = await createAdminSession(userData.id, userData);
           console.log('✅ Custom authentication session created:', sessionId);
+
+          const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+          const networkMeta = await fetchClientNetworkMeta();
+          const adminLogId = await createLoginLog({
+            userId: userData.id,
+            userType: 'admin',
+            userName: userData.name,
+            sessionId,
+            ipAddress: networkMeta.ipAddress,
+            city: networkMeta.city,
+            userAgent: ua || '-',
+            deviceType: getDeviceType(ua),
+            browserNameVersion: getBrowserNameVersion(ua),
+          });
           
           // Store session ID in localStorage for persistence
           localStorage.setItem('adminSessionId', sessionId);
           localStorage.setItem('adminData', JSON.stringify(userData));
+          localStorage.setItem('adminLoginLogId', adminLogId);
           
           // Set cookie for server-side middleware
           document.cookie = `adminSessionId=${sessionId}; path=/; max-age=86400; secure; samesite=strict`;
@@ -201,6 +257,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Store employee data in localStorage for persistence
           localStorage.setItem('employeeSessionId', userData.id);
           localStorage.setItem('employeeData', JSON.stringify(userData));
+
+          const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+          const networkMeta = await fetchClientNetworkMeta();
+          const employeeLogId = await createLoginLog({
+            userId: userData.id,
+            userType: 'employee',
+            userName: userData.name,
+            sessionId: userData.id,
+            ipAddress: networkMeta.ipAddress,
+            city: networkMeta.city,
+            userAgent: ua || '-',
+            deviceType: getDeviceType(ua),
+            browserNameVersion: getBrowserNameVersion(ua),
+          });
+          localStorage.setItem('employeeLoginLogId', employeeLogId);
           
           // Set cookie for server-side middleware
           document.cookie = `employeeSessionId=${userData.id}; path=/; max-age=86400; secure; samesite=strict`;
@@ -325,6 +396,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
+    const adminLogId = localStorage.getItem('adminLoginLogId') || '';
+    const employeeLogId = localStorage.getItem('employeeLoginLogId') || '';
+    if (adminLogId) closeLoginLog(adminLogId);
+    if (employeeLogId) closeLoginLog(employeeLogId);
+
     setCurrentAdmin(null);
     setCurrentEmployee(null);
     setCurrentUserData(null);
@@ -332,8 +408,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Clear localStorage
     localStorage.removeItem('adminSessionId');
     localStorage.removeItem('adminData');
+    localStorage.removeItem('adminLoginLogId');
     localStorage.removeItem('employeeSessionId');
     localStorage.removeItem('employeeData');
+    localStorage.removeItem('employeeLoginLogId');
     
     // Clear cookies
     document.cookie = 'adminSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';

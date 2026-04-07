@@ -70,7 +70,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-300 p-4">
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-4 bg-cover bg-center bg-no-repeat relative"
+      style={{ backgroundImage: "url('/login-bg-network.png')" }}
+    >
+      <div className="absolute inset-0 bg-slate-900/45" />
       <Toaster position="top-center" />
       <div className="max-w-md w-full space-y-6 sm:space-y-8 p-4 sm:p-8 bg-white rounded-2xl shadow-xl border border-white/60 relative z-10">
         <div className="text-center">
@@ -211,6 +215,14 @@ export default function LoginPage() {
         <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
           <SocialMediaLinks variant="login" />
         </div>
+      </div>
+      <div className="relative z-10 mt-4 w-full max-w-md text-center">
+        <Link
+          href="/calculator"
+          className="text-sm text-blue-600 hover:text-blue-800 underline"
+        >
+          Open Calculator
+        </Link>
       </div>
     </div>
   );

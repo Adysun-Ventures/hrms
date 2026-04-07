@@ -210,6 +210,87 @@ export const validateAdminSession = async (sessionId: string) => {
   }
 };
 
+// Login logs
+export const createLoginLog = async (payload: {
+  userId: string;
+  userType: 'admin' | 'employee';
+  userName?: string;
+  ipAddress?: string;
+  city?: string;
+  deviceType?: string;
+  userAgent?: string;
+  browserNameVersion?: string;
+  sessionId?: string;
+}) => {
+  try {
+    const logRef = await addDoc(collection(db, 'login_logs'), {
+      userId: payload.userId,
+      userType: payload.userType,
+      userName: payload.userName || '',
+      ipAddress: payload.ipAddress || '-',
+      city: payload.city || '-',
+      deviceType: payload.deviceType || '-',
+      userAgent: payload.userAgent || '-',
+      browserNameVersion: payload.browserNameVersion || '-',
+      sessionId: payload.sessionId || '',
+      sessionOpenedAt: new Date(),
+      sessionClosedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    return logRef.id;
+  } catch (error) {
+    console.error('Error creating login log:', error);
+    throw error;
+  }
+};
+
+export const closeLoginLog = async (logId: string) => {
+  try {
+    if (!logId) return;
+    await updateDoc(doc(db, 'login_logs', logId), {
+      sessionClosedAt: new Date(),
+      updatedAt: new Date(),
+    });
+  } catch (error) {
+    console.error('Error closing login log:', error);
+  }
+};
+
+export const getEmployeeLoginLogs = async (employeeId: string) => {
+  try {
+    const sessionId = localStorage.getItem('adminSessionId');
+    const adminData = localStorage.getItem('adminData');
+    if (!sessionId || !adminData) {
+      throw new Error('No admin session found. Please log in as admin first.');
+    }
+
+    const sessionData = await validateAdminSession(sessionId);
+    if (!sessionData) {
+      throw new Error('Admin session expired. Please log in again.');
+    }
+
+    const q = query(collection(db, 'login_logs'), where('userId', '==', employeeId));
+    const snapshot = await getDocs(q);
+    const logs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as any));
+
+    return logs
+      .filter((l) => l.userType === 'employee')
+      .sort((a, b) => {
+        const aTime = a?.sessionOpenedAt?.toDate
+          ? a.sessionOpenedAt.toDate().getTime()
+          : new Date(a?.sessionOpenedAt || 0).getTime();
+        const bTime = b?.sessionOpenedAt?.toDate
+          ? b.sessionOpenedAt.toDate().getTime()
+          : new Date(b?.sessionOpenedAt || 0).getTime();
+        return bTime - aTime;
+      });
+  } catch (error) {
+    console.error('Error fetching employee login logs:', error);
+    throw error;
+  }
+};
+
 // Employee CRUD operations
 export const addEmployee = async (employeeData: Omit<Employee, 'id'>) => {
   try {

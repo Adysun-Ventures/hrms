@@ -10,7 +10,7 @@ import { Salary } from '@/types';
 import { formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import TableHeader from '@/components/ui/TableHeader';
 import { useEmployeeSelfSalariesByEmployee, useSalary } from '@/hooks/useSalaries';
-import { getEmployeeNameById, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
+import { getAdminNameById, getEmployeeNameById, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import { useSearchParams } from 'next/navigation';
 import { use } from 'react';
@@ -25,6 +25,8 @@ type PageParams = {
 export default function SalaryViewPage({ params }: PageParams) {
   const [employeeName, setEmployeeName] = useState<string>('Loading...');
   const [resolvedEmploymentId, setResolvedEmploymentId] = useState<string | null>(null);
+  const [createdByName, setCreatedByName] = useState<string>('');
+  const [updatedByName, setUpdatedByName] = useState<string>('');
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -70,6 +72,25 @@ export default function SalaryViewPage({ params }: PageParams) {
       }
     };
     fetchEmployeeName();
+  }, [salary]);
+
+  useEffect(() => {
+    const resolveActorName = async (actorId?: string) => {
+      if (!actorId) return 'Unknown';
+      const adminName = await getAdminNameById(actorId);
+      if (adminName && adminName !== 'Unknown Admin') return adminName;
+      const empName = await getEmployeeNameById(actorId);
+      if (empName && empName !== 'Unknown Employee') return empName;
+      return 'Unknown';
+    };
+
+    const fetchAuditNames = async () => {
+      if (!salary) return;
+      setCreatedByName(await resolveActorName((salary as any).createdBy));
+      setUpdatedByName(await resolveActorName((salary as any).updatedBy));
+    };
+
+    fetchAuditNames();
   }, [salary]);
 
   // Breadcrumb fallback: some existing salary documents may not store `employmentId`.
@@ -260,7 +281,7 @@ export default function SalaryViewPage({ params }: PageParams) {
           }
         />
 
-        <div className="px-6 pb-6">
+        <div className="px-6 pb-2">
           {/* Essential Salary Information Only */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -325,27 +346,13 @@ export default function SalaryViewPage({ params }: PageParams) {
             </div>
           </div>
 
-          {/* Audit Trail - Keep only essential audit info */}
-          <div className="mt-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-              <FaRupeeSign className="mr-2" /> Audit Trail
-            </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">
-                  {salary?.createdAt ? formatDateToDayMonYearWithTime(salary.createdAt) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Created At</p>
-              </div>
-              
-              <div className="p-3">
-                <p className="text-lg font-medium text-gray-900">
-                  {salary?.updatedAt ? formatDateToDayMonYearWithTime(salary.updatedAt) : '-'}
-                </p>
-                <p className="text-sm text-gray-500">Updated At</p>
-              </div>
-            </div>
+          <div className="mt-6 pt-3 border-gray-200 flex items-center justify-between gap-4">
+            <p className="text-sm font-normal text-gray-700">
+              Created By {createdByName || 'Unknown'} On {salary?.createdAt ? formatDateToDayMonYearWithTime(salary.createdAt) : '-'}
+            </p>
+            <p className="text-sm font-normal text-gray-700 text-right">
+              Updated By {updatedByName || 'Unknown'} On {salary?.updatedAt ? formatDateToDayMonYearWithTime(salary.updatedAt) : '-'}
+            </p>
           </div>
         </div>
       </div>

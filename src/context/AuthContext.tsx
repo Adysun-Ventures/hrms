@@ -116,33 +116,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               localStorage.removeItem('employeeData');
               document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             } else {
-              // Block only if any employment record is resigned.
-              // If the employee has no employment records, allow login.
-              const empId = (latest as any).id;
-              const qEmp = query(collection(db, 'employments'), where('employeeId', '==', empId));
-              const snapEmp = await getDocs(qEmp);
-              const employments = snapEmp.docs.map((d) => d.data() as any);
-
-              const hasResignedEmployment = employments.some((emp: any) => {
-                const status = String(emp?.employmentStatus ?? '').trim().toLowerCase();
-                const isResigned =
-                  emp?.isResignation === true ||
-                  emp?.is_resigned === true ||
-                  emp?.is_resigned === 'true' ||
-                  status === 'resigned';
-                return isResigned;
-              });
-
-              if (hasResignedEmployment) {
-                localStorage.removeItem('employeeSessionId');
-                localStorage.removeItem('employeeData');
-                document.cookie =
-                  'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-              } else {
-                setCurrentEmployee(latest);
-                setCurrentAdmin(null);
-                setCurrentUserData(latest);
-              }
+              // Allow employee session restore regardless of resignation status.
+              setCurrentEmployee(latest);
+              setCurrentAdmin(null);
+              setCurrentUserData(latest);
             }
           } catch (e) {
             // If validation fails, clear session for safety
@@ -220,26 +197,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // Employee authentication
         if (userData.password === password) {
           console.log('✅ Employee password match successful!');
-
-          // Block ONLY when any employment record is resigned.
-          // If the employee has no employment records, allow login.
-          const qEmp = query(collection(db, 'employments'), where('employeeId', '==', userData.id));
-          const snapEmp = await getDocs(qEmp);
-          const employments = snapEmp.docs.map((d) => d.data() as any);
-
-          const hasResignedEmployment = employments.some((emp: any) => {
-            const status = String(emp?.employmentStatus ?? '').trim().toLowerCase();
-            const isResigned =
-              emp?.isResignation === true ||
-              emp?.is_resigned === true ||
-              emp?.is_resigned === 'true' ||
-              status === 'resigned';
-            return isResigned;
-          });
-
-          if (hasResignedEmployment) {
-            throw new Error('Your employment is marked as Resigned. Please contact administrator.');
-          }
           
           // Store employee data in localStorage for persistence
           localStorage.setItem('employeeSessionId', userData.id);

@@ -9,7 +9,7 @@ import TableHeader from '@/components/ui/TableHeader';
 import Pagination from '@/components/ui/Pagination';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FiDownload, FiEdit, FiEye, FiPlus } from 'react-icons/fi';
-import { FaRupeeSign } from 'react-icons/fa';
+import { FaRupeeSign, FaSyncAlt } from 'react-icons/fa';
 import { Toaster } from 'react-hot-toast';
 import { pdf } from '@react-pdf/renderer';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -44,12 +44,16 @@ const getDaysInMonth = (month1to12: number, year: number) => {
   return new Date(y, m, 0).getDate();
 };
 
+const toIntOrNull = (value: unknown): number | null => {
+  const parsed = Number.parseInt(String(value ?? ''), 10);
+  return Number.isNaN(parsed) ? null : parsed;
+};
+
 export default function EmployeeMySalaryPage() {
   const router = useRouter();
   const { currentUserData } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -79,10 +83,12 @@ export default function EmployeeMySalaryPage() {
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
 
-    const matchesMonth = monthFilter === 'all' || String(salary.month) === String(monthFilter);
-    const matchesYear = yearFilter === 'all' || String(salary.year) === String(yearFilter);
+    const salaryYear = toIntOrNull(salary.year);
+    const selectedYear = toIntOrNull(yearFilter);
 
-    return matchesSearch && matchesMonth && matchesYear;
+    const matchesYear = yearFilter === 'all' || (salaryYear !== null && selectedYear !== null && salaryYear === selectedYear);
+
+    return matchesSearch && matchesYear;
   });
 
   const totalItems = filteredSalaries.length;
@@ -105,24 +111,12 @@ export default function EmployeeMySalaryPage() {
     const years = Array.from(
       new Set(
         salaries
-          .map((s) => s.year)
-          .filter((y): y is number => typeof y === 'number' && !Number.isNaN(y)),
+          .map((s) => toIntOrNull(s.year))
+          .filter((y): y is number => y !== null),
       ),
     ).sort((a, b) => b - a);
 
     return [{ label: 'All Years', value: 'all' }, ...years.map((y) => ({ label: String(y), value: String(y) }))];
-  };
-
-  const getMonthOptions = () => {
-    const months = Array.from(
-      new Set(
-        salaries
-          .map((s) => s.month)
-          .filter((m): m is number => typeof m === 'number' && !Number.isNaN(m)),
-      ),
-    ).sort((a, b) => a - b);
-
-    return [{ label: 'All Months', value: 'all' }, ...months.map((m) => ({ label: getMonthName(m), value: String(m) }))];
   };
 
   const handleDownload = async (salary: Salary) => {
@@ -156,8 +150,13 @@ export default function EmployeeMySalaryPage() {
         (employmentData as any)?.employeeName ||
         'Unknown Employee';
 
-      const safeName = employeeName.replace(/\s+/g, '_');
+      const firstName =
+        String(employeeName || 'Employee')
+          .trim()
+          .split(/\s+/)[0]
+          .replace(/[^A-Za-z0-9_-]/g, '') || 'Employee';
       const monthName = getMonthName((f as any).month);
+      const monthShort = monthName.slice(0, 3);
 
       const pf = Number((f as any).pf ?? 0) || 0;
       const pt = Number((f as any).ptDeduct ?? 200) || 0;
@@ -211,7 +210,7 @@ export default function EmployeeMySalaryPage() {
 
       const blob = await pdf(<SalarySlipPDF formData={slipFormData} />).toBlob();
 
-      saveAs(blob, `${safeName}_Salary_${monthName}_${(f as any).year}.pdf`);
+      saveAs(blob, `${firstName}_Salary_Slip_${monthShort}_${(f as any).year}.pdf`);
     } catch (error) {
       console.error('Error generating salary PDF:', error);
     }
@@ -233,6 +232,16 @@ export default function EmployeeMySalaryPage() {
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <TableHeader
           title="My Salary"
+          customReloadButton={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              aria-label="Reload"
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          }
           total={filteredSalaries.length}
           backButton={{ href: '/employee-dashboard', label: 'Back' }}
           actionButtons={[
@@ -246,22 +255,22 @@ export default function EmployeeMySalaryPage() {
           searchPlaceholder="Search by month/year"
           searchValue={searchTerm}
           onSearchChange={(e) => setSearchTerm(e.target.value)}
-          showStats={false}
+          showStats={true}
           showSearch={true}
-          filterValue={monthFilter}
-          onFilterChange={setMonthFilter}
-          filterOptions={getMonthOptions()}
-          showFilter={true}
+          showFilter={false}
           secondFilterValue={yearFilter}
           onSecondFilterChange={setYearFilter}
           secondFilterOptions={getYearOptions()}
           showSecondFilter={true}
         />
 
-        <div className="overflow-x-auto mt-4">
+        <div className="overflow-x-auto px-6 mt-4">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Sr. No
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Period
                 </th>
@@ -269,16 +278,16 @@ export default function EmployeeMySalaryPage() {
                   Working Days
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Leaves Count
+                  Leaves
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Gross Salary (A)
+                  Gross (A)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Deductions (B)
+                  Deductions (B)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Net Salary
+                  In-Hand (C)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -286,8 +295,11 @@ export default function EmployeeMySalaryPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedSalaries.map((salary) => (
+              {paginatedSalaries.map((salary, idx) => (
                 <tr key={salary.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {startIndex + idx + 1}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {getMonthName(salary.month)} {salary.year}
                   </td>
@@ -347,7 +359,7 @@ export default function EmployeeMySalaryPage() {
               <FaRupeeSign className="mx-auto h-8 w-8 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No salary records found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || monthFilter !== 'all' || yearFilter !== 'all'
+                {searchTerm || yearFilter !== 'all'
                   ? 'Try adjusting your search, month, or year filter.'
                   : 'No salary slips have been generated yet.'}
               </p>

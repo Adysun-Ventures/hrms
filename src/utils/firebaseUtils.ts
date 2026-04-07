@@ -742,6 +742,11 @@ export const getEmploymentsByEmployee = async (employeeId: string) => {
     querySnapshot.forEach((doc) => {
       employments.push({ id: doc.id, ...doc.data() } as Employment);
     });
+    employments.sort((a: any, b: any) => {
+      const ad = new Date(a.startDate || a.joiningDate || 0).getTime();
+      const bd = new Date(b.startDate || b.joiningDate || 0).getTime();
+      return bd - ad;
+    });
     
     console.log('✅ Employments fetched successfully:', employments.length, 'records');
     return employments;
@@ -1541,6 +1546,11 @@ export const getEmployeeSelfEmployment = async (employeeId: string) => {
     querySnapshot.forEach((doc) => {
       employments.push({ id: doc.id, ...doc.data() } as Employment);
     });
+    employments.sort((a: any, b: any) => {
+      const ad = new Date(a.startDate || a.joiningDate || 0).getTime();
+      const bd = new Date(b.startDate || b.joiningDate || 0).getTime();
+      return bd - ad;
+    });
     
     console.log('✅ Employee employment data found:', employments.length);
     return employments;
@@ -1600,8 +1610,19 @@ export const updateEmployeeSelfEmployment = async (
       'joiningDate',
       'startDate',
       'endDate',
+      'contractType',
       'joiningCtc',
       'inHandCtc',
+      'relievingCtc',
+      'joiningFixedPay',
+      'joiningVariablePay',
+      'currentFixedPay',
+      'currentVariablePay',
+      'joiningOtherAllowance',
+      'currentOtherAllowance',
+      'employerPF',
+      'benefits',
+      'paymentFrequency',
       // Professional References (employee self-edit)
       'professionalReferences',
       // Salary details
@@ -1651,6 +1672,7 @@ export const updateEmployeeSelfEmployment = async (
       'incrementedInHandCtc',
       // Resignation details
       'isResignation',
+      'employeeStatus',
       'resignationDate',
       'lastWorkingDate',
       'lastDrawnSalary',

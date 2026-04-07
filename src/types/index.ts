@@ -171,6 +171,10 @@ export interface Employment {
   relievingCtc?: number | null;
   isResignation?: boolean;
 
+  // Resignation outcome shown in Employees list.
+  // Only meaningful when `isResignation` is true.
+  employeeStatus?: 'terminated' | 'exited';
+
   // CTC split (optional) - requested for Employment Add/Edit forms
   joiningFixedPay?: number;
   joiningVariablePay?: number;

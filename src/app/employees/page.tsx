@@ -11,7 +11,7 @@ import { useEmployees, useDeleteEmployee, useUpdateEmployee } from '@/hooks/useE
 import { useEmployments, useEmploymentsByEmployee } from '@/hooks/useEmployments';
 import { useSalariesByEmployee } from '@/hooks/useSalaries';
 import Pagination from '@/components/ui/Pagination';
-import { FaRupeeSign } from "react-icons/fa";
+import { FaBan, FaCheck, FaRupeeSign, FaSyncAlt, FaTimes } from "react-icons/fa";
 import Link from 'next/link';
 
 
@@ -21,9 +21,35 @@ const EmploymentWorkingStatusBadge = ({ employeeId }: { employeeId: string }) =>
   const employment = employments[0];
   const isResigned = employment?.isResignation === true;
 
+  const outcome = isResigned ? employment?.employeeStatus : undefined;
+  const label = isResigned
+    ? outcome === 'terminated'
+      ? 'Terminated'
+      : outcome === 'exited'
+        ? 'Exited'
+        : 'Resigned'
+    : 'Working';
+
+  const icon = isResigned
+    ? outcome === 'terminated'
+      ? <FaBan className="mr-1.5" />
+      : outcome === 'exited'
+        ? <FaTimes className="mr-1.5" />
+        : <FaTimes className="mr-1.5" />
+    : <FaCheck className="mr-1.5" />;
+
+  const colorClass = isResigned
+    ? outcome === 'terminated'
+      ? 'text-red-500'
+      : outcome === 'exited'
+        ? 'text-orange-500'
+        : 'text-orange-500'
+    : 'text-green-500';
+
   return (
-    <span className={`text-sm font-semibold ${isResigned ? 'text-red-800' : 'text-green-800'}`}>
-      {isResigned ? 'Resigned' : 'Working'}
+    <span className={`inline-flex items-center text-sm font-normal ${colorClass}`}>
+      {icon}
+      {label}
     </span>
   );
 };
@@ -43,7 +69,7 @@ const EmploymentStatusBadge = ({ employeeId }: { employeeId: string }) => {
 
   return (
     <span
-      className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+      className={`px-2 py-0.5 inline-flex text-xs leading-5 font-normal rounded-full ${
         isResigned
           ? 'bg-red-100 text-red-800'
           : 'bg-green-100 text-green-800'
@@ -237,7 +263,7 @@ const EmployeeStatusToggle = ({
       type="button"
       onClick={() => onToggle(employeeId, next)}
       disabled={isToggling}
-      className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full transition-opacity ${
+      className={`px-2 py-0.5 inline-flex text-xs leading-5 font-normal rounded-full transition-opacity ${
         isToggling ? 'opacity-60 cursor-not-allowed' : 'hover:opacity-90 cursor-pointer'
       } ${
         normalized === 'active'
@@ -589,6 +615,16 @@ useEffect(() => {
             { value: 'external', label: 'External' }
           ]}
           backButton={{ href: '/dashboard' }}
+          customReloadButton={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              aria-label="Reload"
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          }
           actionButtons={[
             {
               label: 'Create',
@@ -625,10 +661,13 @@ useEffect(() => {
             {!searchTerm && filterValue !== 'all' && employmentStatusFilter !== 'all' && 'No employees match the selected filters'}
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto px-6">
             <table className="min-w-full divide-y divide-gray-200 table-fixed border-collapse">
               <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm after:absolute after:h-px after:w-full after:bottom-0 after:left-0 after:bg-gray-300">
                 <tr>
+                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
+                    SR. No
+                  </th>
                   <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
   <div
   role="button"
@@ -656,7 +695,7 @@ useEffect(() => {
     onClick={() => handleSort('joiningDate')}
     className="flex items-center gap-1 cursor-pointer select-none"
   >
-    Date of Joining
+    DOG
     {sortConfig.key === 'joiningDate' && (
       <span className="text-xs">
         {sortConfig.direction === 'asc' ? '▲' : '▼'}
@@ -667,19 +706,19 @@ useEffect(() => {
 
 
                   <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
-                    Current CTC
+                    Curr. CTC
                   </th>
                   <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
-                    Total Sal. Cr.
+                    Total Sal.
                   </th>
                   <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
                     Status
                   </th>
                   <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
-                    Employee Type
+                    EMP. Type
                   </th>
                   <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
-                    Employment Status
+                    Status
                   </th>
                   <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[11%]">
                     Actions
@@ -687,8 +726,11 @@ useEffect(() => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {paginatedEmployees.map((employee) => (
+                {paginatedEmployees.map((employee, idx) => (
                   <tr key={employee.id}>
+                    <td className="px-6 py-2 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{startIndex + idx + 1}</div>
+                    </td>
                     <td className="px-6 py-2 whitespace-nowrap">
                       <div className="flex items-center">
                           <div className="text-sm font-medium text-gray-900">{employee.name}</div>
@@ -725,10 +767,10 @@ useEffect(() => {
 
                     <td className="px-6 py-2 whitespace-nowrap text-center">
                       <span
-                        className={`text-sm font-semibold ${
+                        className={`text-sm font-normal ${
                           (employee.employeeType || 'internal') === 'internal'
-                            ? 'text-blue-800'
-                            : 'text-orange-800'
+                            ? 'text-blue-500'
+                            : 'text-orange-500'
                         }`}
                       >
                         {(employee.employeeType || 'internal')

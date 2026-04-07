@@ -4,7 +4,7 @@ import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiArrowLeft, FiEdit, FiUser, FiBriefcase, FiCalendar, FiDollarSign, FiMapPin, FiTrendingUp, FiDownload } from 'react-icons/fi';
-import { FaRupeeSign } from "react-icons/fa";
+import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { Employment, Employee, ProfessionalReference } from '@/types';
@@ -544,6 +544,16 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           showSearch={false}
           showFilter={false}
           headerClassName="px-6 py-6"
+          customReloadButton={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              aria-label="Reload"
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          }
           backButton={{
             href: isEmployeeUser
               ? "/employee-dashboard"

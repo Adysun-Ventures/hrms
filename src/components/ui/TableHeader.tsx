@@ -220,7 +220,10 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           {/* Center - Title */}
           {title && (
             <div className="flex-1 flex justify-center text-center">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{title}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-800">{title}</h1>
+                {customReloadButton}
+              </div>
             </div>
           )}
 
@@ -500,7 +503,6 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                         </div>
                       </div>
                     )}
-                    {customReloadButton}
                   </div>
 
                   {/* Desktop Clear Filters Button */}

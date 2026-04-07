@@ -612,7 +612,7 @@ export default function AddSalaryPage() {
               {/* CTC */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <span className="text-red-500 mr-1">*</span>CTC (Cost to Company)
+                  <span className="text-red-500 mr-1">*</span>CTC
                 </label>
                 <input
                   type="number"

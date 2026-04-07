@@ -14,6 +14,7 @@ import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 import CustomDateInput from '@/components/ui/CustomDateInput';
+import { FaSyncAlt } from 'react-icons/fa';
 
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relievingCtc'> {
@@ -389,6 +390,16 @@ export default function EditEmployeeProfilePage() {
                     showSearch={false}
                     showFilter={false}
                     headerClassName="px-6 py-6"
+                    customReloadButton={
+                      <button
+                        type="button"
+                        onClick={() => window.location.reload()}
+                        className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                        aria-label="Reload"
+                      >
+                        <FaSyncAlt size={14} />
+                      </button>
+                    }
                     backButton={{
                         href: '/employee/profile',
                         label: 'Back'

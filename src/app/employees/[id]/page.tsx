@@ -13,7 +13,7 @@ import { getAdminNameById, getEmployeeNameById } from '@/utils/firebaseUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { useQueryClient } from '@tanstack/react-query';
-import { FaRupeeSign } from "react-icons/fa";
+import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
 
 
 type PageParams = {
@@ -258,6 +258,16 @@ export default function EmployeeViewPage({ params }: PageParams) {
           onSearchChange={() => {}}
           showSearch={false}
           showStats={false}
+          customReloadButton={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              aria-label="Reload"
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          }
           backButton={{ href: '/employees', label: 'Back' }}
           actionButtons={[
             ...(safeEmployments && safeEmployments.length > 0 && safeEmployments[0] ? [

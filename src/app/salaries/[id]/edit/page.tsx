@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { FiArrowLeft, FiCheckCircle, FiX } from 'react-icons/fi';
+import { FaSyncAlt } from 'react-icons/fa';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import TableHeader from '@/components/ui/TableHeader';
@@ -467,6 +468,16 @@ export default function EditSalaryPage({ params }: PageParams) {
           showSearch={false}
           showFilter={false}
           headerClassName="px-6 py-6"
+          customReloadButton={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              aria-label="Reload"
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          }
           backButton={{ 
             href: isEmployeeUser
               ? '/employee/my-salary'
@@ -610,7 +621,7 @@ export default function EditSalaryPage({ params }: PageParams) {
               {/* CTC */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  <span className="text-red-500 mr-1">*</span>CTC (Cost to Company)
+                  <span className="text-red-500 mr-1">*</span>CTC
                 </label>
                 <input
                   type="number"

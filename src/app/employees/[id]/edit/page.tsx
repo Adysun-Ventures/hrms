@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, Controller } from 'react-hook-form';
 import { FiCheckCircle, FiEye, FiEyeOff, FiPlus, FiX } from 'react-icons/fi';
+import { FaSyncAlt } from 'react-icons/fa';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { getEmployee, updateEmployee, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere } from '@/utils/firebaseUtils';
 import { Employee } from '@/types';
@@ -289,6 +290,16 @@ export default function EditEmployeePage({ params }: PageParams) {
             onClick: () => router.back(),
             label: 'Back'
           }}
+          customReloadButton={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              aria-label="Reload"
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          }
           actionButtons={[
             {
               label: isSubmitting ? 'Saving...' : 'Save',

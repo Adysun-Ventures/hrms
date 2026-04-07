@@ -14,7 +14,7 @@ import { getEmployeeNameById, getEmploymentsByEmployee } from '@/utils/firebaseU
 import toast, { Toaster } from 'react-hot-toast';
 import { useSearchParams } from 'next/navigation';
 import { use } from 'react';
-import { FaRupeeSign } from "react-icons/fa";
+import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
 import { useAuth } from '@/context/AuthContext';
 
 
@@ -219,6 +219,16 @@ export default function SalaryViewPage({ params }: PageParams) {
           showSearch={false}
           showFilter={false}
           headerClassName="px-6 py-6"
+          customReloadButton={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              aria-label="Reload"
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          }
           backButton={{ 
             href: isEmployeeView
               ? '/employee/my-salary'

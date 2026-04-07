@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
 import { FiCheckCircle, FiRefreshCw, FiX } from 'react-icons/fi';
+import { FaSyncAlt } from 'react-icons/fa';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { getEmployment, getEmployee, updateEmployment, getEmployees as getEmployeesAuth, checkEmploymentIdUnique, updateEmployeeSelfEmployment } from '@/utils/firebaseUtils';
@@ -134,6 +135,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const joiningCtcValue = watch('joiningCtc');
   const joiningFixedPayValue = watch('joiningFixedPay');
   const isResignation = watch('isResignation');
+  const employeeStatusValue = watch('employeeStatus' as any);
   const whereWereYouEmploidValue = watch('whereWereYouEmploid');
   const selectedDepartment = watch('department');
   const designationOptionsByDepartment = EMPLOYMENT_DESIGNATION_BY_DEPARTMENT;
@@ -152,6 +154,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     if (!derivedLocation) return;
     setValue('location', derivedLocation, { shouldValidate: true, shouldDirty: true });
   }, [derivedLocation, setValue]);
+
+  useEffect(() => {
+    if (!isResignation) return;
+    if (employeeStatusValue) return;
+    setValue('employeeStatus' as any, 'exited', { shouldValidate: false, shouldDirty: false });
+  }, [isResignation, employeeStatusValue, setValue]);
 
   // Joining Fixed is read-only and computed as: joiningFixedPay = joiningCtc - joiningVariablePay
   const joiningVariablePayValue = watch('joiningVariablePay');
@@ -752,12 +760,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       if (data.isResignation) {
         formattedData.employmentStatus = 'resigned';
         formattedData.is_resigned = true;
+        formattedData.employeeStatus = data.employeeStatus || 'exited';
       } else {
         formattedData.employmentStatus = 'working';
         formattedData.is_resigned = false;
         formattedData.resignationDate = '';
         formattedData.lastWorkingDate = '';
         formattedData.reasonForLeaving = '';
+        delete (formattedData as any).employeeStatus;
       }
 
       // `pfIncluded` is UI-only toggle; store the numeric `pf` only.
@@ -935,6 +945,16 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
           showSearch={false}
           showFilter={false}
           headerClassName="px-6 py-6"
+          customReloadButton={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              aria-label="Reload"
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          }
           backButton={{
             href: `/employments/${id}`,
             label: 'Back'
@@ -1516,6 +1536,20 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           />
                         )}
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Employee Status
+                      </label>
+                      <select
+                        {...register('employeeStatus')}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                      >
+                        <option value="">Select</option>
+                        <option value="terminated">Terminated</option>
+                        <option value="exited">Exited</option>
+                      </select>
                     </div>
 
                     <div>

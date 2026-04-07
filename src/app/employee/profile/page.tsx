@@ -9,7 +9,7 @@ import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { getAdminNameById, getEmployeeNameById, getEmployeeSelf,getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
-import { FaRupeeSign } from "react-icons/fa";
+import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
 import { Employee } from '@/types';
 
 
@@ -196,6 +196,16 @@ console.log(employmentData?.[0]?.bankName);
           showSearch={false}
           showFilter={false}
           headerClassName="px-6 py-6"
+          customReloadButton={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              aria-label="Reload"
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          }
           actionButtons={[
             {
               label: 'Edit Profile',

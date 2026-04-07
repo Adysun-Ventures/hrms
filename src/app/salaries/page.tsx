@@ -17,24 +17,12 @@ import { getEmployeeNameById, getEmploymentsByEmployee } from '@/utils/firebaseU
 import SimpleBreadcrumb from '@/components/ui/SimpleBreadcrumb';
 import { useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { FaRupeeSign } from "react-icons/fa";
+import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
 import { pdf } from '@react-pdf/renderer';
 import { SalarySlipPDF } from '@/app/doc_pages/pages/v2/SalarySlipGenerator';
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/firebase/config";
 import { saveAs } from "file-saver";
-import {
-  Document as DocxDocument,
-  Packer as DocxPacker,
-  Paragraph as DocxParagraph,
-  TextRun as DocxTextRun,
-  Table as DocxTable,
-  TableRow as DocxTableRow,
-  TableCell as DocxTableCell,
-  AlignmentType as DocxAlignmentType,
-  WidthType as DocxWidthType,
-  BorderStyle as DocxBorderStyle,
-} from "docx";
 
 
 
@@ -66,7 +54,6 @@ const EmployeeNameDisplay = ({ employeeId }: { employeeId: string }) => {
 
 export default function SalariesPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [monthFilter, setMonthFilter] = useState('all');
   const [yearFilter, setYearFilter] = useState('all');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [employeeName, setEmployeeName] = useState<string>('');
@@ -226,8 +213,12 @@ const handleDownload = async (salary: Salary) => {
       employmentData?.employeeName ||
       "Unknown Employee";
 
-    const safeName = employeeName.replace(/\s+/g, "_");
+    const firstName = String(employeeName || 'Employee')
+      .trim()
+      .split(/\s+/)[0]
+      .replace(/[^A-Za-z0-9_-]/g, '') || 'Employee';
     const monthName = getMonthName(f.month);
+    const monthShort = monthName.slice(0, 3);
 
     const payYear = Number(f.year) || new Date().getFullYear();
     const payMonth1 = Number(f.month) || 1;
@@ -292,247 +283,9 @@ const handleDownload = async (salary: Salary) => {
     };
 
     const blob = await pdf(<SalarySlipPDF formData={slipFormData} />).toBlob();
-    saveAs(blob, `Salary-${safeName}-${monthName}-${f.year}.pdf`);
+    saveAs(blob, `${firstName}_Salary_Slip_${monthShort}_${f.year}.pdf`);
 
     toast.success("PDF Downloaded");
-
-    // ===== DOCX (Salary Slip) =====
-    try {
-      const docxSections: DocxParagraph[] | (DocxParagraph | DocxTable)[] = [
-        new DocxParagraph({
-          children: [
-            new DocxTextRun({
-              text: `Salary Slip - ${monthName} ${f.year}`,
-              bold: true,
-            }),
-          ],
-        }),
-        new DocxParagraph({}),
-        new DocxTable({
-          width: { size: 100, type: DocxWidthType.PERCENTAGE },
-          borders: {
-            top: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            bottom: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            left: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            right: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            insideHorizontal: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-            insideVertical: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-          },
-          rows: [
-            ...[
-              ["Employee Name", employeeName],
-              ["Employee ID", f.employeeId],
-              ["Designation", f.jobTitle || "-"],
-              ["Bank Name", f.bankName || "-"],
-              ["Account No", f.accountNo || "-"],
-              ["IFSC Code", f.ifscCode || "-"],
-              ["Pan Number", String(f.panCard || f.panNumber || f.pan || "").trim() || "-"],
-              ["Leaves", String(f.leavesCount ?? 0)],
-              ["Work Days", String(f.workDays ?? 0)],
-            ].map(
-              ([label, value]) =>
-                new DocxTableRow({
-                  children: [
-                    new DocxTableCell({
-                      children: [new DocxParagraph({ children: [new DocxTextRun({ text: label, bold: true })] })],
-                    }),
-                    new DocxTableCell({
-                      children: [new DocxParagraph({ text: value || "-" })],
-                    }),
-                  ],
-                })
-            ),
-          ],
-        }),
-        new DocxParagraph({}),
-        new DocxTable({
-          width: { size: 100, type: DocxWidthType.PERCENTAGE },
-          borders: {
-            top: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            bottom: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            left: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            right: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            insideHorizontal: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-            insideVertical: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-          },
-          rows: [
-            new DocxTableRow({
-              children: [
-                new DocxTableCell({
-                  children: [new DocxParagraph({ children: [new DocxTextRun({ text: "Earnings (A)", bold: true })] })],
-                }),
-                new DocxTableCell({
-                  children: [
-                    new DocxParagraph({
-                      alignment: DocxAlignmentType.RIGHT,
-                      children: [new DocxTextRun({ text: "Amount", bold: true })],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-            ...earningsData.map(
-              (e) =>
-                new DocxTableRow({
-                  children: [
-                    new DocxTableCell({
-                      children: [new DocxParagraph({ text: e.label })],
-                    }),
-                    new DocxTableCell({
-                      children: [
-                        new DocxParagraph({
-                          alignment: DocxAlignmentType.RIGHT,
-                          text: String(e.amount ?? 0),
-                        }),
-                      ],
-                    }),
-                  ],
-                })
-            ),
-            new DocxTableRow({
-              children: [
-                new DocxTableCell({
-                  children: [new DocxParagraph({ children: [new DocxTextRun({ text: "Gross Salary", bold: true })] })],
-                }),
-                new DocxTableCell({
-                  children: [
-                    new DocxParagraph({
-                      alignment: DocxAlignmentType.RIGHT,
-                      children: [
-                        new DocxTextRun({
-                          text: String(f.grossSalary || f.totalSalary || 0),
-                          bold: true,
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        }),
-        new DocxParagraph({}),
-        new DocxTable({
-          width: { size: 100, type: DocxWidthType.PERCENTAGE },
-          borders: {
-            top: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            bottom: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            left: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            right: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            insideHorizontal: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-            insideVertical: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-          },
-          rows: [
-            new DocxTableRow({
-              children: [
-                new DocxTableCell({
-                  children: [new DocxParagraph({ children: [new DocxTextRun({ text: "Deductions (B)", bold: true })] })],
-                }),
-                new DocxTableCell({
-                  children: [
-                    new DocxParagraph({
-                      alignment: DocxAlignmentType.RIGHT,
-                      children: [new DocxTextRun({ text: "Amount", bold: true })],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-            ...deductionsData.map(
-              (d) =>
-                new DocxTableRow({
-                  children: [
-                    new DocxTableCell({
-                      children: [new DocxParagraph({ text: d.label })],
-                    }),
-                    new DocxTableCell({
-                      children: [
-                        new DocxParagraph({
-                          alignment: DocxAlignmentType.RIGHT,
-                          text: String(d.amount ?? 0),
-                        }),
-                      ],
-                    }),
-                  ],
-                })
-            ),
-            new DocxTableRow({
-              children: [
-                new DocxTableCell({
-                  children: [
-                    new DocxParagraph({ children: [new DocxTextRun({ text: "Total Deductions", bold: true })] }),
-                  ],
-                }),
-                new DocxTableCell({
-                  children: [
-                    new DocxParagraph({
-                      alignment: DocxAlignmentType.RIGHT,
-                      children: [
-                        new DocxTextRun({
-                          text: String(f.totalDeduction || 0),
-                          bold: true,
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        }),
-        new DocxParagraph({}),
-        new DocxTable({
-          width: { size: 100, type: DocxWidthType.PERCENTAGE },
-          borders: {
-            top: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            bottom: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            left: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            right: { style: DocxBorderStyle.SINGLE, size: 6, color: "000000" },
-            insideHorizontal: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-            insideVertical: { style: DocxBorderStyle.SINGLE, size: 4, color: "AAAAAA" },
-          },
-          rows: [
-            new DocxTableRow({
-              children: [
-                new DocxTableCell({
-                  children: [
-                    new DocxParagraph({ children: [new DocxTextRun({ text: "Net Salary (A - B)", bold: true })] }),
-                  ],
-                }),
-                new DocxTableCell({
-                  children: [
-                    new DocxParagraph({
-                      alignment: DocxAlignmentType.RIGHT,
-                      children: [
-                        new DocxTextRun({
-                          text: String(f.netSalary || f.inhandSalary || 0),
-                          bold: true,
-                        }),
-                      ],
-                    }),
-                  ],
-                }),
-              ],
-            }),
-          ],
-        }),
-      ];
-
-      const docx = new DocxDocument({
-        sections: [
-          {
-            properties: {},
-            children: docxSections,
-          },
-        ],
-      });
-
-      const docxBlob = await DocxPacker.toBlob(docx);
-      saveAs(docxBlob, `Salary-${safeName}-${monthName}-${f.year}.docx`);
-      toast.success("DOCX Downloaded");
-    } catch (e) {
-      console.error("DOCX generation failed:", e);
-    }
 
   } catch (error) {
     console.error(error);
@@ -574,17 +327,24 @@ const handleDownload = async (salary: Salary) => {
     setDeleteConfirm(null);
   };
 
+  const toIntOrNull = (value: unknown): number | null => {
+    const parsed = Number.parseInt(String(value ?? ''), 10);
+    return Number.isNaN(parsed) ? null : parsed;
+  };
+
   const filteredSalaries = salaries.filter(salary => {
     const matchesSearch = 
       salary.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       salary.employmentId?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesMonth = monthFilter === 'all' || salary.month === parseInt(monthFilter);
-    const matchesYear = yearFilter === 'all' || salary.year === parseInt(yearFilter);
+
+    const salaryYear = toIntOrNull(salary.year);
+    const selectedYear = toIntOrNull(yearFilter);
+
+    const matchesYear = yearFilter === 'all' || (salaryYear !== null && selectedYear !== null && salaryYear === selectedYear);
     
     const matchesEmployeeId = employeeId ? salary.employeeId === employeeId : true;
     
-    return matchesSearch && matchesMonth && matchesYear && matchesEmployeeId;
+    return matchesSearch && matchesYear && matchesEmployeeId;
   });
 
   // Pagination logic
@@ -597,7 +357,7 @@ const handleDownload = async (salary: Salary) => {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, monthFilter, yearFilter, employeeId]);
+  }, [searchTerm, yearFilter, employeeId]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -647,30 +407,23 @@ const handleDownload = async (salary: Salary) => {
       <div className="bg-white rounded-lg shadow-sm overflow-hidden">
         <TableHeader
           title="Salary"
+          customReloadButton={
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              aria-label="Reload"
+            >
+              <FaSyncAlt size={14} />
+            </button>
+          }
           total={filteredSalaries.length}
           searchValue={searchTerm}
           onSearchChange={(e) => setSearchTerm(e.target.value)}
           searchPlaceholder="Search"
-          showStats={false}
+          showStats={true}
           showSearch={true}
-          showFilter={true}
-          filterValue={monthFilter}
-          onFilterChange={setMonthFilter}
-          filterOptions={[
-            { value: 'all', label: 'All Months' },
-            { value: '1', label: 'January' },
-            { value: '2', label: 'February' },
-            { value: '3', label: 'March' },
-            { value: '4', label: 'April' },
-            { value: '5', label: 'May' },
-            { value: '6', label: 'June' },
-            { value: '7', label: 'July' },
-            { value: '8', label: 'August' },
-            { value: '9', label: 'September' },
-            { value: '10', label: 'October' },
-            { value: '11', label: 'November' },
-            { value: '12', label: 'December' }
-          ]}
+          showFilter={false}
           showSecondFilter={true}
           secondFilterValue={yearFilter}
           onSecondFilterChange={setYearFilter}
@@ -705,10 +458,13 @@ const handleDownload = async (salary: Salary) => {
           headerClassName="px-6 pt-6 pb-6"
         />
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto px-6 mt-4">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Sr. No
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Period
                 </th>
@@ -716,16 +472,16 @@ const handleDownload = async (salary: Salary) => {
                   Working Days
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Leaves Count
+                  Leaves
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Gross Salary (A)
+                  Gross (A)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Deductions (B)
+                  Deductions (B)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Net Salary
+                  In-Hand (C)
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -733,8 +489,11 @@ const handleDownload = async (salary: Salary) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedSalaries.map((salary) => (
+              {paginatedSalaries.map((salary, idx) => (
                 <tr key={salary.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {startIndex + idx + 1}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {getMonthName(salary.month)} {salary.year}
                   </td>
@@ -814,7 +573,7 @@ const handleDownload = async (salary: Salary) => {
                 {employeeId ? 'No salary records found' : 'No salaries found'}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || monthFilter !== 'all' || yearFilter !== 'all'
+                {searchTerm || yearFilter !== 'all'
                   ? 'Try adjusting your search, month, or year filter.'
                   : 'Get started by adding a salary record.'
                 }

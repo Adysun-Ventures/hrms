@@ -616,7 +616,7 @@ function RelievingLetterV2() {
                     }}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Use Joining Date
+                    Joining Date
                   </button>
                 </div>
 
@@ -632,21 +632,20 @@ function RelievingLetterV2() {
                   <button
                     type="button"
                     onClick={() => {
-                      const resignDate = normalizeDateForInput(
-                        employment?.resignationDate ||
-                        employment?.resignedDate ||
+                      const lastWorkingDate = normalizeDateForInput(
                         employment?.lastWorkingDate ||
+                        employment?.endDate ||
                         ""
                       );
-                      if (!resignDate) {
-                        toast.error("Resign date is not available for selected employee");
+                      if (!lastWorkingDate) {
+                        toast.error("Last working day is not available for selected employee");
                         return;
                       }
-                      setEmployeeRelievingDate(resignDate);
+                      setEmployeeRelievingDate(lastWorkingDate);
                     }}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Use Resign Date
+                    Last Working Day
                   </button>
                 </div>
 
@@ -676,7 +675,7 @@ function RelievingLetterV2() {
                     }}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Use Resign Date
+                    Resign Date
                   </button>
                 </div>
 
@@ -713,7 +712,7 @@ function RelievingLetterV2() {
             </div>
           </div>
           <div className="-mx-6 border-t border-gray-200 my-4"></div>
-          <div className="pt-4 flex items-center justify-between mt-4">
+          <div className="pt-0 flex items-center justify-between mt-4">
             <button
               type="button"
               onClick={() => window.history.back()}

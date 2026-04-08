@@ -332,20 +332,31 @@ const handleDownload = async (salary: Salary) => {
     return Number.isNaN(parsed) ? null : parsed;
   };
 
-  const filteredSalaries = salaries.filter(salary => {
-    const matchesSearch = 
-      salary.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      salary.employmentId?.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredSalaries = salaries
+    .filter((salary) => {
+      const matchesSearch =
+        salary.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        salary.employmentId?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const salaryYear = toIntOrNull(salary.year);
-    const selectedYear = toIntOrNull(yearFilter);
+      const salaryYear = toIntOrNull(salary.year);
+      const selectedYear = toIntOrNull(yearFilter);
 
-    const matchesYear = yearFilter === 'all' || (salaryYear !== null && selectedYear !== null && salaryYear === selectedYear);
-    
-    const matchesEmployeeId = employeeId ? salary.employeeId === employeeId : true;
-    
-    return matchesSearch && matchesYear && matchesEmployeeId;
-  });
+      const matchesYear =
+        yearFilter === 'all' || (salaryYear !== null && selectedYear !== null && salaryYear === selectedYear);
+
+      const matchesEmployeeId = employeeId ? salary.employeeId === employeeId : true;
+
+      return matchesSearch && matchesYear && matchesEmployeeId;
+    })
+    .sort((a, b) => {
+      const yearA = Number((a as any).year) || 0;
+      const yearB = Number((b as any).year) || 0;
+      if (yearB !== yearA) return yearB - yearA;
+
+      const monthA = Number((a as any).month) || 0;
+      const monthB = Number((b as any).month) || 0;
+      return monthB - monthA;
+    });
 
   // Pagination logic
   const totalItems = filteredSalaries.length;
@@ -353,6 +364,10 @@ const handleDownload = async (salary: Salary) => {
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedSalaries = filteredSalaries.slice(startIndex, endIndex);
+  const totalInHandAmount = filteredSalaries.reduce((sum, salary) => {
+    const inHand = Number((salary as any).netSalary ?? (salary as any).inhandSalary ?? 0) || 0;
+    return sum + inHand;
+  }, 0);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -378,7 +393,7 @@ const handleDownload = async (salary: Salary) => {
 
   const getYearOptions = () => {
     const currentYear = new Date().getFullYear();
-    const years = [{ value: 'all', label: 'All Years' }];
+    const years = [{ value: 'all', label: 'Years' }];
     for (let year = currentYear; year >= currentYear - 10; year--) {
       years.push({ value: year.toString(), label: year.toString() });
     }
@@ -410,7 +425,7 @@ const handleDownload = async (salary: Salary) => {
           customReloadButton={
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={() => router.refresh()}
               className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               aria-label="Reload"
             >
@@ -418,6 +433,11 @@ const handleDownload = async (salary: Salary) => {
             </button>
           }
           total={filteredSalaries.length}
+          totalLabel="Total Sal"
+          stackTotalStat={true}
+          extraStatLabel="Total Sal. (Rs. In-Hand)"
+          extraStatValue={totalInHandAmount}
+          stackExtraStat={true}
           searchValue={searchTerm}
           onSearchChange={(e) => setSearchTerm(e.target.value)}
           searchPlaceholder="Search"
@@ -428,6 +448,7 @@ const handleDownload = async (salary: Salary) => {
           secondFilterValue={yearFilter}
           onSecondFilterChange={setYearFilter}
           secondFilterOptions={getYearOptions()}
+          showSecondFilterIcon={false}
           onRefresh={handleRefresh}
           isRefreshing={isLoading}
           actionButtons={[
@@ -459,31 +480,31 @@ const handleDownload = async (salary: Salary) => {
         />
 
         <div className="overflow-x-auto px-6 mt-4">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Sr. No
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Period
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Working Days
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Leaves
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Gross (A)
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Deductions (B)
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   In-Hand (C)
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -491,28 +512,28 @@ const handleDownload = async (salary: Salary) => {
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedSalaries.map((salary, idx) => (
                 <tr key={salary.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-900 text-center">
                     {startIndex + idx + 1}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-900 text-center">
                     {getMonthName(salary.month)} {salary.year}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-900 text-center">
                     {(salary as any).workDays ?? (salary as any).workingDays ?? (salary as any).totalWorkingDays ?? (salary as any).monthDays ?? '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-900 text-center">
                     {(salary as any).leavesCount ?? (salary as any).totalLeaves ?? '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-1 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
                     ₹{((salary as any).grossSalary ?? salary.totalSalary ?? 0).toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-1 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
                     ₹{((salary as any).totalDeduction ?? (salary as any).totalDeductions ?? 0).toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-1 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
                     ₹{((salary as any).netSalary ?? salary.inhandSalary ?? 0).toLocaleString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td className="px-6 py-1 whitespace-nowrap text-sm font-medium text-center">
                     {deleteConfirm === salary.id ? (
                       <div className="flex items-center justify-center space-x-2">
                         <button
@@ -531,7 +552,7 @@ const handleDownload = async (salary: Salary) => {
                         </button>
                       </div>
                     ) : (
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center justify-center space-x-3">
                         <ActionButton
                           icon={<FiDownload className="w-5 h-5" />}
                           title="Download Salary Details"

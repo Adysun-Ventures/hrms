@@ -22,7 +22,7 @@ const Pagination: React.FC<PaginationProps> = ({
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-gray-200">
+    <div className="flex items-center justify-between px-6 py-4 bg-white">
       {/* Left side - Page size dropdown and item count */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">

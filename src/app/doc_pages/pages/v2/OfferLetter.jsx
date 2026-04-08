@@ -941,7 +941,7 @@ function OfferLetterV2() {
           ]}
         />
 <div className="-mx-8 border-t border-gray-200 my-4"></div>
-        <div className="px-8 pb-8 mt-6">
+        <div className="px-8 pb-4 mt-6">
           <div>
           
             {/* <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2"> */}
@@ -1065,7 +1065,7 @@ function OfferLetterV2() {
                   }}
                   className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                 >
-                  Use Joining Date
+                  Joining Date
                 </button>
               </div>
 
@@ -1139,7 +1139,7 @@ function OfferLetterV2() {
           <div className="-mx-8 border-t border-gray-200 my-4"></div>
          
 
-          <div className="px-0 pt-4 flex items-center justify-between mt-4">
+          <div className="px-0 pt-0 flex items-center justify-between mt-4">
             <button
               type="button"
               onClick={() => window.history.back()}

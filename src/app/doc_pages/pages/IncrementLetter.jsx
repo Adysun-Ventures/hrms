@@ -417,7 +417,7 @@ function IncrementLetter() {
                 }}
                 className="mt-2 text-sm text-blue-600 hover:underline"
               >
-                Use Increment Date
+                Increment Date
               </button>
             </div>
 
@@ -449,7 +449,7 @@ function IncrementLetter() {
                     }}
                     className="mt-2 text-sm text-blue-600 hover:underline"
                   >
-                    Use Increment Date
+                    Increment Date
                   </button>
                 </div>
               )}

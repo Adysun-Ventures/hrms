@@ -279,9 +279,10 @@ const EmployeeStatusToggle = ({
 
 export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterValue, setFilterValue] = useState('all');
-  const [employmentStatusFilter, setEmploymentStatusFilter] = useState('all');
-  const [employeeTypeFilter, setEmployeeTypeFilter] = useState<'all' | 'internal' | 'external'>('all');
+  // Default dropdown selection should show the dropdown name (placeholder).
+  const [filterValue, setFilterValue] = useState('');
+  const [employmentStatusFilter, setEmploymentStatusFilter] = useState('');
+  const [employeeTypeFilter, setEmployeeTypeFilter] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -429,19 +430,24 @@ useEffect(() => {
       const matchesSearch = q.length === 0 ? true : searchable.includes(q);
       
       const matchesStatusFilter = 
-        filterValue === 'all' || 
+        !filterValue || filterValue === 'all' || 
         (filterValue === 'active' && employee.status === 'active') ||
         (filterValue === 'inactive' && employee.status === 'inactive');
       
       const isResigned = emp?.isResignation === true;
+      const employeeOutcome = String(emp?.employeeStatus || '').toLowerCase().trim();
+      const normalizedOutcome =
+        employeeOutcome === 'terminated' ? 'terminated' : employeeOutcome === 'exited' ? 'exited' : 'exited';
+
       const matchesEmploymentStatusFilter =
-        employmentStatusFilter === 'all' ||
+        !employmentStatusFilter || employmentStatusFilter === 'all' ||
         (employmentStatusFilter === 'working' && !isResigned) ||
-        (employmentStatusFilter === 'resigned' && isResigned);
+        (employmentStatusFilter === 'terminated' && isResigned && normalizedOutcome === 'terminated') ||
+        (employmentStatusFilter === 'exited' && isResigned && normalizedOutcome === 'exited');
 
       const normalizedEmployeeType = (employee.employeeType || 'internal').toLowerCase();
       const matchesEmployeeTypeFilter =
-        employeeTypeFilter === 'all' || normalizedEmployeeType === employeeTypeFilter;
+        !employeeTypeFilter || employeeTypeFilter === 'all' || normalizedEmployeeType === employeeTypeFilter;
       
       return matchesSearch && matchesStatusFilter && matchesEmploymentStatusFilter && matchesEmployeeTypeFilter;
     })
@@ -586,39 +592,47 @@ useEffect(() => {
           onSearchChange={(e) => setSearchTerm(e.target.value)}
           searchPlaceholder="Search"
           searchAriaLabel="Search employees"
-          onRefresh={handleRefresh}
-          isRefreshing={false} // Tanstack Query handles refreshing state
           showSearch={true}
           showFilter={true}
           filterValue={filterValue}
           onFilterChange={setFilterValue}
           filterOptions={[
-            { value: 'all', label: 'All Status' },
+            { value: '', label: 'Status' },
+            { value: 'all', label: 'All' },
             { value: 'active', label: 'Active' },
             { value: 'inactive', label: 'Inactive' }
           ]}
+          filterOptGroupLabel="Status"
+          showFilterIcon={false}
           showSecondFilter={true}
           secondFilterValue={employmentStatusFilter}
           onSecondFilterChange={setEmploymentStatusFilter}
           secondFilterOptions={[
-            { value: 'all', label: 'All Employee Status' },
+            { value: '', label: 'Emp. Status' },
+            { value: 'all', label: 'All' },
             { value: 'working', label: 'Working' },
-            { value: 'resigned', label: 'Resigned' }
+            { value: 'terminated', label: 'Terminated' },
+            { value: 'exited', label: 'Exited' }
           ]}
           secondFilterLabel="Employment Status"
+          secondFilterOptGroupLabel="Emp. Status"
+          showSecondFilterIcon={false}
           showCustomFilters={true}
           technologyFilterValue={employeeTypeFilter}
           onTechnologyFilterChange={(v) => setEmployeeTypeFilter(v as any)}
           technologyFilterOptions={[
-            { value: 'all', label: 'All Types' },
-            { value: 'internal', label: 'Internal' },
-            { value: 'external', label: 'External' }
+            { value: '', label: 'Emp. Type' },
+            { value: 'all', label: 'All' },
+            { value: 'external', label: 'External' },
+            { value: 'internal', label: 'Internal' }
           ]}
+          technologyFilterOptGroupLabel="Emp. Type"
+          showTechnologyFilterIcon={false}
           backButton={{ href: '/dashboard' }}
           customReloadButton={
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={handleRefresh}
               className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               aria-label="Reload"
             >
@@ -662,13 +676,13 @@ useEffect(() => {
           </div>
         ) : (
           <div className="overflow-x-auto px-6">
-            <table className="min-w-full divide-y divide-gray-200 table-fixed border-collapse">
-              <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm after:absolute after:h-px after:w-full after:bottom-0 after:left-0 after:bg-gray-300">
+            <table className="min-w-full divide-y divide-gray-200 table-fixed border border-gray-300">
+              <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                 <tr>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
                     SR. No
                   </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
   <div
   role="button"
   tabIndex={0}
@@ -685,10 +699,10 @@ useEffect(() => {
 </th>
 
 
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                     Emp ID
                   </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
   <div
     role="button"
     tabIndex={0}
@@ -705,20 +719,20 @@ useEffect(() => {
 </th>
 
 
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
                     Curr. CTC
                   </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
                     Total Sal.
                   </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
                     Status
                   </th>
-                  <th className="px-6 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
                     EMP. Type
                   </th>
                   <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
-                    Status
+                    Emp. Status
                   </th>
                   <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[11%]">
                     Actions
@@ -728,30 +742,30 @@ useEffect(() => {
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedEmployees.map((employee, idx) => (
                   <tr key={employee.id}>
-                    <td className="px-6 py-2 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap text-center">
                       <div className="text-sm text-gray-900">{startIndex + idx + 1}</div>
                     </td>
-                    <td className="px-6 py-2 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap text-center">
                       <div className="flex items-center">
                           <div className="text-sm font-medium text-gray-900">{employee.name}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-2 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap text-center">
                       <div className="text-sm text-gray-900">
                         <EmployeeIdDisplay employeeId={employee.id} />
                       </div>
                     </td>
-                    <td className="px-6 py-2 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap text-center">
                       <div className="text-sm text-gray-900">
                         <JoiningDateDisplay employeeId={employee.id} />
                       </div>
                     </td>
-                    <td className="px-6 py-2 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap text-center">
                       <div className="text-sm text-gray-900">
                         <CurrentPackageDisplay employeeId={employee.id} />
                       </div>
                     </td>
-                    <td className="px-6 py-2 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap text-center">
                       <div className="text-sm text-gray-900">
                         <TotalSalaryCreditsDisplay employeeId={employee.id} />
                       </div>
@@ -783,7 +797,7 @@ useEffect(() => {
                       <EmploymentWorkingStatusBadge employeeId={employee.id} />
                     </td>
 
-                    <td className="px-6 py-2 whitespace-nowrap">
+                    <td className="px-6 py-2 whitespace-nowrap text-center">
                       {deleteConfirm === employee.id ? (
                         <div className="flex items-center justify-center space-x-2">
                           <button

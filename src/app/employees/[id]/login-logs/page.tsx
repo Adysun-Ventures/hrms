@@ -1,6 +1,7 @@
 'use client';
 
 import { use, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TableHeader from '@/components/ui/TableHeader';
 import { FiBook } from 'react-icons/fi';
@@ -21,6 +22,7 @@ type LoginLogRow = {
   browserNameVersion?: string;
   sessionOpenedAt?: any;
   sessionClosedAt?: any;
+  sessionClosedThrough?: string;
 };
 
 const toDateText = (value: any) => {
@@ -29,8 +31,21 @@ const toDateText = (value: any) => {
   return formatDateToDayMonYearWithTime(d);
 };
 
+const toSessionCloseThroughText = (row: LoginLogRow) => {
+  const through = String(row.sessionClosedThrough || '').toLowerCase();
+  if (through === 'logout') return 'Logout';
+  if (through === 'browser_tab_close') return 'Browser/Tab Close';
+  if (through === 'session_expired') return 'Session Expired';
+  if (through === 'network_lost') return 'Network Lost';
+  if (through === 'unknown') return 'Unknown';
+  if (through) return through.replaceAll('_', ' ');
+  if (!row.sessionClosedAt) return '-';
+  return 'Unknown';
+};
+
 export default function EmployeeLoginLogsPage({ params }: PageParams) {
   const { id } = use(params);
+  const router = useRouter();
   const [employeeName, setEmployeeName] = useState('Loading...');
   const [rows, setRows] = useState<LoginLogRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +95,7 @@ export default function EmployeeLoginLogsPage({ params }: PageParams) {
           customReloadButton={
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={() => router.refresh()}
               className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               aria-label="Reload"
             >
@@ -101,12 +116,13 @@ export default function EmployeeLoginLogsPage({ params }: PageParams) {
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Browser</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Session Open</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Session Close</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">How Session Closed</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {!loading && rows.length === 0 && (
                 <tr>
-                  <td className="px-4 py-4 text-sm text-gray-500" colSpan={8}>
+                  <td className="px-4 py-4 text-sm text-gray-500" colSpan={9}>
                     No login logs found.
                   </td>
                 </tr>
@@ -123,6 +139,7 @@ export default function EmployeeLoginLogsPage({ params }: PageParams) {
                   <td className="px-4 py-3 text-sm text-gray-800">{row.browserNameVersion || '-'}</td>
                   <td className="px-4 py-3 text-sm text-gray-800">{toDateText(row.sessionOpenedAt)}</td>
                   <td className="px-4 py-3 text-sm text-gray-800">{toDateText(row.sessionClosedAt)}</td>
+                  <td className="px-4 py-3 text-sm text-gray-800">{toSessionCloseThroughText(row)}</td>
                 </tr>
               ))}
             </tbody>

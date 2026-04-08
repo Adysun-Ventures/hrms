@@ -395,6 +395,11 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
   const currentMonthStats = calculateCurrentMonthStats();
 
+  const showResignationDetails =
+    Boolean((employment as any)?.isResignation) ||
+    Boolean((employment as any)?.is_resigned) ||
+    String((employment as any)?.employmentStatus || '').toLowerCase() === 'resigned';
+
   // Calculate real leave statistics
   const calculateLeaveStats = () => {
     if (!employment?.leaves || employment.leaves.length === 0) {
@@ -590,7 +595,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           customReloadButton={
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={() => router.refresh()}
               className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               aria-label="Reload"
             >
@@ -1239,7 +1244,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           </div>
           <div className="border-t border-gray-200 my-2" />
 
-          {employment.isResignation && (
+          {showResignationDetails && (
             <>
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
@@ -1282,6 +1287,29 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                     </p>
                     <p className="text-sm text-gray-500">Last Working Date</p>
                   </div>
+
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">
+                      {employment.employeeStatus || '-'}
+                    </p>
+                    <p className="text-sm text-gray-500">Employee Status</p>
+                  </div>
+
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">
+                      {(employment as any).relievingCtc
+                        ? formatCurrency((employment as any).relievingCtc)
+                        : '-'}
+                    </p>
+                    <p className="text-sm text-gray-500">Relieving CTC</p>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <p className="text-lg font-medium text-gray-900 break-words">
+                      {employment.reasonForLeaving || '-'}
+                    </p>
+                    <p className="text-sm text-gray-500">Reason for Exit</p>
+                  </div>
                 </div>
               </div>
               <div className="border-t border-gray-200 my-2" />
@@ -1292,73 +1320,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
           {hasIncrementDetails ? (
             <>
-              {/* Career Progression/Increment Details (CTP) */}
-              <div className="mb-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                  <FiTrendingUp className="mr-2" />Increment Details
-                </h2>
-
-                {(() => {
-                  const increments =
-                    employment.increments && employment.increments.length > 0
-                      ? employment.increments
-                      : (employment.incrementDate ||
-                         employment.newSalary ||
-                         employment.incrementedCtc ||
-                         employment.incrementedInHandCtc)
-                        ? [
-                            {
-                              incrementDate: employment.incrementDate,
-                              newSalary: employment.newSalary,
-                              incrementedCtc: employment.incrementedCtc,
-                              incrementedInHandCtc: employment.incrementedInHandCtc,
-                            },
-                          ]
-                        : [];
-
-                  return (
-                    <div className="space-y-4">
-                      {increments.map((inc, index) => (
-                        <div key={inc.id || index}>
-                          <p className="text-sm font-semibold text-gray-500 mb-2">
-                            Increment {index + 1}
-                          </p>
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                              <p className="text-sm text-gray-500 mb-1">Increment Date</p>
-                              <p className="text-base font-medium text-gray-900">
-                                {inc.incrementDate ? formatDateToDayMonYear(inc.incrementDate) : '-'}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500 mb-1">Incremented Salary</p>
-                              <p className="text-base font-medium text-gray-900">
-                                {inc.newSalary ? formatCurrency(inc.newSalary) : '-'}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500 mb-1">Incremented CTC</p>
-                              <p className="text-base font-medium text-gray-900">
-                                {inc.incrementedCtc ? formatCurrency(inc.incrementedCtc) : '-'}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm text-gray-500 mb-1">Incremented In-hand CTC</p>
-                              <p className="text-base font-medium text-gray-900">
-                                {inc.incrementedInHandCtc ? formatCurrency(inc.incrementedInHandCtc) : '-'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-              </div>
-            </>
-          ) : null}
-          <div className="border-t border-gray-200 my-2" />
-          {/* Joining Salary Information */}
+              {/* Joining Salary Information */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <FaRupeeSign className="mr-2" /> Joining Salary Information
@@ -1425,6 +1387,72 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
           <div className="border-t border-gray-200 my-2" />
 
+          {/* Career Progression/Increment Details (CTP) */}
+              <div className="mb-6">
+                <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                  <FiTrendingUp className="mr-2" />Increment Details
+                </h2>
+
+                {(() => {
+                  const increments =
+                    employment.increments && employment.increments.length > 0
+                      ? employment.increments
+                      : (employment.incrementDate ||
+                         employment.newSalary ||
+                         employment.incrementedCtc ||
+                         employment.incrementedInHandCtc)
+                        ? [
+                            {
+                              incrementDate: employment.incrementDate,
+                              newSalary: employment.newSalary,
+                              incrementedCtc: employment.incrementedCtc,
+                              incrementedInHandCtc: employment.incrementedInHandCtc,
+                            },
+                          ]
+                        : [];
+
+                  return (
+                    <div className="space-y-4">
+                      {increments.map((inc, index) => (
+                        <div key={inc.id || index}>
+                          <p className="text-sm font-semibold text-gray-500 mb-2">
+                            Increment {index + 1}
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Increment Date</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {inc.incrementDate ? formatDateToDayMonYear(inc.incrementDate) : '-'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Incremented Salary</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {inc.newSalary ? formatCurrency(inc.newSalary) : '-'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Incremented CTC</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {inc.incrementedCtc ? formatCurrency(inc.incrementedCtc) : '-'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Incremented In-hand CTC</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {inc.incrementedInHandCtc ? formatCurrency(inc.incrementedInHandCtc) : '-'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            </>
+          ) : null}
+          <div className="border-t border-gray-200 my-2" />
           {/* Current Salary Information */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">

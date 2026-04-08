@@ -54,12 +54,16 @@ interface TableHeaderProps {
   onFilterChange?: (value: string) => void;
   filterOptions?: FilterOption[];
   showFilter?: boolean;
+  showFilterIcon?: boolean;
+  filterOptGroupLabel?: string;
   // Second filter props
   secondFilterValue?: string;
   onSecondFilterChange?: (value: string) => void;
   secondFilterOptions?: FilterOption[];
   showSecondFilter?: boolean;
   secondFilterLabel?: string;
+  showSecondFilterIcon?: boolean;
+  secondFilterOptGroupLabel?: string;
   headerClassName?: string;
   // Attendance marking props
   showAttendanceMarking?: boolean;
@@ -72,6 +76,9 @@ interface TableHeaderProps {
   technologyFilterValue?: string;
   onTechnologyFilterChange?: (value: string) => void;
   technologyFilterOptions?: FilterOption[];
+  technologyFilterLabelText?: string;
+  showTechnologyFilterIcon?: boolean;
+  technologyFilterOptGroupLabel?: string;
   roleFilterValue?: string;
   onRoleFilterChange?: (value: string) => void;
   roleFilterOptions?: FilterOption[];
@@ -82,6 +89,11 @@ interface TableHeaderProps {
   hasActiveFilters?: boolean;
   customReloadButton?: React.ReactNode;
   actionButtonsBeforeAttendance?: boolean;
+  totalLabel?: string;
+  stackTotalStat?: boolean;
+  extraStatLabel?: string;
+  extraStatValue?: number;
+  stackExtraStat?: boolean;
 }
 
 const TableHeader: React.FC<TableHeaderProps> = ({
@@ -108,12 +120,16 @@ const TableHeader: React.FC<TableHeaderProps> = ({
     { value: 'inactive', label: 'Inactive' }
   ],
   showFilter = false,
+  showFilterIcon = true,
+  filterOptGroupLabel,
   // Second filter props
   secondFilterValue = 'all',
   onSecondFilterChange,
   secondFilterOptions = [],
   showSecondFilter = false,
   secondFilterLabel = 'Filter',
+  showSecondFilterIcon = true,
+  secondFilterOptGroupLabel,
   headerClassName = 'px-4 sm:px-6 pt-6 pb-6',
   showAttendanceMarking = false,
   attendanceData,
@@ -125,6 +141,9 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   technologyFilterValue = '',
   onTechnologyFilterChange,
   technologyFilterOptions = [],
+  technologyFilterLabelText,
+  showTechnologyFilterIcon = true,
+  technologyFilterOptGroupLabel,
   roleFilterValue = '',
   onRoleFilterChange,
   roleFilterOptions = [],
@@ -135,6 +154,11 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   hasActiveFilters = false,
   customReloadButton,
   actionButtonsBeforeAttendance = false,
+  totalLabel = 'Total',
+  stackTotalStat = false,
+  extraStatLabel,
+  extraStatValue,
+  stackExtraStat = false,
 }) => {
   const getButtonClasses = (variant: string = 'primary', hollow: boolean = false) => {
     const baseClasses = 'px-2 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1 sm:gap-2 transition-colors duration-200 text-sm sm:text-base w-full sm:w-auto';
@@ -356,14 +380,33 @@ const TableHeader: React.FC<TableHeaderProps> = ({
 
       {/* Stats and Search Section */}
       {(showStats || showSearch || showFilter || showSecondFilter || showCustomFilters) && (
-        <div className="px-4 sm:px-6 pb-6 border-b border-gray-200">
+        <div className="px-4 sm:px-6 pb-6">
           {/* Mobile: Stack everything vertically, Desktop: Side by side */}
           <div className={`flex flex-col lg:flex-row ${showStats ? 'lg:justify-between' : 'lg:justify-end'} lg:items-center gap-4 mt-4`}>
             {/* Stats Section */}
             {showStats && (
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                 {typeof total === 'number' && (
-                  <span className="pr-2 py-1 rounded-full">Total: <span className="font-medium">{total}</span></span>
+                  stackTotalStat ? (
+                    <span className="pr-2 py-1 rounded-full inline-flex flex-col items-center leading-tight">
+                      <span className="font-medium">{total}</span>
+                      <span>{totalLabel}</span>
+                    </span>
+                  ) : (
+                    <span className="pr-2 py-1 rounded-full">{totalLabel}: <span className="font-medium">{total}</span></span>
+                  )
+                )}
+                {typeof extraStatValue === 'number' && extraStatLabel && (
+                  stackExtraStat ? (
+                    <span className="pr-2 py-1 rounded-full inline-flex flex-col items-center leading-tight">
+                      <span className="font-medium">{extraStatValue.toLocaleString('en-IN')}</span>
+                      <span>{extraStatLabel}</span>
+                    </span>
+                  ) : (
+                    <span className="pr-2 py-1 rounded-full">
+                      {extraStatLabel}: <span className="font-medium">{extraStatValue.toLocaleString('en-IN')}</span>
+                    </span>
+                  )
                 )}
                 {typeof active === 'number' && (
                   <span className="pr-2 py-1 rounded-full text-green-700">Active: <span className="font-medium">{active}</span></span>
@@ -449,20 +492,35 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                     )}
                     {technologyFilterOptions.length > 0 && onTechnologyFilterChange && (
                       <div className="relative w-full sm:w-32">
+                        {technologyFilterLabelText && (
+                          <div className="mb-1 text-xs text-gray-500">{technologyFilterLabelText}</div>
+                        )}
                         <select
                           value={technologyFilterValue}
                           onChange={(e) => onTechnologyFilterChange(e.target.value)}
-                          className="appearance-none border border-gray-300 rounded-md pl-10 pr-8 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full"
+                          className={`appearance-none border border-gray-300 rounded-md ${showTechnologyFilterIcon ? 'pl-10' : 'pl-3'} pr-8 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full`}
                         >
-                          {technologyFilterOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.label}
-                            </option>
-                          ))}
+                          {technologyFilterOptGroupLabel ? (
+                            <optgroup label={technologyFilterOptGroupLabel}>
+                              {technologyFilterOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ) : (
+                            technologyFilterOptions.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))
+                          )}
                         </select>
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <FiCpu className="w-4 h-4 text-gray-500" />
-                        </div>
+                        {showTechnologyFilterIcon && (
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <FiCpu className="w-4 h-4 text-gray-500" />
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -524,17 +582,29 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                     <select
                       value={filterValue}
                       onChange={(e) => onFilterChange(e.target.value)}
-                      className="appearance-none border border-gray-300 rounded-md pl-10 pr-8 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto"
+                      className={`appearance-none border border-gray-300 rounded-md ${showFilterIcon ? 'pl-10' : 'pl-3'} pr-8 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto`}
                     >
-                      {filterOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
+                      {filterOptGroupLabel ? (
+                        <optgroup label={filterOptGroupLabel}>
+                          {filterOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : (
+                        filterOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))
+                      )}
                     </select>
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FiFilter className="w-4 h-4 text-gray-500" />
-                    </div>
+                    {showFilterIcon && (
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FiFilter className="w-4 h-4 text-gray-500" />
+                      </div>
+                    )}
                   </div>
                 )}
                 
@@ -543,17 +613,29 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                     <select
                       value={secondFilterValue}
                       onChange={(e) => onSecondFilterChange(e.target.value)}
-                      className="appearance-none border border-gray-300 rounded-md pl-10 pr-8 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto"
+                      className={`appearance-none border border-gray-300 rounded-md ${showSecondFilterIcon ? 'pl-10' : 'pl-3'} pr-8 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto`}
                     >
-                      {secondFilterOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
+                      {secondFilterOptGroupLabel ? (
+                        <optgroup label={secondFilterOptGroupLabel}>
+                          {secondFilterOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : (
+                        secondFilterOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))
+                      )}
                     </select>
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <FiFilter className="w-4 h-4 text-gray-500" />
-                    </div>
+                    {showSecondFilterIcon && (
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FiFilter className="w-4 h-4 text-gray-500" />
+                      </div>
+                    )}
                   </div>
                 )}
                 

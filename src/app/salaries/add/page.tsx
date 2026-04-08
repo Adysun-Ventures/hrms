@@ -50,6 +50,7 @@ export interface Salary {
 type SalaryFormData = {
   employeeId: string;
   employmentId: string;
+  day: number;
   month: number;
   year: number;
   ctc: number;
@@ -92,6 +93,7 @@ export default function AddSalaryPage() {
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<SalaryFormData>({
     mode: 'onChange', // Enable real-time validation and updates
     defaultValues: {
+      day: new Date().getDate(),
       month: new Date().getMonth() + 1,
       year: new Date().getFullYear(),
       employeeId: employeeId || '',
@@ -120,6 +122,7 @@ export default function AddSalaryPage() {
   const fixedPay = watch('fixedPay') || 0;
   const year = Number(watch('year')) || new Date().getFullYear();
   const month = Number(watch('month')) || new Date().getMonth() + 1;
+  const day = Number(watch('day')) || 0;
   const leavesCount = watch('leavesCount') || 0;
   const ptDeduct = watch('ptDeduct') || getProfessionalTaxByMonth(month);
   const otherDeduction = watch('otherDeduction') || 0;
@@ -191,6 +194,10 @@ export default function AddSalaryPage() {
     };
   }, [ctc, fixedPay, year, month, leavesCount]);
 
+  const adjustedWorkDays = useMemo(() => {
+    return Math.max(0, (Number(calculations.workDays) || 0) - (Number(day) || 0));
+  }, [calculations.workDays, day]);
+
   // Use calculated values directly for display
   const leavesDeductAmt = calculations.leavesDeductAmt;
   const pfDeduct = isPfEnabled ? (calculations.pfDeduct || 0) : 0;
@@ -200,7 +207,7 @@ export default function AddSalaryPage() {
 
   // Update form values in real-time when calculations change
   useEffect(() => {
-    setValue('workDays', calculations.workDays, { shouldValidate: false, shouldDirty: false });
+    setValue('workDays', adjustedWorkDays, { shouldValidate: false, shouldDirty: false });
     setValue('basic', calculations.basic, { shouldValidate: false, shouldDirty: false });
     setValue('hra', calculations.hra, { shouldValidate: false, shouldDirty: false });
     setValue('conveyanceAllowance', calculations.conveyanceAllowance, { shouldValidate: false, shouldDirty: false });
@@ -209,7 +216,7 @@ export default function AddSalaryPage() {
     
     // Keep PT deduction aligned with selected month rule.
     setValue('ptDeduct', calculations.ptDeduct, { shouldValidate: false, shouldDirty: false });
-  }, [calculations, setValue, ptDeduct]);
+  }, [calculations, adjustedWorkDays, setValue, ptDeduct]);
 
   useEffect(()=>{
     //Fixed pay results
@@ -330,6 +337,7 @@ export default function AddSalaryPage() {
 
       // Use calculated values (form values may be stale)
       const finalGrossSalary = calculations.grossSalary;
+      const finalWorkDays = Math.max(0, (Number(calculations.workDays) || 0) - (Number(data.day) || 0));
       const finalOtherDeduction = Number(data.otherDeduction || 0) || 0;
       const finalPfDeduct = isPfEnabled ? (calculations.pfDeduct || 0) : 0;
       const finalTotalDeduction =
@@ -344,7 +352,7 @@ export default function AddSalaryPage() {
         basicSalary: calculations.basic,
         inhandSalary: finalNetSalary,
         totalSalary: finalGrossSalary,
-        workDays: calculations.workDays,
+        workDays: finalWorkDays,
         leavesCount: data.leavesCount,
         ctc: data.ctc,
         fixedPay: data.fixedPay,
@@ -517,6 +525,27 @@ export default function AddSalaryPage() {
               )}
             </div>
 
+            {/* Day */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <span className="text-red-500 mr-1">*</span>Day
+              </label>
+              <select
+                {...register('day', { required: 'Day is required', valueAsNumber: true })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Select Day</option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+              {errors.day && (
+                <p className="mt-1 text-sm text-red-600">{errors.day.message}</p>
+              )}
+            </div>
+
             {/* Year */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -558,13 +587,15 @@ export default function AddSalaryPage() {
                   min: { value: 0, message: 'Work days cannot be negative' },
                   valueAsNumber: true
                 })}
-                value={calculations.workDays}
+                value={adjustedWorkDays}
                 disabled
                 readOnly
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
                 placeholder="Auto-calculated"
               />
-              <span className="text-xs text-gray-500">(Auto-calculated: {calculations.monthDays} days - {leavesCount} leaves)</span>
+              <span className="text-xs text-gray-500">
+                (Auto-calculated: {calculations.monthDays} days - {leavesCount} leaves - {day || 0} day)
+              </span>
               {errors.workDays && (
                 <p className="mt-1 text-sm text-red-600">{errors.workDays.message}</p>
               )}

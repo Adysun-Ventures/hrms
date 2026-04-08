@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
 import { 
   signInWithPhoneNumber, 
   PhoneAuthProvider, 
@@ -84,6 +84,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentEmployee, setCurrentEmployee] = useState<EmployeeUser | null>(null);
   const [currentUserData, setCurrentUserData] = useState<CurrentUser>(null);
   const [loading, setLoading] = useState(true);
+  const isLoggingOutRef = useRef(false);
+
+  const closeActiveLoginLogs = (
+    reason: 'logout' | 'browser_tab_close' | 'session_expired' | 'network_lost' | 'unknown'
+  ) => {
+    const adminLogId = localStorage.getItem('adminLoginLogId') || '';
+    const employeeLogId = localStorage.getItem('employeeLoginLogId') || '';
+    if (adminLogId) closeLoginLog(adminLogId, reason);
+    if (employeeLogId) closeLoginLog(employeeLogId, reason);
+  };
 
   const getDeviceType = (ua: string) => {
     const s = ua.toLowerCase();
@@ -193,6 +203,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const handlePageClose = () => {
+      if (isLoggingOutRef.current) return;
+      closeActiveLoginLogs('browser_tab_close');
+    };
+    const handleOffline = () => closeActiveLoginLogs('network_lost');
+
+    window.addEventListener('pagehide', handlePageClose);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('pagehide', handlePageClose);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // Note: no employment-status-based auto-logout.
 
   const signInWithCredentials = async (phoneNumber: string, password: string) => {
@@ -282,7 +307,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return { employee: userData, userType: 'employee' };
         } else {
           console.log('❌ Employee password mismatch!');
-          throw new Error('Invalid phone or password.');
+          throw new Error('Invalid Mobile or password.');
         }
       } else {
         console.log('❌ Unknown user type');
@@ -396,10 +421,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    const adminLogId = localStorage.getItem('adminLoginLogId') || '';
-    const employeeLogId = localStorage.getItem('employeeLoginLogId') || '';
-    if (adminLogId) closeLoginLog(adminLogId);
-    if (employeeLogId) closeLoginLog(employeeLogId);
+    isLoggingOutRef.current = true;
+    closeActiveLoginLogs('logout');
 
     setCurrentAdmin(null);
     setCurrentEmployee(null);

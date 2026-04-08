@@ -562,7 +562,7 @@ export default function AppraisalLetterV2() {
           ]}
         />
   <div className="w-full border-t border-gray-200 my-4"></div>
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-6">
 
           {/* SECTION CARD */}
           <div>
@@ -698,7 +698,7 @@ export default function AppraisalLetterV2() {
                     onClick={() => useIncrementDateFor(setDocumentGenerateDate)}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Use Increment Date
+                    Increment Date
                   </button>
                 </div>
 
@@ -712,7 +712,7 @@ export default function AppraisalLetterV2() {
                     onClick={() => useIncrementDateFor(setEffectiveDate)}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Use Increment Date
+                    Increment Date
                   </button>
                 </div>
 
@@ -746,7 +746,7 @@ export default function AppraisalLetterV2() {
             </div>
           </div>
           <div className="-mx-6 border-t border-gray-200 my-4"></div>
-          <div className="pt-4 flex items-center justify-between mt-4">
+          <div className="pt-0 flex items-center justify-between mt-4">
             <button
               type="button"
               onClick={() => window.history.back()}

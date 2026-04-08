@@ -245,11 +245,20 @@ export const createLoginLog = async (payload: {
   }
 };
 
-export const closeLoginLog = async (logId: string) => {
+export const closeLoginLog = async (
+  logId: string,
+  closedThrough:
+    | 'logout'
+    | 'browser_tab_close'
+    | 'session_expired'
+    | 'network_lost'
+    | 'unknown' = 'unknown'
+) => {
   try {
     if (!logId) return;
     await updateDoc(doc(db, 'login_logs', logId), {
       sessionClosedAt: new Date(),
+      sessionClosedThrough: closedThrough,
       updatedAt: new Date(),
     });
   } catch (error) {

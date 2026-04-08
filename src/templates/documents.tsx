@@ -5,7 +5,7 @@ export type DocumentRole = 'admin' | 'employee';
 
 export type DocumentTemplateKey =
   | 'offer-letter'
-  | 'joining-letter'
+  | 'appointment-letter'
   | 'salary-slip'
   | 'relieving-letter'
   | 'increment-letter'
@@ -35,11 +35,11 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     icon: <FiFileText size={24} />,
   },
   {
-    key: 'joining-letter',
-    title: 'Joining Letter',
-    description: 'Generate joining letters',
-    adminHref: '/dashboard/documents/v2/joining-letter',
-    employeeHref: '/employee/documents/joining-letter',
+    key: 'appointment-letter',
+    title: 'Appointment Letter',
+    description: 'Generate appointment letters',
+    adminHref: '/dashboard/documents/v2/appointment-letter',
+    employeeHref: '/employee/documents/appointment-letter',
     roles: ['admin', 'employee'],
     icon: <FiFileText size={24} />,
   },

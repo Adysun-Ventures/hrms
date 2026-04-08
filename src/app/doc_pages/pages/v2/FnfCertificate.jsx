@@ -415,7 +415,7 @@ export default function FnfCertificate() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-800 mb-1">Salary up to last working day</label>
               <input
@@ -468,7 +468,7 @@ export default function FnfCertificate() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-800 mb-1">Mode of Payment</label>
               <input

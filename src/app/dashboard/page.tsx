@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { FiClipboard, FiFile, FiFileText, FiRefreshCw, FiUsers } from 'react-icons/fi';
+import { FiClipboard, FiFile, FiFileText, FiUsers } from 'react-icons/fi';
 import { Toaster, toast } from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -43,17 +43,6 @@ export default function DashboardPage() {
       return;
     }
   }, [currentAdmin, currentUserData, router]);
-
-  // Handle refresh with toast feedback
-  const handleRefresh = async () => {
-    try {
-      refetch();
-      toast.success('Dashboard refreshed successfully');
-    } catch (error) {
-      console.error('Error refreshing dashboard data:', error);
-      toast.error('Failed to refresh dashboard');
-    }
-  };
 
   // Handle error state
   useEffect(() => {
@@ -111,9 +100,9 @@ export default function DashboardPage() {
       icon: <FiFileText className="w-6 h-6 text-blue-600" />,
     },
     {
-      title: 'Joining Letter',
-      description: 'Generate joining letter',
-      href: '/dashboard/documents/v2/joining-letter',
+      title: 'Appointment Letter',
+      description: 'Generate appointment letter',
+      href: '/dashboard/documents/v2/appointment-letter',
       icon: <FiFileText className="w-6 h-6 text-blue-600" />,
     },
   ];
@@ -126,21 +115,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
           <p className="text-slate-700">Welcome back, {currentAdmin.name}.</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isLoading}
-          className={`p-2 rounded-md transition-all duration-200 ${
-            isLoading 
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-              : 'bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-700'
-          }`}
-          title="Refresh dashboard data"
-          aria-label="Refresh dashboard data"
-        >
-          <FiRefreshCw 
-            className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} 
-          />
-        </button>
       </div>
 
       {isLoading ? (

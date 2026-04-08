@@ -70,12 +70,12 @@ A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607`,
     >
       <div className="pt-6 md:pt-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200">
+          <div className="px-6 py-5">
             <div className="grid grid-cols-[auto_1fr_auto] items-center">
               <button
                 type="button"
                 onClick={() => router.back()}
-                className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm"
+                className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full border border-gray-300 bg-gray-100 text-gray-700 hover:bg-gray-200 text-sm"
               >
                 <FiArrowLeft className="w-4 h-4" />
                 Back

@@ -293,7 +293,7 @@ export default function EditEmployeePage({ params }: PageParams) {
           customReloadButton={
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={() => router.refresh()}
               className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               aria-label="Reload"
             >

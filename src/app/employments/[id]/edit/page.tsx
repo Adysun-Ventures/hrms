@@ -32,6 +32,7 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relie
   benefits: string | string[];
   relievingCtc?: string; // Form input is string, will be converted to number|null
   whereWereYouEmploid?: string;
+  incrementHikePercentWrtJoiningCtc?: number;
   // PF toggles for Joining/Current salary information
   joiningPfIncluded?: boolean;
   currentPfIncluded?: boolean;
@@ -189,6 +190,30 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     joiningMonthlyFixed - (joiningBasic + joiningHra + joiningConveyance);
   const joiningOtherAllowanceValue = watch('joiningOtherAllowance') ?? joiningOtherAllowanceCalculated;
 
+  useEffect(() => {
+    if (!loading && incrementFields.length === 0) {
+      appendIncrement({
+        incrementDate: '',
+        incrementedCtc: Number(joiningCtcValue ?? 0) || 0,
+        incrementHikePercentWrtJoiningCtc: undefined,
+        incrementVariablePay: Number(joiningVariablePayValue ?? 0) || 0,
+        incrementFixedPay: Number(joiningFixedPayValue ?? 0) || 0,
+        incrementOtherAllowance: Number(joiningOtherAllowanceValue ?? 0) || 0,
+        incrementPfIncluded: false,
+        previousDesignation: '',
+        newDesignation: '',
+      } as any);
+    }
+  }, [
+    loading,
+    incrementFields.length,
+    appendIncrement,
+    joiningCtcValue,
+    joiningVariablePayValue,
+    joiningFixedPayValue,
+    joiningOtherAllowanceValue,
+  ]);
+
   const joiningPfIncluded = watch('joiningPfIncluded') || false;
   const joiningPf = joiningPfIncluded ? Math.min(joiningBasic, 15000) * 0.12 : 0;
 
@@ -222,6 +247,41 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       shouldDirty: false,
     });
   }, [dirtyFields, currentOtherAllowanceCalculated, setValue]);
+
+  const getIncrementSalaryBreakdown = (increment: any) => {
+    const joining = Number(joiningCtcValue ?? 0) || 0;
+    const incrementCtc = Number(increment?.incrementedCtc ?? 0) || 0;
+    const incrementVariable = Number(increment?.incrementVariablePay ?? 0) || 0;
+    const incrementFixed = incrementCtc - incrementVariable;
+    const incrementMonthlyFixed = incrementFixed / 12;
+    const incrementBasic = incrementMonthlyFixed * 0.5;
+    const incrementHra = incrementBasic * 0.4;
+    const incrementConveyance = 2000;
+    const incrementOtherAllowanceCalculated =
+      incrementMonthlyFixed - (incrementBasic + incrementHra + incrementConveyance);
+    const incrementOtherAllowance =
+      increment?.incrementOtherAllowance != null
+        ? Number(increment.incrementOtherAllowance)
+        : incrementOtherAllowanceCalculated;
+    const incrementGross =
+      incrementBasic + incrementHra + incrementConveyance + (Number(incrementOtherAllowance) || 0);
+    const incrementPfIncluded = Boolean(increment?.incrementPfIncluded);
+    const incrementPf = incrementPfIncluded ? Math.min(incrementBasic, 15000) * 0.12 : 0;
+    const incrementHikePercent = joining > 0 ? ((incrementCtc - joining) / joining) * 100 : 0;
+
+    return {
+      incrementFixed,
+      incrementMonthlyFixed,
+      incrementBasic,
+      incrementHra,
+      incrementConveyance,
+      incrementOtherAllowance,
+      incrementGross,
+      incrementPfIncluded,
+      incrementPf,
+      incrementHikePercent,
+    };
+  };
 
   // ---------------- PROFESSIONAL REFERENCE (Team Lead / Colleagues) ----------------
   // Professional Reference: dropdown shows saved Name.
@@ -471,12 +531,16 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                employmentData.incrementedCtc ||
                employmentData.incrementedInHandCtc)
             ? [
-                {
+                ({
                   incrementDate: employmentData.incrementDate || '',
                   newSalary: employmentData.newSalary,
                   incrementedCtc: employmentData.incrementedCtc,
+                  incrementVariablePay: (employmentData as any).incrementVariablePay,
+                  incrementFixedPay: (employmentData as any).incrementFixedPay,
+                  incrementOtherAllowance: (employmentData as any).incrementOtherAllowance,
+                  incrementPfIncluded: (employmentData as any).incrementPfIncluded,
                   incrementedInHandCtc: employmentData.incrementedInHandCtc,
-                },
+                } as any),
               ]
             : [];
 
@@ -824,8 +888,19 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       if (data.increments && data.increments.length > 0) {
         formattedData.increments = data.increments.map((inc) => ({
           ...inc,
-          newSalary: inc.newSalary != null ? Number(inc.newSalary) : undefined,
           incrementedCtc: inc.incrementedCtc != null ? Number(inc.incrementedCtc) : undefined,
+          incrementHikePercentWrtJoiningCtc:
+            (inc as any).incrementHikePercentWrtJoiningCtc != null
+              ? Number((inc as any).incrementHikePercentWrtJoiningCtc)
+              : undefined,
+          incrementVariablePay:
+            (inc as any).incrementVariablePay != null ? Number((inc as any).incrementVariablePay) : undefined,
+          incrementFixedPay:
+            (inc as any).incrementFixedPay != null ? Number((inc as any).incrementFixedPay) : undefined,
+          incrementOtherAllowance:
+            (inc as any).incrementOtherAllowance != null ? Number((inc as any).incrementOtherAllowance) : undefined,
+          incrementPfIncluded: Boolean((inc as any).incrementPfIncluded),
+          newSalary: inc.newSalary != null ? Number(inc.newSalary) : undefined,
           incrementedInHandCtc:
             inc.incrementedInHandCtc != null ? Number(inc.incrementedInHandCtc) : undefined,
         }));
@@ -834,11 +909,24 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         if (latest.incrementDate) {
           formattedData.incrementDate = latest.incrementDate;
         }
+        if ((latest as any).incrementVariablePay != null) {
+          formattedData.incrementVariablePay = Number((latest as any).incrementVariablePay);
+        }
+        if ((latest as any).incrementFixedPay != null) {
+          formattedData.incrementFixedPay = Number((latest as any).incrementFixedPay);
+        }
+        if ((latest as any).incrementOtherAllowance != null) {
+          formattedData.incrementOtherAllowance = Number((latest as any).incrementOtherAllowance);
+        }
+        formattedData.incrementPfIncluded = Boolean((latest as any).incrementPfIncluded);
         if (latest.newSalary != null) {
           formattedData.newSalary = Number(latest.newSalary);
         }
         if (latest.incrementedCtc != null) {
           formattedData.incrementedCtc = Number(latest.incrementedCtc);
+        }
+        if ((latest as any).incrementHikePercentWrtJoiningCtc != null) {
+          formattedData.incrementHikePercentWrtJoiningCtc = Number((latest as any).incrementHikePercentWrtJoiningCtc);
         }
         if (latest.incrementedInHandCtc != null) {
           formattedData.incrementedInHandCtc = Number(latest.incrementedInHandCtc);
@@ -948,7 +1036,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
           customReloadButton={
             <button
               type="button"
-              onClick={() => window.location.reload()}
+              onClick={() => router.refresh()}
               className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               aria-label="Reload"
             >
@@ -1618,151 +1706,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
-            {/* Career Progression/Increment Details (CTP) */}
-            <div className="bg-white p-4 rounded-lg mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-medium text-gray-800 border-l-4 border-purple-500 pl-2">
-                  Increment Details
-                </h2>
-                <button
-                  type="button"
-                  onClick={() =>
-                    appendIncrement({
-                      incrementDate: '',
-                      newSalary: undefined,
-                      incrementedCtc: undefined,
-                      incrementedInHandCtc: undefined,
-                      previousDesignation: '',
-                      newDesignation: '',
-                    })
-                  }
-                  className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
-                >
-                  Add Increment
-                </button>
-              </div>
-
-              {incrementFields.length === 0 && (
-                <p className="text-sm text-gray-500 mb-2">
-                  No increments added yet. Click &quot;Add Increment&quot; to add the first increment.
-                </p>
-              )}
-
-              <div className="space-y-4">
-                {incrementFields.map((field, index) => (
-                  <div
-                    key={field.id}
-                    className="border border-gray-200 rounded-lg p-4 bg-white"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-sm font-semibold text-gray-800">
-                        Increment {index + 1}
-                      </h3>
-                      {incrementFields.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeIncrement(index)}
-                          className="text-xs text-red-600 hover:text-red-800"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Increment Date
-                        </label>
-                        <Controller
-                          name={`increments.${index}.incrementDate` as const}
-                          control={control}
-                          render={({ field }) => (
-                            <CustomDateInput
-                              name={`increments.${index}.incrementDate`}
-                              value={field.value}
-                              onChange={field.onChange}
-                              placeholder="Select increment date"
-                              className="px-3 py-2"
-                            />
-                          )}
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Incremented Salary (₹)
-                        </label>
-                        <input
-                          type="number"
-                          {...register(`increments.${index}.newSalary` as const, {
-                            min: { value: 0, message: 'Amount must be positive' },
-                            valueAsNumber: true,
-                          })}
-                          placeholder="Incremented salary amount"
-                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Incremented CTC (₹)
-                        </label>
-                        <input
-                          type="number"
-                          {...register(`increments.${index}.incrementedCtc` as const, {
-                            min: { value: 0, message: 'Amount must be positive' },
-                            valueAsNumber: true,
-                          })}
-                          placeholder="Incremented CTC amount"
-                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Incremented In-hand CTC (₹)
-                        </label>
-                        <input
-                          type="number"
-                          {...register(`increments.${index}.incrementedInHandCtc` as const, {
-                            min: { value: 0, message: 'Amount must be positive' },
-                            valueAsNumber: true,
-                          })}
-                          placeholder="Incremented in-hand CTC"
-                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Old Designation
-                        </label>
-                        <input
-                          type="text"
-                          {...register(`increments.${index}.previousDesignation` as const)}
-                          placeholder="E.g., Software Developer"
-                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          New Designation
-                        </label>
-                        <input
-                          type="text"
-                          {...register(`increments.${index}.newDesignation` as const)}
-                          placeholder="E.g., Senior Software Developer"
-                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             {/* Joining Salary Information (CTC split) */}
             <div className="bg-white p-4 rounded-lg mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -1947,41 +1890,395 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               </div>
             </div>
 
+            {/* Career Progression/Increment Details (CTP) */}
+            <div className="bg-white p-4 rounded-lg mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium text-gray-800 border-l-4 border-purple-500 pl-2">
+                  Increment Details
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const previousIncrement =
+                      incrementFields.length > 0
+                        ? (watch(`increments.${incrementFields.length - 1}` as any) as any)
+                        : null;
+                    const previousIncrementCtc =
+                      Number(previousIncrement?.incrementedCtc ?? joiningCtcValue ?? 0) || 0;
+                    const currentIncrementCtc =
+                      Number(previousIncrement?.incrementedCtc ?? joiningCtcValue ?? 0) || 0;
+                    const defaultHikePercent =
+                      previousIncrement?.incrementHikePercentWrtJoiningCtc != null
+                        ? Number(previousIncrement.incrementHikePercentWrtJoiningCtc)
+                        : previousIncrementCtc > 0
+                          ? Number((((currentIncrementCtc - previousIncrementCtc) / previousIncrementCtc) * 100).toFixed(2))
+                          : 0;
+
+                    appendIncrement({
+                      incrementDate: '',
+                      incrementedCtc: currentIncrementCtc,
+                      incrementHikePercentWrtJoiningCtc: defaultHikePercent,
+                      incrementVariablePay:
+                        Number(previousIncrement?.incrementVariablePay ?? joiningVariablePayValue ?? 0) || 0,
+                      incrementFixedPay:
+                        Number(previousIncrement?.incrementFixedPay ?? joiningFixedPayValue ?? 0) || 0,
+                      incrementOtherAllowance:
+                        Number(previousIncrement?.incrementOtherAllowance ?? joiningOtherAllowanceValue ?? 0) || 0,
+                      incrementPfIncluded:
+                        previousIncrement?.incrementPfIncluded != null
+                          ? Boolean(previousIncrement.incrementPfIncluded)
+                          : false,
+                      previousDesignation: previousIncrement?.newDesignation || '',
+                      newDesignation: '',
+                    } as any);
+                  }}
+                  className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
+                >
+                  Add Increment
+                </button>
+              </div>
+
+              {incrementFields.length === 0 && (
+                <p className="text-sm text-gray-500 mb-2">
+                  No increments added yet. Click &quot;Add Increment&quot; to add the first increment.
+                </p>
+              )}
+
+              <div className="space-y-4">
+                {incrementFields.map((field, index) => {
+                  const currentIncrement = watch(`increments.${index}` as const);
+                  const incrementBreakdown = getIncrementSalaryBreakdown(currentIncrement);
+                  return (
+                  <div
+                    key={field.id}
+                    className="border border-gray-200 rounded-lg p-4 bg-white"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-gray-800">
+                        Increment {index + 1}
+                      </h3>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setValue(
+                              `increments.${index}.incrementPfIncluded` as any,
+                              !incrementBreakdown.incrementPfIncluded,
+                              { shouldDirty: true }
+                            );
+                          }}
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border ${
+                            incrementBreakdown.incrementPfIncluded
+                              ? 'bg-green-100 text-green-700 border-green-300'
+                              : 'bg-gray-100 text-gray-700 border-gray-300'
+                          }`}
+                        >
+                          <span className="mr-2">Is PF</span>
+                          <span
+                            className={`h-4 w-8 rounded-full flex items-center ${
+                              incrementBreakdown.incrementPfIncluded ? 'bg-green-500' : 'bg-gray-400'
+                            }`}
+                          >
+                            <span
+                              className={`h-3 w-3 bg-white rounded-full transform transition-transform ${
+                                incrementBreakdown.incrementPfIncluded ? 'translate-x-4' : 'translate-x-1'
+                              }`}
+                            />
+                          </span>
+                          <span className="ml-2 text-[11px]">{incrementBreakdown.incrementPfIncluded ? 'ON' : 'OFF'}</span>
+                        </button>
+                        {incrementFields.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeIncrement(index)}
+                            className="text-xs text-red-600 hover:text-red-800"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Increment Date
+                        </label>
+                        <Controller
+                          name={`increments.${index}.incrementDate` as const}
+                          control={control}
+                          render={({ field }) => (
+                            <CustomDateInput
+                              name={`increments.${index}.incrementDate`}
+                              value={field.value}
+                              onChange={field.onChange}
+                              placeholder="Select increment date"
+                              className="px-3 py-2"
+                            />
+                          )}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Hike % WRT Joining CTC
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          {...register(`increments.${index}.incrementHikePercentWrtJoiningCtc` as any, {
+                            min: { value: 0, message: 'Hike % must be positive' },
+                            valueAsNumber: true,
+                            onChange: (e) => {
+                              const previousCtc =
+                                index > 0
+                                  ? Number((watch(`increments.${index - 1}.incrementedCtc` as any) as any) ?? 0) || 0
+                                  : Number(joiningCtcValue ?? 0) || 0;
+                              const hike = Number(e?.target?.value ?? 0);
+                              if (!Number.isFinite(hike) || previousCtc <= 0) return;
+                              const nextIncrementCtc = previousCtc * (1 + hike / 100);
+                              setValue(
+                                `increments.${index}.incrementedCtc` as any,
+                                Number(nextIncrementCtc.toFixed(2)),
+                                { shouldValidate: true, shouldDirty: true }
+                              );
+                            },
+                          })}
+                          placeholder="Enter hike %"
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <span className="text-red-500 mr-1">*</span> Increment CTC (₹)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          {...register(`increments.${index}.incrementedCtc` as const, {
+                            required: 'Increment CTC is required',
+                            min: { value: 0, message: 'Increment CTC must be positive' },
+                            valueAsNumber: true,
+                          })}
+                          placeholder="Increment CTC"
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Increment Variable (₹)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          {...register(`increments.${index}.incrementVariablePay` as any, {
+                            min: { value: 0, message: 'Amount must be positive' },
+                            valueAsNumber: true,
+                          })}
+                          placeholder="Increment Variable"
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Increment Fixed (₹)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={Number.isFinite(incrementBreakdown.incrementFixed) ? incrementBreakdown.incrementFixed.toFixed(2) : ''}
+                          readOnly
+                          placeholder="Increment Fixed"
+                          className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Increment Monthly Fixed (₹)
+                        </label>
+                        <input
+                          type="number"
+                          value={Number.isFinite(incrementBreakdown.incrementMonthlyFixed) ? incrementBreakdown.incrementMonthlyFixed.toFixed(2) : ''}
+                          readOnly
+                          className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Basic (₹)
+                        </label>
+                        <input
+                          type="number"
+                          value={Number.isFinite(incrementBreakdown.incrementBasic) ? incrementBreakdown.incrementBasic.toFixed(2) : ''}
+                          readOnly
+                          className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          HRA (₹)
+                        </label>
+                        <input
+                          type="number"
+                          value={Number.isFinite(incrementBreakdown.incrementHra) ? incrementBreakdown.incrementHra.toFixed(2) : ''}
+                          readOnly
+                          className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Conveyance Allowance (₹)
+                        </label>
+                        <input
+                          type="number"
+                          value={Number.isFinite(incrementBreakdown.incrementConveyance) ? incrementBreakdown.incrementConveyance.toFixed(2) : ''}
+                          readOnly
+                          className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Other Allowance (₹)
+                        </label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          {...register(`increments.${index}.incrementOtherAllowance` as any, {
+                            valueAsNumber: true,
+                          })}
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Gross Salary (₹)
+                        </label>
+                        <input
+                          type="number"
+                          value={Number.isFinite(incrementBreakdown.incrementGross) ? incrementBreakdown.incrementGross.toFixed(2) : ''}
+                          readOnly
+                          className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      {incrementBreakdown.incrementPfIncluded && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
+                          <input
+                            type="number"
+                            value={Number.isFinite(incrementBreakdown.incrementPf) ? incrementBreakdown.incrementPf.toFixed(2) : ''}
+                            readOnly
+                            className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Old Designation
+                        </label>
+                        <input
+                          type="text"
+                          {...register(`increments.${index}.previousDesignation` as const)}
+                          placeholder="E.g., Software Developer"
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          New Designation
+                        </label>
+                        <input
+                          type="text"
+                          {...register(`increments.${index}.newDesignation` as const)}
+                          placeholder="E.g., Senior Software Developer"
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )})}
+              </div>
+            </div>
+
             {/* Current Salary Information (CTC split) */}
             <div className="bg-white p-4 rounded-lg mb-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-medium text-gray-800 border-l-4 border-green-500 pl-2">
                   Current Salary Information
                 </h2>
-                <Controller
-                  name="currentPfIncluded"
-                  control={control}
-                  render={({ field }) => (
-                    <button
-                      type="button"
-                      onClick={() => field.onChange(!field.value)}
-                      className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-medium border ${
-                        field.value
-                          ? 'bg-green-100 text-green-700 border-green-300'
-                          : 'bg-gray-100 text-gray-700 border-gray-300'
-                      }`}
-                    >
-                      <span className="mr-2">Is PF</span>
-                      <span
-                        className={`h-4 w-8 rounded-full flex items-center ${
-                          field.value ? 'bg-green-500' : 'bg-gray-400'
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const latestIncrement =
+                        incrementFields.length > 0
+                          ? (watch(`increments.${incrementFields.length - 1}` as any) as any)
+                          : null;
+                      if (!latestIncrement) return;
+                      setValue('salary', Number(latestIncrement.incrementedCtc ?? 0) || 0, {
+                        shouldValidate: true,
+                        shouldDirty: true,
+                      });
+                      setValue(
+                        'currentVariablePay',
+                        Number(latestIncrement.incrementVariablePay ?? 0) || 0,
+                        { shouldValidate: true, shouldDirty: true }
+                      );
+                      setValue(
+                        'currentOtherAllowance',
+                        Number(latestIncrement.incrementOtherAllowance ?? 0) || 0,
+                        { shouldValidate: false, shouldDirty: true }
+                      );
+                      setValue('currentPfIncluded', Boolean(latestIncrement.incrementPfIncluded), {
+                        shouldValidate: false,
+                        shouldDirty: true,
+                      });
+                    }}
+                    className="text-sm text-blue-600 hover:text-blue-700 underline"
+                  >
+                    Last Increment
+                  </button>
+                  <Controller
+                    name="currentPfIncluded"
+                    control={control}
+                    render={({ field }) => (
+                      <button
+                        type="button"
+                        onClick={() => field.onChange(!field.value)}
+                        className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-medium border ${
+                          field.value
+                            ? 'bg-green-100 text-green-700 border-green-300'
+                            : 'bg-gray-100 text-gray-700 border-gray-300'
                         }`}
                       >
+                        <span className="mr-2">Is PF</span>
                         <span
-                          className={`h-3 w-3 bg-white rounded-full transform transition-transform ${
-                            field.value ? 'translate-x-4' : 'translate-x-1'
+                          className={`h-4 w-8 rounded-full flex items-center ${
+                            field.value ? 'bg-green-500' : 'bg-gray-400'
                           }`}
-                        />
-                      </span>
-                      <span className="ml-2 text-[11px]">{field.value ? 'ON' : 'OFF'}</span>
-                    </button>
-                  )}
-                />
+                        >
+                          <span
+                            className={`h-3 w-3 bg-white rounded-full transform transition-transform ${
+                              field.value ? 'translate-x-4' : 'translate-x-1'
+                            }`}
+                          />
+                        </span>
+                        <span className="ml-2 text-[11px]">{field.value ? 'ON' : 'OFF'}</span>
+                      </button>
+                    )}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>

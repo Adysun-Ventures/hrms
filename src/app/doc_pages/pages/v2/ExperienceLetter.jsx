@@ -401,18 +401,18 @@ const [searchTerm, setSearchTerm] = useState("");
     }
   };
 
-  const useExitDateFor = (targetSetter) => {
-    const exitDate = normalizeDateForInput(
+  const useLastWorkingDateFor = (targetSetter) => {
+    const lastWorkingDate = normalizeDateForInput(
       employment?.lastWorkingDate ||
       employment?.resignationDate ||
       employment?.resignedDate ||
       ''
     );
-    if (!exitDate) {
-      toast.error('Exit date is not available for selected employee');
+    if (!lastWorkingDate) {
+      toast.error('Last working date is not available for selected employee');
       return;
     }
-    targetSetter(exitDate);
+    targetSetter(lastWorkingDate);
   };
 
   const canGenerate = Boolean(
@@ -454,7 +454,7 @@ const [searchTerm, setSearchTerm] = useState("");
           ]}
         />
 <div className="w-full border-t border-gray-200 my-4"></div>
-        <div className="p-6 space-y-6">
+        <div className="p-4 space-y-6">
 
           {/* CARD */}
           <div>
@@ -538,10 +538,10 @@ const [searchTerm, setSearchTerm] = useState("");
                   <DateDropdown value={todaysDate} onChange={setTodaysDate} />
                   <button
                     type="button"
-                    onClick={() => useExitDateFor(setTodaysDate)}
+                    onClick={() => useLastWorkingDateFor(setTodaysDate)}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Use Exit Date
+                    Last Working Date
                   </button>
                 </div>
 
@@ -553,10 +553,10 @@ const [searchTerm, setSearchTerm] = useState("");
                   <DateDropdown value={employeeSignDate} onChange={setEmployeeSignDate} />
                   <button
                     type="button"
-                    onClick={() => useExitDateFor(setEmployeeSignDate)}
+                    onClick={() => useLastWorkingDateFor(setEmployeeSignDate)}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Use Exit Date
+                    Last Working Date
                   </button>
                 </div>
                 
@@ -595,7 +595,7 @@ const [searchTerm, setSearchTerm] = useState("");
           </div>
           <div className="-mx-6 border-t border-gray-200 my-4"></div>
           {/* BUTTONS */}
-          <div className="px-0 pt-4 flex items-center justify-between mt-4">
+          <div className="px-0 pt-0 flex items-center justify-between mt-4">
             <button
               type="button"
               onClick={() => window.history.back()}

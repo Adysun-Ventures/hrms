@@ -55,7 +55,7 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
           return <SalarySlipGeneratorV2 />;
         case 'v2/experience-letter':
           return <ExperienceLetterV2Page/>;
-        case 'v2/joining-letter':
+        case 'v2/appointment-letter':
           return <JoiningLetterV2/>;
         case 'v2/fnf-certificate':
           return <FnfCertificateV2 />;

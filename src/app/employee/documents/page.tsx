@@ -44,9 +44,9 @@ const documents = [
     icon: <FiFileText size={24} />
   },
   { 
-    title: 'Joining Letter', 
-    description: 'View and download your joining letter',
-    path: '/employee/documents/joining-letter', 
+    title: 'Appointment Letter', 
+    description: 'View and download your appointment letter',
+    path: '/employee/documents/appointment-letter', 
     icon: <FiFileText size={24} /> 
   },
 ];

@@ -23,6 +23,7 @@ import { useAttendanceMarking } from '@/hooks/useAttendanceMarking';
 import { getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
+import { useEmployeeSelfSalariesByEmployee } from '@/hooks/useSalaries';
 
 export default function EmployeeDashboardPage() {
   const { currentEmployee, currentUserData, logout } = useAuth();
@@ -120,6 +121,13 @@ export default function EmployeeDashboardPage() {
 
   // Check if employee has employment
   const hasEmployment = !employmentLoading && employmentData.length > 0;
+  const { data: employeeSalaries, isLoading: salaryCountLoading } =
+    useEmployeeSelfSalariesByEmployee(currentUserData?.id || '');
+  const totalSalaryCount = employeeSalaries?.length || 0;
+  const totalInHandSalary = (employeeSalaries || []).reduce((sum: number, salary: any) => {
+    const inHand = Number(salary?.netSalary ?? salary?.inhandSalary ?? 0) || 0;
+    return sum + inHand;
+  }, 0);
 
 
   return (
@@ -140,7 +148,7 @@ export default function EmployeeDashboardPage() {
       </div> */}
 
       {/* Employee Information Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="-mx-6 px-6 flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-800">Employee Information</h2>
@@ -148,7 +156,7 @@ export default function EmployeeDashboardPage() {
               <button
                 type="button"
                 onClick={() => router.push("/employee/profile")}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
                 aria-label="View Profile"
               >
                 <FiEye className="w-4 h-4" />
@@ -233,7 +241,7 @@ export default function EmployeeDashboardPage() {
                     if (!employmentId) return;
                     router.push(`/employments/${employmentId}`);
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
                   aria-label="View Employment"
                 >
                   <FiEye className="w-4 h-4" />
@@ -351,6 +359,38 @@ export default function EmployeeDashboardPage() {
             </div>
           </div>
         )}
+
+        {/* Salary Information Card */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="-mx-6 px-6 flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-800">Salary Information</h2>
+            <button
+              type="button"
+              onClick={() => router.push('/employee/my-salary')}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              aria-label="View Salary"
+            >
+              <FiEye className="w-4 h-4" />
+              <span className="hidden sm:inline">View Salary</span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p className="font-medium text-gray-900">
+                {salaryCountLoading ? 'Loading...' : totalSalaryCount}
+              </p>
+              <p className="text-sm text-gray-600">Total Salary Count</p>
+            </div>
+
+            <div>
+              <p className="font-medium text-gray-900">
+                {salaryCountLoading ? 'Loading...' : totalInHandSalary.toLocaleString('en-IN')}
+              </p>
+              <p className="text-sm text-gray-600">Total Sal. (Rs. In-Hand)</p>
+            </div>
+          </div>
+        </div>
 
         
         

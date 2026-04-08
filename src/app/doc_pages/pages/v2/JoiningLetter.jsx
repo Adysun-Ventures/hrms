@@ -248,7 +248,7 @@ async function buildJoiningLetterDocx(employee, designation, department, reporti
     new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: issueDate })] }),
     new Paragraph({ children: [new TextRun({ text: toTitleCase(name), bold: true })] }),
     new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "JOINING LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
+    new Paragraph({ children: [new TextRun({ text: "APPOINTMENT LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
     new Paragraph({ text: "" }),
     new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
     new Paragraph({
@@ -271,7 +271,7 @@ async function buildJoiningLetterDocx(employee, designation, department, reporti
     new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
     new Paragraph({
       text:
-        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this joining letter. I accept the offer of employment with Adysun Ventures Private Limited.",
+        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.",
     }),
     new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCase(name), bold: true })] }),
     new Paragraph({ text: "Signature: ________________________________" }),
@@ -347,7 +347,7 @@ const JoiningLetterPDF = ({
             marginBottom: 14
           }}
         >
-          JOINING LETTER
+          APPOINTMENT LETTER
         </Text>
 
         {/* BODY */}
@@ -396,7 +396,7 @@ const JoiningLetterPDF = ({
           Acknowledgement and Acceptance
         </Text>
         <Text style={{ marginBottom: 10 }}>
-          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this joining letter. I accept the offer of employment with Adysun Ventures Private Limited.
+          I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.
         </Text>
         <Text style={{ marginBottom: 6 }}>
           Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCase(employeeName)}</Text>
@@ -582,7 +582,7 @@ export default function JoiningLetterV2() {
 
       <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6">
         <TableHeader
-          title="Joining Letter"
+          title="Appointment Letter"
           backButton={{
             href: selfEmployeeId ? "/employee/documents" : "/dashboard/documents",
             label: "Back",
@@ -611,7 +611,7 @@ export default function JoiningLetterV2() {
               Joining Information
             </h2> */}
 
-            <div className="bg-white p-4 rounded-lg">
+            <div className="bg-white p-2 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
                 {!selfEmployeeId && (
@@ -743,7 +743,7 @@ export default function JoiningLetterV2() {
                     onClick={() => useEmploymentJoiningDateFor(setDocumentGenerateDate)}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Use Joining Date
+                    Joining Date
                   </button>
                 </div>
 
@@ -757,7 +757,7 @@ export default function JoiningLetterV2() {
                     onClick={() => useEmploymentJoiningDateFor(setJoiningDate)}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Use Joining Date
+                    Joining Date
                   </button>
                 </div>
 
@@ -821,7 +821,7 @@ export default function JoiningLetterV2() {
             </div>
           </div>
           <div className="-mx-6 border-t border-gray-200 my-4"></div>
-          <div className="px-0 pt-4 flex items-center justify-between mt-4">
+          <div className="px-0 pt-0 flex items-center justify-between mt-4">
             <button
               type="button"
               onClick={() => window.history.back()}

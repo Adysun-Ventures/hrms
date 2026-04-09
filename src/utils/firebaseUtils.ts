@@ -234,7 +234,9 @@ export const createLoginLog = async (payload: {
       browserNameVersion: payload.browserNameVersion || '-',
       sessionId: payload.sessionId || '',
       sessionOpenedAt: new Date(),
+      sessionLastSeenAt: new Date(),
       sessionClosedAt: null,
+      sessionClosedThrough: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -242,6 +244,18 @@ export const createLoginLog = async (payload: {
   } catch (error) {
     console.error('Error creating login log:', error);
     throw error;
+  }
+};
+
+export const touchLoginLog = async (logId: string) => {
+  try {
+    if (!logId) return;
+    await updateDoc(doc(db, 'login_logs', logId), {
+      sessionLastSeenAt: new Date(),
+      updatedAt: new Date(),
+    });
+  } catch (error) {
+    // keep silent; this runs on an interval
   }
 };
 
@@ -259,6 +273,7 @@ export const closeLoginLog = async (
     await updateDoc(doc(db, 'login_logs', logId), {
       sessionClosedAt: new Date(),
       sessionClosedThrough: closedThrough,
+      sessionLastSeenAt: new Date(),
       updatedAt: new Date(),
     });
   } catch (error) {
@@ -283,7 +298,7 @@ export const getEmployeeLoginLogs = async (employeeId: string) => {
     const snapshot = await getDocs(q);
     const logs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as any));
 
-    return logs
+    const employeeLogs = logs
       .filter((l) => l.userType === 'employee')
       .sort((a, b) => {
         const aTime = a?.sessionOpenedAt?.toDate
@@ -294,6 +309,51 @@ export const getEmployeeLoginLogs = async (employeeId: string) => {
           : new Date(b?.sessionOpenedAt || 0).getTime();
         return bTime - aTime;
       });
+
+    // Best-effort: mark stale "open" sessions as closed via tab/browser close.
+    // This is needed because browsers often kill async Firestore writes on tab close.
+    const STALE_MS = 90 * 1000;
+    const now = Date.now();
+    const closedAt = new Date();
+    const staleToClose = employeeLogs.filter((l) => {
+      if (l?.sessionClosedAt) return false;
+      const lastSeen = l?.sessionLastSeenAt?.toDate
+        ? l.sessionLastSeenAt.toDate()
+        : l?.sessionLastSeenAt
+          ? new Date(l.sessionLastSeenAt)
+          : l?.updatedAt?.toDate
+            ? l.updatedAt.toDate()
+            : l?.updatedAt
+              ? new Date(l.updatedAt)
+              : l?.sessionOpenedAt?.toDate
+                ? l.sessionOpenedAt.toDate()
+                : new Date(l?.sessionOpenedAt || 0);
+      return now - lastSeen.getTime() > STALE_MS;
+    });
+
+    if (staleToClose.length > 0) {
+      // Update Firestore + also update local objects so UI shows reason immediately.
+      await Promise.allSettled(
+        staleToClose.map((l) => closeLoginLog(String(l.id || ''), 'browser_tab_close'))
+      );
+      staleToClose.forEach((l) => {
+        l.sessionClosedAt = closedAt;
+        l.sessionClosedThrough = 'browser_tab_close';
+        l.sessionLastSeenAt = closedAt;
+        l.updatedAt = closedAt;
+      });
+    }
+
+    // Return logs (with any best-effort local updates applied)
+    return employeeLogs.sort((a, b) => {
+      const aTime = a?.sessionOpenedAt?.toDate
+        ? a.sessionOpenedAt.toDate().getTime()
+        : new Date(a?.sessionOpenedAt || 0).getTime();
+      const bTime = b?.sessionOpenedAt?.toDate
+        ? b.sessionOpenedAt.toDate().getTime()
+        : new Date(b?.sessionOpenedAt || 0).getTime();
+      return bTime - aTime;
+    });
   } catch (error) {
     console.error('Error fetching employee login logs:', error);
     throw error;

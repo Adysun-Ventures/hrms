@@ -423,6 +423,10 @@ const OfferLetterPDF = ({
       size="A4"
       style={{
         ...offerLetterStyles.page,
+        paddingTop: 35,
+        paddingRight: 35,
+        paddingBottom: 35,
+        paddingLeft: 35,
         fontFamily: "Helvetica",
         fontSize: 12,
         lineHeight: 1.45
@@ -431,7 +435,7 @@ const OfferLetterPDF = ({
       <Watermark logoSrc={COMPANY_DATA.logo} />
       <GlobalPDFHeader fontFamily="Helvetica" />
 
-      <View style={{ borderBottom: "1px solid #000", marginBottom: 14 }} />
+      <View style={{ borderBottom: "1px solid #000", marginBottom: 8 }} />
 
       <Text style={{ marginBottom: 14 }}>
         <Text style={{ fontWeight: "bold" }}>Date: </Text>{letterDate}
@@ -488,6 +492,7 @@ const OfferLetterPDF = ({
         Your role will require alignment with organizational objectives and a
         commitment to producing measurable outcomes.
       </Text>
+    <GlobalPDFFooter />
     </Page>
 
     {/* ---------------- PAGE 2 ---------------- */}
@@ -495,13 +500,20 @@ const OfferLetterPDF = ({
       size="A4"
       style={{
         ...offerLetterStyles.page,
+        paddingTop: 35,
+        paddingRight: 35,
+        paddingLeft: 35,
         fontFamily: "Helvetica",
         fontSize: 12,
-        lineHeight: 1.45
+        // lineHeight: 1.45
       }}
       wrap={false}
     >
       <Watermark logoSrc={COMPANY_DATA.logo} />
+      <GlobalPDFHeader fontFamily="Helvetica" />
+
+      <View style={{ borderBottom: "1px solid #000", marginBottom: 8 }} />
+      
 
       <Text style={compactStyles.sectionTitle}>Role & Performance Expectations</Text>
       <Text style={compactStyles.paragraph}>
@@ -533,6 +545,8 @@ const OfferLetterPDF = ({
         <Text style={compactStyles.bullet}>• Adhere to attendance and leave requirements.</Text>
         <Text style={compactStyles.bullet}>• Use company resources responsibly and professionally.</Text>
       </View>
+      <View style={{ marginBottom: 20 }} />
+    <GlobalPDFFooter />
     </Page>
 
     {/* ---------------- PAGE 3 ---------------- */}
@@ -540,11 +554,17 @@ const OfferLetterPDF = ({
       size="A4"
       style={{
         ...offerLetterStyles.page,
+        paddingTop: 35,
+        paddingRight: 35,
+        paddingLeft: 35,
         fontFamily: "Helvetica",
         fontSize: 12
       }}
     >
       <Watermark logoSrc={COMPANY_DATA.logo} />
+      <GlobalPDFHeader fontFamily="Helvetica" />
+
+      <View style={{ borderBottom: "1px solid #000", marginBottom: 8 }} />
 
       <Text style={balancedStyles.sectionTitle}>General Terms</Text>
       <View style={balancedStyles.bulletList}>
@@ -566,6 +586,7 @@ const OfferLetterPDF = ({
         <Text style={balancedStyles.bullet}>• This employment shall be governed under the laws applicable within India.</Text>
         <Text style={balancedStyles.bullet}>• Any dispute shall be addressed under competent court jurisdiction.</Text>
       </View>
+    <GlobalPDFFooter />
     </Page>
 
     {/* ---------------- PAGE 4 (CTC PAGE — UNTOUCHED LOGIC) ---------------- */}
@@ -573,12 +594,18 @@ const OfferLetterPDF = ({
       size="A4"
       style={{
         ...offerLetterStyles.page,
+        paddingTop: 35,
+        paddingRight: 35,
+        paddingLeft: 35,
         fontFamily: "Helvetica",
         fontSize: 11
       }}
       wrap={false}
     >
       <Watermark logoSrc={COMPANY_DATA.logo} />
+      <GlobalPDFHeader fontFamily="Helvetica" />
+
+      <View style={{ borderBottom: "1px solid #000", marginBottom: 8 }} />
 
       <Text style={[balancedStyles.sectionTitle, { fontSize: 14, fontWeight: "bold" }]}>
         CTC Breakdown – Annual and Monthly
@@ -660,7 +687,6 @@ const OfferLetterPDF = ({
           <Text style={{ fontSize: 10 }}>{COMPANY_DATA.hrEmail}</Text>
         </View>
       </View>
-
       <GlobalPDFFooter />
     </Page>
 

@@ -21,6 +21,7 @@ type LoginLogRow = {
   userAgent?: string;
   browserNameVersion?: string;
   sessionOpenedAt?: any;
+  sessionLastSeenAt?: any;
   sessionClosedAt?: any;
   sessionClosedThrough?: string;
 };

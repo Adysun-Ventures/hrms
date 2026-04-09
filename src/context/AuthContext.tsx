@@ -19,6 +19,7 @@ import {
   checkUserByPhone,
   createLoginLog,
   closeLoginLog,
+  touchLoginLog,
 } from '../utils/firebaseUtils';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
@@ -118,13 +119,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchClientNetworkMeta = async () => {
     try {
+      // Primary: ipapi.co provides ip + location fields
       const res = await fetch('https://ipapi.co/json/');
-      if (!res.ok) return { ipAddress: '-', city: '-' };
-      const data = await res.json();
-      return {
-        ipAddress: data?.ip || '-',
-        city: data?.city || '-',
-      };
+      if (res.ok) {
+        const data = await res.json();
+        const ipAddress =
+          data?.ip ||
+          data?.ip_address ||
+          data?.query ||
+          '-';
+        const city =
+          data?.city ||
+          data?.region ||
+          data?.region_code ||
+          '-';
+        if (ipAddress !== '-' || city !== '-') {
+          return { ipAddress, city };
+        }
+      }
+
+      // Fallback: ipify for IP only (location may remain '-')
+      const ipRes = await fetch('https://api.ipify.org?format=json');
+      if (!ipRes.ok) return { ipAddress: '-', city: '-' };
+      const ipData = await ipRes.json();
+      return { ipAddress: ipData?.ip || '-', city: '-' };
     } catch {
       return { ipAddress: '-', city: '-' };
     }
@@ -209,13 +227,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       closeActiveLoginLogs('browser_tab_close');
     };
     const handleOffline = () => closeActiveLoginLogs('network_lost');
+    const handleVisibility = () => {
+      const adminLogId = localStorage.getItem('adminLoginLogId') || '';
+      const employeeLogId = localStorage.getItem('employeeLoginLogId') || '';
+      if (adminLogId) touchLoginLog(adminLogId);
+      if (employeeLogId) touchLoginLog(employeeLogId);
+    };
 
     window.addEventListener('pagehide', handlePageClose);
     window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       window.removeEventListener('pagehide', handlePageClose);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
+  }, []);
+
+  useEffect(() => {
+    const tick = () => {
+      const adminLogId = localStorage.getItem('adminLoginLogId') || '';
+      const employeeLogId = localStorage.getItem('employeeLoginLogId') || '';
+      if (adminLogId) touchLoginLog(adminLogId);
+      if (employeeLogId) touchLoginLog(employeeLogId);
+    };
+
+    // heartbeat so we can detect "tab closed" reliably
+    tick();
+    const interval = window.setInterval(tick, 30_000);
+    return () => window.clearInterval(interval);
   }, []);
 
   // Note: no employment-status-based auto-logout.

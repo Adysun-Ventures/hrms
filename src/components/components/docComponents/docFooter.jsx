@@ -9,7 +9,7 @@ const GlobalPDFFooter = () => {
         bottom: 20,
         left: 35,
         right: 35,
-        textAlign: "center",
+        textAlign: "left",
         fontSize: 10,
         borderTopWidth: 1,
         borderTopColor: "#000",
@@ -17,8 +17,10 @@ const GlobalPDFFooter = () => {
       }}
     >
       <Text style={{ color: "#D85604", fontWeight: "bold" }}>Adysun Ventures Pvt. Ltd.</Text>
-      <Text>S no 47, WorkPlex, Pune-Satara Road, Pune 411009</Text>
-      <Text>www.adysunventures.com | hr@adysunventures.com</Text>
+      <Text>Pune Office, S no 47, WorkPlex, Pune-Satara Road, Pune 411009</Text>
+      <Text>Thane Office, A2, 704, Kanchanpushp Society, kavesar, Thane West, Thane, Maharashtra - 400607</Text>
+      <Text>www.adysunventures.com | hr@adysunventures.com | 9579537523</Text>
+      
     </View>
   );
 };

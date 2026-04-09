@@ -18,6 +18,7 @@ import {
   StyleSheet,
 } from "@react-pdf/renderer";
 import { createAdysunDocx } from "@/utils/docxAdysun";
+import { getEmployeeSalaries } from "@/utils/firebaseUtils";
 
 const COMPANY_DATA = {
   name: "ADYSUN VENTURES PVT. LTD.",
@@ -68,12 +69,7 @@ const styles = StyleSheet.create({
 });
 
 const FnfCertificatePDF = ({ model }) => {
-  const netAmount =
-    asNumber(model.salaryUpto) +
-    asNumber(model.leaveEncashment) +
-    asNumber(model.bonusIncentives) +
-    asNumber(model.otherPayables) -
-    asNumber(model.deductions);
+  const netAmount = asNumber(model.totalSalaryPaid);
 
   return (
     <Document>
@@ -179,6 +175,8 @@ export default function FnfCertificate() {
   const [paymentMode, setPaymentMode] = useState("Bank Transfer");
   const [designationOverride, setDesignationOverride] = useState("");
   const [departmentOverride, setDepartmentOverride] = useState("");
+  const [salaryHistoryLines, setSalaryHistoryLines] = useState([]);
+  const [totalSalaryPaid, setTotalSalaryPaid] = useState(0);
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -221,6 +219,60 @@ export default function FnfCertificate() {
     if (exitDate) setPaymentDate(String(exitDate).slice(0, 10));
   }, [employment]);
 
+  useEffect(() => {
+    const loadLatestSalary = async () => {
+      const employeeId = employee?.id;
+      if (!employeeId) {
+        setSalaryHistoryLines([]);
+        setTotalSalaryPaid(0);
+        return;
+      }
+      try {
+        const salaries = await getEmployeeSalaries(employeeId);
+        if (!Array.isArray(salaries) || salaries.length === 0) {
+          setSalaryHistoryLines(["No salary record found"]);
+          setTotalSalaryPaid(0);
+          return;
+        }
+
+        const sorted = [...salaries].sort((a, b) => {
+          const yearA = Number(a?.year) || 0;
+          const yearB = Number(b?.year) || 0;
+          if (yearB !== yearA) return yearB - yearA;
+          const monthA = Number(a?.month) || 0;
+          const monthB = Number(b?.month) || 0;
+          return monthB - monthA;
+        });
+
+        let total = 0;
+        const lines = sorted.map((item) => {
+          const monthIndex = Math.max(0, Math.min(11, (Number(item?.month) || 1) - 1));
+          const monthShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][
+            monthIndex
+          ];
+          const year = String(item?.year || "");
+          const amount = Number(item?.netSalary ?? item?.inhandSalary ?? 0) || 0;
+          total += amount;
+          return {
+            year,
+            period: `${monthShort} ${year}`,
+            amount: `${amount.toLocaleString("en-IN", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })} Rs.`,
+          };
+        });
+        setSalaryHistoryLines(lines);
+        setTotalSalaryPaid(total);
+      } catch {
+        setSalaryHistoryLines(["Salary info unavailable"]);
+        setTotalSalaryPaid(0);
+      }
+    };
+
+    loadLatestSalary();
+  }, [employee?.id]);
+
   const model = useMemo(() => {
     const employeeCode = String(
       employment?.employmentId || employee?.employeeId || employee?.id || ""
@@ -242,6 +294,7 @@ export default function FnfCertificate() {
       deductions,
       paymentMode,
       paymentDate,
+      totalSalaryPaid,
     };
   }, [
     documentDate,
@@ -258,6 +311,7 @@ export default function FnfCertificate() {
     deductions,
     paymentMode,
     paymentDate,
+    totalSalaryPaid,
   ]);
 
   const canGenerate = true;
@@ -298,12 +352,12 @@ export default function FnfCertificate() {
         <div className="w-full border-t border-gray-200 my-4" />
 
         <div className="p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {!selfEmployeeId && (
-              <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">
-                  Employee <span className="text-red-500">*</span>
-                </label>
+          <div className="grid grid-cols-1">
+            <div className="max-w-md">
+              <label className="block text-sm font-medium text-slate-800 mb-1">
+                Employee <span className="text-red-500">*</span>
+              </label>
+              {!selfEmployeeId ? (
                 <Combobox
                   value={employee}
                   onChange={(e) => {
@@ -353,9 +407,61 @@ export default function FnfCertificate() {
                     </Combobox.Options>
                   </div>
                 </Combobox>
-              </div>
-            )}
+              ) : (
+                <input
+                  type="text"
+                  className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-50"
+                  value={employee?.name || ""}
+                  readOnly
+                />
+              )}
+            </div>
+          </div>
 
+          <div className="border border-gray-500 p-2 min-h-14 text-gray-900">
+            {salaryHistoryLines.length > 0 ? (
+              <div className="space-y-1">
+                {typeof salaryHistoryLines[0] === "string" ? (
+                  <p className="text-sm">{salaryHistoryLines[0]}</p>
+                ) : (
+                  (() => {
+                    const grouped = salaryHistoryLines.reduce((acc, row) => {
+                      const y = row.year || "-";
+                      if (!acc[y]) acc[y] = [];
+                      acc[y].push(row);
+                      return acc;
+                    }, {});
+                    const years = Object.keys(grouped).sort((a, b) => Number(b) - Number(a));
+
+                    return (
+                      <div className="space-y-2">
+                        {years.map((year) => (
+                          <div key={year}>
+                            <p className="text-xs font-semibold text-gray-600 mb-1">{year}</p>
+                            <div className="grid grid-cols-12 gap-2">
+                              {grouped[year].map((row, index) => (
+                                <div
+                                  key={`${row.period}-${index}`}
+                                  className="col-span-1 border border-gray-300 rounded px-2 py-1 min-w-0"
+                                >
+                                  <p className="text-sm">{row.period.split(" ")[0]}</p>
+                                  <p className="text-sm font-medium">{row.amount}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()
+                )}
+              </div>
+            ) : (
+              "-"
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-800 mb-1">
                 <span className="text-red-500">*</span> Document Date
@@ -494,13 +600,7 @@ export default function FnfCertificate() {
               <p className="text-sm text-gray-500">Net Amount Paid</p>
               <p className="text-lg font-semibold text-gray-900">
                 Rs.{" "}
-                {formatCurrency(
-                  asNumber(salaryUpto) +
-                    asNumber(leaveEncashment) +
-                    asNumber(bonusIncentives) +
-                    asNumber(otherPayables) -
-                    asNumber(deductions)
-                )}
+                {formatCurrency(totalSalaryPaid)}
               </p>
             </div>
           </div>

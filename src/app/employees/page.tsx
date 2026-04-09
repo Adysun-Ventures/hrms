@@ -633,7 +633,7 @@ useEffect(() => {
             <button
               type="button"
               onClick={handleRefresh}
-              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              className="p-1 rounded-full border border-gray-300 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               aria-label="Reload"
             >
               <FaSyncAlt size={14} />
@@ -679,10 +679,10 @@ useEffect(() => {
             <table className="min-w-full divide-y divide-gray-200 table-fixed border border-gray-300">
               <thead className="bg-gray-50 sticky top-0 z-10 shadow-sm">
                 <tr>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-[8%]">
                     SR. No
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[15%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-[15%]">
   <div
   role="button"
   tabIndex={0}
@@ -699,10 +699,10 @@ useEffect(() => {
 </th>
 
 
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-[10%]">
                     Emp ID
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">
   <div
     role="button"
     tabIndex={0}
@@ -719,22 +719,22 @@ useEffect(() => {
 </th>
 
 
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-[12%]">
                     Curr. CTC
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[12%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-[12%]">
                     Total Sal.
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[8%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-[8%]">
                     Status
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-[10%]">
                     EMP. Type
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[10%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-[10%]">
                     Emp. Status
                   </th>
-                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-[11%]">
+                  <th className="px-6 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-[11%]">
                     Actions
                   </th>
                 </tr>

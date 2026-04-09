@@ -596,7 +596,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             <button
               type="button"
               onClick={() => router.refresh()}
-              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              className="p-1 rounded-full border border-gray-300 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               aria-label="Reload"
             >
               <FaSyncAlt size={14} />

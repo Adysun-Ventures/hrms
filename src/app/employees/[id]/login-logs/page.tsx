@@ -4,7 +4,7 @@ import { use, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TableHeader from '@/components/ui/TableHeader';
-import { FiBook } from 'react-icons/fi';
+import { FiRefreshCw } from 'react-icons/fi';
 import { getEmployee, getEmployeeLoginLogs } from '@/utils/firebaseUtils';
 import { formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import toast, { Toaster } from 'react-hot-toast';
@@ -97,10 +97,10 @@ export default function EmployeeLoginLogsPage({ params }: PageParams) {
             <button
               type="button"
               onClick={() => router.refresh()}
-              className="p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+              className="p-1 rounded-full border border-gray-300 text-gray-400 hover:text-gray-600 hover:bg-gray-100"
               aria-label="Reload"
             >
-              <FiBook size={14} />
+              <FiRefreshCw size={14} />
             </button>
           }
         />

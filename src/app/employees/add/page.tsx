@@ -17,6 +17,17 @@ import CustomDateInput from '@/components/ui/CustomDateInput';
 
 
 type EmployeeFormData = Omit<Employee, 'id'>;
+type ParsedEmployeeData = {
+  fullName?: string;
+  dateOfBirth?: string;
+  homeTown?: string;
+  mobile?: string;
+  email?: string;
+  currentAddress?: string;
+  permanentAddress?: string;
+  aadharNumber?: string;
+  panCard?: string;
+};
 
 function uuid() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -37,6 +48,9 @@ function uuid() {
 export default function AddEmployeePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoFillInput, setAutoFillInput] = useState('');
+  const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [autoFillError, setAutoFillError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [educationEntries, setEducationEntries] = useState<Array<{
     id: string;
@@ -122,6 +136,156 @@ export default function AddEmployeePage() {
         ? { ...entry, type: newType }
         : entry
     ));
+  };
+
+  const normalizeParsedDate = (value?: string) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+    const isValidDateParts = (y: number, m: number, d: number) => {
+      if (y < 1900 || y > 2100) return false;
+      if (m < 1 || m > 12) return false;
+      if (d < 1 || d > 31) return false;
+      const dt = new Date(y, m - 1, d);
+      return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+    };
+
+    const toIso = (y: number, m: number, d: number) =>
+      `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+    // Accept DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
+    let match = raw.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+    if (match) {
+      const d = Number(match[1]);
+      const m = Number(match[2]);
+      const y = Number(match[3]);
+      return isValidDateParts(y, m, d) ? toIso(y, m, d) : '';
+    }
+
+    // Accept YYYY/MM/DD or YYYY-MM-DD or YYYY.MM.DD
+    match = raw.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);
+    if (match) {
+      const y = Number(match[1]);
+      const m = Number(match[2]);
+      const d = Number(match[3]);
+      return isValidDateParts(y, m, d) ? toIso(y, m, d) : '';
+    }
+
+    // Fallback for textual dates like "15 Aug 1998"
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return '';
+    return toIso(parsed.getFullYear(), parsed.getMonth() + 1, parsed.getDate());
+  };
+
+  const applyParsedEmployeeData = (parsed: ParsedEmployeeData) => {
+    const issues: string[] = [];
+    const cleanMobile = String(parsed.mobile || '').replace(/\D/g, '');
+    const cleanAadhar = String(parsed.aadharNumber || '').replace(/\D/g, '');
+    const cleanPan = String(parsed.panCard || '').trim().toUpperCase();
+
+    if (parsed.fullName) {
+      setValue('name', toTitleCase(String(parsed.fullName).trim()), { shouldValidate: true });
+    }
+    if (parsed.dateOfBirth) {
+      const normalizedDob = normalizeParsedDate(parsed.dateOfBirth);
+      if (normalizedDob) {
+        setValue('dateOfBirth', normalizedDob as any, { shouldValidate: true });
+      } else {
+        issues.push('Date of Birth is invalid');
+      }
+    }
+    if (parsed.homeTown) {
+      setValue('homeTown', String(parsed.homeTown).trim(), { shouldValidate: true });
+    }
+    if (cleanMobile) {
+      if (cleanMobile.length === 10) {
+        setValue('phone', cleanMobile as any, { shouldValidate: true });
+      } else {
+        issues.push('Mobile must be 10 digits');
+      }
+    }
+    if (parsed.email) {
+      setValue('email', String(parsed.email).trim(), { shouldValidate: true });
+    }
+    if (parsed.currentAddress) {
+      setValue('currentAddress', String(parsed.currentAddress).trim(), { shouldValidate: true });
+    }
+    if (parsed.permanentAddress) {
+      setValue('permanentAddress', String(parsed.permanentAddress).trim(), { shouldValidate: true });
+    }
+    if (cleanAadhar) {
+      if (cleanAadhar.length === 12) {
+        setValue('aadharCard', formatAadharCard(cleanAadhar) as any, { shouldValidate: true });
+      } else {
+        issues.push('Aadhar must be 12 digits');
+      }
+    }
+    if (cleanPan) {
+      if (/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(cleanPan)) {
+        setValue('panCard', cleanPan as any, { shouldValidate: true });
+      } else {
+        issues.push('PAN format is invalid');
+      }
+    }
+
+    if (issues.length > 0) {
+      const msg = issues.join(' | ');
+      setAutoFillError(msg);
+      toast.error(msg);
+    } else {
+      setAutoFillError(null);
+      toast.success('Form auto-filled successfully');
+    }
+  };
+
+  const handleAutoFillFromText = async () => {
+    const text = autoFillInput.trim();
+    if (!text) {
+      setAutoFillError('Please paste employee details first.');
+      return;
+    }
+
+    setIsAutoFilling(true);
+    setAutoFillError(null);
+
+    try {
+      const csvParts = text.split(',').map((part) => part.trim());
+      let parsed: ParsedEmployeeData;
+
+      if (csvParts.length === 8 || csvParts.length === 9) {
+        parsed = {
+          fullName: csvParts[0],
+          dateOfBirth: csvParts[1],
+          homeTown: csvParts[2],
+          mobile: csvParts[3],
+          email: csvParts[4],
+          currentAddress: csvParts[5],
+          permanentAddress: csvParts[6],
+          aadharNumber: csvParts[7],
+          panCard: csvParts[8] || '',
+        };
+      } else {
+        const response = await fetch('/api/parse-employee', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload?.error || 'Failed to parse employee details');
+        }
+        parsed = payload as ParsedEmployeeData;
+      }
+
+      applyParsedEmployeeData(parsed);
+    } catch (err: any) {
+      const message = err?.message || 'Parsing failed. Please try again.';
+      setAutoFillError(message);
+      toast.error(message);
+    } finally {
+      setIsAutoFilling(false);
+    }
   };
 
   const onSubmit = async (data: EmployeeFormData) => {
@@ -258,6 +422,31 @@ export default function AddEmployeePage() {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="bg-white p-4 mb-4 rounded-lg">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
+              Auto Fill Employee Details
+            </h2>
+            <div className="space-y-3">
+              <textarea
+                value={autoFillInput}
+                onChange={(e) => setAutoFillInput(e.target.value)}
+                placeholder="Paste employee details (supports comma-separated or free text)"
+                className="w-full min-h-28 p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleAutoFillFromText}
+                  disabled={isAutoFilling}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {isAutoFilling ? 'Auto Filling...' : 'Auto Fill from Text'}
+                </button>
+                {autoFillError && <p className="text-sm text-red-600">{autoFillError}</p>}
+              </div>
+            </div>
+          </div>
+
           {/* Personal Details Section */}
           <div className="bg-white p-4 mb-4 rounded-lg">
             <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Personal Details</h2>

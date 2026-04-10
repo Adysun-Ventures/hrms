@@ -82,7 +82,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const [breadcrumbEmployeeName, setBreadcrumbEmployeeName] = useState<string>('');
   // Salary breakdown sections removed as requested.
   const [originalEmployment, setOriginalEmployment] = useState<Employment | null>(null);
+  const [showIncrementDetails, setShowIncrementDetails] = useState(false);
   const generatedEmploymentIdsRef = useRef<Set<string>>(new Set());
+  const hasInitializedIncrementsRef = useRef(false);
   useForm({
   defaultValues: {
     isResignation: false
@@ -191,7 +193,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const joiningOtherAllowanceValue = watch('joiningOtherAllowance') ?? joiningOtherAllowanceCalculated;
 
   useEffect(() => {
-    if (!loading && incrementFields.length === 0) {
+    if (!showIncrementDetails) return;
+    if (!loading && !hasInitializedIncrementsRef.current && incrementFields.length === 0) {
+      hasInitializedIncrementsRef.current = true;
       appendIncrement({
         incrementDate: '',
         incrementedCtc: Number(joiningCtcValue ?? 0) || 0,
@@ -205,6 +209,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       } as any);
     }
   }, [
+    showIncrementDetails,
     loading,
     incrementFields.length,
     appendIncrement,
@@ -543,6 +548,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 } as any),
               ]
             : [];
+
+        setShowIncrementDetails(increments.length > 0);
 
         const normalizedWorkSchedule =
           rest.workSchedule === 'Office' || rest.workSchedule === 'Remote' || rest.workSchedule === 'Hybrid'
@@ -1899,6 +1906,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 <button
                   type="button"
                   onClick={() => {
+                    if (!showIncrementDetails) {
+                      setShowIncrementDetails(true);
+                    }
                     const previousIncrement =
                       incrementFields.length > 0
                         ? (watch(`increments.${incrementFields.length - 1}` as any) as any)
@@ -1938,13 +1948,19 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 </button>
               </div>
 
-              {incrementFields.length === 0 && (
+              {!showIncrementDetails && (
+                <p className="text-sm text-gray-500 mb-2">
+                  Click &quot;Add Increment&quot; to show increment details.
+                </p>
+              )}
+
+              {showIncrementDetails && incrementFields.length === 0 && (
                 <p className="text-sm text-gray-500 mb-2">
                   No increments added yet. Click &quot;Add Increment&quot; to add the first increment.
                 </p>
               )}
 
-              <div className="space-y-4">
+              {showIncrementDetails && <div className="space-y-4">
                 {incrementFields.map((field, index) => {
                   const currentIncrement = watch(`increments.${index}` as const);
                   const incrementBreakdown = getIncrementSalaryBreakdown(currentIncrement);
@@ -1987,15 +2003,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           </span>
                           <span className="ml-2 text-[11px]">{incrementBreakdown.incrementPfIncluded ? 'ON' : 'OFF'}</span>
                         </button>
-                        {incrementFields.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeIncrement(index)}
-                            className="text-xs text-red-600 hover:text-red-800"
-                          >
-                            Remove
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeIncrement(index)}
+                          className="text-xs text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
                       </div>
                     </div>
 
@@ -2208,7 +2222,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     </div>
                   </div>
                 )})}
-              </div>
+              </div>}
             </div>
 
             {/* Current Salary Information (CTC split) */}

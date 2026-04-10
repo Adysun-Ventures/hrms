@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import {
@@ -122,9 +122,10 @@ export default function AddEmploymentPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [preSelectedEmployee, setPreSelectedEmployee] = useState<Employee | null>(null);
-  const [showIncrementDetails, setShowIncrementDetails] = useState(true);
+  const [showIncrementDetails, setShowIncrementDetails] = useState(false);
   // Salary breakdown sections removed as requested.
   const generatedEmploymentIdsRef = useRef<Set<string>>(new Set());
+  const hasInitializedIncrementsRef = useRef(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -176,6 +177,15 @@ export default function AddEmploymentPage() {
       colleague3: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
       reportingManagerRef: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
     }
+  });
+
+  const {
+    fields: incrementFields,
+    append: appendIncrement,
+    remove: removeIncrement,
+  } = useFieldArray({
+    control,
+    name: 'increments' as any,
   });
 
   const whereWereYouEmploidValue = watch('whereWereYouEmploid');
@@ -331,6 +341,26 @@ export default function AddEmploymentPage() {
   useEffect(() => {
     if (!showIncrementDetails) return;
 
+    // Only auto-create the first increment once (initial load), so user can still delete all increments.
+    if (!hasInitializedIncrementsRef.current && incrementFields.length === 0) {
+      hasInitializedIncrementsRef.current = true;
+      appendIncrement(
+        {
+          incrementDate: '',
+          incrementHikePercentWrtJoiningCtc: undefined,
+          incrementedCtc: Number(joiningCtcValue ?? 0) || 0,
+          incrementVariablePay: Number(joiningVariablePayValue ?? 0) || 0,
+          incrementFixedPay: Number(joiningFixedPayValue ?? 0) || 0,
+          incrementOtherAllowance: Number(joiningOtherAllowanceValue ?? 0) || 0,
+          incrementPfIncluded: false,
+          previousDesignation: '',
+          newDesignation: '',
+        } as any,
+        { shouldFocus: false }
+      );
+      return;
+    }
+
     if (!(dirtyFields as any)?.incrementedCtc) {
       setValue('incrementedCtc', Number(joiningCtcValue ?? 0) || 0, {
         shouldValidate: false,
@@ -366,6 +396,8 @@ export default function AddEmploymentPage() {
     joiningFixedPayValue,
     joiningOtherAllowanceValue,
     setValue,
+    incrementFields.length,
+    appendIncrement,
   ]);
 
   useEffect(() => {
@@ -399,6 +431,38 @@ export default function AddEmploymentPage() {
     if (joining <= 0) return 0;
     return ((increment - joining) / joining) * 100;
   })();
+
+  const getIncrementSalaryBreakdown = (increment: any) => {
+    const incrementCtc = Number(increment?.incrementedCtc ?? 0) || 0;
+    const incrementVariable = Number(increment?.incrementVariablePay ?? 0) || 0;
+    const incrementFixed = incrementCtc - incrementVariable;
+    const incrementMonthlyFixed = incrementFixed / 12;
+    const incrementBasic = incrementMonthlyFixed * 0.5;
+    const incrementHra = incrementBasic * 0.4;
+    const incrementConveyance = 2000;
+    const incrementOtherAllowanceCalculated =
+      incrementMonthlyFixed - (incrementBasic + incrementHra + incrementConveyance);
+    const incrementOtherAllowance =
+      increment?.incrementOtherAllowance ?? incrementOtherAllowanceCalculated;
+    const incrementGross =
+      incrementBasic + incrementHra + incrementConveyance + (Number(incrementOtherAllowance) || 0);
+    const incrementPfIncluded = Boolean(increment?.incrementPfIncluded);
+    const incrementPf = incrementPfIncluded ? Math.min(incrementBasic, 15000) * 0.12 : 0;
+
+    return {
+      incrementCtc,
+      incrementVariable,
+      incrementFixed,
+      incrementMonthlyFixed,
+      incrementBasic,
+      incrementHra,
+      incrementConveyance,
+      incrementOtherAllowance,
+      incrementGross,
+      incrementPfIncluded,
+      incrementPf,
+    };
+  };
 
   // Ensure ADV prefix is maintained in employmentId
   const employmentId = watch('employmentId');
@@ -583,6 +647,46 @@ export default function AddEmploymentPage() {
             ? Number(data.incrementOtherAllowance)
             : undefined,
         incrementPfIncluded: Boolean(data.incrementPfIncluded),
+        // Persist multi-increment history (if any) and mirror latest into legacy scalar fields.
+        increments:
+          Array.isArray((data as any).increments) && (data as any).increments.length > 0
+            ? (data as any).increments.map((inc: any) => ({
+                incrementDate: inc?.incrementDate || '',
+                incrementHikePercentWrtJoiningCtc:
+                  inc?.incrementHikePercentWrtJoiningCtc !== undefined &&
+                  inc?.incrementHikePercentWrtJoiningCtc !== null &&
+                  !Number.isNaN(Number(inc?.incrementHikePercentWrtJoiningCtc))
+                    ? Number(inc.incrementHikePercentWrtJoiningCtc)
+                    : undefined,
+                incrementedCtc:
+                  inc?.incrementedCtc !== undefined &&
+                  inc?.incrementedCtc !== null &&
+                  !Number.isNaN(Number(inc?.incrementedCtc))
+                    ? Number(inc.incrementedCtc)
+                    : undefined,
+                incrementVariablePay:
+                  inc?.incrementVariablePay !== undefined &&
+                  inc?.incrementVariablePay !== null &&
+                  !Number.isNaN(Number(inc?.incrementVariablePay))
+                    ? Number(inc.incrementVariablePay)
+                    : undefined,
+                incrementFixedPay:
+                  inc?.incrementFixedPay !== undefined &&
+                  inc?.incrementFixedPay !== null &&
+                  !Number.isNaN(Number(inc?.incrementFixedPay))
+                    ? Number(inc.incrementFixedPay)
+                    : undefined,
+                incrementOtherAllowance:
+                  inc?.incrementOtherAllowance !== undefined &&
+                  inc?.incrementOtherAllowance !== null &&
+                  !Number.isNaN(Number(inc?.incrementOtherAllowance))
+                    ? Number(inc.incrementOtherAllowance)
+                    : undefined,
+                incrementPfIncluded: Boolean(inc?.incrementPfIncluded),
+                previousDesignation: String(inc?.previousDesignation || ''),
+                newDesignation: String(inc?.newDesignation || ''),
+              }))
+            : undefined,
         additionalAllowance: Number((data as any).additionalAllowance ?? 0) || 0,
         specialAllowance: Number((data as any).specialAllowance ?? 0) || 0,
         joiningFixedPay: Number((data as any).joiningFixedPay ?? 0) || 0,
@@ -609,6 +713,17 @@ export default function AddEmploymentPage() {
         updatedAt: currentTimestamp,
         updatedBy: auditId,
       };
+
+      if ((formattedData as any).increments && (formattedData as any).increments.length > 0) {
+        const latest = (formattedData as any).increments[(formattedData as any).increments.length - 1];
+        (formattedData as any).incrementDate = latest?.incrementDate || '';
+        (formattedData as any).incrementedCtc = latest?.incrementedCtc;
+        (formattedData as any).incrementHikePercentWrtJoiningCtc = latest?.incrementHikePercentWrtJoiningCtc;
+        (formattedData as any).incrementVariablePay = latest?.incrementVariablePay;
+        (formattedData as any).incrementFixedPay = latest?.incrementFixedPay;
+        (formattedData as any).incrementOtherAllowance = latest?.incrementOtherAllowance;
+        (formattedData as any).incrementPfIncluded = Boolean(latest?.incrementPfIncluded);
+      }
 
       // UI no longer captures lastSalaryDate for resignation details.
       delete (formattedData as any).lastSalaryDate;
@@ -1382,230 +1497,346 @@ export default function AddEmploymentPage() {
 
               {/* Career Progression/Increment Details (CTP) */}
               <div className="bg-white p-4 rounded-lg mb-6">
-                <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">
-                 Increment Details
-                </h2>
-
-                {!showIncrementDetails ? (
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-gray-800 border-l-4 border-purple-500 pl-2">
+                    Increment Details
+                  </h2>
                   <button
                     type="button"
-                    onClick={() => setShowIncrementDetails(true)}
-                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors"
+                    onClick={() => {
+                      if (!showIncrementDetails) {
+                        setShowIncrementDetails(true);
+                        if (incrementFields.length === 0) {
+                          const previousIncrementCtc = Number(joiningCtcValue ?? 0) || 0;
+                          appendIncrement({
+                            incrementDate: '',
+                            incrementedCtc: previousIncrementCtc,
+                            incrementHikePercentWrtJoiningCtc: 0,
+                            incrementVariablePay: Number(joiningVariablePayValue ?? 0) || 0,
+                            incrementFixedPay: Number(joiningFixedPayValue ?? 0) || 0,
+                            incrementOtherAllowance: Number(joiningOtherAllowanceValue ?? 0) || 0,
+                            incrementPfIncluded: false,
+                            previousDesignation: '',
+                            newDesignation: '',
+                          } as any);
+                          return;
+                        }
+                      }
+                      const previousIncrement =
+                        incrementFields.length > 0
+                          ? (watch(`increments.${incrementFields.length - 1}` as any) as any)
+                          : null;
+                      const previousIncrementCtc =
+                        Number(previousIncrement?.incrementedCtc ?? joiningCtcValue ?? 0) || 0;
+                      const currentIncrementCtc =
+                        Number(previousIncrement?.incrementedCtc ?? joiningCtcValue ?? 0) || 0;
+                      const defaultHikePercent =
+                        previousIncrement?.incrementHikePercentWrtJoiningCtc != null
+                          ? Number(previousIncrement.incrementHikePercentWrtJoiningCtc)
+                          : previousIncrementCtc > 0
+                            ? Number((((currentIncrementCtc - previousIncrementCtc) / previousIncrementCtc) * 100).toFixed(2))
+                            : 0;
+
+                      appendIncrement({
+                        incrementDate: '',
+                        incrementedCtc: currentIncrementCtc,
+                        incrementHikePercentWrtJoiningCtc: defaultHikePercent,
+                        incrementVariablePay:
+                          Number(previousIncrement?.incrementVariablePay ?? joiningVariablePayValue ?? 0) || 0,
+                        incrementFixedPay:
+                          Number(previousIncrement?.incrementFixedPay ?? joiningFixedPayValue ?? 0) || 0,
+                        incrementOtherAllowance:
+                          Number(previousIncrement?.incrementOtherAllowance ?? joiningOtherAllowanceValue ?? 0) || 0,
+                        incrementPfIncluded:
+                          previousIncrement?.incrementPfIncluded != null
+                            ? Boolean(previousIncrement.incrementPfIncluded)
+                            : false,
+                        previousDesignation: previousIncrement?.newDesignation || '',
+                        newDesignation: '',
+                      } as any);
+                    }}
+                    className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
                   >
-                    <FiPlus className="mr-2" />
                     Add Increment
                   </button>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Increment Date
-                      </label>
-                      <Controller
-                        name="incrementDate"
-                        control={control}
-                        render={({ field }) => (
-                          <CustomDateInput
-                            name="incrementDate"
-                            value={field.value}
-                            onChange={field.onChange}
-                            placeholder="Select increment date"
-                            className="px-3 py-2"
-                          />
-                        )}
-                      />
-                    </div>
+                </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Hike % WRT Joining CTC
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...register('incrementHikePercentWrtJoiningCtc', {
-                          min: { value: 0, message: 'Hike % must be positive' },
-                          valueAsNumber: true,
-                          onChange: (e) => {
-                            const joining = Number(joiningCtcValue ?? 0) || 0;
-                            const hike = Number(e?.target?.value ?? 0);
-                            if (!Number.isFinite(hike) || joining <= 0) return;
-                            const nextIncrementCtc = joining * (1 + hike / 100);
-                            setValue('incrementedCtc', Number(nextIncrementCtc.toFixed(2)), {
-                              shouldValidate: true,
-                              shouldDirty: true,
-                            });
-                          },
-                        })}
-                        placeholder="Enter hike %"
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        <span className="text-red-500 mr-1">*</span> Increment CTC (₹)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...register('incrementedCtc', {
-                          required: 'Increment CTC is required',
-                          min: { value: 0, message: 'Increment CTC must be positive' },
-                          valueAsNumber: true,
-                        })}
-                        placeholder="Increment CTC"
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Increment Variable (₹)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...register('incrementVariablePay', {
-                          min: { value: 0, message: 'Amount must be positive' },
-                          valueAsNumber: true,
-                        })}
-                        placeholder="Increment Variable"
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Increment Fixed (₹)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...register('incrementFixedPay', {
-                          valueAsNumber: true,
-                        })}
-                        readOnly
-                        placeholder="Increment Fixed"
-                        className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Increment Monthly Fixed (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={Number.isFinite(incrementMonthlyFixed) ? incrementMonthlyFixed.toFixed(2) : ''}
-                        readOnly
-                        className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Basic (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={Number.isFinite(incrementBasic) ? incrementBasic.toFixed(2) : ''}
-                        readOnly
-                        className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        HRA (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={Number.isFinite(incrementHra) ? incrementHra.toFixed(2) : ''}
-                        readOnly
-                        className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Conveyance Allowance (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={Number.isFinite(incrementConveyance) ? incrementConveyance.toFixed(2) : ''}
-                        readOnly
-                        className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Other Allowance (₹)
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...register('incrementOtherAllowance', {
-                          valueAsNumber: true,
-                        })}
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Gross Salary (₹)
-                      </label>
-                      <input
-                        type="number"
-                        value={Number.isFinite(incrementGrossSalary) ? incrementGrossSalary.toFixed(2) : ''}
-                        readOnly
-                        className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">PF</label>
-                      <button
-                        type="button"
-                        onClick={() => setValue('incrementPfIncluded', !incrementPfIncluded, { shouldDirty: true })}
-                        className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-medium border ${
-                          incrementPfIncluded
-                            ? 'bg-green-100 text-green-700 border-green-300'
-                            : 'bg-gray-100 text-gray-700 border-gray-300'
-                        }`}
-                      >
-                        <span className="mr-2">Is PF</span>
-                        <span
-                          className={`h-4 w-8 rounded-full flex items-center ${
-                            incrementPfIncluded ? 'bg-green-500' : 'bg-gray-400'
-                          }`}
-                        >
-                          <span
-                            className={`h-3 w-3 bg-white rounded-full transform transition-transform ${
-                              incrementPfIncluded ? 'translate-x-4' : 'translate-x-1'
-                            }`}
-                          />
-                        </span>
-                        <span className="ml-2 text-[11px]">{incrementPfIncluded ? 'ON' : 'OFF'}</span>
-                      </button>
-                    </div>
-
-                    {incrementPfIncluded && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
-                        <input
-                          type="number"
-                          value={Number.isFinite(incrementPf) ? incrementPf.toFixed(2) : ''}
-                          readOnly
-                          className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                        />
-                      </div>
-                    )}
-
-                  </div>
+                {!showIncrementDetails && (
+                  <p className="text-sm text-gray-500 mb-2">
+                    Click &quot;Add Increment&quot; to show increment details.
+                  </p>
                 )}
+
+                {showIncrementDetails && incrementFields.length === 0 && (
+                  <p className="text-sm text-gray-500 mb-2">
+                    No increments added yet. Click &quot;Add Increment&quot; to add the first increment.
+                  </p>
+                )}
+
+                {showIncrementDetails && <div className="space-y-4">
+                  {incrementFields.map((field, index) => {
+                    const currentIncrement = watch(`increments.${index}` as const);
+                    const incrementBreakdown = getIncrementSalaryBreakdown(currentIncrement);
+                    return (
+                      <div
+                        key={field.id}
+                        className="border border-gray-200 rounded-lg p-4 bg-white"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="text-sm font-semibold text-gray-800">
+                            Increment {index + 1}
+                          </h3>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setValue(
+                                  `increments.${index}.incrementPfIncluded` as any,
+                                  !incrementBreakdown.incrementPfIncluded,
+                                  { shouldDirty: true }
+                                );
+                              }}
+                              className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium border ${
+                                incrementBreakdown.incrementPfIncluded
+                                  ? 'bg-green-100 text-green-700 border-green-300'
+                                  : 'bg-gray-100 text-gray-700 border-gray-300'
+                              }`}
+                            >
+                              <span className="mr-2">Is PF</span>
+                              <span
+                                className={`h-4 w-8 rounded-full flex items-center ${
+                                  incrementBreakdown.incrementPfIncluded ? 'bg-green-500' : 'bg-gray-400'
+                                }`}
+                              >
+                                <span
+                                  className={`h-3 w-3 bg-white rounded-full transform transition-transform ${
+                                    incrementBreakdown.incrementPfIncluded ? 'translate-x-4' : 'translate-x-1'
+                                  }`}
+                                />
+                              </span>
+                              <span className="ml-2 text-[11px]">{incrementBreakdown.incrementPfIncluded ? 'ON' : 'OFF'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeIncrement(index)}
+                              className="text-xs text-red-600 hover:text-red-800"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Increment Date
+                            </label>
+                            <Controller
+                              name={`increments.${index}.incrementDate` as const}
+                              control={control}
+                              render={({ field }) => (
+                                <CustomDateInput
+                                  name={`increments.${index}.incrementDate`}
+                                  value={field.value}
+                                  onChange={field.onChange}
+                                  placeholder="Select increment date"
+                                  className="px-3 py-2"
+                                />
+                              )}
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Hike % WRT Joining CTC
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              {...register(`increments.${index}.incrementHikePercentWrtJoiningCtc` as any, {
+                                min: { value: 0, message: 'Hike % must be positive' },
+                                valueAsNumber: true,
+                                onChange: (e) => {
+                                  const previousCtc =
+                                    index > 0
+                                      ? Number((watch(`increments.${index - 1}.incrementedCtc` as any) as any) ?? 0) || 0
+                                      : Number(joiningCtcValue ?? 0) || 0;
+                                  const hike = Number(e?.target?.value ?? 0);
+                                  if (!Number.isFinite(hike) || previousCtc <= 0) return;
+                                  const nextIncrementCtc = previousCtc * (1 + hike / 100);
+                                  setValue(
+                                    `increments.${index}.incrementedCtc` as any,
+                                    Number(nextIncrementCtc.toFixed(2)),
+                                    { shouldValidate: true, shouldDirty: true }
+                                  );
+                                },
+                              })}
+                              placeholder="Enter hike %"
+                              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              <span className="text-red-500 mr-1">*</span> Increment CTC (₹)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              {...register(`increments.${index}.incrementedCtc` as const, {
+                                required: 'Increment CTC is required',
+                                min: { value: 0, message: 'Increment CTC must be positive' },
+                                valueAsNumber: true,
+                              })}
+                              placeholder="Increment CTC"
+                              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Increment Variable (₹)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              {...register(`increments.${index}.incrementVariablePay` as any, {
+                                min: { value: 0, message: 'Amount must be positive' },
+                                valueAsNumber: true,
+                              })}
+                              placeholder="Increment Variable"
+                              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Increment Fixed (₹)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={Number.isFinite(incrementBreakdown.incrementFixed) ? incrementBreakdown.incrementFixed.toFixed(2) : ''}
+                              readOnly
+                              placeholder="Increment Fixed"
+                              className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Increment Monthly Fixed (₹)
+                            </label>
+                            <input
+                              type="number"
+                              value={Number.isFinite(incrementBreakdown.incrementMonthlyFixed) ? incrementBreakdown.incrementMonthlyFixed.toFixed(2) : ''}
+                              readOnly
+                              className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Basic (₹)
+                            </label>
+                            <input
+                              type="number"
+                              value={Number.isFinite(incrementBreakdown.incrementBasic) ? incrementBreakdown.incrementBasic.toFixed(2) : ''}
+                              readOnly
+                              className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              HRA (₹)
+                            </label>
+                            <input
+                              type="number"
+                              value={Number.isFinite(incrementBreakdown.incrementHra) ? incrementBreakdown.incrementHra.toFixed(2) : ''}
+                              readOnly
+                              className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Conveyance Allowance (₹)
+                            </label>
+                            <input
+                              type="number"
+                              value={Number.isFinite(incrementBreakdown.incrementConveyance) ? incrementBreakdown.incrementConveyance.toFixed(2) : ''}
+                              readOnly
+                              className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Other Allowance (₹)
+                            </label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              {...register(`increments.${index}.incrementOtherAllowance` as any, {
+                                valueAsNumber: true,
+                              })}
+                              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Gross Salary (₹)
+                            </label>
+                            <input
+                              type="number"
+                              value={Number.isFinite(incrementBreakdown.incrementGross) ? incrementBreakdown.incrementGross.toFixed(2) : ''}
+                              readOnly
+                              className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          {incrementBreakdown.incrementPfIncluded && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">PF (₹)</label>
+                              <input
+                                type="number"
+                                value={Number.isFinite(incrementBreakdown.incrementPf) ? incrementBreakdown.incrementPf.toFixed(2) : ''}
+                                readOnly
+                                className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                          )}
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Old Designation
+                            </label>
+                            <input
+                              type="text"
+                              {...register(`increments.${index}.previousDesignation` as const)}
+                              placeholder="E.g., Software Developer"
+                              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              New Designation
+                            </label>
+                            <input
+                              type="text"
+                              {...register(`increments.${index}.newDesignation` as const)}
+                              placeholder="E.g., Senior Software Developer"
+                              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>}
               </div>
 
               {/* Current Salary Information (CTC split) */}
@@ -1618,19 +1849,24 @@ export default function AddEmploymentPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        setValue('salary', Number(incrementCtcValue ?? 0) || 0, {
+                        const latestIncrement =
+                          incrementFields.length > 0
+                            ? (watch(`increments.${incrementFields.length - 1}` as any) as any)
+                            : null;
+                        if (!latestIncrement) return;
+                        setValue('salary', Number(latestIncrement.incrementedCtc ?? 0) || 0, {
                           shouldValidate: true,
                           shouldDirty: true,
                         });
-                        setValue('currentVariablePay', Number(incrementVariablePayValue ?? 0) || 0, {
+                        setValue('currentVariablePay', Number(latestIncrement.incrementVariablePay ?? 0) || 0, {
                           shouldValidate: true,
                           shouldDirty: true,
                         });
-                        setValue('currentOtherAllowance', Number(incrementOtherAllowanceValue ?? 0) || 0, {
+                        setValue('currentOtherAllowance', Number(latestIncrement.incrementOtherAllowance ?? 0) || 0, {
                           shouldValidate: false,
                           shouldDirty: true,
                         });
-                        setValue('currentPfIncluded', Boolean(incrementPfIncluded), {
+                        setValue('currentPfIncluded', Boolean(latestIncrement.incrementPfIncluded), {
                           shouldValidate: false,
                           shouldDirty: true,
                         });

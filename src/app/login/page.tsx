@@ -7,7 +7,6 @@ import Image from 'next/image';
 import { FiEye, FiEyeOff, FiLock, FiPhone } from 'react-icons/fi';
 import { useAuth } from '@/context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
-import Link from 'next/link';
 import SocialMediaLinks from '@/components/ui/SocialMediaLinks';
 
 type LoginFormValues = {
@@ -215,14 +214,6 @@ export default function LoginPage() {
         <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200">
           <SocialMediaLinks variant="login" />
         </div>
-      </div>
-      <div className="relative z-10 mt-4 w-full max-w-md text-center">
-        <Link
-          href="/calculator"
-          className="text-sm text-blue-600 hover:text-blue-800 underline"
-        >
-          Open Calculator
-        </Link>
       </div>
     </div>
   );

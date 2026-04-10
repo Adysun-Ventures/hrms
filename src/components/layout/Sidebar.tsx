@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FiUsers, FiMenu, FiX, FiFile, FiHome } from 'react-icons/fi';
+import { FaCalculator } from 'react-icons/fa';
 import { useAuth } from '@/context/AuthContext';
 import { FiMail } from 'react-icons/fi';
 import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
@@ -107,6 +108,12 @@ const Sidebar = () => {
       path: '/dashboard/documents',
       name: 'Documents',
       icon: <FiFile className="w-5 h-5" />
+    });
+
+    menuItems.push({
+      path: '/calculator',
+      name: 'Calculator',
+      icon: <FaCalculator className="w-5 h-5" />,
     });
   }
 

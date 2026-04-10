@@ -8,8 +8,8 @@ export default function CalculatorPage() {
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-semibold text-gray-800">Calculator</h1>
-          <Link href="/login" className="text-sm text-blue-600 hover:text-blue-800 underline">
-            Back to Login
+          <Link href="/dashboard" className="text-sm text-blue-600 hover:text-blue-800 underline">
+            Back
           </Link>
         </div>
         <Link

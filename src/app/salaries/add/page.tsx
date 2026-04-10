@@ -195,8 +195,8 @@ export default function AddSalaryPage() {
   }, [ctc, fixedPay, year, month, leavesCount]);
 
   const adjustedWorkDays = useMemo(() => {
-    return Math.max(0, (Number(calculations.workDays) || 0) - (Number(day) || 0));
-  }, [calculations.workDays, day]);
+    return Math.max(0, Number(calculations.workDays) || 0);
+  }, [calculations.workDays]);
 
   // Use calculated values directly for display
   const leavesDeductAmt = calculations.leavesDeductAmt;
@@ -328,7 +328,7 @@ export default function AddSalaryPage() {
 
       // Use calculated values (form values may be stale)
       const finalGrossSalary = calculations.grossSalary;
-      const finalWorkDays = Math.max(0, (Number(calculations.workDays) || 0) - (Number(data.day) || 0));
+      const finalWorkDays = Math.max(0, Number(calculations.workDays) || 0);
       const finalOtherDeduction = Number(data.otherDeduction || 0) || 0;
       const finalPfDeduct = isPfEnabled ? (calculations.pfDeduct || 0) : 0;
       const finalTotalDeduction =
@@ -585,7 +585,7 @@ export default function AddSalaryPage() {
                 placeholder="Auto-calculated"
               />
               <span className="text-xs text-gray-500">
-                (Auto-calculated: {calculations.monthDays} days - {leavesCount} leaves - {day || 0} day)
+                (Auto-calculated: {calculations.monthDays} days - {leavesCount} leaves)
               </span>
               {errors.workDays && (
                 <p className="mt-1 text-sm text-red-600">{errors.workDays.message}</p>

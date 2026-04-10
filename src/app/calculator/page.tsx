@@ -1,10 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 
 export default function CalculatorPage() {
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <DashboardLayout
+      allowedUserTypes={['admin']}
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Calculator', isCurrent: true },
+      ]}
+    >
       <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-4">
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-xl font-semibold text-gray-800">Calculator</h1>
@@ -22,6 +29,6 @@ export default function CalculatorPage() {
           </p>
         </Link>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

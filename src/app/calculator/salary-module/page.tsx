@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 import {
   calculateMonthlySalary,
   getProfessionalTaxByMonth,
@@ -43,7 +44,14 @@ export default function SalaryModulePage() {
     new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
+    <DashboardLayout
+      allowedUserTypes={['admin']}
+      breadcrumbItems={[
+        { label: 'Dashboard', href: '/dashboard' },
+        { label: 'Calculator', href: '/calculator' },
+        { label: 'Salary Module', isCurrent: true },
+      ]}
+    >
       <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-md p-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-semibold text-gray-800">Salary Calculation Module</h1>
@@ -174,6 +182,6 @@ export default function SalaryModulePage() {
           </div>
         </div>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

@@ -248,37 +248,28 @@ export default function AddSalaryPage() {
             setEmploymentId(latestEmployment.id);
             setValue('employmentId', latestEmployment.id); // Pre-fill employment ID
 
-            // Determine CTC with priority: incrementedCtc > joiningCtc > salary
-            const ctcValue = latestEmployment.incrementedCtc 
-              || latestEmployment.joiningCtc 
-              || latestEmployment.salary 
-              || 0;
+            // Auto-fill from Employment -> Current Salary Information
+            // Fallbacks keep backward compatibility for old records.
+            const ctcValue =
+              Number(latestEmployment.salary ?? latestEmployment.incrementedCtc ?? latestEmployment.joiningCtc ?? 0) || 0;
+            const variablePayValue =
+              Number((latestEmployment as any).currentVariablePay ?? (latestEmployment as any).incrementVariablePay ?? 0) || 0;
+            const fixedPayFromCurrent =
+              Number((latestEmployment as any).currentFixedPay ?? 0) || 0;
+            const fixedPayValue =
+              fixedPayFromCurrent > 0 ? fixedPayFromCurrent : Math.max(0, ctcValue - variablePayValue);
 
-            // Determine Fixed Pay from inHandCtc
-            const fixedPayValue = latestEmployment.inHandCtc || 0;
-            // Determine Variable Pay from employment "Current Salary information" variable
-            const variablePayValue = latestEmployment.currentVariablePay || 0;
-            // PF is stored as a numeric amount on Employment; treat `> 0` as enabled.
+            // Prefer explicit Current PF toggle, fallback to stored PF amount.
             const pfEnabledValue =
-              Number(latestEmployment.pf ?? (latestEmployment as any).employerPF ?? 0) > 0;
+              typeof (latestEmployment as any).currentPfIncluded === 'boolean'
+                ? Boolean((latestEmployment as any).currentPfIncluded)
+                : Number(latestEmployment.pf ?? 0) > 0;
 
-            // Pre-fill CTC only if value exists and is greater than 0
-            if (ctcValue > 0) {
-              setValue('ctc', ctcValue, { shouldValidate: false, shouldDirty: false });
-              toast.success('CTC pre-filled from employment record', { duration: 3000 });
-            }
-
-            // Pre-fill Fixed Pay only if value exists and is greater than 0
-            if (fixedPayValue > 0) {
-              setValue('fixedPay', fixedPayValue, { shouldValidate: false, shouldDirty: false });
-              toast.success('Fixed Pay pre-filled from employment record', { duration: 3000 });
-            }
-
-            setIsPfEnabled(pfEnabledValue);
-
-            // Pre-fill Variable Pay from employment record (Fixed Pay auto-calc uses ctc - variablePay).
+            setValue('ctc', ctcValue, { shouldValidate: false, shouldDirty: false });
             setValue('variablePay', variablePayValue, { shouldValidate: false, shouldDirty: false });
-            toast.success('Variable Pay pre-filled from employment record', { duration: 3000 });
+            setValue('fixedPay', fixedPayValue, { shouldValidate: false, shouldDirty: false });
+            setIsPfEnabled(pfEnabledValue);
+            toast.success('Salary fields auto-filled from Current Salary Information', { duration: 3000 });
           } else {
             if (isEmployeeUser) {
               toast.error('No employment record found for your profile. Please contact HR/Admin.');

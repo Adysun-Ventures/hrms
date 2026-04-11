@@ -18,7 +18,8 @@ import {
   buildProfessionalReferencesArray,
 } from '@/utils/professionalReferenceEmployment';
 import { Employment, Employee } from '@/types';
-import { FiCheckCircle, FiPlus, FiRefreshCw, FiX } from 'react-icons/fi';
+import { FiPlus, FiRefreshCw, FiX } from 'react-icons/fi';
+import { FaSquarePlus } from 'react-icons/fa6';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
@@ -801,9 +802,10 @@ export default function AddEmploymentPage() {
           }}
           actionButtons={[
             {
-              label: isSubmitting ? 'Saving...' : 'Add Employment',
-              icon: <FiPlus />,
+              label: isSubmitting ? 'Creating...' : 'Create Employment',
+              icon: <FaSquarePlus />,
               variant: 'success',
+              pill: true,
               onClick: handleSubmit(onSubmit),
               disabled: isSubmitting
             }
@@ -2148,10 +2150,10 @@ export default function AddEmploymentPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
+                  className="px-5 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
                 >
-                  <FiCheckCircle />
-                  {isSubmitting ? 'Saving...' : 'Add Employment'}
+                  <FaSquarePlus />
+                  {isSubmitting ? 'Creating...' : 'Create Employment'}
                 </button>
               </div>
             </form>

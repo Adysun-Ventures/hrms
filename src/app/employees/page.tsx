@@ -12,6 +12,7 @@ import { useEmployments, useEmploymentsByEmployee } from '@/hooks/useEmployments
 import { useSalariesByEmployee } from '@/hooks/useSalaries';
 import Pagination from '@/components/ui/Pagination';
 import { FaBan, FaCheck, FaRupeeSign, FaSyncAlt, FaTimes } from "react-icons/fa";
+import { FaSquarePlus } from 'react-icons/fa6';
 import Link from 'next/link';
 
 
@@ -641,10 +642,11 @@ useEffect(() => {
           }
           actionButtons={[
             {
-              label: 'Create',
+              label: 'Create Employee',
               href: '/employees/add',
-              icon: <FiPlus />,
+              icon: <FaSquarePlus />,
               variant: 'success' as const,
+              pill: true,
             }
           ]}
           headerClassName="px-6 pt-6 mb-0"

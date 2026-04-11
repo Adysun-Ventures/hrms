@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { FiArrowLeft, FiCheckCircle, FiX } from 'react-icons/fi';
+import { FiArrowLeft, FiX } from 'react-icons/fi';
+import { FaSquarePlus } from 'react-icons/fa6';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TableHeader from '@/components/ui/TableHeader';
 import toast, { Toaster } from 'react-hot-toast';
@@ -476,9 +477,10 @@ export default function AddSalaryPage() {
           }}
           actionButtons={[
             {
-              label: 'Save',
-              icon: <FiCheckCircle />,
+              label: isLoading ? 'Creating...' : 'Create Salary',
+              icon: <FaSquarePlus />,
               variant: 'success',
+              pill: true,
               onClick: handleSubmit(onSubmit),
               disabled: isLoading
             }
@@ -566,10 +568,10 @@ export default function AddSalaryPage() {
               )}
             </div>
 
-            {/* Working Days - Auto-calculated */}
+            {/* Payable Days - Auto-calculated */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Working Days 
+                Payable Days 
               </label>
               <input
                 type="number"
@@ -979,10 +981,10 @@ export default function AddSalaryPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-5 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              <FiCheckCircle className="w-4 h-4" />
-              Save
+              <FaSquarePlus className="w-4 h-4" />
+              {isLoading ? 'Creating...' : 'Create Salary'}
             </button>
           </div>
         </form>

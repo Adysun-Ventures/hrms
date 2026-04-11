@@ -10,6 +10,7 @@ import Pagination from '@/components/ui/Pagination';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { FiDownload, FiEdit, FiEye, FiPlus } from 'react-icons/fi';
 import { FaRupeeSign, FaSyncAlt } from 'react-icons/fa';
+import { FaSquarePlus } from 'react-icons/fa6';
 import { Toaster } from 'react-hot-toast';
 import { pdf } from '@react-pdf/renderer';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -266,9 +267,10 @@ export default function EmployeeMySalaryPage() {
           backButton={{ href: '/employee-dashboard', label: 'Back' }}
           actionButtons={[
             {
-              label: 'Add Salary',
-              icon: <FiPlus className="w-4 h-4" />,
+              label: 'Create Salary',
+              icon: <FaSquarePlus className="w-4 h-4" />,
               variant: 'success',
+              pill: true,
               onClick: () => router.push('/salaries/add?from=employee'),
             },
           ]}

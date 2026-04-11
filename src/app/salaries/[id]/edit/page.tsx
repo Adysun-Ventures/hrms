@@ -585,10 +585,10 @@ export default function EditSalaryPage({ params }: PageParams) {
               )}
             </div>
 
-            {/* Working Days - Auto-calculated */}
+            {/* Payable Days - Auto-calculated */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Working Days 
+                Payable Days 
               </label>
               <input
                 type="number"

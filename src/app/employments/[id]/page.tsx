@@ -278,28 +278,38 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
     fetchAuditNames();
   }, [employment]);
 
-  const hasIncrementDetails = (() => {
-    const arr = employment?.increments;
-    if (Array.isArray(arr) && arr.length > 0) return true;
+  const isIncrementRowMeaningful = (inc: any) => {
+    if (!inc) return false;
+    const incrementDate = String(inc.incrementDate ?? '').trim();
+    const newSalary = Number(inc.newSalary ?? 0) || 0;
+    const incrementedCtc = Number(inc.incrementedCtc ?? 0) || 0;
+    const incrementedInHandCtc = Number(inc.incrementedInHandCtc ?? 0) || 0;
+    const hikePercent = Number(inc.incrementHikePercentWrtJoiningCtc ?? 0) || 0;
+    const variable = Number(inc.incrementVariablePay ?? 0) || 0;
+    const fixed = Number(inc.incrementFixedPay ?? 0) || 0;
+    const otherAllowance = Number(inc.incrementOtherAllowance ?? 0) || 0;
+    const previousDesignation = String(inc.previousDesignation ?? '').trim();
+    const newDesignation = String(inc.newDesignation ?? '').trim();
 
-    const incrementDate = String(employment?.incrementDate ?? '').trim();
-    const newSalary = employment?.newSalary != null ? Number(employment.newSalary) : 0;
-    const incrementedCtc =
-      employment?.incrementedCtc != null ? Number(employment.incrementedCtc) : 0;
-    const incrementedInHandCtc =
-      employment?.incrementedInHandCtc != null ? Number(employment.incrementedInHandCtc) : 0;
-
-    return (
-      Boolean(incrementDate) ||
+    return Boolean(
+      incrementDate ||
+      previousDesignation ||
+      newDesignation ||
       newSalary > 0 ||
       incrementedCtc > 0 ||
-      incrementedInHandCtc > 0
+      incrementedInHandCtc > 0 ||
+      hikePercent > 0 ||
+      variable > 0 ||
+      fixed > 0 ||
+      otherAllowance > 0
     );
-  })();
+  };
 
   const incrementRows = (() => {
     const arr = employment?.increments;
-    if (Array.isArray(arr) && arr.length > 0) return arr;
+    if (Array.isArray(arr) && arr.length > 0) {
+      return arr.filter((inc: any) => isIncrementRowMeaningful(inc));
+    }
     if (
       employment?.incrementDate ||
       employment?.newSalary ||
@@ -313,10 +323,11 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           incrementedCtc: employment.incrementedCtc,
           incrementedInHandCtc: employment.incrementedInHandCtc,
         },
-      ];
+      ].filter((inc: any) => isIncrementRowMeaningful(inc));
     }
     return [];
   })();
+  const hasIncrementDetails = incrementRows.length > 0;
 
   // Calculate real attendance statistics
   const calculateAttendanceStats = () => {
@@ -922,13 +933,13 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                               Increment Date
                             </th>
                             <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
-                              Incremented Salary
+                              Increment CTC
                             </th>
                             <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
-                              Incremented CTC
+                              Increment Variable
                             </th>
                             <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
-                              Incremented In-hand CTC
+                              Increment Fixed
                             </th>
                           </tr>
                         </thead>
@@ -942,13 +953,20 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                                 {inc.incrementDate ? formatDateToDayMonYear(inc.incrementDate) : '-'}
                               </td>
                               <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                                {inc.newSalary ? formatCurrency(Number(inc.newSalary)) : '-'}
+                                {(Number(inc.incrementedCtc ?? 0) || Number(inc.newSalary ?? 0))
+                                  ? formatCurrency(Number(inc.incrementedCtc ?? inc.newSalary))
+                                  : '-'}
                               </td>
                               <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                                {inc.incrementedCtc ? formatCurrency(Number(inc.incrementedCtc)) : '-'}
+                                {inc.incrementVariablePay ? formatCurrency(Number(inc.incrementVariablePay)) : '-'}
                               </td>
                               <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                                {inc.incrementedInHandCtc ? formatCurrency(Number(inc.incrementedInHandCtc)) : '-'}
+                                {(() => {
+                                  const ctc = Number(inc.incrementedCtc ?? 0) || 0;
+                                  const variable = Number(inc.incrementVariablePay ?? 0) || 0;
+                                  const fixed = Number(inc.incrementFixedPay ?? (ctc - variable)) || 0;
+                                  return fixed > 0 ? formatCurrency(fixed) : '-';
+                                })()}
                               </td>
                             </tr>
                           ))}
@@ -1413,7 +1431,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
                   return (
                     <div className="space-y-4">
-                      {increments.map((inc, index) => (
+                      {increments.map((inc: any, index: number) => (
                         <div key={inc.id || index}>
                           <p className="text-sm font-semibold text-gray-500 mb-2">
                             Increment {index + 1}
@@ -1426,21 +1444,134 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-500 mb-1">Incremented Salary</p>
+                              <p className="text-sm text-gray-500 mb-1">Hike % WRT Joining CTC</p>
                               <p className="text-base font-medium text-gray-900">
-                                {inc.newSalary ? formatCurrency(inc.newSalary) : '-'}
+                                {inc.incrementHikePercentWrtJoiningCtc != null
+                                  ? `${Number(inc.incrementHikePercentWrtJoiningCtc).toFixed(2)}%`
+                                  : '-'}
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-500 mb-1">Incremented CTC</p>
+                              <p className="text-sm text-gray-500 mb-1">Increment CTC (₹)</p>
                               <p className="text-base font-medium text-gray-900">
-                                {inc.incrementedCtc ? formatCurrency(inc.incrementedCtc) : '-'}
+                                {(Number(inc.incrementedCtc ?? 0) || Number(inc.newSalary ?? 0))
+                                  ? formatCurrency(Number(inc.incrementedCtc ?? inc.newSalary))
+                                  : '-'}
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-500 mb-1">Incremented In-hand CTC</p>
+                              <p className="text-sm text-gray-500 mb-1">Increment Variable (₹)</p>
                               <p className="text-base font-medium text-gray-900">
-                                {inc.incrementedInHandCtc ? formatCurrency(inc.incrementedInHandCtc) : '-'}
+                                {inc.incrementVariablePay ? formatCurrency(Number(inc.incrementVariablePay)) : '-'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Increment Fixed (₹)</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {(() => {
+                                  const ctc = Number(inc.incrementedCtc ?? 0) || 0;
+                                  const variable = Number(inc.incrementVariablePay ?? 0) || 0;
+                                  const fixed = Number(inc.incrementFixedPay ?? (ctc - variable)) || 0;
+                                  return fixed > 0 ? formatCurrency(fixed) : '-';
+                                })()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Increment Monthly Fixed (₹)</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {(() => {
+                                  const ctc = Number(inc.incrementedCtc ?? 0) || 0;
+                                  const variable = Number(inc.incrementVariablePay ?? 0) || 0;
+                                  const fixed = Number(inc.incrementFixedPay ?? (ctc - variable)) || 0;
+                                  const monthlyFixed = fixed / 12;
+                                  return monthlyFixed > 0 ? formatCurrency(monthlyFixed) : '-';
+                                })()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Basic (₹)</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {(() => {
+                                  const ctc = Number(inc.incrementedCtc ?? 0) || 0;
+                                  const variable = Number(inc.incrementVariablePay ?? 0) || 0;
+                                  const fixed = Number(inc.incrementFixedPay ?? (ctc - variable)) || 0;
+                                  const basic = (fixed / 12) * 0.5;
+                                  return basic > 0 ? formatCurrency(basic) : '-';
+                                })()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">HRA (₹)</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {(() => {
+                                  const ctc = Number(inc.incrementedCtc ?? 0) || 0;
+                                  const variable = Number(inc.incrementVariablePay ?? 0) || 0;
+                                  const fixed = Number(inc.incrementFixedPay ?? (ctc - variable)) || 0;
+                                  const basic = (fixed / 12) * 0.5;
+                                  const hra = basic * 0.4;
+                                  return hra > 0 ? formatCurrency(hra) : '-';
+                                })()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Conveyance Allowance (₹)</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {formatCurrency(2000)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Other Allowance (₹)</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {(() => {
+                                  const ctc = Number(inc.incrementedCtc ?? 0) || 0;
+                                  const variable = Number(inc.incrementVariablePay ?? 0) || 0;
+                                  const fixed = Number(inc.incrementFixedPay ?? (ctc - variable)) || 0;
+                                  const monthlyFixed = fixed / 12;
+                                  const basic = monthlyFixed * 0.5;
+                                  const hra = basic * 0.4;
+                                  const other =
+                                    inc.incrementOtherAllowance != null
+                                      ? Number(inc.incrementOtherAllowance)
+                                      : monthlyFixed - (basic + hra + 2000);
+                                  return other > 0 ? formatCurrency(other) : '-';
+                                })()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Gross Salary (₹)</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {(() => {
+                                  const ctc = Number(inc.incrementedCtc ?? 0) || 0;
+                                  const variable = Number(inc.incrementVariablePay ?? 0) || 0;
+                                  const fixed = Number(inc.incrementFixedPay ?? (ctc - variable)) || 0;
+                                  const monthlyFixed = fixed / 12;
+                                  const basic = monthlyFixed * 0.5;
+                                  const hra = basic * 0.4;
+                                  const other =
+                                    inc.incrementOtherAllowance != null
+                                      ? Number(inc.incrementOtherAllowance)
+                                      : monthlyFixed - (basic + hra + 2000);
+                                  const gross = basic + hra + 2000 + other;
+                                  return gross > 0 ? formatCurrency(gross) : '-';
+                                })()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Is PF</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {Boolean(inc.incrementPfIncluded) ? 'Yes' : 'No'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">Old Designation</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {inc.previousDesignation || '-'}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-500 mb-1">New Designation</p>
+                              <p className="text-base font-medium text-gray-900">
+                                {inc.newDesignation || '-'}
                               </p>
                             </div>
                           </div>

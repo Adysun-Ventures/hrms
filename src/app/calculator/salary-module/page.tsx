@@ -10,30 +10,27 @@ import {
 } from '@/utils/monthlySalaryCalculationUtils';
 
 export default function SalaryModulePage() {
-  const today = new Date();
-  const [day, setDay] = useState<number>(1);
-  const [month, setMonth] = useState<number>(today.getMonth() + 1);
-  const [year, setYear] = useState<number>(today.getFullYear());
-  const [leavesCount, setLeavesCount] = useState<number>(0);
-
   const [ctc, setCtc] = useState<number>(0);
   const [variablePay, setVariablePay] = useState<number>(0);
   const [isPfEnabled, setIsPfEnabled] = useState<boolean>(true);
   const [otherAllowance, setOtherAllowance] = useState<number>(0);
   const [otherDeduction, setOtherDeduction] = useState<number>(0);
-  const [ptDeduct, setPtDeduct] = useState<number>(getProfessionalTaxByMonth(month));
+  const [ptDeduct, setPtDeduct] = useState<number>(() =>
+    getProfessionalTaxByMonth(new Date().getMonth() + 1)
+  );
 
   const fixedPay = useMemo(() => Math.max(0, Number(ctc || 0) - Number(variablePay || 0)), [ctc, variablePay]);
 
   const calculations: MonthlySalaryResult = useMemo(() => {
+    const d = new Date();
     return calculateMonthlySalary({
       ctc: Number(ctc) || 0,
       fixedPay: Number(fixedPay) || 0,
-      year: Number(year) || today.getFullYear(),
-      month: Number(month) || today.getMonth() + 1,
-      leavesCount: Number(leavesCount) || 0,
+      year: d.getFullYear(),
+      month: d.getMonth() + 1,
+      leavesCount: 0,
     });
-  }, [ctc, fixedPay, year, month, leavesCount, today]);
+  }, [ctc, fixedPay]);
 
   const pfDeduct = isPfEnabled ? calculations.pfDeduct || 0 : 0;
   const grossSalary = calculations.basic + calculations.hra + calculations.conveyanceAllowance + (Number(otherAllowance) || 0);
@@ -58,53 +55,6 @@ export default function SalaryModulePage() {
           <Link href="/calculator" className="text-sm text-blue-600 hover:text-blue-800 underline">
             Back
           </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Day</label>
-            <select value={day} onChange={(e) => setDay(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-md">
-              {Array.from({ length: calculations.monthDays || 31 }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>{d}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
-            <select value={month} onChange={(e) => { const m = Number(e.target.value); setMonth(m); setPtDeduct(getProfessionalTaxByMonth(m)); }} className="w-full px-3 py-2 border border-gray-300 rounded-md">
-              <option value={1}>January</option>
-              <option value={2}>February</option>
-              <option value={3}>March</option>
-              <option value={4}>April</option>
-              <option value={5}>May</option>
-              <option value={6}>June</option>
-              <option value={7}>July</option>
-              <option value={8}>August</option>
-              <option value={9}>September</option>
-              <option value={10}>October</option>
-              <option value={11}>November</option>
-              <option value={12}>December</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
-            <select value={year} onChange={(e) => setYear(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-md">
-              {Array.from({ length: (new Date().getFullYear() + 5) - 1990 + 1 }, (_, i) => 1990 + i).map((yr) => (
-                <option key={yr} value={yr}>{yr}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Leave Count</label>
-            <select value={leavesCount} onChange={(e) => setLeavesCount(Number(e.target.value))} className="w-full px-3 py-2 border border-gray-300 rounded-md">
-              {Array.from({ length: 16 }, (_, i) => i).map((l) => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

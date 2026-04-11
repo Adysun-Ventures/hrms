@@ -12,6 +12,7 @@ interface ActionButton {
   variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' | 'info' | 'orange' | 'purple';
   disabled?: boolean;
   hollow?: boolean;
+  pill?: boolean;
 }
 
 interface BackButton {
@@ -160,8 +161,9 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   extraStatValue,
   stackExtraStat = false,
 }) => {
-  const getButtonClasses = (variant: string = 'primary', hollow: boolean = false) => {
-    const baseClasses = 'px-2 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1 sm:gap-2 transition-colors duration-200 text-sm sm:text-base w-full sm:w-auto';
+  const getButtonClasses = (variant: string = 'primary', hollow: boolean = false, pill: boolean = false) => {
+    const shapeClass = pill ? 'rounded-full' : 'rounded-md';
+    const baseClasses = `px-2 sm:px-4 py-2 ${shapeClass} flex items-center justify-center gap-1 sm:gap-2 transition-colors duration-200 text-sm sm:text-base w-full sm:w-auto`;
     
     if (hollow) {
       switch (variant) {
@@ -270,7 +272,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                     className={`${
                       button.disabled
                         ? 'px-2 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base w-full sm:w-auto bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : getButtonClasses(button.variant, button.hollow)
+                        : getButtonClasses(button.variant, button.hollow, button.pill)
                     }`}
                     onClick={button.onClick}
                   >
@@ -287,7 +289,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                   className={`${
                     button.disabled
                       ? 'px-2 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base w-full sm:w-auto bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : getButtonClasses(button.variant, button.hollow)
+                      : getButtonClasses(button.variant, button.hollow, button.pill)
                   }`}
                 >
                   {buttonContent}
@@ -350,7 +352,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                     className={`${
                       button.disabled
                         ? 'px-2 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base w-full sm:w-auto bg-gray-300 text-gray-500 cursor-not-allowed'
-                        : getButtonClasses(button.variant, button.hollow)
+                        : getButtonClasses(button.variant, button.hollow, button.pill)
                     }`}
                     onClick={button.onClick}
                   >
@@ -367,7 +369,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                   className={`${
                     button.disabled
                       ? 'px-2 sm:px-4 py-2 rounded-md flex items-center justify-center gap-1 sm:gap-2 text-sm sm:text-base w-full sm:w-auto bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : getButtonClasses(button.variant, button.hollow)
+                      : getButtonClasses(button.variant, button.hollow, button.pill)
                   }`}
                 >
                   {buttonContent}

@@ -7,7 +7,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { addEmployee } from '@/utils/firebaseUtils';
 import { getAdminDataForAudit, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere } from '@/utils/firebaseUtils';
 import { Employee } from '@/types';
-import { FiCheckCircle, FiX, FiPlus, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FiX, FiPlus, FiEye, FiEyeOff } from 'react-icons/fi';
+import { FaSquarePlus } from 'react-icons/fa6';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
@@ -78,6 +79,13 @@ export default function AddEmployeePage() {
   };
   const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
   const currentAddressValue = watch('currentAddress');
+  const phoneValue = watch('phone');
+
+  const getAutoPasswordFromMobile = (mobile?: string) => {
+    const digits = String(mobile || '').replace(/\D/g, '');
+    if (digits.length !== 10) return '';
+    return `${digits.slice(-5)}@@##`;
+  };
 
   // Helper functions for managing education entries
   // Check if we can add more entries
@@ -201,6 +209,7 @@ export default function AddEmployeePage() {
     if (cleanMobile) {
       if (cleanMobile.length === 10) {
         setValue('phone', cleanMobile as any, { shouldValidate: true });
+        setValue('password', getAutoPasswordFromMobile(cleanMobile) as any, { shouldValidate: true });
       } else {
         issues.push('Mobile must be 10 digits');
       }
@@ -279,6 +288,7 @@ export default function AddEmployeePage() {
       }
 
       applyParsedEmployeeData(parsed);
+      await handleSubmit((formData) => onSubmit(formData, true))();
     } catch (err: any) {
       const message = err?.message || 'Parsing failed. Please try again.';
       setAutoFillError(message);
@@ -288,7 +298,7 @@ export default function AddEmployeePage() {
     }
   };
 
-  const onSubmit = async (data: EmployeeFormData) => {
+  const onSubmit = async (data: EmployeeFormData, redirectToCreatedEmployeeView = false) => {
     try {
       setIsSubmitting(true);
       setError(null);
@@ -357,9 +367,13 @@ export default function AddEmployeePage() {
       delete employeeDataWithAudit.twelthStandard;
       delete employeeDataWithAudit.diploma;
 
-      await addEmployee(employeeDataWithAudit);
+      const createdEmployee = await addEmployee(employeeDataWithAudit);
       toast.success('Employee added successfully!', { id: 'add-employee' });
-      router.push('/employees');
+      if (redirectToCreatedEmployeeView) {
+        router.push(`/employees/${createdEmployee.id}`);
+      } else {
+        router.push('/employees');
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to add employee';
       setError(errorMessage);
@@ -374,6 +388,13 @@ export default function AddEmployeePage() {
       setValue('permanentAddress', currentAddressValue || '');
     }
   }, [sameAsCurrentAddress, currentAddressValue, setValue]);
+
+  useEffect(() => {
+    const generatedPassword = getAutoPasswordFromMobile(phoneValue);
+    if (generatedPassword) {
+      setValue('password', generatedPassword as any, { shouldValidate: true });
+    }
+  }, [phoneValue, setValue]);
 
   return (
     <DashboardLayout
@@ -405,10 +426,11 @@ export default function AddEmployeePage() {
           }}
           actionButtons={[
             {
-              label: isSubmitting ? 'Saving...' : 'Save',
-              icon: <FiCheckCircle />,
+              label: isSubmitting ? 'Creating...' : 'Create Employee',
+              icon: <FaSquarePlus />,
               variant: 'success',
-              onClick: handleSubmit(onSubmit),
+              pill: true,
+              onClick: handleSubmit((data) => onSubmit(data, false)),
               disabled: isSubmitting
             }
           ]}
@@ -421,7 +443,7 @@ export default function AddEmployeePage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit((data) => onSubmit(data, false))}>
           <div className="bg-white p-4 mb-4 rounded-lg">
             <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
               Auto Fill Employee Details
@@ -509,7 +531,7 @@ export default function AddEmployeePage() {
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter password"
+                      placeholder="Auto: last 5 mobile digits + @@##"
                       {...register('password', {
                         required: 'Password is required',
                         minLength: {
@@ -1353,10 +1375,10 @@ export default function AddEmployeePage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
+              className="px-5 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
             >
-              <FiCheckCircle />
-              {isSubmitting ? 'Saving...' : 'Save'}
+              <FaSquarePlus />
+              {isSubmitting ? 'Creating...' : 'Create Employee'}
             </button>
           </div>
         </form>

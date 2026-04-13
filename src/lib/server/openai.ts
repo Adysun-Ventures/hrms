@@ -8,16 +8,35 @@ const cleanEnvValue = (value?: string) =>
     .trim()
     .replace(/^['"]|['"]$/g, '');
 
+const extractKeyFromEnvText = (text: string): string => {
+  const lines = text.split(/\r?\n/);
+  const keyLine =
+    lines.find((row) => row.trim().startsWith('OPENAI_API_KEY=')) ||
+    lines.find((row) => row.trim().startsWith('NEXT_PUBLIC_OPENAI_API_KEY='));
+  if (!keyLine) return '';
+  return cleanEnvValue(keyLine.split('=').slice(1).join('='));
+};
+
 const readKeyFromEnvFile = (): string => {
   try {
-    const envPath = path.join(process.cwd(), '.env');
-    if (!fs.existsSync(envPath)) return '';
-    const text = fs.readFileSync(envPath, 'utf8');
-    const line = text
-      .split(/\r?\n/)
-      .find((row) => row.trim().startsWith('OPENAI_API_KEY='));
-    if (!line) return '';
-    return cleanEnvValue(line.split('=').slice(1).join('='));
+    const cwd = process.cwd();
+    const candidates = [
+      path.join(cwd, '.env.local'),
+      path.join(cwd, '.env'),
+      path.join(cwd, '..', '.env.local'),
+      path.join(cwd, '..', '.env'),
+      path.join(cwd, 'hrms', '.env.local'),
+      path.join(cwd, 'hrms', '.env'),
+    ];
+
+    for (const envPath of candidates) {
+      if (!fs.existsSync(envPath)) continue;
+      const text = fs.readFileSync(envPath, 'utf8');
+      const key = extractKeyFromEnvText(text);
+      if (key) return key;
+    }
+
+    return '';
   } catch {
     return '';
   }

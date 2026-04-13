@@ -1,6 +1,8 @@
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
 
+export const runtime = 'nodejs';
+
 type ParsedEmployeeData = {
   fullName: string;
   dateOfBirth: string;
@@ -39,10 +41,15 @@ const sanitize = (raw: any): ParsedEmployeeData => ({
 
 export async function POST(request: Request) {
   try {
-    const apiKey = process.env.OPENAI_API_KEY;
+    const rawApiKey =
+      process.env.OPENAI_API_KEY ||
+      process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
+      process.env.OPENAI_APIKEY ||
+      '';
+    const apiKey = String(rawApiKey).trim().replace(/^['"]|['"]$/g, '');
     if (!apiKey) {
       return NextResponse.json(
-        { error: 'OPENAI_API_KEY is not configured on server' },
+        { error: 'OPENAI_API_KEY is not configured on server. Please set it in hrms/.env and restart the dev server.' },
         { status: 500 }
       );
     }

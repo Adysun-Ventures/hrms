@@ -1,5 +1,7 @@
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
+import fs from 'fs';
+import path from 'path';
 
 export const runtime = 'nodejs';
 
@@ -39,14 +41,34 @@ const sanitize = (raw: any): ParsedEmployeeData => ({
   panCard: String(raw?.panCard || '').trim(),
 });
 
+const normalizeApiKey = (value?: string) =>
+  String(value || '').trim().replace(/^['"]|['"]$/g, '');
+
+const readApiKeyFromEnvFile = () => {
+  try {
+    const envPath = path.join(process.cwd(), '.env');
+    if (!fs.existsSync(envPath)) return '';
+    const raw = fs.readFileSync(envPath, 'utf8');
+    const line = raw
+      .split(/\r?\n/)
+      .find((l) => l.trim().startsWith('OPENAI_API_KEY='));
+    if (!line) return '';
+    const value = line.split('=').slice(1).join('=');
+    return normalizeApiKey(value);
+  } catch {
+    return '';
+  }
+};
+
 export async function POST(request: Request) {
   try {
-    const rawApiKey =
+    const rawApiKey = normalizeApiKey(
       process.env.OPENAI_API_KEY ||
       process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
       process.env.OPENAI_APIKEY ||
-      '';
-    const apiKey = String(rawApiKey).trim().replace(/^['"]|['"]$/g, '');
+      ''
+    );
+    const apiKey = rawApiKey || readApiKeyFromEnvFile();
     if (!apiKey) {
       return NextResponse.json(
         { error: 'OPENAI_API_KEY is not configured on server. Please set it in hrms/.env and restart the dev server.' },

@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export const runtime = 'nodejs';
 
@@ -41,20 +41,21 @@ const sanitize = (raw: any): ParsedEmployeeData => ({
   panCard: String(raw?.panCard || '').trim(),
 });
 
-const normalizeApiKey = (value?: string) =>
-  String(value || '').trim().replace(/^['"]|['"]$/g, '');
+const cleanEnvValue = (value?: string) =>
+  String(value || '')
+    .trim()
+    .replace(/^['"]|['"]$/g, '');
 
-const readApiKeyFromEnvFile = () => {
+const readKeyFromEnvFile = (): string => {
   try {
     const envPath = path.join(process.cwd(), '.env');
     if (!fs.existsSync(envPath)) return '';
-    const raw = fs.readFileSync(envPath, 'utf8');
-    const line = raw
+    const text = fs.readFileSync(envPath, 'utf8');
+    const line = text
       .split(/\r?\n/)
-      .find((l) => l.trim().startsWith('OPENAI_API_KEY='));
+      .find((row) => row.trim().startsWith('OPENAI_API_KEY='));
     if (!line) return '';
-    const value = line.split('=').slice(1).join('=');
-    return normalizeApiKey(value);
+    return cleanEnvValue(line.split('=').slice(1).join('='));
   } catch {
     return '';
   }
@@ -62,13 +63,13 @@ const readApiKeyFromEnvFile = () => {
 
 export async function POST(request: Request) {
   try {
-    const rawApiKey = normalizeApiKey(
+    const rawApiKey =
       process.env.OPENAI_API_KEY ||
       process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
       process.env.OPENAI_APIKEY ||
-      ''
-    );
-    const apiKey = rawApiKey || readApiKeyFromEnvFile();
+      readKeyFromEnvFile() ||
+      '';
+    const apiKey = cleanEnvValue(rawApiKey);
     if (!apiKey) {
       return NextResponse.json(
         { error: 'OPENAI_API_KEY is not configured on server. Please set it in hrms/.env and restart the dev server.' },

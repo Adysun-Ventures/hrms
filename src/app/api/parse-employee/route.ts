@@ -1,7 +1,5 @@
-import OpenAI from 'openai';
 import { NextResponse } from 'next/server';
-import fs from 'node:fs';
-import path from 'node:path';
+import { getOpenAIClient, getOpenAIKey } from '@/lib/server/openai';
 
 export const runtime = 'nodejs';
 
@@ -41,35 +39,9 @@ const sanitize = (raw: any): ParsedEmployeeData => ({
   panCard: String(raw?.panCard || '').trim(),
 });
 
-const cleanEnvValue = (value?: string) =>
-  String(value || '')
-    .trim()
-    .replace(/^['"]|['"]$/g, '');
-
-const readKeyFromEnvFile = (): string => {
-  try {
-    const envPath = path.join(process.cwd(), '.env');
-    if (!fs.existsSync(envPath)) return '';
-    const text = fs.readFileSync(envPath, 'utf8');
-    const line = text
-      .split(/\r?\n/)
-      .find((row) => row.trim().startsWith('OPENAI_API_KEY='));
-    if (!line) return '';
-    return cleanEnvValue(line.split('=').slice(1).join('='));
-  } catch {
-    return '';
-  }
-};
-
 export async function POST(request: Request) {
   try {
-    const rawApiKey =
-      process.env.OPENAI_API_KEY ||
-      process.env.NEXT_PUBLIC_OPENAI_API_KEY ||
-      process.env.OPENAI_APIKEY ||
-      readKeyFromEnvFile() ||
-      '';
-    const apiKey = cleanEnvValue(rawApiKey);
+    const apiKey = getOpenAIKey();
     if (!apiKey) {
       return NextResponse.json(
         { error: 'OPENAI_API_KEY is not configured on server. Please set it in hrms/.env and restart the dev server.' },
@@ -83,7 +55,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'text is required' }, { status: 400 });
     }
 
-    const client = new OpenAI({ apiKey });
+    const client = getOpenAIClient();
     const completion = await client.chat.completions.create({
       model: 'gpt-4o-mini',
       response_format: { type: 'json_object' },

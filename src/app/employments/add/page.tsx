@@ -18,8 +18,7 @@ import {
   buildProfessionalReferencesArray,
 } from '@/utils/professionalReferenceEmployment';
 import { Employment, Employee } from '@/types';
-import { FiPlus, FiRefreshCw, FiX } from 'react-icons/fi';
-import { FaSquarePlus } from 'react-icons/fa6';
+import { FiCheckCircle, FiPlus, FiRefreshCw, FiX } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
@@ -103,6 +102,7 @@ interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   currentPfIncluded?: boolean;
 
   // Job details
+  joiningDesignation?: string;
   jobTitle: string;
   department: string;
   location: string;
@@ -124,6 +124,9 @@ export default function AddEmploymentPage() {
   const [loading, setLoading] = useState(true);
   const [preSelectedEmployee, setPreSelectedEmployee] = useState<Employee | null>(null);
   const [showIncrementDetails, setShowIncrementDetails] = useState(false);
+  const [aiIncrementCount, setAiIncrementCount] = useState(1);
+  const [joiningCalcMode, setJoiningCalcMode] = useState<'ctc' | 'variable' | 'fixed' | 'other'>('variable');
+  const [currentCalcMode, setCurrentCalcMode] = useState<'ctc' | 'variable' | 'fixed' | 'other'>('variable');
   // Salary breakdown sections removed as requested.
   const generatedEmploymentIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedIncrementsRef = useRef(false);
@@ -165,7 +168,7 @@ export default function AddEmploymentPage() {
             ]),
       ];
 
-  const { register, handleSubmit, formState: { errors, dirtyFields }, watch, setValue, control } = useForm<EmploymentFormData>({
+  const { register, handleSubmit, formState: { errors, dirtyFields }, watch, setValue, control, getValues } = useForm<EmploymentFormData>({
     defaultValues: {
       employmentId: 'ADV',
       isResignation: false,
@@ -184,6 +187,7 @@ export default function AddEmploymentPage() {
     fields: incrementFields,
     append: appendIncrement,
     remove: removeIncrement,
+    replace: replaceIncrements,
   } = useFieldArray({
     control,
     name: 'increments' as any,
@@ -270,29 +274,116 @@ export default function AddEmploymentPage() {
 
   // Salary calculations removed as requested.
 
-  // Joining Fixed is read-only and computed as: joiningFixedPay = joiningCtc - joiningVariablePay
+  // Joining Salary supports reverse/dynamic calculation:
+  // - ctc/variable mode: fixed = ctc - variable, other = formula
+  // - fixed mode: ctc = fixed + variable, other = formula
+  // - other mode: fixed from other formula, then ctc = fixed + variable
   const joiningCtcValue = watch('joiningCtc');
   const joiningVariablePayValue = watch('joiningVariablePay');
   const joiningFixedPayValue = watch('joiningFixedPay');
+  const joiningOtherAllowanceManualValue = watch('joiningOtherAllowance');
   const joiningPfIncluded = watch('joiningPfIncluded') || false;
 
   useEffect(() => {
     const ctc = Number(joiningCtcValue ?? 0) || 0;
     const variable = Number(joiningVariablePayValue ?? 0) || 0;
-    const fixed = ctc - variable;
-    setValue('joiningFixedPay', fixed, { shouldValidate: false, shouldDirty: true });
-  }, [joiningCtcValue, joiningVariablePayValue, setValue]);
+    const fixed = Number(joiningFixedPayValue ?? 0) || 0;
+    const other = Number(joiningOtherAllowanceManualValue ?? 0) || 0;
+
+    const maybeSet = (name: any, next: number, current: number) => {
+      if (Math.abs((current || 0) - (next || 0)) > 0.01) {
+        setValue(name, Number(next.toFixed(2)) as any, { shouldValidate: false, shouldDirty: true });
+      }
+    };
+
+    if (joiningCalcMode === 'ctc' || joiningCalcMode === 'variable') {
+      const computedFixed = ctc - variable;
+      const monthlyFixed = computedFixed / 12;
+      const basic = monthlyFixed * 0.5;
+      const hra = basic * 0.4;
+      const computedOther = monthlyFixed - (basic + hra + 2000);
+      maybeSet('joiningFixedPay', computedFixed, fixed);
+      maybeSet('joiningOtherAllowance', computedOther, other);
+      return;
+    }
+
+    if (joiningCalcMode === 'fixed') {
+      const computedCtc = fixed + variable;
+      const monthlyFixed = fixed / 12;
+      const basic = monthlyFixed * 0.5;
+      const hra = basic * 0.4;
+      const computedOther = monthlyFixed - (basic + hra + 2000);
+      maybeSet('joiningCtc', computedCtc, ctc);
+      maybeSet('joiningOtherAllowance', computedOther, other);
+      return;
+    }
+
+    const monthlyFixedFromOther = (other + 2000) / 0.3;
+    const computedFixed = monthlyFixedFromOther * 12;
+    const computedCtc = computedFixed + variable;
+    maybeSet('joiningFixedPay', computedFixed, fixed);
+    maybeSet('joiningCtc', computedCtc, ctc);
+  }, [
+    joiningCtcValue,
+    joiningVariablePayValue,
+    joiningFixedPayValue,
+    joiningOtherAllowanceManualValue,
+    joiningCalcMode,
+    setValue,
+  ]);
 
   const currentCtcValue = watch('salary');
   const currentVariablePayValue = watch('currentVariablePay');
   const currentFixedPayValue = watch('currentFixedPay');
+  const currentOtherAllowanceManualValue = watch('currentOtherAllowance');
 
   useEffect(() => {
     const ctc = Number(currentCtcValue ?? 0) || 0;
     const variable = Number(currentVariablePayValue ?? 0) || 0;
-    const fixed = ctc - variable;
-    setValue('currentFixedPay', fixed, { shouldValidate: false, shouldDirty: true });
-  }, [currentCtcValue, currentVariablePayValue, setValue]);
+    const fixed = Number(currentFixedPayValue ?? 0) || 0;
+    const other = Number(currentOtherAllowanceManualValue ?? 0) || 0;
+
+    const maybeSet = (name: any, next: number, current: number) => {
+      if (Math.abs((current || 0) - (next || 0)) > 0.01) {
+        setValue(name, Number(next.toFixed(2)) as any, { shouldValidate: false, shouldDirty: true });
+      }
+    };
+
+    if (currentCalcMode === 'ctc' || currentCalcMode === 'variable') {
+      const computedFixed = ctc - variable;
+      const monthlyFixed = computedFixed / 12;
+      const basic = monthlyFixed * 0.5;
+      const hra = basic * 0.4;
+      const computedOther = monthlyFixed - (basic + hra + 2000);
+      maybeSet('currentFixedPay', computedFixed, fixed);
+      maybeSet('currentOtherAllowance', computedOther, other);
+      return;
+    }
+
+    if (currentCalcMode === 'fixed') {
+      const computedCtc = fixed + variable;
+      const monthlyFixed = fixed / 12;
+      const basic = monthlyFixed * 0.5;
+      const hra = basic * 0.4;
+      const computedOther = monthlyFixed - (basic + hra + 2000);
+      maybeSet('salary', computedCtc, ctc);
+      maybeSet('currentOtherAllowance', computedOther, other);
+      return;
+    }
+
+    const monthlyFixedFromOther = (other + 2000) / 0.3;
+    const computedFixed = monthlyFixedFromOther * 12;
+    const computedCtc = computedFixed + variable;
+    maybeSet('currentFixedPay', computedFixed, fixed);
+    maybeSet('salary', computedCtc, ctc);
+  }, [
+    currentCtcValue,
+    currentVariablePayValue,
+    currentFixedPayValue,
+    currentOtherAllowanceManualValue,
+    currentCalcMode,
+    setValue,
+  ]);
 
   const joiningMonthlyFixed = (Number(joiningFixedPayValue ?? 0) || 0) / 12;
   const joiningBasic = joiningMonthlyFixed * 0.5;
@@ -323,14 +414,6 @@ export default function AddEmploymentPage() {
   const incrementPfIncluded = watch('incrementPfIncluded') || false;
 
   useEffect(() => {
-    if ((dirtyFields as any)?.joiningOtherAllowance) return;
-    setValue('joiningOtherAllowance', joiningOtherAllowanceCalculated, {
-      shouldValidate: false,
-      shouldDirty: false,
-    });
-  }, [dirtyFields, joiningOtherAllowanceCalculated, setValue]);
-
-  useEffect(() => {
     if ((dirtyFields as any)?.currentOtherAllowance) return;
     setValue('currentOtherAllowance', currentOtherAllowanceCalculated, {
       shouldValidate: false,
@@ -352,9 +435,9 @@ export default function AddEmploymentPage() {
           incrementedCtc: Number(joiningCtcValue ?? 0) || 0,
           incrementVariablePay: Number(joiningVariablePayValue ?? 0) || 0,
           incrementFixedPay: Number(joiningFixedPayValue ?? 0) || 0,
-          incrementOtherAllowance: Number(joiningOtherAllowanceValue ?? 0) || 0,
+          incrementOtherAllowance: undefined,
           incrementPfIncluded: false,
-          previousDesignation: '',
+          previousDesignation: String(watch('joiningDesignation') || '').trim(),
           newDesignation: '',
         } as any,
         { shouldFocus: false }
@@ -463,6 +546,197 @@ export default function AddEmploymentPage() {
       incrementPfIncluded,
       incrementPf,
     };
+  };
+
+  const getDefaultIncrementVariablePay = (incrementCtc: number) => {
+    const ctc = Number(incrementCtc ?? 0) || 0;
+    if (ctc >= 1000000 && ctc <= 1400000) return 100000;
+    if (ctc >= 800000 && ctc < 1000000) return 70000;
+    if (ctc >= 600000 && ctc < 800000) return 60000;
+    if (ctc >= 500000 && ctc < 600000) return 50000;
+    return 40000;
+  };
+
+  const buildNextIncrementRow = (previousIncrement: any | null) => {
+    const previousIncrementCtc = Number(previousIncrement?.incrementedCtc ?? joiningCtcValue ?? 0) || 0;
+    const currentIncrementCtc = Number(previousIncrement?.incrementedCtc ?? joiningCtcValue ?? 0) || 0;
+    const defaultHikePercent =
+      previousIncrement?.incrementHikePercentWrtJoiningCtc != null
+        ? Number(previousIncrement.incrementHikePercentWrtJoiningCtc)
+        : previousIncrementCtc > 0
+          ? Number((((currentIncrementCtc - previousIncrementCtc) / previousIncrementCtc) * 100).toFixed(2))
+          : 0;
+
+    return {
+      incrementDate: '',
+      incrementedCtc: currentIncrementCtc,
+      incrementHikePercentWrtJoiningCtc: defaultHikePercent,
+      incrementVariablePay: getDefaultIncrementVariablePay(currentIncrementCtc),
+      incrementFixedPay:
+        Number(previousIncrement?.incrementFixedPay ?? joiningFixedPayValue ?? 0) || 0,
+      incrementOtherAllowance: undefined,
+      incrementPfIncluded:
+        previousIncrement?.incrementPfIncluded != null
+          ? Boolean(previousIncrement.incrementPfIncluded)
+          : false,
+      previousDesignation: previousIncrement
+        ? String(previousIncrement?.newDesignation || '').trim()
+        : String(watch('joiningDesignation') || '').trim(),
+      newDesignation: '',
+    };
+  };
+
+  const handleAddIncrement = () => {
+    if (!showIncrementDetails) {
+      setShowIncrementDetails(true);
+    }
+
+    const currentIncrements = (getValues('increments') as any[]) || [];
+    const previousIncrement =
+      currentIncrements.length > 0 ? currentIncrements[currentIncrements.length - 1] : null;
+
+    appendIncrement(buildNextIncrementRow(previousIncrement) as any);
+  };
+
+  const handleCreateIncrementsWithAi = () => {
+    if (!showIncrementDetails) {
+      setShowIncrementDetails(true);
+    }
+
+    const count = Math.max(1, Math.min(7, Number(aiIncrementCount) || 1));
+    const joining = Number(joiningCtcValue ?? 0) || 0;
+    const current = Number(watch('salary') ?? 0) || 0;
+    if (joining <= 0) {
+      toast.error('Joining CTC must be greater than 0 to create increments.');
+      return;
+    }
+    if (current <= 0) {
+      toast.error('FIll Current Salary Information Frist');
+      return;
+    }
+    if (current <= joining) {
+      toast.error('Current salary must be greater than Joining CTC for increments.');
+      return;
+    }
+
+    const currentDate = new Date();
+    const joiningDateRaw = watch('joiningDate');
+    const parsedJoiningDate = joiningDateRaw ? new Date(joiningDateRaw as any) : null;
+    const joiningDate =
+      parsedJoiningDate && !Number.isNaN(parsedJoiningDate.getTime())
+        ? parsedJoiningDate
+        : null;
+    const rows: any[] = [];
+
+    const toInputDate = (date: Date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
+
+    const dateRangeMs =
+      joiningDate && currentDate.getTime() > joiningDate.getTime()
+        ? currentDate.getTime() - joiningDate.getTime()
+        : 0;
+
+    const ratio = current / joining;
+    const buildVariableHikePercents = (): number[] => {
+      const isStrictlyAscending = (arr: number[]) =>
+        arr.length > 1 && arr.every((v, idx) => idx === 0 || arr[idx - 1] < v);
+      const shuffle = (arr: number[]) => {
+        const next = [...arr];
+        for (let i = next.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [next[i], next[j]] = [next[j], next[i]];
+        }
+        return next;
+      };
+
+      if (count === 1) {
+        const onlyPct = ((ratio - 1) * 100);
+        return [Number(Math.max(0, onlyPct).toFixed(2))];
+      }
+
+      const MIN_FAIR_HIKE = 5;
+      const MAX_FAIR_HIKE = 25;
+
+      for (let attempt = 0; attempt < 2000; attempt += 1) {
+        const basePercents: number[] = [];
+        for (let i = 0; i < count - 1; i += 1) {
+          const p = Number((MIN_FAIR_HIKE + Math.random() * (MAX_FAIR_HIKE - MIN_FAIR_HIKE)).toFixed(2));
+          basePercents.push(p);
+        }
+
+        const productBeforeLast = basePercents.reduce((acc, p) => acc * (1 + p / 100), 1);
+        const lastPct = ((ratio / productBeforeLast) - 1) * 100;
+        const isDistinctFromOthers = basePercents.every((p) => Math.abs(p - lastPct) > 0.01);
+
+        if (lastPct >= MIN_FAIR_HIKE && lastPct <= MAX_FAIR_HIKE && isDistinctFromOthers) {
+          const randomized = shuffle([...basePercents, Number(lastPct.toFixed(2))]);
+          if (!isStrictlyAscending(randomized)) {
+            return randomized;
+          }
+        }
+      }
+
+      // Guaranteed fallback for any increment count:
+      // derive average compound hike and add slight random variation.
+      const avgPct = (Math.pow(ratio, 1 / count) - 1) * 100;
+      const fallback = Array.from({ length: count }, (_, idx) => {
+        const jitter = (Math.random() - 0.5) * 4; // -2..+2
+        const adaptiveMin = Math.min(MIN_FAIR_HIKE, avgPct);
+        const adaptiveMax = Math.max(MAX_FAIR_HIKE, avgPct);
+        const val = Math.max(adaptiveMin, Math.min(adaptiveMax, avgPct + jitter + idx * 0.03));
+        return Number(val.toFixed(2));
+      });
+      const randomized = shuffle(fallback);
+      if (!isStrictlyAscending(randomized)) return randomized;
+      return randomized.reverse();
+    };
+
+    const hikePercents = buildVariableHikePercents();
+
+    let previousSalary = joining;
+    let previousIncrement: any = null;
+    for (let i = 1; i <= count; i += 1) {
+      const incrementDateTime =
+        dateRangeMs > 0 && joiningDate
+          ? joiningDate.getTime() + (dateRangeMs * i) / count
+          : currentDate.getTime();
+      const incrementDate = toInputDate(new Date(incrementDateTime));
+      const hikePercent = Number(hikePercents[i - 1] ?? 0);
+      const salaryAfterIncrement =
+        i === count
+          ? Number(current.toFixed(2))
+          : Number((previousSalary * (1 + hikePercent / 100)).toFixed(2));
+      const incrementVariable = getDefaultIncrementVariablePay(salaryAfterIncrement);
+      const incrementFixed = Number((salaryAfterIncrement - incrementVariable).toFixed(2));
+
+      const row = {
+        incrementDate,
+        incrementedCtc: salaryAfterIncrement,
+        incrementHikePercentWrtJoiningCtc: hikePercent,
+        incrementVariablePay: incrementVariable,
+        incrementFixedPay: incrementFixed,
+        incrementOtherAllowance: undefined,
+        incrementPfIncluded:
+          previousIncrement?.incrementPfIncluded != null
+            ? Boolean(previousIncrement.incrementPfIncluded)
+            : false,
+        previousDesignation: previousIncrement
+          ? String(previousIncrement?.newDesignation || '').trim()
+          : String(watch('joiningDesignation') || '').trim(),
+        newDesignation: '',
+      };
+
+      rows.push(row);
+      previousIncrement = row;
+      previousSalary = salaryAfterIncrement;
+    }
+
+    replaceIncrements(rows as any);
+    toast.success('Increment plan generated.');
   };
 
   // Ensure ADV prefix is maintained in employmentId
@@ -677,12 +951,7 @@ export default function AddEmploymentPage() {
                   !Number.isNaN(Number(inc?.incrementFixedPay))
                     ? Number(inc.incrementFixedPay)
                     : undefined,
-                incrementOtherAllowance:
-                  inc?.incrementOtherAllowance !== undefined &&
-                  inc?.incrementOtherAllowance !== null &&
-                  !Number.isNaN(Number(inc?.incrementOtherAllowance))
-                    ? Number(inc.incrementOtherAllowance)
-                    : undefined,
+                incrementOtherAllowance: Number(getIncrementSalaryBreakdown(inc).incrementOtherAllowance) || 0,
                 incrementPfIncluded: Boolean(inc?.incrementPfIncluded),
                 previousDesignation: String(inc?.previousDesignation || ''),
                 newDesignation: String(inc?.newDesignation || ''),
@@ -722,7 +991,8 @@ export default function AddEmploymentPage() {
         (formattedData as any).incrementHikePercentWrtJoiningCtc = latest?.incrementHikePercentWrtJoiningCtc;
         (formattedData as any).incrementVariablePay = latest?.incrementVariablePay;
         (formattedData as any).incrementFixedPay = latest?.incrementFixedPay;
-        (formattedData as any).incrementOtherAllowance = latest?.incrementOtherAllowance;
+        (formattedData as any).incrementOtherAllowance =
+          Number(getIncrementSalaryBreakdown(latest).incrementOtherAllowance) || 0;
         (formattedData as any).incrementPfIncluded = Boolean(latest?.incrementPfIncluded);
       }
 
@@ -802,8 +1072,8 @@ export default function AddEmploymentPage() {
           }}
           actionButtons={[
             {
-              label: isSubmitting ? 'Creating...' : 'Create Employment',
-              icon: <FaSquarePlus />,
+              label: isSubmitting ? 'Saving...' : 'Save',
+              icon: <FiCheckCircle />,
               variant: 'success',
               pill: true,
               onClick: handleSubmit(onSubmit),
@@ -1352,6 +1622,34 @@ export default function AddEmploymentPage() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <span className="text-red-500 mr-1">*</span> Joining Date
+                    </label>
+                    <CustomDateInput
+                      name="joiningDateInline"
+                      value={watch('joiningDate') || ''}
+                      onChange={(value) => setValue('joiningDate', value as any, { shouldValidate: true, shouldDirty: true })}
+                      placeholder="Select joining date"
+                      className="px-3 py-2"
+                    />
+                    {errors.joiningDate && (
+                      <p className="mt-1 text-sm text-red-600">{errors.joiningDate.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Joining Designation
+                    </label>
+                    <input
+                      type="text"
+                      {...register('joiningDesignation')}
+                      placeholder="Enter joining designation"
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       <span className="text-red-500 mr-1">*</span> Joining CTC (₹)
                     </label>
                     <input
@@ -1362,6 +1660,7 @@ export default function AddEmploymentPage() {
                         required: 'Joining CTC is required',
                         min: { value: 0, message: 'Joining CTC must be positive' },
                         valueAsNumber: true,
+                        onChange: () => setJoiningCalcMode('ctc'),
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
@@ -1381,6 +1680,7 @@ export default function AddEmploymentPage() {
                       {...register('joiningVariablePay', {
                         min: { value: 0, message: 'Amount must be positive' },
                         valueAsNumber: true,
+                        onChange: () => setJoiningCalcMode('variable'),
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
@@ -1397,9 +1697,9 @@ export default function AddEmploymentPage() {
                       {...register('joiningFixedPay', {
                         min: { value: 0, message: 'Amount must be positive' },
                         valueAsNumber: true,
+                        onChange: () => setJoiningCalcMode('fixed'),
                       })}
-                      readOnly
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
                   </div>
 
@@ -1465,6 +1765,7 @@ export default function AddEmploymentPage() {
                       placeholder="Other Allowance"
                       {...register('joiningOtherAllowance', {
                         valueAsNumber: true,
+                        onChange: () => setJoiningCalcMode('other'),
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
@@ -1503,64 +1804,33 @@ export default function AddEmploymentPage() {
                   <h2 className="text-lg font-medium text-gray-800 border-l-4 border-purple-500 pl-2">
                     Increment Details
                   </h2>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!showIncrementDetails) {
-                        setShowIncrementDetails(true);
-                        if (incrementFields.length === 0) {
-                          const previousIncrementCtc = Number(joiningCtcValue ?? 0) || 0;
-                          appendIncrement({
-                            incrementDate: '',
-                            incrementedCtc: previousIncrementCtc,
-                            incrementHikePercentWrtJoiningCtc: 0,
-                            incrementVariablePay: Number(joiningVariablePayValue ?? 0) || 0,
-                            incrementFixedPay: Number(joiningFixedPayValue ?? 0) || 0,
-                            incrementOtherAllowance: Number(joiningOtherAllowanceValue ?? 0) || 0,
-                            incrementPfIncluded: false,
-                            previousDesignation: '',
-                            newDesignation: '',
-                          } as any);
-                          return;
-                        }
-                      }
-                      const previousIncrement =
-                        incrementFields.length > 0
-                          ? (watch(`increments.${incrementFields.length - 1}` as any) as any)
-                          : null;
-                      const previousIncrementCtc =
-                        Number(previousIncrement?.incrementedCtc ?? joiningCtcValue ?? 0) || 0;
-                      const currentIncrementCtc =
-                        Number(previousIncrement?.incrementedCtc ?? joiningCtcValue ?? 0) || 0;
-                      const defaultHikePercent =
-                        previousIncrement?.incrementHikePercentWrtJoiningCtc != null
-                          ? Number(previousIncrement.incrementHikePercentWrtJoiningCtc)
-                          : previousIncrementCtc > 0
-                            ? Number((((currentIncrementCtc - previousIncrementCtc) / previousIncrementCtc) * 100).toFixed(2))
-                            : 0;
-
-                      appendIncrement({
-                        incrementDate: '',
-                        incrementedCtc: currentIncrementCtc,
-                        incrementHikePercentWrtJoiningCtc: defaultHikePercent,
-                        incrementVariablePay:
-                          Number(previousIncrement?.incrementVariablePay ?? joiningVariablePayValue ?? 0) || 0,
-                        incrementFixedPay:
-                          Number(previousIncrement?.incrementFixedPay ?? joiningFixedPayValue ?? 0) || 0,
-                        incrementOtherAllowance:
-                          Number(previousIncrement?.incrementOtherAllowance ?? joiningOtherAllowanceValue ?? 0) || 0,
-                        incrementPfIncluded:
-                          previousIncrement?.incrementPfIncluded != null
-                            ? Boolean(previousIncrement.incrementPfIncluded)
-                            : false,
-                        previousDesignation: previousIncrement?.newDesignation || '',
-                        newDesignation: '',
-                      } as any);
-                    }}
-                    className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
-                  >
-                    Add Increment
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={aiIncrementCount}
+                      onChange={(e) => setAiIncrementCount(Number(e.target.value) || 1)}
+                      className="px-2 py-1 text-sm border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      {Array.from({ length: 7 }, (_, i) => i + 1).map((count) => (
+                        <option key={count} value={count}>
+                          {count} Increment{count > 1 ? 's' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleCreateIncrementsWithAi}
+                      className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200"
+                    >
+                      Create with AI
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddIncrement}
+                      className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
+                    >
+                      Add Increment
+                    </button>
+                  </div>
                 </div>
 
                 {!showIncrementDetails && (
@@ -1650,7 +1920,11 @@ export default function AddEmploymentPage() {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Hike % WRT Joining CTC
+                              {index === 0
+                                ? 'Hike % WRT Joining CTC'
+                                : index === 1
+                                  ? 'Hike % WRT Increment 1'
+                                  : 'Hike % WRT Previous Increment'}
                             </label>
                             <input
                               type="number"
@@ -1689,6 +1963,33 @@ export default function AddEmploymentPage() {
                                 required: 'Increment CTC is required',
                                 min: { value: 0, message: 'Increment CTC must be positive' },
                                 valueAsNumber: true,
+                                onChange: (e) => {
+                                  const ctc = Number(e?.target?.value ?? 0) || 0;
+                                  const variable = getDefaultIncrementVariablePay(ctc);
+                                  setValue(`increments.${index}.incrementVariablePay` as any, Number(variable.toFixed(2)), {
+                                    shouldDirty: true,
+                                    shouldValidate: false,
+                                  });
+                                  const previousCtc =
+                                    index > 0
+                                      ? Number(watch(`increments.${index - 1}.incrementedCtc` as any) ?? 0) || 0
+                                      : Number(joiningCtcValue ?? 0) || 0;
+                                  if (previousCtc > 0) {
+                                    const hikePercent = ((ctc - previousCtc) / previousCtc) * 100;
+                                    setValue(
+                                      `increments.${index}.incrementHikePercentWrtJoiningCtc` as any,
+                                      Number(hikePercent.toFixed(2)),
+                                      { shouldDirty: true, shouldValidate: false }
+                                    );
+                                  }
+                                  const fixed = ctc - variable;
+                                  const monthlyFixed = fixed / 12;
+                                  const basic = monthlyFixed * 0.5;
+                                  const hra = basic * 0.4;
+                                  const other = monthlyFixed - (basic + hra + 2000);
+                                  setValue(`increments.${index}.incrementFixedPay` as any, Number(fixed.toFixed(2)), { shouldDirty: true, shouldValidate: false });
+                                  setValue(`increments.${index}.incrementOtherAllowance` as any, Number(other.toFixed(2)), { shouldDirty: true, shouldValidate: false });
+                                },
                               })}
                               placeholder="Increment CTC"
                               className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1705,6 +2006,17 @@ export default function AddEmploymentPage() {
                               {...register(`increments.${index}.incrementVariablePay` as any, {
                                 min: { value: 0, message: 'Amount must be positive' },
                                 valueAsNumber: true,
+                                onChange: (e) => {
+                                  const variable = Number(e?.target?.value ?? 0) || 0;
+                                  const ctc = Number(watch(`increments.${index}.incrementedCtc` as any) ?? 0) || 0;
+                                  const fixed = ctc - variable;
+                                  const monthlyFixed = fixed / 12;
+                                  const basic = monthlyFixed * 0.5;
+                                  const hra = basic * 0.4;
+                                  const other = monthlyFixed - (basic + hra + 2000);
+                                  setValue(`increments.${index}.incrementFixedPay` as any, Number(fixed.toFixed(2)), { shouldDirty: true, shouldValidate: false });
+                                  setValue(`increments.${index}.incrementOtherAllowance` as any, Number(other.toFixed(2)), { shouldDirty: true, shouldValidate: false });
+                                },
                               })}
                               placeholder="Increment Variable"
                               className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -1718,10 +2030,23 @@ export default function AddEmploymentPage() {
                             <input
                               type="number"
                               step="0.01"
-                              value={Number.isFinite(incrementBreakdown.incrementFixed) ? incrementBreakdown.incrementFixed.toFixed(2) : ''}
-                              readOnly
+                              {...register(`increments.${index}.incrementFixedPay` as any, {
+                                min: { value: 0, message: 'Amount must be positive' },
+                                valueAsNumber: true,
+                                onChange: (e) => {
+                                  const fixed = Number(e?.target?.value ?? 0) || 0;
+                                  const variable = Number(watch(`increments.${index}.incrementVariablePay` as any) ?? 0) || 0;
+                                  const ctc = fixed + variable;
+                                  const monthlyFixed = fixed / 12;
+                                  const basic = monthlyFixed * 0.5;
+                                  const hra = basic * 0.4;
+                                  const other = monthlyFixed - (basic + hra + 2000);
+                                  setValue(`increments.${index}.incrementedCtc` as any, Number(ctc.toFixed(2)), { shouldDirty: true, shouldValidate: true });
+                                  setValue(`increments.${index}.incrementOtherAllowance` as any, Number(other.toFixed(2)), { shouldDirty: true, shouldValidate: false });
+                                },
+                              })}
                               placeholder="Increment Fixed"
-                              className="w-full p-2 border rounded-md bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                           </div>
 
@@ -1782,6 +2107,15 @@ export default function AddEmploymentPage() {
                               step="0.01"
                               {...register(`increments.${index}.incrementOtherAllowance` as any, {
                                 valueAsNumber: true,
+                                onChange: (e) => {
+                                  const other = Number(e?.target?.value ?? 0) || 0;
+                                  const variable = Number(watch(`increments.${index}.incrementVariablePay` as any) ?? 0) || 0;
+                                  const monthlyFixed = (other + 2000) / 0.3;
+                                  const fixed = monthlyFixed * 12;
+                                  const ctc = fixed + variable;
+                                  setValue(`increments.${index}.incrementFixedPay` as any, Number(fixed.toFixed(2)), { shouldDirty: true, shouldValidate: false });
+                                  setValue(`increments.${index}.incrementedCtc` as any, Number(ctc.toFixed(2)), { shouldDirty: true, shouldValidate: true });
+                                },
                               })}
                               className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
@@ -1921,6 +2255,7 @@ export default function AddEmploymentPage() {
                         required: 'Current CTC is required',
                         min: { value: 0, message: 'Current CTC must be positive' },
                         valueAsNumber: true,
+                        onChange: () => setCurrentCalcMode('ctc'),
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
@@ -1940,6 +2275,7 @@ export default function AddEmploymentPage() {
                       {...register('currentVariablePay', {
                         min: { value: 0, message: 'Amount must be positive' },
                         valueAsNumber: true,
+                        onChange: () => setCurrentCalcMode('variable'),
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
@@ -1956,9 +2292,9 @@ export default function AddEmploymentPage() {
                       {...register('currentFixedPay', {
                         min: { value: 0, message: 'Amount must be positive' },
                         valueAsNumber: true,
+                        onChange: () => setCurrentCalcMode('fixed'),
                       })}
-                      readOnly
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-50"
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
                   </div>
 
@@ -2024,6 +2360,7 @@ export default function AddEmploymentPage() {
                       placeholder="Other Allowance"
                       {...register('currentOtherAllowance', {
                         valueAsNumber: true,
+                        onChange: () => setCurrentCalcMode('other'),
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
@@ -2152,8 +2489,8 @@ export default function AddEmploymentPage() {
                   disabled={isSubmitting}
                   className="px-5 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
                 >
-                  <FaSquarePlus />
-                  {isSubmitting ? 'Creating...' : 'Create Employment'}
+                  <FiCheckCircle />
+                  {isSubmitting ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </form>

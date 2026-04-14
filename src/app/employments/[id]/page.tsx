@@ -923,32 +923,32 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
                   {hasIncrementDetails && (
                     <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-                      <table className="w-full min-w-[860px] border-collapse text-sm text-gray-900">
+                      <table className="w-full min-w-[980px] border-collapse text-sm text-gray-900">
                         <thead>
                           <tr className="bg-gray-100">
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12%]">
-                              Sr. No
-                            </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
                               Increment Date
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16%]">
                               Increment CTC
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16%]">
                               Increment Variable
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[22%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16%]">
                               Increment Fixed
+                            </th>
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                              Gross Salary
+                            </th>
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12%]">
+                              Is PF
                             </th>
                           </tr>
                         </thead>
                         <tbody>
                           {incrementRows.map((inc: any, idx: number) => (
                             <tr key={inc.id || idx}>
-                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                                {idx + 1}
-                              </td>
                               <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
                                 {inc.incrementDate ? formatDateToDayMonYear(inc.incrementDate) : '-'}
                               </td>
@@ -967,6 +967,25 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                                   const fixed = Number(inc.incrementFixedPay ?? (ctc - variable)) || 0;
                                   return fixed > 0 ? formatCurrency(fixed) : '-';
                                 })()}
+                              </td>
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                                {(() => {
+                                  const ctc = Number(inc.incrementedCtc ?? 0) || 0;
+                                  const variable = Number(inc.incrementVariablePay ?? 0) || 0;
+                                  const fixed = Number(inc.incrementFixedPay ?? (ctc - variable)) || 0;
+                                  const monthlyFixed = fixed / 12;
+                                  const basic = monthlyFixed * 0.5;
+                                  const hra = basic * 0.4;
+                                  const other =
+                                    inc.incrementOtherAllowance != null
+                                      ? Number(inc.incrementOtherAllowance)
+                                      : monthlyFixed - (basic + hra + 2000);
+                                  const gross = basic + hra + 2000 + other;
+                                  return gross > 0 ? formatCurrency(gross) : '-';
+                                })()}
+                              </td>
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                                {Boolean(inc.incrementPfIncluded) ? 'Yes' : 'No'}
                               </td>
                             </tr>
                           ))}
@@ -1432,7 +1451,10 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   return (
                     <div className="space-y-4">
                       {increments.map((inc: any, index: number) => (
-                        <div key={inc.id || index}>
+                        <div
+                          key={inc.id || index}
+                          className="pb-4 mb-4 border-b border-gray-200 last:pb-0 last:mb-0 last:border-b-0"
+                        >
                           <p className="text-sm font-semibold text-gray-500 mb-2">
                             Increment {index + 1}
                           </p>

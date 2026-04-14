@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { FiArrowLeft, FiX } from 'react-icons/fi';
-import { FaSquarePlus } from 'react-icons/fa6';
+import { FaRegSquarePlus } from 'react-icons/fa6';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TableHeader from '@/components/ui/TableHeader';
 import toast, { Toaster } from 'react-hot-toast';
@@ -76,6 +76,7 @@ export default function AddSalaryPage() {
   const [isPfEnabled, setIsPfEnabled] = useState(true);
   const [employeeName, setEmployeeName] = useState<string>('');
   const [employmentId, setEmploymentId] = useState<string>('');
+  const [salaryCalcMode, setSalaryCalcMode] = useState<'ctc' | 'variable' | 'fixed' | 'other'>('variable');
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryEmployeeId = searchParams?.get('employeeId');
@@ -128,6 +129,7 @@ export default function AddSalaryPage() {
   const ptDeduct = watch('ptDeduct') || getProfessionalTaxByMonth(month);
   const otherDeduction = watch('otherDeduction') || 0;
   const variablePay = watch('variablePay') || 0;
+  const otherAllowance = watch('otherAllowance') || 0;
   const formatINR = (num: number) => {
   return new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: 2,
@@ -206,29 +208,62 @@ export default function AddSalaryPage() {
   const totalDeduction = pfDeduct + (ptDeduct || 200) + leavesDeductAmt + otherDeduction;
   const netSalary = grossSalary - totalDeduction;
 
+  // Keep dependent fields in sync from whichever salary input user edits.
+  useEffect(() => {
+    const ctcNum = Number(ctc) || 0;
+    const variableNum = Number(variablePay) || 0;
+    const fixedNum = Number(fixedPay) || 0;
+    const otherNum = Number(otherAllowance) || 0;
+
+    const maybeSet = (name: keyof SalaryFormData, next: number, current: number) => {
+      if (Math.abs((current || 0) - (next || 0)) > 0.01) {
+        setValue(name, Number(next.toFixed(2)) as any, { shouldValidate: false, shouldDirty: true });
+      }
+    };
+
+    if (salaryCalcMode === 'ctc' || salaryCalcMode === 'variable') {
+      const nextFixed = Math.max(0, ctcNum - variableNum);
+      const monthlyFixed = nextFixed / 12;
+      const basic = monthlyFixed * 0.5;
+      const hra = basic * 0.4;
+      const conveyance = 2000;
+      const nextOther = monthlyFixed - (basic + hra + conveyance);
+      maybeSet('fixedPay', nextFixed, fixedNum);
+      maybeSet('otherAllowance', nextOther, otherNum);
+      return;
+    }
+
+    if (salaryCalcMode === 'fixed') {
+      const nextCtc = fixedNum + variableNum;
+      const monthlyFixed = fixedNum / 12;
+      const basic = monthlyFixed * 0.5;
+      const hra = basic * 0.4;
+      const conveyance = 2000;
+      const nextOther = monthlyFixed - (basic + hra + conveyance);
+      maybeSet('ctc', nextCtc, ctcNum);
+      maybeSet('otherAllowance', nextOther, otherNum);
+      return;
+    }
+
+    const monthlyFixedFromOther = (otherNum + 2000) / 0.3;
+    const nextFixed = monthlyFixedFromOther * 12;
+    const nextCtc = nextFixed + variableNum;
+    maybeSet('fixedPay', nextFixed, fixedNum);
+    maybeSet('ctc', nextCtc, ctcNum);
+  }, [ctc, variablePay, fixedPay, otherAllowance, salaryCalcMode, setValue]);
+
   // Update form values in real-time when calculations change
   useEffect(() => {
     setValue('workDays', adjustedWorkDays, { shouldValidate: false, shouldDirty: false });
     setValue('basic', calculations.basic, { shouldValidate: false, shouldDirty: false });
     setValue('hra', calculations.hra, { shouldValidate: false, shouldDirty: false });
     setValue('conveyanceAllowance', calculations.conveyanceAllowance, { shouldValidate: false, shouldDirty: false });
-    setValue('otherAllowance', calculations.otherAllowance, { shouldValidate: false, shouldDirty: false });
     setValue('leavesDeductAmt', calculations.leavesDeductAmt, { shouldValidate: false, shouldDirty: false });
     
     // Keep PT deduction aligned with selected month rule.
     setValue('ptDeduct', calculations.ptDeduct, { shouldValidate: false, shouldDirty: false });
   }, [calculations, adjustedWorkDays, setValue, ptDeduct]);
 
-  useEffect(()=>{
-    //Fixed pay results
-    const autoFixed = Number(ctc || 0) - Number(variablePay || 0);
-
-    setValue(
-      'fixedPay',
-      autoFixed >= 0 ? autoFixed : 0,
-      { shouldValidate: false, shouldDirty: true }
-    );
-  }, [ctc, variablePay, setValue]);
 
   // Fetch employee name and employment ID when employeeId is available
   useEffect(() => {
@@ -288,17 +323,6 @@ export default function AddSalaryPage() {
 
     fetchEmployeeData();
   }, [employeeId, setValue, router, isEmployeeUser]);
-
-  useEffect(() => {
-  const autoFixed = Number(ctc || 0) - Number(variablePay || 0);
-
-  setValue(
-    'fixedPay',
-    autoFixed >= 0 ? autoFixed : 0,
-    { shouldValidate: false, shouldDirty: true }
-  );
-}, [ctc, variablePay, setValue]);
-
 
   const onSubmit = async (data: SalaryFormData) => {
     try {
@@ -478,7 +502,7 @@ export default function AddSalaryPage() {
           actionButtons={[
             {
               label: isLoading ? 'Creating...' : 'Create Salary',
-              icon: <FaSquarePlus />,
+              icon: <FaRegSquarePlus />,
               variant: 'success',
               pill: true,
               onClick: handleSubmit(onSubmit),
@@ -644,7 +668,8 @@ export default function AddSalaryPage() {
                   {...register('ctc', { 
                     required: 'CTC is required',
                     min: { value: 0, message: 'CTC cannot be negative' },
-                    valueAsNumber: true
+                    valueAsNumber: true,
+                    onChange: () => setSalaryCalcMode('ctc'),
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
@@ -665,7 +690,8 @@ export default function AddSalaryPage() {
                   {...register('variablePay', { 
                     required: 'Pay is required',
                     min: { value: 0, message: 'Pay cannot be negative' },
-                    valueAsNumber: true
+                    valueAsNumber: true,
+                    onChange: () => setSalaryCalcMode('variable'),
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
@@ -676,22 +702,28 @@ export default function AddSalaryPage() {
                 )}
               </div>
               
-              {/* Fixed Pay - Auto-calculated based on CTC and Fixed Pay */}
+              {/* Fixed Pay */}
 
               <div className=''>
-  <label className="block text-sm font-medium text-gray-700 mb-2">
-    <span className="text-red-500 mr-1">*</span>Fixed Pay
-  </label>
-
-  <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100">
-    {Number(fixedPay || 0).toFixed(2)}
-
-  </div>
-
-  {errors.fixedPay && (
-    <p className="mt-1 text-sm text-red-600">{errors.fixedPay.message}</p>
-  )}
-</div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <span className="text-red-500 mr-1">*</span>Fixed Pay
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  {...register('fixedPay', {
+                    required: 'Fixed Pay is required',
+                    min: { value: 0, message: 'Fixed Pay cannot be negative' },
+                    valueAsNumber: true,
+                    onChange: () => setSalaryCalcMode('fixed'),
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="0.00"
+                />
+                {errors.fixedPay && (
+                  <p className="mt-1 text-sm text-red-600">{errors.fixedPay.message}</p>
+                )}
+              </div>
 
 
               
@@ -798,7 +830,8 @@ export default function AddSalaryPage() {
                   {...register('otherAllowance', { 
                     required: 'Other allowance is required',
                     min: { value: 0, message: 'Other allowance cannot be negative' },
-                    valueAsNumber: true
+                    valueAsNumber: true,
+                    onChange: () => setSalaryCalcMode('other'),
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
@@ -983,7 +1016,7 @@ export default function AddSalaryPage() {
               disabled={isLoading}
               className="px-5 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              <FaSquarePlus className="w-4 h-4" />
+              <FaRegSquarePlus className="w-4 h-4" />
               {isLoading ? 'Creating...' : 'Create Salary'}
             </button>
           </div>

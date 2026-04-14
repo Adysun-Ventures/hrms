@@ -18,7 +18,7 @@ import SimpleBreadcrumb from '@/components/ui/SimpleBreadcrumb';
 import { useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
-import { FaSquarePlus } from 'react-icons/fa6';
+import { FaRegSquarePlus } from 'react-icons/fa6';
 import { pdf } from '@react-pdf/renderer';
 import { SalarySlipPDF } from '@/app/doc_pages/pages/v2/SalarySlipGenerator';
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
@@ -455,7 +455,7 @@ const handleDownload = async (salary: Salary) => {
           actionButtons={[
             { 
               label: 'Create Salary', 
-              icon: <FaSquarePlus />, 
+              icon: <FaRegSquarePlus />, 
               variant: 'success' as const, 
               pill: true,
               href: employeeId

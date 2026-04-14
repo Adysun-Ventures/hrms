@@ -7,8 +7,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { addEmployee } from '@/utils/firebaseUtils';
 import { getAdminDataForAudit, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere } from '@/utils/firebaseUtils';
 import { Employee } from '@/types';
-import { FiX, FiPlus, FiEye, FiEyeOff } from 'react-icons/fi';
-import { FaSquarePlus } from 'react-icons/fa6';
+import { FiCheckCircle, FiX, FiPlus, FiEye, FiEyeOff } from 'react-icons/fi';
 import Link from 'next/link';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
@@ -426,8 +425,8 @@ export default function AddEmployeePage() {
           }}
           actionButtons={[
             {
-              label: isSubmitting ? 'Creating...' : 'Create Employee',
-              icon: <FaSquarePlus />,
+              label: isSubmitting ? 'Saving...' : 'Save',
+              icon: <FiCheckCircle />,
               variant: 'success',
               pill: true,
               onClick: handleSubmit((data) => onSubmit(data, false)),
@@ -1377,8 +1376,8 @@ export default function AddEmployeePage() {
               disabled={isSubmitting}
               className="px-5 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
             >
-              <FaSquarePlus />
-              {isSubmitting ? 'Creating...' : 'Create Employee'}
+              <FiCheckCircle />
+              {isSubmitting ? 'Saving...' : 'Save'}
             </button>
           </div>
         </form>

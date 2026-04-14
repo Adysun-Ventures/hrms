@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { FiEdit, FiTrash2, FiPlus, FiSearch, FiEye, FiDollarSign } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiSearch, FiEye, FiDollarSign } from 'react-icons/fi';
+import { FaRegSquarePlus } from 'react-icons/fa6';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Employment, Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
@@ -248,7 +249,7 @@ export default function EmploymentsPage() {
             {
               label: 'Add Employment',
               href: employeeIdFilter ? `/employments/add?employeeId=${employeeIdFilter}` : '/employments/add',
-              icon: <FiPlus />,
+              icon: <FaRegSquarePlus />,
               variant: 'success'
             }
           ]}

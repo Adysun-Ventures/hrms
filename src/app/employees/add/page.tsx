@@ -477,7 +477,7 @@ export default function AddEmployeePage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Name
+                    <span className="text-red-500 mr-1">*</span> Name <span className="text-red-500 text-xs">(Frist Name Middle Name Last Name)</span>
                   </label>
                   <input
                     type="text"

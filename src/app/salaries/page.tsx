@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiEdit, FiTrash2, FiPlus, FiSearch, FiEye, FiDollarSign, FiDownload } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiEye, FiDownload, FiCpu } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Salary } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
@@ -24,6 +24,8 @@ import { SalarySlipPDF } from '@/app/doc_pages/pages/v2/SalarySlipGenerator';
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/firebase/config";
 import { saveAs } from "file-saver";
+import { addSalary, checkExistingSalary } from '@/utils/firebaseUtils';
+import { calculateMonthlySalary } from '@/utils/monthlySalaryCalculationUtils';
 
 
 
@@ -61,6 +63,7 @@ export default function SalariesPage() {
   const [resolvedEmploymentId, setResolvedEmploymentId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [isAiCreating, setIsAiCreating] = useState(false);
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -328,6 +331,212 @@ const handleDownload = async (salary: Salary) => {
     setDeleteConfirm(null);
   };
 
+  const toIsoDateOnly = (value?: string | null): string | null => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
+  };
+
+  const getPeriodStart = (employment: any): Date | null => {
+    const startRaw = employment?.joiningDate || employment?.startDate;
+    const start = toIsoDateOnly(startRaw);
+    return start ? new Date(start) : null;
+  };
+
+  const getPeriodEnd = (employment: any): Date => {
+    const isResigned =
+      Boolean(employment?.isResignation) ||
+      Boolean(employment?.is_resigned) ||
+      String(employment?.employmentStatus || '').toLowerCase() === 'resigned';
+    const endRaw = isResigned
+      ? (employment?.lastWorkingDate || employment?.resignationDate || employment?.endDate)
+      : null;
+    const end = toIsoDateOnly(endRaw);
+    return end ? new Date(end) : new Date();
+  };
+
+  const monthStart = (d: Date): Date => new Date(d.getFullYear(), d.getMonth(), 1);
+  const monthEnd = (d: Date): Date => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+
+  const addMonths = (d: Date, count: number): Date => new Date(d.getFullYear(), d.getMonth() + count, 1);
+
+  const handleCreateWithAi = async () => {
+    if (!employeeId) {
+      toast.error('Please open salary list for a specific employee first.');
+      return;
+    }
+
+    try {
+      setIsAiCreating(true);
+      toast.loading('AI salary creation started...', { id: 'ai-salary-create' });
+
+      const employments = await getEmploymentsByEmployee(employeeId);
+      if (!employments?.length) {
+        toast.error('No employment record found for this employee.', { id: 'ai-salary-create' });
+        return;
+      }
+
+      const chronologicalEmployments = [...employments].sort((a: any, b: any) => {
+        const ad = new Date(a.startDate || a.joiningDate || 0).getTime();
+        const bd = new Date(b.startDate || b.joiningDate || 0).getTime();
+        return ad - bd;
+      });
+
+      let createdCount = 0;
+      let skippedCount = 0;
+      let failedCount = 0;
+
+      for (const employment of chronologicalEmployments as any[]) {
+        const periodStart = getPeriodStart(employment);
+        if (!periodStart) continue;
+        const periodEnd = getPeriodEnd(employment);
+        if (periodStart > periodEnd) continue;
+
+        const increments: any[] = Array.isArray(employment?.increments)
+          ? employment.increments
+          : [];
+
+        const incrementTimeline = increments
+          .filter((inc) => inc?.incrementDate)
+          .map((inc) => ({
+            ...inc,
+            incrementDateObj: new Date(inc.incrementDate),
+          }))
+          .filter((inc) => !Number.isNaN(inc.incrementDateObj.getTime()))
+          .sort((a, b) => a.incrementDateObj.getTime() - b.incrementDateObj.getTime());
+
+        const baseCtc = Number(
+          employment?.joiningCtc ??
+            employment?.salary ??
+            employment?.incrementedCtc ??
+            0
+        ) || 0;
+        const baseVariable = Number(
+          employment?.joiningVariablePay ??
+            employment?.currentVariablePay ??
+            0
+        ) || 0;
+        const baseFixed = Number(employment?.joiningFixedPay ?? 0) || Math.max(0, baseCtc - baseVariable);
+        const basePfIncluded = Number(employment?.employerPF ?? employment?.pf ?? 0) > 0;
+
+        const startMonth = monthStart(periodStart);
+        const endMonth = monthStart(periodEnd);
+
+        for (
+          let current = new Date(startMonth);
+          current <= endMonth;
+          current = addMonths(current, 1)
+        ) {
+          const month = current.getMonth() + 1;
+          const year = current.getFullYear();
+          const existing = await checkExistingSalary(employeeId, month, year);
+          if (existing) {
+            skippedCount += 1;
+            continue;
+          }
+
+          const applicableIncrement = incrementTimeline
+            .filter((inc) => inc.incrementDateObj <= monthEnd(current))
+            .slice(-1)[0];
+
+          const ctc = Number(
+            applicableIncrement?.incrementedCtc ??
+              applicableIncrement?.newSalary ??
+              baseCtc
+          ) || 0;
+          const variablePay = Number(
+            applicableIncrement?.incrementVariablePay ?? baseVariable
+          ) || 0;
+          const fixedPay = Number(
+            applicableIncrement?.incrementFixedPay ?? (ctc - variablePay)
+          ) || Math.max(0, ctc - variablePay);
+          const pfIncluded =
+            typeof applicableIncrement?.incrementPfIncluded === 'boolean'
+              ? Boolean(applicableIncrement.incrementPfIncluded)
+              : basePfIncluded;
+
+          const calculated = calculateMonthlySalary({
+            ctc,
+            fixedPay,
+            month,
+            year,
+            leavesCount: 0,
+          });
+
+          const pf = pfIncluded ? Number(calculated.pfDeduct || 0) : 0;
+          const grossSalary =
+            Number(calculated.basic || 0) +
+            Number(calculated.hra || 0) +
+            Number(calculated.conveyanceAllowance || 0) +
+            Number(calculated.otherAllowance || 0);
+          const totalDeduction = pf + Number(calculated.ptDeduct || 0) + Number(calculated.leavesDeductAmt || 0);
+          const netSalary = grossSalary - totalDeduction;
+
+          try {
+            await addSalary({
+              employeeId,
+              employmentId: employment?.id || '',
+              day: 1,
+              month,
+              year,
+              ctc,
+              fixedPay,
+              variablePay,
+              workDays: Number(calculated.monthDays || 0),
+              leavesCount: 0,
+              basic: Number(calculated.basic || 0),
+              hra: Number(calculated.hra || 0),
+              conveyanceAllowance: Number(calculated.conveyanceAllowance || 0),
+              otherAllowance: Number(calculated.otherAllowance || 0),
+              ptDeduct: Number(calculated.ptDeduct || 0),
+              leavesDeductAmt: Number(calculated.leavesDeductAmt || 0),
+              otherDeduction: 0,
+              basicSalary: Number(calculated.basic || 0),
+              inhandSalary: Number(netSalary.toFixed(2)),
+              totalSalary: Number(grossSalary.toFixed(2)),
+              pf: Number(pf.toFixed(2)),
+              grossSalary: Number(grossSalary.toFixed(2)),
+              totalDeduction: Number(totalDeduction.toFixed(2)),
+              netSalary: Number(netSalary.toFixed(2)),
+              perMonth: Number(calculated.perMonth || 0),
+              perDay: Number(calculated.perDay || 0),
+              monthDays: Number(calculated.monthDays || 0),
+            } as any);
+            createdCount += 1;
+          } catch (error) {
+            console.error('Failed to auto-create salary:', { month, year, error });
+            failedCount += 1;
+          }
+        }
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['salaries'] });
+      await queryClient.invalidateQueries({ queryKey: ['salaries', 'list'] });
+      await queryClient.invalidateQueries({ queryKey: ['salaries', 'byEmployee', employeeId] });
+      await refetchEmployeeSalaries();
+
+      if (createdCount > 0) {
+        toast.success(
+          `Created ${createdCount} salaries. Skipped ${skippedCount} existing${failedCount ? `, failed ${failedCount}` : ''}.`,
+          { id: 'ai-salary-create' }
+        );
+      } else {
+        toast.error(
+          failedCount > 0
+            ? `No salary created. Failed ${failedCount}, skipped ${skippedCount}.`
+            : `No new salaries created. ${skippedCount} already exist.`,
+          { id: 'ai-salary-create' }
+        );
+      }
+    } catch (error: any) {
+      console.error('AI create salary failed:', error);
+      toast.error(error?.message || 'Failed to create salaries with AI.', { id: 'ai-salary-create' });
+    } finally {
+      setIsAiCreating(false);
+    }
+  };
+
   const toIntOrNull = (value: unknown): number | null => {
     const parsed = Number.parseInt(String(value ?? ''), 10);
     return Number.isNaN(parsed) ? null : parsed;
@@ -461,7 +670,15 @@ const handleDownload = async (salary: Salary) => {
               href: employeeId
                 ? `/salaries/add?employeeId=${employeeId}${from === 'employment' ? '&from=employment' : ''}`
                 : '/salaries/add'
-            }
+            },
+            {
+              label: isAiCreating ? 'Creating...' : 'Create with AI',
+              icon: <FiCpu />,
+              variant: 'purple' as const,
+              pill: true,
+              onClick: handleCreateWithAi,
+              disabled: isAiCreating || !employeeId,
+            },
           ]}
           backButton={{
             onClick: () => {

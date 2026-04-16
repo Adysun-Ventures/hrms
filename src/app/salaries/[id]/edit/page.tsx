@@ -162,12 +162,36 @@ export default function EditSalaryPage({ params }: PageParams) {
   }, [ctc, fixedPay, year, month, leavesCount]);
 
   const adjustedWorkDays = useMemo(() => {
-    return Math.max(0, Number(calculations.workDays) || 0);
-  }, [calculations.workDays]);
+    const monthDays = Number(calculations.monthDays) || 0;
+    const selectedDay = Number(day) || 1;
+    const selectedLeaves = Number(leavesCount) || 0;
+    return Math.max(0, monthDays - (selectedDay - 1) - selectedLeaves);
+  }, [calculations.monthDays, day, leavesCount]);
 
+  const monthlySalaryPayable = useMemo(() => {
+    const monthlyFixed = Number(fixedPay || 0) / 12;
+    const monthDays = Number(calculations.monthDays) || 0;
+    const payableDays = Number(adjustedWorkDays) || 0;
+    if (monthDays <= 0) return 0;
+    return (monthlyFixed / monthDays) * payableDays;
+  }, [fixedPay, calculations.monthDays, adjustedWorkDays]);
+  const payableComponents = useMemo(() => {
+    const totalPayable = Number(monthlySalaryPayable) || 0;
+    const basic = totalPayable * 0.5;
+    const hra = basic * 0.4;
+    const conveyanceAllowance = 2000;
+    const otherAllowance = totalPayable - (basic + hra + conveyanceAllowance);
+    return {
+      basic,
+      hra,
+      conveyanceAllowance,
+      otherAllowance,
+      grossSalary: basic + hra + conveyanceAllowance + otherAllowance,
+    };
+  }, [monthlySalaryPayable]);
   // Use calculated values directly for display
   const leavesDeductAmt = calculations.leavesDeductAmt;
-  const grossSalary = calculations.grossSalary;
+  const grossSalary = payableComponents.grossSalary;
   const pfDeduct = isPfEnabled ? (calculations.pfDeduct || 0) : 0;
   const otherDeduction = watch('otherDeduction') || 0;
   const totalDeduction = pfDeduct + (ptDeduct || 200) + leavesDeductAmt + otherDeduction;
@@ -220,14 +244,15 @@ export default function EditSalaryPage({ params }: PageParams) {
   // Update form values in real-time when calculations change
   useEffect(() => {
     setValue('workDays', adjustedWorkDays, { shouldValidate: false, shouldDirty: false });
-    setValue('basic', calculations.basic, { shouldValidate: false, shouldDirty: false });
-    setValue('hra', calculations.hra, { shouldValidate: false, shouldDirty: false });
-    setValue('conveyanceAllowance', calculations.conveyanceAllowance, { shouldValidate: false, shouldDirty: false });
+    setValue('basic', payableComponents.basic, { shouldValidate: false, shouldDirty: false });
+    setValue('hra', payableComponents.hra, { shouldValidate: false, shouldDirty: false });
+    setValue('conveyanceAllowance', payableComponents.conveyanceAllowance, { shouldValidate: false, shouldDirty: false });
+    setValue('otherAllowance', payableComponents.otherAllowance, { shouldValidate: false, shouldDirty: false });
     setValue('leavesDeductAmt', calculations.leavesDeductAmt, { shouldValidate: false, shouldDirty: false });
     
     // Keep PT deduction aligned with selected month rule.
     setValue('ptDeduct', calculations.ptDeduct, { shouldValidate: false, shouldDirty: false });
-  }, [calculations, adjustedWorkDays, setValue, ptDeduct]);
+  }, [calculations, adjustedWorkDays, payableComponents, setValue, ptDeduct]);
 
   // Watch for form changes
   const watchedValues = watch();
@@ -350,8 +375,11 @@ export default function EditSalaryPage({ params }: PageParams) {
       });
 
       // Use calculated values (form values may be stale)
-      const finalGrossSalary = calculations.grossSalary;
-      const finalWorkDays = Math.max(0, Number(calculations.workDays) || 0);
+      const finalGrossSalary = payableComponents.grossSalary;
+      const finalWorkDays = Math.max(
+        0,
+        (Number(calculations.monthDays) || 0) - ((Number(data.day) || 1) - 1) - (Number(data.leavesCount) || 0)
+      );
       const finalOtherDeduction = Number(data.otherDeduction || 0) || 0;
       const finalPfDeduct = isPfEnabled ? (calculations.pfDeduct || 0) : 0;
       const finalTotalDeduction =
@@ -367,17 +395,17 @@ export default function EditSalaryPage({ params }: PageParams) {
           ...data,
           employeeId: employeeId || data.employeeId,
           employmentId: employmentId || data.employmentId,
-          basicSalary: calculations.basic,
+          basicSalary: payableComponents.basic,
           inhandSalary: finalNetSalary,
           totalSalary: finalGrossSalary,
           workDays: finalWorkDays,
           leavesCount: data.leavesCount,
           ctc: data.ctc,
           fixedPay: data.fixedPay,
-          basic: calculations.basic,
-          hra: calculations.hra,
-          conveyanceAllowance: calculations.conveyanceAllowance,
-          otherAllowance: calculations.otherAllowance,
+          basic: payableComponents.basic,
+          hra: payableComponents.hra,
+          conveyanceAllowance: payableComponents.conveyanceAllowance,
+          otherAllowance: payableComponents.otherAllowance,
           ptDeduct: data.ptDeduct || calculations.ptDeduct,
           leavesDeductAmt: calculations.leavesDeductAmt,
           pf: finalPfDeduct,
@@ -540,7 +568,7 @@ export default function EditSalaryPage({ params }: PageParams) {
 
         <form onSubmit={handleSubmit(onSubmit)} className="px-6 pb-6">
           {/* Period Information */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
             {/* Month */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -620,7 +648,7 @@ export default function EditSalaryPage({ params }: PageParams) {
             </div>
 
             {/* Payable Days - Auto-calculated */}
-            <div>
+            <div className=' md:col-span-3'>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Payable Days 
               </label>
@@ -641,12 +669,12 @@ export default function EditSalaryPage({ params }: PageParams) {
                 <p className="mt-1 text-sm text-red-600">{errors.workDays.message}</p>
               )}
               <span className="text-xs text-gray-500">
-                (Auto-calculated: {calculations.monthDays} days - {leavesCount} leaves)
+                (Auto-calculated: {calculations.monthDays} - ({day || 1} - 1) - {leavesCount} leaves)
               </span>
             </div>
 
             {/* Leaves Count */}
-            <div>
+            <div className=' md:col-span-3'>
   <label className="block text-sm font-medium text-gray-700 mb-2">
     <span className="text-red-500 mr-1">*</span>Leave Count
     
@@ -682,7 +710,7 @@ export default function EditSalaryPage({ params }: PageParams) {
           {/* Salary Input Fields */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Salary Inputs</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-y-4 gap-x-0">
               {/* CTC */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -755,12 +783,29 @@ export default function EditSalaryPage({ params }: PageParams) {
                   Monthly Fixed (₹)
                 </label>
                 <input
-                  type="number"
-                  value={Number((Number(fixedPay || 0) / 12).toFixed(2))}
+                  type="text"
+                  value={(Number(fixedPay || 0) / 12).toFixed(2)}
                   readOnly
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
                 />
+              </div>
+
+              {/* Monthly Salary Payable (read-only) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Monthly Salary Payable (₹)
+                </label>
+                <input
+                  type="text"
+                  value={Number(monthlySalaryPayable || 0).toFixed(2)}
+                  readOnly
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                />
+                <span className="text-xs text-gray-500">
+                  Formula: Monthly Fixed / Total Days in month × Payable Days
+                </span>
               </div>
             </div>
           </div>
@@ -777,14 +822,14 @@ export default function EditSalaryPage({ params }: PageParams) {
                   Basic <span className="text-xs text-gray-500">(Auto-calculated)</span>
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   step="0.01"
                   {...register('basic', { 
                     required: 'Basic salary is required',
                     min: { value: 0, message: 'Basic salary cannot be negative' },
                     valueAsNumber: true
                   })}
-                  value={calculations.basic}
+                  value={Number(payableComponents.basic || 0).toFixed(2)}
                   disabled
                   readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
@@ -801,14 +846,14 @@ export default function EditSalaryPage({ params }: PageParams) {
                   HRA <span className="text-xs text-gray-500">(Auto-calculated)</span>
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   step="0.01"
                   {...register('hra', { 
                     required: 'HRA is required',
                     min: { value: 0, message: 'HRA cannot be negative' },
                     valueAsNumber: true
                   })}
-                  value={calculations.hra}
+                  value={Number(payableComponents.hra || 0).toFixed(2)}
                   disabled
                   readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
@@ -825,14 +870,14 @@ export default function EditSalaryPage({ params }: PageParams) {
                   Conveyance Allowance <span className="text-xs text-gray-500">(Auto-calculated)</span>
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   step="0.01"
                   {...register('conveyanceAllowance', { 
                     required: 'Conveyance allowance is required',
                     min: { value: 0, message: 'Conveyance allowance cannot be negative' },
                     valueAsNumber: true
                   })}
-                  value={calculations.conveyanceAllowance}
+                  value={Number(payableComponents.conveyanceAllowance || 0).toFixed(2)}
                   disabled
                   readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
@@ -917,9 +962,9 @@ export default function EditSalaryPage({ params }: PageParams) {
                   PF (DEDUCT) <span className="text-xs text-gray-500">(Auto-calculated)</span>
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   step="0.01"
-                  value={pfDeduct}
+                  value={Number(pfDeduct || 0).toFixed(2)}
                   disabled
                   readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
@@ -948,29 +993,6 @@ export default function EditSalaryPage({ params }: PageParams) {
                 )}
               </div>
 
-              {/* Leaves Deduct Amt - Auto-calculated */}
-              <div className="md:col-span-3">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Leaves Deduct Amt <span className="text-xs text-gray-500">(Auto-calculated)</span>
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  {...register('leavesDeductAmt', { 
-                    required: 'Leaves deduction amount is required',
-                    min: { value: 0, message: 'Leaves deduction amount cannot be negative' },
-                    valueAsNumber: true
-                  })}
-                  value={calculations.leavesDeductAmt}
-                  disabled
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
-                  placeholder="0.00"
-                />
-                {errors.leavesDeductAmt && (
-                  <p className="mt-1 text-sm text-red-600">{errors.leavesDeductAmt.message}</p>
-                )}
-              </div>
 
               {/* Other Deduction */}
               <div className="md:col-span-3">

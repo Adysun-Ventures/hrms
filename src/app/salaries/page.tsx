@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiEdit, FiTrash2, FiEye, FiDownload, FiCpu } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiEye, FiDownload, FiCpu, FiSettings, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Salary } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
@@ -56,14 +56,30 @@ const EmployeeNameDisplay = ({ employeeId }: { employeeId: string }) => {
 
 
 export default function SalariesPage() {
+  type IncrementHeaderMeta = {
+    index: number;
+    incrementDate: string;
+    oldCtc: number;
+    newCtc: number;
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const [yearFilter, setYearFilter] = useState('all');
+  const [incrementFilter, setIncrementFilter] = useState('all');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [selectionEnabled, setSelectionEnabled] = useState(false);
+  const [bulkDropdownOpen, setBulkDropdownOpen] = useState(false);
+  const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [selectAll, setSelectAll] = useState(false);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleteIds, setBulkDeleteIds] = useState<string[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [employeeName, setEmployeeName] = useState<string>('');
   const [resolvedEmploymentId, setResolvedEmploymentId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [isAiCreating, setIsAiCreating] = useState(false);
+  const [incrementHeaderMeta, setIncrementHeaderMeta] = useState<IncrementHeaderMeta[]>([]);
+  const bulkDropdownRef = useRef<HTMLDivElement | null>(null);
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -136,6 +152,50 @@ export default function SalariesPage() {
     };
 
     fetchEmployeeName();
+  }, [employeeId]);
+
+  // Build first increment metadata for header stats.
+  useEffect(() => {
+    if (!employeeId) {
+      setIncrementHeaderMeta([]);
+      return;
+    }
+
+    (async () => {
+      try {
+        const employments = await getEmploymentsByEmployee(employeeId);
+        const allIncrements: IncrementHeaderMeta[] = [];
+        let globalIncrementIndex = 0;
+
+        for (const employment of employments || []) {
+          const joiningCtc = Number((employment as any)?.joiningCtc ?? (employment as any)?.salary ?? 0) || 0;
+          const increments = Array.isArray((employment as any)?.increments) ? (employment as any).increments : [];
+          const timeline = increments
+            .filter((inc: any) => inc?.incrementDate)
+            .map((inc: any) => ({ ...inc, dateObj: new Date(inc.incrementDate) }))
+            .filter((inc: any) => !Number.isNaN(inc.dateObj.getTime()))
+            .sort((a: any, b: any) => a.dateObj.getTime() - b.dateObj.getTime());
+
+          let previousCtc = joiningCtc;
+          for (const inc of timeline) {
+            const newCtc = Number(inc?.incrementedCtc ?? inc?.newSalary ?? previousCtc) || previousCtc;
+            globalIncrementIndex += 1;
+            allIncrements.push({
+              index: globalIncrementIndex,
+              incrementDate: inc.incrementDate,
+              oldCtc: previousCtc,
+              newCtc,
+            });
+            previousCtc = newCtc;
+          }
+        }
+
+        setIncrementHeaderMeta(allIncrements);
+      } catch (e) {
+        console.error('Failed to build increment labels for salary list:', e);
+        setIncrementHeaderMeta([]);
+      }
+    })();
   }, [employeeId]);
 
   // Use mutation for delete operation
@@ -542,21 +602,58 @@ const handleDownload = async (salary: Salary) => {
     return Number.isNaN(parsed) ? null : parsed;
   };
 
+  const getFinancialYearFromMonthYear = (month: number | null, year: number | null): number | null => {
+    if (month === null || year === null) return null;
+    return month >= 4 ? year : year - 1;
+  };
+
+  const getSalaryMonthDate = (salary: Salary): Date | null => {
+    const month = toIntOrNull((salary as any).month);
+    const year = toIntOrNull((salary as any).year);
+    if (month === null || year === null || month < 1 || month > 12) return null;
+    return new Date(year, month - 1, 1);
+  };
+
   const filteredSalaries = salaries
     .filter((salary) => {
       const matchesSearch =
         salary.employeeId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         salary.employmentId?.toLowerCase().includes(searchTerm.toLowerCase());
 
+      const salaryMonth = toIntOrNull((salary as any).month);
       const salaryYear = toIntOrNull(salary.year);
-      const selectedYear = toIntOrNull(yearFilter);
+      const salaryFinancialYear = getFinancialYearFromMonthYear(salaryMonth, salaryYear);
+      const selectedFinancialYear = toIntOrNull(yearFilter);
 
       const matchesYear =
-        yearFilter === 'all' || (salaryYear !== null && selectedYear !== null && salaryYear === selectedYear);
+        yearFilter === 'all' ||
+        (salaryFinancialYear !== null &&
+          selectedFinancialYear !== null &&
+          salaryFinancialYear === selectedFinancialYear);
+
+      const selectedIncrementNumber = toIntOrNull(incrementFilter);
+      const selectedIncrementIndex =
+        selectedIncrementNumber === null
+          ? -1
+          : incrementHeaderMeta.findIndex((inc) => inc.index === selectedIncrementNumber);
+      const selectedIncrementMeta = selectedIncrementIndex >= 0 ? incrementHeaderMeta[selectedIncrementIndex] : null;
+      const previousIncrementMeta = selectedIncrementIndex > 0 ? incrementHeaderMeta[selectedIncrementIndex - 1] : null;
+      const selectedIncrementDate = selectedIncrementMeta ? new Date(selectedIncrementMeta.incrementDate) : null;
+      const previousIncrementDate = previousIncrementMeta ? new Date(previousIncrementMeta.incrementDate) : null;
+      const salaryMonthDate = getSalaryMonthDate(salary);
+      const matchesIncrement =
+        incrementFilter === 'all' ||
+        (selectedIncrementDate !== null &&
+          !Number.isNaN(selectedIncrementDate.getTime()) &&
+          salaryMonthDate !== null &&
+          salaryMonthDate <= selectedIncrementDate &&
+          (previousIncrementDate === null ||
+            Number.isNaN(previousIncrementDate.getTime()) ||
+            salaryMonthDate > previousIncrementDate));
 
       const matchesEmployeeId = employeeId ? salary.employeeId === employeeId : true;
 
-      return matchesSearch && matchesYear && matchesEmployeeId;
+      return matchesSearch && matchesYear && matchesIncrement && matchesEmployeeId;
     })
     .sort((a, b) => {
       const yearA = Number((a as any).year) || 0;
@@ -567,6 +664,99 @@ const handleDownload = async (salary: Salary) => {
       const monthB = Number((b as any).month) || 0;
       return monthB - monthA;
     });
+
+  const filteredRowIds = useMemo(() => filteredSalaries.map((s) => s.id), [filteredSalaries]);
+  const filteredRowIdsKey = useMemo(() => filteredRowIds.join('|'), [filteredRowIds]);
+
+  // Keep selected rows in sync with currently applied filters.
+  useEffect(() => {
+    if (!selectionEnabled) return;
+    const idSet = new Set(filteredRowIds);
+    setSelectedRows((prev) => prev.filter((id) => idSet.has(id)));
+  }, [filteredRowIdsKey, selectionEnabled]);
+
+  useEffect(() => {
+    if (!selectionEnabled) {
+      setSelectAll(false);
+      return;
+    }
+    setSelectAll(filteredRowIds.length > 0 && selectedRows.length === filteredRowIds.length);
+  }, [filteredRowIdsKey, selectionEnabled, selectedRows.length]);
+
+  // Close bulk dropdown on outside click (bonus requirement).
+  useEffect(() => {
+    if (!bulkDropdownOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (bulkDropdownRef.current && bulkDropdownRef.current.contains(target)) return;
+      setBulkDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, [bulkDropdownOpen]);
+
+  const toggleRowSelection = (id: string) => {
+    setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const handleAllOptionClick = () => {
+    if (!selectionEnabled) setSelectionEnabled(true);
+    if (filteredRowIds.length === 0) return;
+    const allCurrentlySelected = selectedRows.length === filteredRowIds.length;
+    setSelectedRows(allCurrentlySelected ? [] : filteredRowIds);
+    setSelectAll(!allCurrentlySelected);
+    setBulkDropdownOpen(false);
+  };
+
+  const openBulkDeleteModal = () => {
+    if (selectedRows.length === 0) return;
+    setBulkDeleteIds(selectedRows);
+    setBulkDeleteOpen(true);
+  };
+
+  const resetSelectionState = () => {
+    setSelectedRows([]);
+    setSelectAll(false);
+    setSelectionEnabled(false);
+    setBulkDropdownOpen(false);
+  };
+
+  const confirmBulkDelete = async () => {
+    if (bulkDeleteIds.length === 0) return;
+    try {
+      setIsBulkDeleting(true);
+      toast.loading('Deleting selected salaries...', { id: 'bulk-delete' });
+
+      for (const id of bulkDeleteIds) {
+        // Mutate sequentially to avoid rate/lock issues.
+        await deleteSalaryMutation.mutateAsync(id);
+      }
+
+      toast.success(`${bulkDeleteIds.length} Salaries Selected`, { id: 'bulk-delete' });
+      setBulkDeleteOpen(false);
+      setBulkDeleteIds([]);
+      resetSelectionState();
+
+      // Ensure list updates immediately after bulk delete.
+      await queryClient.invalidateQueries({ queryKey: ['salaries', 'list'] });
+      if (employeeId) {
+        await queryClient.invalidateQueries({ queryKey: ['salaries', 'byEmployee', employeeId] });
+        await refetchEmployeeSalaries();
+      } else {
+        await refetchAllSalaries();
+      }
+    } catch (e: any) {
+      toast.error(e?.message || 'Failed to delete selected salaries', { id: 'bulk-delete' });
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const closeBulkDeleteModal = () => {
+    if (isBulkDeleting) return;
+    setBulkDeleteOpen(false);
+  };
 
   // Pagination logic
   const totalItems = filteredSalaries.length;
@@ -582,7 +772,7 @@ const handleDownload = async (salary: Salary) => {
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, yearFilter, employeeId]);
+  }, [searchTerm, yearFilter, incrementFilter, employeeId]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -602,12 +792,33 @@ const handleDownload = async (salary: Salary) => {
   };
 
   const getYearOptions = () => {
-    const currentYear = new Date().getFullYear();
-    const years = [{ value: 'all', label: 'Years' }];
-    for (let year = currentYear; year >= currentYear - 10; year--) {
-      years.push({ value: year.toString(), label: year.toString() });
-    }
-    return years;
+    const years = new Set<number>();
+    salaries.forEach((salary) => {
+      const month = toIntOrNull((salary as any).month);
+      const year = toIntOrNull((salary as any).year);
+      const fyStart = getFinancialYearFromMonthYear(month, year);
+      if (fyStart !== null) years.add(fyStart);
+    });
+
+    return [
+      { value: 'all', label: 'Financial Years' },
+      ...Array.from(years)
+        .sort((a, b) => b - a)
+        .map((fyStart) => ({
+          value: String(fyStart),
+          label: `FY ${fyStart}\u2013${String(fyStart + 1).slice(-2)}`,
+        })),
+    ];
+  };
+
+  const getIncrementOptions = () => {
+    return [
+      { value: 'all', label: 'All Increments' },
+      ...incrementHeaderMeta.map((inc) => ({
+        value: String(inc.index),
+        label: `Increment ${inc.index}`,
+      })),
+    ];
   };
 
   return (
@@ -645,15 +856,35 @@ const handleDownload = async (salary: Salary) => {
           total={filteredSalaries.length}
           totalLabel="Total Sal"
           stackTotalStat={true}
-          extraStatLabel="Total Sal. (Rs. In-Hand)"
+          extraStatLabel="Total Sal. (In Hand)"
           extraStatValue={totalInHandAmount}
+          extraStatValuePrefix={<FaRupeeSign className="mr-1" />}
           stackExtraStat={true}
+          dropdown={
+            incrementHeaderMeta.length > 0 ? (
+              <span className="pr-2 py-1 inline-flex flex-row flex-wrap items-center gap-2">
+                {incrementHeaderMeta.map((inc) => (
+                  <span
+                    key={`${inc.index}-${inc.incrementDate}`}
+                    className="rounded-md border border-gray-200 px-2 py-1 inline-flex flex-col leading-tight"
+                  >
+                    <span className="font-semibold">{`Increment ${inc.index}`}</span>
+                    <span>{formatDateToDayMonYear(inc.incrementDate)}</span>
+                    <span>{`₹${inc.oldCtc.toLocaleString('en-IN')} -> ₹${inc.newCtc.toLocaleString('en-IN')}`}</span>
+                  </span>
+                ))}
+              </span>
+            ) : undefined
+          }
           searchValue={searchTerm}
           onSearchChange={(e) => setSearchTerm(e.target.value)}
           searchPlaceholder="Search"
           showStats={true}
           showSearch={true}
-          showFilter={false}
+          showFilter={incrementHeaderMeta.length > 0}
+          filterValue={incrementFilter}
+          onFilterChange={setIncrementFilter}
+          filterOptions={getIncrementOptions()}
           showSecondFilter={true}
           secondFilterValue={yearFilter}
           onSecondFilterChange={setYearFilter}
@@ -662,6 +893,14 @@ const handleDownload = async (salary: Salary) => {
           onRefresh={handleRefresh}
           isRefreshing={isLoading}
           actionButtons={[
+            {
+              label: isAiCreating ? 'Creating...' : 'Create with AI',
+              icon: <FiCpu />,
+              variant: 'purple' as const,
+              pill: true,
+              onClick: handleCreateWithAi,
+              disabled: isAiCreating || !employeeId,
+            },
             { 
               label: 'Create Salary', 
               icon: <FaRegSquarePlus />, 
@@ -670,14 +909,6 @@ const handleDownload = async (salary: Salary) => {
               href: employeeId
                 ? `/salaries/add?employeeId=${employeeId}${from === 'employment' ? '&from=employment' : ''}`
                 : '/salaries/add'
-            },
-            {
-              label: isAiCreating ? 'Creating...' : 'Create with AI',
-              icon: <FiCpu />,
-              variant: 'purple' as const,
-              pill: true,
-              onClick: handleCreateWithAi,
-              disabled: isAiCreating || !employeeId,
             },
           ]}
           backButton={{
@@ -695,15 +926,56 @@ const handleDownload = async (salary: Salary) => {
               }
             },
           }}
-          headerClassName="px-6 pt-6 pb-6"
+          headerClassName="px-6 pt-6 pb-2"
         />
 
-        <div className="overflow-x-auto px-6 mt-4">
+        <div className="overflow-x-auto px-6 mt-0">
           <table className="min-w-full divide-y divide-gray-200 border border-gray-300">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sr. No
+                  <div className="flex items-center justify-center gap-2">
+                    {selectedRows.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={openBulkDeleteModal}
+                        disabled={isBulkDeleting}
+                        aria-label="Delete selected salaries"
+                        title="Delete selected salaries"
+                        className="p-1 rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                      >
+                        <FiTrash2 className="w-5 h-5" />
+                      </button>
+                    )}
+                    <div className="relative" ref={bulkDropdownRef}>
+                      <button
+                        type="button"
+                        aria-label="Bulk actions"
+                        onClick={() => {
+                          setSelectionEnabled(true);
+                          setBulkDropdownOpen((v) => !v);
+                        }}
+                        className="p-1 rounded hover:bg-gray-100 text-gray-600"
+                      >
+                        <FiSettings className="w-4 h-4" />
+                      </button>
+
+                      {bulkDropdownOpen && (
+                        <div className="absolute left-0 top-full z-30 mt-2 w-28 bg-white border border-gray-200 rounded-md shadow-lg">
+                          <button
+                            type="button"
+                            onClick={handleAllOptionClick}
+                            className={`block w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 ${
+                              selectAll ? 'bg-gray-100' : ''
+                            }`}
+                          >
+                            All
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <span>Sr. No</span>
+                  </div>
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Period
@@ -732,7 +1004,17 @@ const handleDownload = async (salary: Salary) => {
               {paginatedSalaries.map((salary, idx) => (
                 <tr key={salary.id} className="hover:bg-gray-50">
                   <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-900 text-center">
-                    {startIndex + idx + 1}
+                    <div className="flex items-center justify-center gap-2">
+                      {selectionEnabled && (
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.includes(salary.id)}
+                          onChange={() => toggleRowSelection(salary.id)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      )}
+                      <span>{startIndex + idx + 1}</span>
+                    </div>
                   </td>
                   <td className="px-6 py-1 whitespace-nowrap text-sm text-gray-900 text-center">
                     {getMonthName(salary.month)} {salary.year}
@@ -813,7 +1095,7 @@ const handleDownload = async (salary: Salary) => {
                 {employeeId ? 'No salary records found' : 'No salaries found'}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || yearFilter !== 'all'
+                {searchTerm || yearFilter !== 'all' || incrementFilter !== 'all'
                   ? 'Try adjusting your search, month, or year filter.'
                   : 'Get started by adding a salary record.'
                 }
@@ -821,6 +1103,60 @@ const handleDownload = async (salary: Salary) => {
             </div>
           )}
         </div>
+
+        {bulkDeleteOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={closeBulkDeleteModal}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={closeBulkDeleteModal}
+                disabled={isBulkDeleting}
+                aria-label="Close delete popup"
+                className="absolute top-4 right-4 h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+
+              <h2 className="text-base font-semibold text-gray-900">
+                {bulkDeleteIds.length} Salaries Selected
+              </h2>
+
+              <p className="mt-3 text-sm text-gray-700">
+                Are you sure you want to delete the selected records?
+              </p>
+              <p className="mt-2 text-sm text-gray-700">
+                This action cannot be undone.
+              </p>
+
+              <div className="mt-6 flex items-end justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={closeBulkDeleteModal}
+                  disabled={isBulkDeleting}
+                  className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                >
+                  <FiX className="w-4 h-4" />
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmBulkDelete}
+                  disabled={isBulkDeleting}
+                  className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                >
+                  <FiTrash2 className="w-4 h-4" />
+                  {isBulkDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Pagination */}
         {totalItems > 0 && (

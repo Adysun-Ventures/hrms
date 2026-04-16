@@ -95,6 +95,7 @@ interface TableHeaderProps {
   extraStatLabel?: string;
   extraStatValue?: number;
   stackExtraStat?: boolean;
+  extraStatValuePrefix?: React.ReactNode;
 }
 
 const TableHeader: React.FC<TableHeaderProps> = ({
@@ -160,6 +161,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   extraStatLabel,
   extraStatValue,
   stackExtraStat = false,
+  extraStatValuePrefix = null,
 }) => {
   const getButtonClasses = (variant: string = 'primary', hollow: boolean = false, pill: boolean = false) => {
     const shapeClass = pill ? 'rounded-full' : 'rounded-md';
@@ -401,12 +403,15 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                 {typeof extraStatValue === 'number' && extraStatLabel && (
                   stackExtraStat ? (
                     <span className="pr-2 py-1 rounded-full inline-flex flex-col items-center leading-tight">
-                      <span className="font-medium">{extraStatValue.toLocaleString('en-IN')}</span>
+                      <span className="font-medium inline-flex items-center">
+                        {extraStatValuePrefix}
+                        {extraStatValue.toLocaleString('en-IN')}
+                      </span>
                       <span>{extraStatLabel}</span>
                     </span>
                   ) : (
                     <span className="pr-2 py-1 rounded-full">
-                      {extraStatLabel}: <span className="font-medium">{extraStatValue.toLocaleString('en-IN')}</span>
+                      {extraStatLabel}: <span className="font-medium inline-flex items-center">{extraStatValuePrefix}{extraStatValue.toLocaleString('en-IN')}</span>
                     </span>
                   )
                 )}

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, use, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm, useFieldArray, Controller } from 'react-hook-form';
+import { useQueryClient } from '@tanstack/react-query';
 import { FiCheckCircle, FiRefreshCw, FiX } from 'react-icons/fi';
 import { FaSyncAlt } from 'react-icons/fa';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -26,6 +27,7 @@ import {
   PROFESSIONAL_REFERENCE_NAME_OPTIONS,
   buildProfessionalReferencesArray,
 } from '@/utils/professionalReferenceEmployment';
+import { queryKeys } from '@/lib/queryKeys';
 
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relievingCtc'> {
@@ -97,6 +99,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
 
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { currentUserData } = useAuth();
   const { id } = use(params);
   const [employmentOwnerId, setEmploymentOwnerId] = useState<string | null>(null);
@@ -184,6 +187,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
   const currentVariablePayValue = watch('currentVariablePay');
   const currentFixedPayValue = watch('currentFixedPay');
   const currentOtherAllowanceManualValue = watch('currentOtherAllowance');
+  const currentLastDrawnCtcValue = watch('lastSalaryAmount');
 
   const computedCurrentFixedPay = useMemo(() => {
     const ctc = Number(currentCtcValue ?? 0) || 0;
@@ -320,6 +324,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       shouldDirty: false,
     });
   }, [dirtyFields, currentOtherAllowanceCalculated, setValue]);
+
+  useEffect(() => {
+    if ((dirtyFields as any)?.lastSalaryAmount) return;
+    setValue('lastSalaryAmount', Number(currentCtcValue ?? 0) || 0, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+  }, [dirtyFields, currentCtcValue, setValue]);
 
   const getIncrementSalaryBreakdown = (increment: any) => {
     const joining = Number(joiningCtcValue ?? 0) || 0;
@@ -1084,6 +1096,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         ...data,
         employmentId: data.employmentId?.trim().toUpperCase(),
         salary: Number((data as any).salary ?? 0),
+        // Last Drawn CTC defaults from Current CTC, but remains editable.
+        lastSalaryAmount: Number((data as any).lastSalaryAmount ?? (data as any).salary ?? 0),
         joiningCtc: Number(data.joiningCtc ?? 0),
         inHandCtc: Number(data.inHandCtc ?? 0),
         relievingCtc: Number((data as any).relievingCtc ?? 0),
@@ -1155,6 +1169,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
       // No longer capture lastSalaryDate from UI; remove it from payload to keep schema clean.
       delete formattedData.lastSalaryDate;
+      delete formattedData.lastDrawnSalary;
 
       // Only include optional fields if they have values (not empty strings or undefined)
       if (data.endDate && data.endDate.trim()) {
@@ -1262,6 +1277,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         await updateEmployeeSelfEmployment(currentUserData!.id, id, formattedData);
       } else {
         await updateEmployment(id, formattedData);
+      }
+      await queryClient.invalidateQueries({ queryKey: queryKeys.employments.detail(id) });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.employments.lists() });
+      const employeeIdForCache = String(formattedData.employeeId || data.employeeId || '').trim();
+      if (employeeIdForCache) {
+        await queryClient.invalidateQueries({
+          queryKey: queryKeys.employments.byEmployee(employeeIdForCache),
+        });
       }
       toast.success('Employment updated successfully!', { id: 'updateEmployment' });
       router.push(`/employments/${id}`);
@@ -1437,25 +1460,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining Date
-                  </label>
-                  <Controller
-                    name="joiningDate"
-                    control={control}
-                    render={({ field }) => (
-                      <CustomDateInput
-                        name="joiningDate"
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select joining date"
-                        className="px-3 py-2"
-                      />
-                    )}
-                  />
-                </div>
-
                 {/* Joining CTC and In-hand CTC removed from this section */}
               </div>
             </div>
@@ -1491,27 +1495,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     <option value="Legal">Legal</option>
   </select>
 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Designation
-                  </label>
-                  <select
-                    {...register('jobTitle')}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    disabled={!selectedDepartment}
-                  >
-                    <option value="">
-                      {selectedDepartment ? 'Select Designation' : 'Select Department first'}
-                    </option>
-                    {(selectedDepartment ? designationOptionsByDepartment[selectedDepartment] : [])?.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1990,27 +1973,20 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       </label>
                       <input
                         type="number"
+                        step="0.01"
                         {...register('lastSalaryAmount', {
                           min: { value: 0, message: 'CTC must be positive' },
                           valueAsNumber: true,
                         })}
+                        value={Number(currentLastDrawnCtcValue ?? 0) || 0}
+                        onChange={(e) => {
+                          setValue('lastSalaryAmount', Number(e.target.value || 0), {
+                            shouldValidate: true,
+                            shouldDirty: true,
+                          });
+                        }}
                         className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter last drawn CTC"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Drawn In Hand
-                      </label>
-                      <input
-                        type="number"
-                        {...register('lastDrawnSalary', {
-                          min: { value: 0, message: 'In-hand must be positive' },
-                          valueAsNumber: true,
-                        })}
-                        className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        placeholder="Enter last drawn in-hand"
+                        placeholder="Auto from Current CTC"
                       />
                     </div>
 
@@ -2083,11 +2059,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Joining Designation
+                    <span className="text-red-500 mr-1">*</span> Joining Designation
                   </label>
                   <input
                     type="text"
-                    {...register('joiningDesignation')}
+                    {...register('joiningDesignation', {
+                      required: 'Joining Designation is required',
+                    })}
                     placeholder="Enter joining designation"
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                   />
@@ -2115,13 +2093,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Joining Variable (₹)
+                    <span className="text-red-500 mr-1">*</span> Joining Variable (₹)
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     placeholder="Joining Variable"
                     {...register('joiningVariablePay', {
+                      required: 'Joining Variable is required',
                       min: { value: 0, message: 'Amount must be positive' },
                       valueAsNumber: true,
                     })}
@@ -2131,13 +2110,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Joining Fixed (₹)
+                    <span className="text-red-500 mr-1">*</span> Joining Fixed (₹)
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     placeholder="Joining Fixed"
                     {...register('joiningFixedPay', {
+                      required: 'Joining Fixed is required',
                       min: { value: 0, message: 'Amount must be positive' },
                       valueAsNumber: true,
                     })}
@@ -2202,13 +2182,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Other Allowance (₹)
+                    <span className="text-red-500 mr-1">*</span> Other Allowance (₹)
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     placeholder="Other Allowance"
                     {...register('joiningOtherAllowance', {
+                      required: 'Joining Other Allowance is required',
                       valueAsNumber: true,
                     })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus-border-blue-500 text-black"
@@ -2353,6 +2334,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         <Controller
                           name={`increments.${index}.incrementDate` as const}
                           control={control}
+                          rules={{ required: 'Increment Date is required' }}
                           render={({ field }) => (
                             <CustomDateInput
                               name={`increments.${index}.incrementDate`}
@@ -2367,6 +2349,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <span className="text-red-500 mr-1">*</span>
                           {index === 0
                             ? 'Hike % WRT Joining CTC'
                             : index === 1
@@ -2377,6 +2360,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                           type="number"
                           step="0.01"
                           {...register(`increments.${index}.incrementHikePercentWrtJoiningCtc` as any, {
+                            required: 'Hike % is required',
                             min: { value: 0, message: 'Hike % must be positive' },
                             valueAsNumber: true,
                             onChange: (e) => {
@@ -2438,12 +2422,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Increment Variable (₹)
+                          <span className="text-red-500 mr-1">*</span> Increment Variable (₹)
                         </label>
                         <input
                           type="number"
                           step="0.01"
                           {...register(`increments.${index}.incrementVariablePay` as any, {
+                            required: 'Increment Variable is required',
                             min: { value: 0, message: 'Amount must be positive' },
                             valueAsNumber: true,
                           })}
@@ -2454,12 +2439,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Increment Fixed (₹)
+                          <span className="text-red-500 mr-1">*</span> Increment Fixed (₹)
                         </label>
                         <input
                           type="number"
                           step="0.01"
                           {...register(`increments.${index}.incrementFixedPay` as any, {
+                            required: 'Increment Fixed is required',
                             min: { value: 0, message: 'Amount must be positive' },
                             valueAsNumber: true,
                           })}
@@ -2521,12 +2507,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Other Allowance (₹)
+                          <span className="text-red-500 mr-1">*</span> Other Allowance (₹)
                         </label>
                         <input
                           type="number"
                           step="0.01"
                           {...register(`increments.${index}.incrementOtherAllowance` as any, {
+                            required: 'Increment Other Allowance is required',
                             valueAsNumber: true,
                           })}
                           className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -2559,11 +2546,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Old Designation
+                          <span className="text-red-500 mr-1">*</span> Old Designation
                         </label>
                         <input
                           type="text"
-                          {...register(`increments.${index}.previousDesignation` as const)}
+                          {...register(`increments.${index}.previousDesignation` as const, {
+                            required: 'Old Designation is required',
+                          })}
                           placeholder="E.g., Software Developer"
                           className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
@@ -2571,11 +2560,13 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          New Designation
+                          <span className="text-red-500 mr-1">*</span> New Designation
                         </label>
                         <input
                           type="text"
-                          {...register(`increments.${index}.newDesignation` as const)}
+                          {...register(`increments.${index}.newDesignation` as const, {
+                            required: 'New Designation is required',
+                          })}
                           placeholder="E.g., Senior Software Developer"
                           className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
@@ -2658,6 +2649,31 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <span className="text-red-500 mr-1">*</span> Designation
+                  </label>
+                  <select
+                    {...register('jobTitle', {
+                      required: 'Designation is required',
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    disabled={!selectedDepartment}
+                  >
+                    <option value="">
+                      {selectedDepartment ? 'Select Designation' : 'Select Department first'}
+                    </option>
+                    {(selectedDepartment ? designationOptionsByDepartment[selectedDepartment] : [])?.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.jobTitle && (
+                    <p className="mt-1 text-sm text-red-600">{errors.jobTitle.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span> Current CTC (₹)
                   </label>
                   <input
@@ -2678,13 +2694,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Variable (₹)
+                    <span className="text-red-500 mr-1">*</span> Variable (₹)
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     placeholder="Variable"
                     {...register('currentVariablePay', {
+                      required: 'Current Variable is required',
                       min: { value: 0, message: 'Amount must be positive' },
                       valueAsNumber: true,
                     })}
@@ -2694,13 +2711,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Fixed (₹)
+                    <span className="text-red-500 mr-1">*</span> Fixed (₹)
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     placeholder="Fixed"
                     {...register('currentFixedPay', {
+                      required: 'Current Fixed is required',
                       min: { value: 0, message: 'Amount must be positive' },
                       valueAsNumber: true,
                     })}
@@ -2765,13 +2783,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Other Allowance (₹)
+                    <span className="text-red-500 mr-1">*</span> Other Allowance (₹)
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     placeholder="Other Allowance"
                     {...register('currentOtherAllowance', {
+                      required: 'Current Other Allowance is required',
                       valueAsNumber: true,
                     })}
                     className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"

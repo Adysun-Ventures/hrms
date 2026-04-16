@@ -15,6 +15,7 @@ import {
   FiEdit2,
   FiBriefcase,
 } from 'react-icons/fi';
+import { FaRupeeSign } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { getEmployeeSelf } from '@/utils/firebaseUtils';
@@ -384,10 +385,10 @@ export default function EmployeeDashboardPage() {
             </div>
 
             <div>
-              <p className="font-medium text-gray-900">
-                {salaryCountLoading ? 'Loading...' : totalInHandSalary.toLocaleString('en-IN')}
+              <p className="font-medium text-gray-900 inline-flex items-center">
+                {salaryCountLoading ? 'Loading...' : (<><FaRupeeSign className="mr-1" />{totalInHandSalary.toLocaleString('en-IN')}</>)}
               </p>
-              <p className="text-sm text-gray-600">Total Sal. (Rs. In-Hand)</p>
+              <p className="text-sm text-gray-600">Total Sal. (In Hand)</p>
             </div>
           </div>
         </div>

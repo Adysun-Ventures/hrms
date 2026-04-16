@@ -284,6 +284,7 @@ export default function AddEmploymentPage() {
   const currentVariablePayValue = watch('currentVariablePay');
   const currentFixedPayValue = watch('currentFixedPay');
   const currentOtherAllowanceManualValue = watch('currentOtherAllowance');
+  const currentLastDrawnCtcValue = watch('lastSalaryAmount');
 
   const computedJoiningFixedPay = useMemo(() => {
     const ctc = Number(joiningCtcValue ?? 0) || 0;
@@ -387,6 +388,14 @@ export default function AddEmploymentPage() {
       shouldDirty: false,
     });
   }, [dirtyFields, currentOtherAllowanceCalculated, setValue]);
+
+  useEffect(() => {
+    if ((dirtyFields as any)?.lastSalaryAmount) return;
+    setValue('lastSalaryAmount', Number(currentCtcValue ?? 0) || 0, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+  }, [dirtyFields, currentCtcValue, setValue]);
 
   // Prefill Increment Details from Joining Salary Information
   useEffect(() => {
@@ -876,6 +885,8 @@ export default function AddEmploymentPage() {
         // Store normalized employmentId for consistent uniqueness checks
         employmentId: normalizedEmploymentId,
         salary: Number((data as any).salary ?? 0),
+        // Last Drawn CTC defaults from Current CTC, but remains editable.
+        lastSalaryAmount: Number((data as any).lastSalaryAmount ?? (data as any).salary ?? 0),
         joiningCtc: Number(data.joiningCtc ?? 0),
         inHandCtc: Number(data.inHandCtc ?? 0),
         relievingCtc: data.relievingCtc && data.relievingCtc !== '' ? Number(data.relievingCtc) : null,
@@ -1008,6 +1019,7 @@ export default function AddEmploymentPage() {
 
       // UI no longer captures lastSalaryDate for resignation details.
       delete (formattedData as any).lastSalaryDate;
+      delete (formattedData as any).lastDrawnSalary;
 
       const created = await addEmployment(formattedData);
       toast.success('Employment record created successfully!', { id: 'add-employment' });
@@ -1166,32 +1178,6 @@ export default function AddEmploymentPage() {
     <option value="Finance">Finance</option>
   </select>
 </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Designation
-                    </label>
-                    <select
-                      {...register('jobTitle', {
-                        required: 'Designation is required'
-                      })}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black disabled:bg-gray-100 disabled:cursor-not-allowed"
-                      disabled={!selectedDepartment}
-                    >
-                      <option value="">
-                        {selectedDepartment ? 'Select designation' : 'Select department first'}
-                      </option>
-                      {(selectedDepartment ? designationOptionsByDepartment[selectedDepartment] : [])?.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.jobTitle && (
-                      <p className="mt-1 text-sm text-red-600">{errors.jobTitle.message}</p>
-                    )}
-                  </div>
-
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1552,29 +1538,6 @@ export default function AddEmploymentPage() {
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      <span className="text-red-500 mr-1">*</span> Joining Date
-                    </label>
-                    <Controller
-                      name="joiningDate"
-                      control={control}
-                      rules={{ required: 'Joining date is required' }}
-                      render={({ field }) => (
-                        <CustomDateInput
-                          name="joiningDate"
-                          value={field.value}
-                          onChange={field.onChange}
-                          placeholder="Select joining date"
-                          className="px-3 py-2"
-                        />
-                      )}
-                    />
-                    {errors.joiningDate && (
-                      <p className="mt-1 text-sm text-red-600">{errors.joiningDate.message}</p>
-                    )}
-                  </div>
-
                   {/* Joining CTC and In-hand CTC removed from this section */}
 
                   {/* <div>
@@ -1648,11 +1611,13 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Joining Designation
+                      <span className="text-red-500 mr-1">*</span> Joining Designation
                     </label>
                     <input
                       type="text"
-                      {...register('joiningDesignation')}
+                      {...register('joiningDesignation', {
+                        required: 'Joining Designation is required',
+                      })}
                       placeholder="Enter joining designation"
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                     />
@@ -1680,13 +1645,14 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Joining Variable (₹)
+                      <span className="text-red-500 mr-1">*</span> Joining Variable (₹)
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       placeholder="Joining Variable"
                       {...register('joiningVariablePay', {
+                        required: 'Joining Variable is required',
                         min: { value: 0, message: 'Amount must be positive' },
                         valueAsNumber: true,
                       })}
@@ -1696,13 +1662,14 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Joining Fixed (₹)
+                      <span className="text-red-500 mr-1">*</span> Joining Fixed (₹)
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       placeholder="Joining Fixed"
                       {...register('joiningFixedPay', {
+                        required: 'Joining Fixed is required',
                         min: { value: 0, message: 'Amount must be positive' },
                         valueAsNumber: true,
                       })}
@@ -1767,13 +1734,14 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Other Allowance (₹)
+                      <span className="text-red-500 mr-1">*</span> Other Allowance (₹)
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       placeholder="Other Allowance"
                       {...register('joiningOtherAllowance', {
+                        required: 'Joining Other Allowance is required',
                         valueAsNumber: true,
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
@@ -1918,6 +1886,7 @@ export default function AddEmploymentPage() {
                             <Controller
                               name={`increments.${index}.incrementDate` as const}
                               control={control}
+                              rules={{ required: 'Increment Date is required' }}
                               render={({ field }) => (
                                 <CustomDateInput
                                   name={`increments.${index}.incrementDate`}
@@ -1932,6 +1901,7 @@ export default function AddEmploymentPage() {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
+                              <span className="text-red-500 mr-1">*</span>
                               {index === 0
                                 ? 'Hike % WRT Joining CTC'
                                 : index === 1
@@ -1942,6 +1912,7 @@ export default function AddEmploymentPage() {
                               type="number"
                               step="0.01"
                               {...register(`increments.${index}.incrementHikePercentWrtJoiningCtc` as any, {
+                                required: 'Hike % is required',
                                 min: { value: 0, message: 'Hike % must be positive' },
                                 valueAsNumber: true,
                                 onChange: (e) => {
@@ -2003,12 +1974,13 @@ export default function AddEmploymentPage() {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Increment Variable (₹)
+                              <span className="text-red-500 mr-1">*</span> Increment Variable (₹)
                             </label>
                             <input
                               type="number"
                               step="0.01"
                               {...register(`increments.${index}.incrementVariablePay` as any, {
+                                required: 'Increment Variable is required',
                                 min: { value: 0, message: 'Amount must be positive' },
                                 valueAsNumber: true,
                               })}
@@ -2019,12 +1991,13 @@ export default function AddEmploymentPage() {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Increment Fixed (₹)
+                              <span className="text-red-500 mr-1">*</span> Increment Fixed (₹)
                             </label>
                             <input
                               type="number"
                               step="0.01"
                               {...register(`increments.${index}.incrementFixedPay` as any, {
+                                required: 'Increment Fixed is required',
                                 min: { value: 0, message: 'Amount must be positive' },
                                 valueAsNumber: true,
                               })}
@@ -2086,12 +2059,13 @@ export default function AddEmploymentPage() {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Other Allowance (₹)
+                              <span className="text-red-500 mr-1">*</span> Other Allowance (₹)
                             </label>
                             <input
                               type="number"
                               step="0.01"
                               {...register(`increments.${index}.incrementOtherAllowance` as any, {
+                                required: 'Increment Other Allowance is required',
                                 valueAsNumber: true,
                               })}
                               className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -2124,11 +2098,13 @@ export default function AddEmploymentPage() {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Old Designation
+                              <span className="text-red-500 mr-1">*</span> Old Designation
                             </label>
                             <input
                               type="text"
-                              {...register(`increments.${index}.previousDesignation` as const)}
+                              {...register(`increments.${index}.previousDesignation` as const, {
+                                required: 'Old Designation is required',
+                              })}
                               placeholder="E.g., Software Developer"
                               className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
@@ -2136,11 +2112,13 @@ export default function AddEmploymentPage() {
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              New Designation
+                              <span className="text-red-500 mr-1">*</span> New Designation
                             </label>
                             <input
                               type="text"
-                              {...register(`increments.${index}.newDesignation` as const)}
+                              {...register(`increments.${index}.newDesignation` as const, {
+                                required: 'New Designation is required',
+                              })}
                               placeholder="E.g., Senior Software Developer"
                               className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
@@ -2222,6 +2200,31 @@ export default function AddEmploymentPage() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <span className="text-red-500 mr-1">*</span> Designation
+                    </label>
+                    <select
+                      {...register('jobTitle', {
+                        required: 'Designation is required',
+                      })}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      disabled={!selectedDepartment}
+                    >
+                      <option value="">
+                        {selectedDepartment ? 'Select designation' : 'Select department first'}
+                      </option>
+                      {(selectedDepartment ? designationOptionsByDepartment[selectedDepartment] : [])?.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.jobTitle && (
+                      <p className="mt-1 text-sm text-red-600">{errors.jobTitle.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
                       <span className="text-red-500 mr-1">*</span> Current CTC (₹)
                     </label>
                     <input
@@ -2242,13 +2245,37 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Variable (₹)
+                      Last Drawn CTC (₹)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="Auto from Current CTC"
+                      {...register('lastSalaryAmount', {
+                        min: { value: 0, message: 'Last Drawn CTC must be positive' },
+                        valueAsNumber: true,
+                      })}
+                      value={Number(currentLastDrawnCtcValue ?? 0) || 0}
+                      onChange={(e) => {
+                        setValue('lastSalaryAmount', Number(e.target.value || 0), {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        });
+                      }}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <span className="text-red-500 mr-1">*</span> Variable (₹)
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       placeholder="Variable"
                       {...register('currentVariablePay', {
+                        required: 'Current Variable is required',
                         min: { value: 0, message: 'Amount must be positive' },
                         valueAsNumber: true,
                       })}
@@ -2258,13 +2285,14 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Fixed (₹)
+                      <span className="text-red-500 mr-1">*</span> Fixed (₹)
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       placeholder="Fixed"
                       {...register('currentFixedPay', {
+                        required: 'Current Fixed is required',
                         min: { value: 0, message: 'Amount must be positive' },
                         valueAsNumber: true,
                       })}
@@ -2329,13 +2357,14 @@ export default function AddEmploymentPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Other Allowance (₹)
+                      <span className="text-red-500 mr-1">*</span> Other Allowance (₹)
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       placeholder="Other Allowance"
                       {...register('currentOtherAllowance', {
+                        required: 'Current Other Allowance is required',
                         valueAsNumber: true,
                       })}
                       className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"

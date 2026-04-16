@@ -18,6 +18,7 @@ import { db } from '@/firebase/config';
 import { saveAs } from 'file-saver';
 import { Salary } from '@/types';
 import { SalarySlipPDF } from '@/app/doc_pages/pages/v2/SalarySlipGenerator';
+import { getEmploymentsByEmployee } from '@/utils/firebaseUtils';
 
 const getMonthName = (month: number | string) => {
   const monthIndex = Number(month);
@@ -50,14 +51,21 @@ const toIntOrNull = (value: unknown): number | null => {
   return Number.isNaN(parsed) ? null : parsed;
 };
 
+const getFinancialYearFromMonthYear = (month: number | null, year: number | null): number | null => {
+  if (month === null || year === null) return null;
+  return month >= 4 ? year : year - 1;
+};
+
 export default function EmployeeMySalaryPage() {
   const router = useRouter();
   const { currentUserData } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [yearFilter, setYearFilter] = useState('all');
+  const [incrementFilter, setIncrementFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [incrementOptions, setIncrementOptions] = useState<Array<{ value: string; label: string; incrementDate: string }>>([]);
 
   useEffect(() => {
     if (!currentUserData) {
@@ -77,6 +85,47 @@ export default function EmployeeMySalaryPage() {
     isError,
   } = useEmployeeSelfSalariesByEmployee(employeeId);
 
+  useEffect(() => {
+    if (!employeeId) {
+      setIncrementOptions([]);
+      return;
+    }
+
+    (async () => {
+      try {
+        const employments = await getEmploymentsByEmployee(employeeId);
+        const timeline = (employments || [])
+          .flatMap((employment: any) => {
+            const increments = Array.isArray(employment?.increments) ? employment.increments : [];
+            return increments
+              .filter((inc: any) => inc?.incrementDate)
+              .map((inc: any) => ({ incrementDate: String(inc.incrementDate) }));
+          })
+          .map((inc) => ({ ...inc, dateObj: new Date(inc.incrementDate) }))
+          .filter((inc) => !Number.isNaN(inc.dateObj.getTime()))
+          .sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+
+        setIncrementOptions(
+          timeline.map((inc, idx) => ({
+            value: String(idx + 1),
+            label: `Increment ${idx + 1}`,
+            incrementDate: inc.incrementDate,
+          })),
+        );
+      } catch (error) {
+        console.error('Failed to load increments for employee salary filter:', error);
+        setIncrementOptions([]);
+      }
+    })();
+  }, [employeeId]);
+
+  const getSalaryMonthDate = (salary: Salary): Date | null => {
+    const month = toIntOrNull((salary as any).month);
+    const year = toIntOrNull((salary as any).year);
+    if (month === null || year === null || month < 1 || month > 12) return null;
+    return new Date(year, month - 1, 1);
+  };
+
   const filteredSalaries = salaries
     .filter((salary) => {
       const matchesSearch =
@@ -85,13 +134,38 @@ export default function EmployeeMySalaryPage() {
           .toLowerCase()
           .includes(searchTerm.toLowerCase());
 
+      const salaryMonth = toIntOrNull((salary as any).month);
       const salaryYear = toIntOrNull(salary.year);
-      const selectedYear = toIntOrNull(yearFilter);
+      const salaryFinancialYear = getFinancialYearFromMonthYear(salaryMonth, salaryYear);
+      const selectedFinancialYear = toIntOrNull(yearFilter);
 
       const matchesYear =
-        yearFilter === 'all' || (salaryYear !== null && selectedYear !== null && salaryYear === selectedYear);
+        yearFilter === 'all' ||
+        (salaryFinancialYear !== null &&
+          selectedFinancialYear !== null &&
+          salaryFinancialYear === selectedFinancialYear);
 
-      return matchesSearch && matchesYear;
+      const selectedIncrementNumber = toIntOrNull(incrementFilter);
+      const selectedIncrementIndex =
+        selectedIncrementNumber === null
+          ? -1
+          : incrementOptions.findIndex((inc) => Number(inc.value) === selectedIncrementNumber);
+      const selectedIncrementMeta = selectedIncrementIndex >= 0 ? incrementOptions[selectedIncrementIndex] : null;
+      const previousIncrementMeta = selectedIncrementIndex > 0 ? incrementOptions[selectedIncrementIndex - 1] : null;
+      const selectedIncrementDate = selectedIncrementMeta ? new Date(selectedIncrementMeta.incrementDate) : null;
+      const previousIncrementDate = previousIncrementMeta ? new Date(previousIncrementMeta.incrementDate) : null;
+      const salaryMonthDate = getSalaryMonthDate(salary);
+      const matchesIncrement =
+        incrementFilter === 'all' ||
+        (selectedIncrementDate !== null &&
+          !Number.isNaN(selectedIncrementDate.getTime()) &&
+          salaryMonthDate !== null &&
+          salaryMonthDate <= selectedIncrementDate &&
+          (previousIncrementDate === null ||
+            Number.isNaN(previousIncrementDate.getTime()) ||
+            salaryMonthDate > previousIncrementDate));
+
+      return matchesSearch && matchesYear && matchesIncrement;
     })
     .sort((a, b) => {
       const yearA = Number((a as any).year) || 0;
@@ -123,16 +197,31 @@ export default function EmployeeMySalaryPage() {
     setCurrentPage(1);
   };
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, yearFilter, incrementFilter]);
+
   const getYearOptions = () => {
-    const years = Array.from(
+    const financialYears = Array.from(
       new Set(
         salaries
-          .map((s) => toIntOrNull(s.year))
-          .filter((y): y is number => y !== null),
+          .map((s) =>
+            getFinancialYearFromMonthYear(
+              toIntOrNull((s as any).month),
+              toIntOrNull((s as any).year),
+            ),
+          )
+          .filter((fy): fy is number => fy !== null),
       ),
     ).sort((a, b) => b - a);
 
-    return [{ label: 'All Years', value: 'all' }, ...years.map((y) => ({ label: String(y), value: String(y) }))];
+    return [
+      { label: 'Financial Years', value: 'all' },
+      ...financialYears.map((fyStart) => ({
+        label: `FY ${fyStart}\u2013${String(fyStart + 1).slice(-2)}`,
+        value: String(fyStart),
+      })),
+    ];
   };
 
   const handleDownload = async (salary: Salary) => {
@@ -261,8 +350,9 @@ export default function EmployeeMySalaryPage() {
           total={filteredSalaries.length}
           totalLabel="Total Sal"
           stackTotalStat={true}
-          extraStatLabel="Total Sal. (Rs. In-Hand)"
+          extraStatLabel="Total Sal. (In Hand)"
           extraStatValue={totalInHandAmount}
+          extraStatValuePrefix={<FaRupeeSign className="mr-1" />}
           stackExtraStat={true}
           backButton={{ href: '/employee-dashboard', label: 'Back' }}
           actionButtons={[
@@ -279,7 +369,13 @@ export default function EmployeeMySalaryPage() {
           onSearchChange={(e) => setSearchTerm(e.target.value)}
           showStats={true}
           showSearch={true}
-          showFilter={false}
+          showFilter={incrementOptions.length > 0}
+          filterValue={incrementFilter}
+          onFilterChange={setIncrementFilter}
+          filterOptions={[
+            { value: 'all', label: 'All Increments' },
+            ...incrementOptions.map((inc) => ({ value: inc.value, label: inc.label })),
+          ]}
           secondFilterValue={yearFilter}
           onSecondFilterChange={setYearFilter}
           secondFilterOptions={getYearOptions()}
@@ -381,7 +477,7 @@ export default function EmployeeMySalaryPage() {
               <FaRupeeSign className="mx-auto h-8 w-8 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No salary records found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || yearFilter !== 'all'
+                {searchTerm || yearFilter !== 'all' || incrementFilter !== 'all'
                   ? 'Try adjusting your search, month, or year filter.'
                   : 'No salary slips have been generated yet.'}
               </p>

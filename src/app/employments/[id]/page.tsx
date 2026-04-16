@@ -879,28 +879,38 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               return (
                 <div className="space-y-4">
                   <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-                    <table className="w-full min-w-[720px] border-collapse text-sm text-gray-900">
+                    <table className="w-full min-w-[840px] border-collapse text-sm text-gray-900">
                       <thead>
                         <tr className="bg-gray-100">
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
+                            Joining Date
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                             Joining CTC
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                             Joining Variable
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                             Fixed
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                             Gross Salary
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                             Is PF
                           </th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {employment.joiningDate
+                              ? formatDateToDayMonYear(employment.joiningDate)
+                              : employment.startDate
+                                ? formatDateToDayMonYear(employment.startDate)
+                                : '-'}
+                          </td>
                           <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
                             {currencyOrDash(joiningCtc)}
                           </td>
@@ -995,28 +1005,36 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   )}
 
                   <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-                    <table className="w-full min-w-[720px] border-collapse text-sm text-gray-900">
+                    <table className="w-full min-w-[840px] border-collapse text-sm text-gray-900">
                       <thead>
                         <tr className="bg-gray-100">
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
+                            Date
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                             Current CTC
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                             Variable
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                             Fixed
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                             Gross Salary
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                             Is PF
                           </th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                            {employment.lastWorkingDate
+                              ? formatDateToDayMonYear(employment.lastWorkingDate)
+                              : 'Present'}
+                          </td>
                           <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
                             {currencyOrDash(currentCtc)}
                           </td>
@@ -1300,15 +1318,6 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
                   <div>
                     <p className="text-lg font-medium text-gray-900">
-                      {employment.lastDrawnSalary
-                        ? formatCurrency(employment.lastDrawnSalary)
-                        : '-'}
-                    </p>
-                    <p className="text-sm text-gray-500">Last Drawn In Hand</p>
-                  </div>
-
-                  <div>
-                    <p className="text-lg font-medium text-gray-900">
                       {employment.lastSalaryAmount
                         ? formatCurrency(employment.lastSalaryAmount)
                         : '-'}
@@ -1330,15 +1339,6 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                       {employment.employeeStatus || '-'}
                     </p>
                     <p className="text-sm text-gray-500">Employee Status</p>
-                  </div>
-
-                  <div>
-                    <p className="text-lg font-medium text-gray-900">
-                      {(employment as any).relievingCtc
-                        ? formatCurrency((employment as any).relievingCtc)
-                        : '-'}
-                    </p>
-                    <p className="text-sm text-gray-500">Relieving CTC</p>
                   </div>
 
                   <div className="md:col-span-2">

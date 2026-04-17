@@ -18,7 +18,7 @@ import {
   buildProfessionalReferencesArray,
 } from '@/utils/professionalReferenceEmployment';
 import { Employment, Employee } from '@/types';
-import { FiCheckCircle, FiPlus, FiRefreshCw, FiX } from 'react-icons/fi';
+import { FiCheckCircle, FiPlus, FiRefreshCw, FiTrash2, FiX } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
@@ -30,6 +30,8 @@ import {
   EMPLOYMENT_ID_NUMBER_MIN,
   randomEmploymentIdSuffix,
 } from '@/constants/employmentJobOptions';
+import { FaHandSparkles } from 'react-icons/fa6';
+import { FaBroom } from 'react-icons/fa6';
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   // Add all the fields we need
@@ -125,6 +127,7 @@ export default function AddEmploymentPage() {
   const [preSelectedEmployee, setPreSelectedEmployee] = useState<Employee | null>(null);
   const [showIncrementDetails, setShowIncrementDetails] = useState(false);
   const [aiIncrementCount, setAiIncrementCount] = useState(1);
+  const [incrementDeleteIndex, setIncrementDeleteIndex] = useState<number | null>(null);
   // NOTE: reverse-sync removed (no sibling input auto-updates)
   // Salary breakdown sections removed as requested.
   const generatedEmploymentIdsRef = useRef<Set<string>>(new Set());
@@ -192,6 +195,63 @@ export default function AddEmploymentPage() {
     control,
     name: 'increments' as any,
   });
+
+  const closeIncrementDeleteModal = () => {
+    setIncrementDeleteIndex(null);
+  };
+
+  const confirmIncrementDelete = () => {
+    if (incrementDeleteIndex === null) return;
+    removeIncrement(incrementDeleteIndex);
+    closeIncrementDeleteModal();
+  };
+
+  const handleCleanSection = (section: string) => {
+    switch (section) {
+      case 'jobDetails':
+        setValue('department', '' as any, { shouldDirty: true });
+        setValue('location', '' as any, { shouldDirty: true });
+        setValue('workSchedule', '' as any, { shouldDirty: true });
+        setValue('whereWereYouEmploid', '' as any, { shouldDirty: true });
+        break;
+      case 'professionalReference':
+        setValue('teamLead', {} as any, { shouldDirty: true });
+        setValue('colleague1', {} as any, { shouldDirty: true });
+        setValue('colleague3', {} as any, { shouldDirty: true });
+        setValue('reportingManagerRef', {} as any, { shouldDirty: true });
+        break;
+      case 'employmentInfo':
+        setValue('employmentId', '' as any, { shouldDirty: true });
+        break;
+      case 'joiningSalary':
+        setValue('joiningDate', '' as any, { shouldDirty: true });
+        setValue('joiningDesignation', '' as any, { shouldDirty: true });
+        setValue('joiningCtc', 0 as any, { shouldDirty: true });
+        setValue('joiningVariablePay', 0 as any, { shouldDirty: true });
+        setValue('joiningOtherAllowance', 0 as any, { shouldDirty: true });
+        setValue('joiningPfIncluded', false as any, { shouldDirty: true });
+        break;
+      case 'increments':
+        replaceIncrements([] as any);
+        setShowIncrementDetails(false);
+        break;
+      case 'currentSalary':
+        setValue('jobTitle', '' as any, { shouldDirty: true });
+        setValue('salary', 0 as any, { shouldDirty: true });
+        setValue('lastSalaryAmount', 0 as any, { shouldDirty: true });
+        setValue('currentVariablePay', 0 as any, { shouldDirty: true });
+        setValue('currentOtherAllowance', 0 as any, { shouldDirty: true });
+        setValue('currentPfIncluded', false as any, { shouldDirty: true });
+        break;
+      case 'bankDetails':
+        setValue('bankName', '' as any, { shouldDirty: true });
+        setValue('accountNo', '' as any, { shouldDirty: true });
+        setValue('ifscCode', '' as any, { shouldDirty: true });
+        break;
+      default:
+        break;
+    }
+  };
 
   const whereWereYouEmploidValue = watch('whereWereYouEmploid');
   const selectedDepartment = watch('department');
@@ -1127,7 +1187,9 @@ export default function AddEmploymentPage() {
                 />
               ) : (
                 <div className="bg-white p-4 rounded-lg mb-6">
-                  <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Basic Information</h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-medium text-gray-800 border-l-4 border-purple-500 pl-2">Basic Information</h2>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1156,7 +1218,17 @@ export default function AddEmploymentPage() {
 
               {/* Job Details Section - MOVED TO TOP */}
               <div className="bg-white p-4 rounded-lg mb-6">
-                <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-purple-500 pl-2">Job Details</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-gray-800 border-l-4 border-purple-500 pl-2">Job Details</h2>
+                  <button
+                    type="button"
+                    onClick={() => handleCleanSection('jobDetails')}
+                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  >
+                    <FaBroom className="w-4 h-4" />
+                    Clean
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
@@ -1226,9 +1298,19 @@ export default function AddEmploymentPage() {
 
               {/* Professional Reference — same as Edit Employment */}
               <div className="bg-white p-4 rounded-lg mb-6">
-                <h2 className="text-lg font-semibold text-gray-800 mb-4 border-l-4 border-indigo-500 pl-2">
-                  Professional Reference
-                </h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-gray-800 border-l-4 border-indigo-500 pl-2">
+                    Professional Reference
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => handleCleanSection('professionalReference')}
+                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  >
+                    <FaBroom className="w-4 h-4" />
+                    Clean
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
@@ -1497,7 +1579,17 @@ export default function AddEmploymentPage() {
 
               {/* Employment Information Section */}
               <div className="bg-white p-4 rounded-lg mb-6">
-                <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Employment Information</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-gray-800 border-l-4 border-blue-500 pl-2">Employment Information</h2>
+                  <button
+                    type="button"
+                    onClick={() => handleCleanSection('employmentInfo')}
+                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  >
+                    <FaBroom className="w-4 h-4" />
+                    Clean
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
@@ -1562,35 +1654,45 @@ export default function AddEmploymentPage() {
                   <h2 className="text-lg font-medium text-gray-800 border-l-4 border-cyan-500 pl-2">
                     Joining Salary Information
                   </h2>
-                  <Controller
-                    name="joiningPfIncluded"
-                    control={control}
-                    render={({ field }) => (
-                      <button
-                        type="button"
-                        onClick={() => field.onChange(!field.value)}
-                        className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-medium border ${
-                          field.value
-                            ? 'bg-green-100 text-green-700 border-green-300'
-                            : 'bg-gray-100 text-gray-700 border-gray-300'
-                        }`}
-                      >
-                        <span className="mr-2">Is PF</span>
-                        <span
-                          className={`h-4 w-8 rounded-full flex items-center ${
-                            field.value ? 'bg-green-500' : 'bg-gray-400'
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleCleanSection('joiningSalary')}
+                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                    >
+                      <FaBroom className="w-4 h-4" />
+                      Clean
+                    </button>
+                    <Controller
+                      name="joiningPfIncluded"
+                      control={control}
+                      render={({ field }) => (
+                        <button
+                          type="button"
+                          onClick={() => field.onChange(!field.value)}
+                          className={`inline-flex items-center rounded-full px-4 py-1 text-xs font-medium border ${
+                            field.value
+                              ? 'bg-green-100 text-green-700 border-green-300'
+                              : 'bg-gray-100 text-gray-700 border-gray-300'
                           }`}
                         >
+                          <span className="mr-2">Is PF</span>
                           <span
-                            className={`h-3 w-3 bg-white rounded-full transform transition-transform ${
-                              field.value ? 'translate-x-4' : 'translate-x-1'
+                            className={`h-4 w-8 rounded-full flex items-center ${
+                              field.value ? 'bg-green-500' : 'bg-gray-400'
                             }`}
-                          />
-                        </span>
-                        <span className="ml-2 text-[11px]">{field.value ? 'ON' : 'OFF'}</span>
-                      </button>
-                    )}
-                  />
+                          >
+                            <span
+                              className={`h-3 w-3 bg-white rounded-full transform transition-transform ${
+                                field.value ? 'translate-x-4' : 'translate-x-1'
+                              }`}
+                            />
+                          </span>
+                          <span className="ml-2 text-[11px]">{field.value ? 'ON' : 'OFF'}</span>
+                        </button>
+                      )}
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
@@ -1781,7 +1883,15 @@ export default function AddEmploymentPage() {
                   <h2 className="text-lg font-medium text-gray-800 border-l-4 border-purple-500 pl-2">
                     Increment Details
                   </h2>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => handleCleanSection('increments')}
+                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                    >
+                      <FaBroom className="w-4 h-4" />
+                      Clean
+                    </button>
                     <select
                       value={aiIncrementCount}
                       onChange={(e) => setAiIncrementCount(Number(e.target.value) || 1)}
@@ -1796,15 +1906,17 @@ export default function AddEmploymentPage() {
                     <button
                       type="button"
                       onClick={handleCreateIncrementsWithAi}
-                      className="px-3 py-1 text-sm bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200"
+                      className="px-4 py-2 text-sm bg-blue-600 text-white rounded-full hover:bg-blue-700 inline-flex items-center gap-2"
                     >
+                      <FaHandSparkles className="w-4 h-4" />
                       Create with AI
                     </button>
                     <button
                       type="button"
                       onClick={handleAddIncrement}
-                      className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
+                      className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 inline-flex items-center gap-1"
                     >
+                      <FiPlus className="w-4 h-4" />
                       Add Increment
                     </button>
                   </div>
@@ -1870,10 +1982,11 @@ export default function AddEmploymentPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => removeIncrement(index)}
-                              className="text-xs text-red-600 hover:text-red-800"
+                              onClick={() => setIncrementDeleteIndex(index)}
+                              className="border border-gray-300 rounded-md p-2 w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 hover:text-red-900"
+                              title={`Delete Increment ${index + 1}`}
                             >
-                              Remove
+                              <FiTrash2 className="w-5 h-5" />
                             </button>
                           </div>
                         </div>
@@ -2139,6 +2252,14 @@ export default function AddEmploymentPage() {
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
+                      onClick={() => handleCleanSection('currentSalary')}
+                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                    >
+                      <FaBroom className="w-4 h-4" />
+                      Clean
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         const latestIncrement =
                           incrementFields.length > 0
@@ -2400,7 +2521,17 @@ export default function AddEmploymentPage() {
 
               {/* Bank Details Section */}
               <div className="bg-white p-4 rounded-lg mb-6">
-                <h2 className="text-lg font-medium text-gray-800 mb-4 border-l-4 border-blue-500 pl-2">Salary Account and Bank Details</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-medium text-gray-800 border-l-4 border-blue-500 pl-2">Salary Account and Bank Details</h2>
+                  <button
+                    type="button"
+                    onClick={() => handleCleanSection('bankDetails')}
+                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  >
+                    <FaBroom className="w-4 h-4" />
+                    Clean
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
@@ -2499,6 +2630,56 @@ export default function AddEmploymentPage() {
                 </button>
               </div>
             </form>
+
+            {incrementDeleteIndex !== null && (
+              <div
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+                onClick={closeIncrementDeleteModal}
+              >
+                <div
+                  className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    onClick={closeIncrementDeleteModal}
+                    aria-label="Close delete popup"
+                    className="absolute top-4 right-4 h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center"
+                  >
+                    <FiX className="w-4 h-4" />
+                  </button>
+
+                  <h2 className="text-base font-semibold text-gray-900">
+                    Delete Increment {incrementDeleteIndex + 1}
+                  </h2>
+                  <p className="mt-3 text-sm text-gray-700">
+                    Are you sure you want to delete this increment?
+                  </p>
+                  <p className="mt-2 text-sm text-gray-700">
+                    This action cannot be undone.
+                  </p>
+
+                  <div className="mt-6 flex items-end justify-between gap-3">
+                    <button
+                      type="button"
+                      onClick={closeIncrementDeleteModal}
+                      className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200 inline-flex items-center gap-2"
+                    >
+                      <FiX className="w-4 h-4" />
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={confirmIncrementDelete}
+                      className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 inline-flex items-center gap-2"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}</div>
     </Layout>

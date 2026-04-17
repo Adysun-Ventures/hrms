@@ -14,6 +14,9 @@ import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 import CustomDateInput from '@/components/ui/CustomDateInput';
+import { FaBroom, FaHandSparkles } from 'react-icons/fa6';
+import { collection, getDocs, limit, query, where } from 'firebase/firestore';
+import { db } from '@/firebase/config';
 
 
 type EmployeeFormData = Omit<Employee, 'id'>;
@@ -61,7 +64,7 @@ export default function AddEmployeePage() {
 
   const router = useRouter();
 
-  const { register, handleSubmit, formState: { errors }, watch, setValue, control } = useForm<EmployeeFormData>({
+  const { register, handleSubmit, formState: { errors }, watch, setValue, control, setError: setFieldError } = useForm<EmployeeFormData>({
     defaultValues: {
       status: 'active',
       employeeType: 'internal', // Default to internal
@@ -143,6 +146,52 @@ export default function AddEmployeePage() {
         ? { ...entry, type: newType }
         : entry
     ));
+  };
+
+  const handleCleanSection = (section: 'personal' | 'educational' | 'additional' | 'contact' | 'identification') => {
+    if (section === 'personal') {
+      setValue('name', '' as any);
+      setValue('phone', '' as any);
+      setValue('password', '' as any);
+      setValue('employeeType', 'internal' as any);
+      setValue('dateOfBirth', '' as any);
+      setValue('bloodGroup', '' as any);
+      setValue('homeTown', '' as any);
+      setValue('email', '' as any);
+      setValue('currentAddress', '' as any);
+      setValue('permanentAddress', '' as any);
+      setValue('panCard', '' as any);
+      setValue('aadharCard', '' as any);
+      setSameAsCurrentAddress(false);
+      return;
+    }
+
+    if (section === 'additional') {
+      setValue('dateOfBirth', '' as any);
+      setValue('bloodGroup', '' as any);
+      setValue('homeTown', '' as any);
+      return;
+    }
+
+    if (section === 'contact') {
+      setValue('email', '' as any);
+      setValue('currentAddress', '' as any);
+      setValue('permanentAddress', '' as any);
+      setSameAsCurrentAddress(false);
+      return;
+    }
+
+    if (section === 'identification') {
+      setValue('aadharCard', '' as any);
+      setValue('panCard', '' as any);
+      setValue('drivingLicense', '' as any);
+      return;
+    }
+
+    setEducationEntries([{ id: uuid(), type: '12th' }]);
+    setValue('secondaryEducation', [] as any);
+    setValue('graduationData' as any, {} as any);
+    setValue('postGraduationData' as any, {} as any);
   };
 
   const normalizeParsedDate = (value?: string) => {
@@ -303,13 +352,64 @@ export default function AddEmployeePage() {
       setError(null);
       toast.loading('Adding employee...', { id: 'add-employee' });
 
+      // Clear any previous uniqueness errors.
+      const clearUniqueErrors = () => {
+        setFieldError('phone' as any, { type: 'manual', message: '' } as any);
+        setFieldError('email' as any, { type: 'manual', message: '' } as any);
+        setFieldError('aadharCard' as any, { type: 'manual', message: '' } as any);
+        setFieldError('panCard' as any, { type: 'manual', message: '' } as any);
+        setFieldError('drivingLicense' as any, { type: 'manual', message: '' } as any);
+        setFieldError('voterID' as any, { type: 'manual', message: '' } as any);
+      };
+      clearUniqueErrors();
+
+      const normalizeDigits = (value?: string) => String(value || '').replace(/\D/g, '');
+      const normalizeEmail = (value?: string) => String(value || '').trim().toLowerCase();
+      const normalizeUpper = (value?: string) => String(value || '').trim().toUpperCase();
+
+      const existsInEmployeesByField = async (field: string, value: string) => {
+        const q = query(collection(db, 'employees'), where(field, '==', value), limit(1));
+        const snap = await getDocs(q);
+        return !snap.empty;
+      };
+
       // Check if phone number is already registered
       const formattedPhoneNumber = `+91${data.phone}`;
       const existingUser = await checkUserByPhone(formattedPhoneNumber);
       
       if (existingUser) {
+        setFieldError('phone' as any, {
+          type: 'manual',
+          message: 'Mobile number is already registered.',
+        } as any);
         const userType = existingUser.userType === 'admin' ? 'admin' : 'employee';
         throw new Error(`Phone number is already registered with an ${userType}`);
+      }
+
+      // Check Email uniqueness (employees collection)
+      const emailValue = normalizeEmail((data as any).email);
+      if (emailValue) {
+        const emailExists = await existsInEmployeesByField('email', emailValue);
+        if (emailExists) {
+          setFieldError('email' as any, {
+            type: 'manual',
+            message: 'Email is already registered.',
+          } as any);
+          throw new Error('Email is already registered. Please use a different email.');
+        }
+      }
+
+      // Check Aadhaar uniqueness (stored without spaces)
+      const aadharDigits = normalizeDigits((data as any).aadharCard);
+      if (aadharDigits) {
+        const aadharExists = await existsInEmployeesByField('aadharCard', aadharDigits);
+        if (aadharExists) {
+          setFieldError('aadharCard' as any, {
+            type: 'manual',
+            message: 'Aadhaar number is already registered.',
+          } as any);
+          throw new Error('Aadhaar number is already registered. Please use a different Aadhaar number.');
+        }
       }
 
       // Validate PAN card if provided
@@ -321,7 +421,37 @@ export default function AddEmployeePage() {
         // Check if PAN already exists
         const panExists = await checkPANExistsAnywhere(data.panCard.toUpperCase());
         if (panExists) {
+          setFieldError('panCard' as any, {
+            type: 'manual',
+            message: 'PAN number is already registered.',
+          } as any);
           throw new Error('This PAN number is already registered. Please use a different PAN or contact support.');
+        }
+      }
+
+      // Check Driving License uniqueness
+      const drivingLicenseValue = normalizeUpper((data as any).drivingLicense);
+      if (drivingLicenseValue) {
+        const drivingExists = await existsInEmployeesByField('drivingLicense', drivingLicenseValue);
+        if (drivingExists) {
+          setFieldError('drivingLicense' as any, {
+            type: 'manual',
+            message: 'Driving license is already registered.',
+          } as any);
+          throw new Error('Driving license is already registered. Please use a different driving license.');
+        }
+      }
+
+      // Check Voter ID uniqueness
+      const voterIdValue = normalizeUpper((data as any).voterID);
+      if (voterIdValue) {
+        const voterExists = await existsInEmployeesByField('voterID', voterIdValue);
+        if (voterExists) {
+          setFieldError('voterID' as any, {
+            type: 'manual',
+            message: 'Voter ID is already registered.',
+          } as any);
+          throw new Error('Voter ID is already registered. Please use a different voter ID.');
         }
       }
 
@@ -459,9 +589,10 @@ export default function AddEmployeePage() {
                   type="button"
                   onClick={handleAutoFillFromText}
                   disabled={isAutoFilling}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2"
                 >
-                  {isAutoFilling ? 'Auto Filling...' : 'Auto Fill from Text'}
+                  <FaHandSparkles className="w-4 h-4" />
+                  {isAutoFilling ? 'Creating With AI...' : 'Create With AI'}
                 </button>
                 {autoFillError && <p className="text-sm text-red-600">{autoFillError}</p>}
               </div>
@@ -470,14 +601,24 @@ export default function AddEmployeePage() {
 
           {/* Personal Details Section */}
           <div className="bg-white p-4 mb-4 rounded-lg">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Personal Details</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold text-gray-800 border-l-4 border-blue-500 pl-2">Personal Details</h2>
+              <button
+                type="button"
+                onClick={() => handleCleanSection('personal')}
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+              >
+                <FaBroom className="w-4 h-4" />
+                Clean
+              </button>
+            </div>
 
             <div className="bg-white p-4 rounded-lg mb-4">
               <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Basic Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Name <span className="text-red-500 text-xs">(Frist Name Middle Name Last Name)</span>
+                    <span className="text-red-500 mr-1">*</span> Name <span className="text-red-500 text-xs">(First Name &nbsp;&nbsp;&nbsp;&nbsp; Middle Name &nbsp;&nbsp;&nbsp;&nbsp; Last Name)</span>
                   </label>
                   <input
                     type="text"
@@ -577,7 +718,17 @@ export default function AddEmployeePage() {
 
             {/* Additional (optional) details */}
             <div className="bg-white p-4 rounded-lg mb-4">
-              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Additional Details</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-md font-medium text-gray-700 border-l-2 border-green-500 pl-2">Additional Details</h3>
+                <button
+                  type="button"
+                  onClick={() => handleCleanSection('additional')}
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                >
+                  <FaBroom className="w-4 h-4" />
+                  Clean
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -623,6 +774,26 @@ export default function AddEmployeePage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Blood Group
+                  </label>
+                  <select
+                    {...register('bloodGroup')}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  >
+                    <option value="">Select blood group</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Home Town
                   </label>
                   <input
@@ -645,9 +816,19 @@ export default function AddEmployeePage() {
 
             {/* Contact Information */}
             <div className="bg-white p-4 rounded-lg mb-4">
-              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">
-                Contact Information
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-md font-medium text-gray-700 border-l-2 border-green-500 pl-2">
+                  Contact Information
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => handleCleanSection('contact')}
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                >
+                  <FaBroom className="w-4 h-4" />
+                  Clean
+                </button>
+              </div>
 
               {/* Row 1: Email */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -728,7 +909,17 @@ export default function AddEmployeePage() {
 
             {/* Identification Documents */}
             <div className="bg-white p-4 rounded-lg mb-4">
-              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Identification Documents</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-md font-medium text-gray-700 border-l-2 border-green-500 pl-2">Identification Documents</h3>
+                <button
+                  type="button"
+                  onClick={() => handleCleanSection('identification')}
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                >
+                  <FaBroom className="w-4 h-4" />
+                  Clean
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -814,7 +1005,17 @@ export default function AddEmployeePage() {
 
           {/* Educational Details Section */}
           <div className="bg-white p-4 rounded-lg">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Educational Details</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold text-gray-800 border-l-4 border-blue-500 pl-2">Educational Details</h2>
+              <button
+                type="button"
+                onClick={() => handleCleanSection('educational')}
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+              >
+                <FaBroom className="w-4 h-4" />
+                Clean
+              </button>
+            </div>
 
             {/* Higher Education */}
             <div className="bg-white p-4 rounded-lg mb-4">

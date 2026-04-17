@@ -138,7 +138,10 @@ const getNetSalary = (f)=>
 const formatCurrency = (value) => {
   const num = Number(value);
   if (!Number.isFinite(num)) return '0.00';
-  return num.toFixed(2);
+  return num.toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 };
 
 // Mask bank account number: show `xxxx` + last 5 digits.
@@ -574,7 +577,7 @@ return (
         ))}
 
         <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderTopWidth: 0.75, borderTopColor: "#000" }}>
-          <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Gross Salary</Text>
+          <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Gross Salary (A)</Text>
           <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
             {formatCurrency(getTotalEarnings(f))}
           </Text>
@@ -599,7 +602,7 @@ return (
 
         <View style={{ flexDirection: "row", backgroundColor: "#e8e8e8", borderTopWidth: 0.75, borderTopColor: "#000", marginTop: f.enablePF ? 0 : 18.5 }}>
           
-          <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Total Deductions</Text>
+          <Text style={{ width: "60%", padding: 4, fontWeight: "bold" }}>Total Deductions (B)</Text>
           <Text style={{ width: "40%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
             {formatCurrency(getTotalDeductions(f))}
           </Text>
@@ -619,7 +622,7 @@ return (
             borderRightColor: "#000"
           }}
         >
-          Net Salary (A - B)
+          Net Salary (C = A - B)
         </Text>
         <Text style={{ width: "50%", padding: 4, textAlign: "right", fontWeight: "bold" }}>
           {formatCurrency(getNetSalary(f))}
@@ -628,7 +631,7 @@ return (
     </View>
 
     {/* DIGITAL NOTICE CENTERED */}
-    <Text style={{ fontSize: 10, textAlign: "center", marginTop: 10, fontWeight: "bold" }}>
+    <Text style={{ fontSize: 10, textAlign: "center", marginTop: 10 }}>
       This document is digitally generated and does not require a signature.
     </Text>
 
@@ -644,9 +647,6 @@ return (
 
     {/* PUSH FOOTER TO BOTTOM */}
     <View style={{ flexGrow: 1 }} />
-
-    {/* FOOTER SEPARATOR */}
-    <View style={{ borderBottomWidth: 1, borderBottomColor: "#000", marginBottom: 8 }} />
 
     {/* FOOTER */}
     <GlobalPDFFooter/>

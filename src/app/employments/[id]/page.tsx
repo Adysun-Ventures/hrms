@@ -655,7 +655,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             ...(!isEmployeeUser && hasSalaries
               ? [
                   {
-                    label: 'View Salaries',
+                    label: 'Salary',
                     icon: <FaRupeeSign />,
                     variant: 'purple' as const,
                     href: `/salaries?employeeId=${employment?.employeeId}&from=employment`,

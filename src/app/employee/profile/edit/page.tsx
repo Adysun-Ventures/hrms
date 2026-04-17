@@ -15,6 +15,7 @@ import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 import CustomDateInput from '@/components/ui/CustomDateInput';
 import { FaSyncAlt } from 'react-icons/fa';
+import { FaBroom } from 'react-icons/fa6';
 
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relievingCtc'> {
@@ -141,6 +142,44 @@ export default function EditEmployeeProfilePage() {
                 ? { ...entry, type: newType }
                 : entry
         ));
+    };
+
+    const handleCleanSection = (section: 'personal' | 'educational' | 'contact' | 'identification') => {
+        if (section === 'personal') {
+            setValue('name', '' as any);
+            setValue('dateOfBirth', '' as any);
+            setValue('bloodGroup', '' as any);
+            setValue('homeTown', '' as any);
+            setValue('phone', '' as any);
+            setValue('email', '' as any);
+            setValue('currentAddress', '' as any);
+            setValue('permanentAddress', '' as any);
+            setValue('panCard', '' as any);
+            setValue('aadharCard', '' as any);
+            setSameAsCurrentAddress(false);
+            return;
+        }
+
+        if (section === 'contact') {
+            setValue('phone', '' as any);
+            setValue('email', '' as any);
+            setValue('currentAddress', '' as any);
+            setValue('permanentAddress', '' as any);
+            setSameAsCurrentAddress(false);
+            return;
+        }
+
+        if (section === 'identification') {
+            setValue('aadharCard', '' as any);
+            setValue('panCard', '' as any);
+            setValue('drivingLicense', '' as any);
+            return;
+        }
+
+        setEducationEntries([{ id: crypto.randomUUID(), type: '12th' }]);
+        setValue('secondaryEducation', [] as any);
+        setValue('graduationData' as any, {} as any);
+        setValue('postGraduationData' as any, {} as any);
     };
 
     // Initialize form data
@@ -277,6 +316,7 @@ export default function EditEmployeeProfilePage() {
                 currentAddress: data.currentAddress?.trim(),
                 permanentAddress: data.permanentAddress?.trim(),
                 dateOfBirth: data.dateOfBirth,
+                bloodGroup: data.bloodGroup?.trim(),
                 homeTown: data.homeTown?.trim(),
                 aadharCard: data.aadharCard?.trim(),
                 drivingLicense: data.drivingLicense?.trim(),
@@ -418,13 +458,23 @@ export default function EditEmployeeProfilePage() {
                 <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-6">
                     {/* Personal Details Section */}
                     {/* <div className="bg-gray-100 p-4 mb-4 rounded-lg"> */}
-                        
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-lg font-semibold text-gray-800 border-l-4 border-blue-500 pl-2">Personal Details</h2>
+                            <button
+                                type="button"
+                                onClick={() => handleCleanSection('personal')}
+                                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                            >
+                                <FaBroom className="w-4 h-4" />
+                                Clean
+                            </button>
+                        </div>
                         <div className="mb-4">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Basic Information</h3>
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        <span className="text-red-500">*</span> Name
+                                        <span className="text-red-500">*</span> Name <span className="text-red-500">First Name &nbsp;&nbsp;&nbsp;&nbsp; Middle Name &nbsp;&nbsp;&nbsp;&nbsp; Last Name</span>
                                 </label>
                                 <input
                                     type="text"
@@ -482,6 +532,23 @@ export default function EditEmployeeProfilePage() {
                                     )}
                                 </div>
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Blood Group</label>
+                                    <select
+                                        {...register('bloodGroup')}
+                                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                                    >
+                                        <option value="">Select blood group</option>
+                                        <option value="A+">A+</option>
+                                        <option value="A-">A-</option>
+                                        <option value="B+">B+</option>
+                                        <option value="B-">B-</option>
+                                        <option value="O+">O+</option>
+                                        <option value="O-">O-</option>
+                                        <option value="AB+">AB+</option>
+                                        <option value="AB-">AB-</option>
+                                    </select>
+                                </div>
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Home Town</label>
                                     <input
                                         type="text"
@@ -500,7 +567,17 @@ export default function EditEmployeeProfilePage() {
 
                         {/* Contact Information */}
                         <div className="mb-4">
-                            <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Contact Information</h3>
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-md font-medium text-gray-700 border-l-2 border-green-500 pl-2">Contact Information</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => handleCleanSection('contact')}
+                                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                >
+                                    <FaBroom className="w-4 h-4" />
+                                    Clean
+                                </button>
+                            </div>
                             
                             {/* Row 1: Phone & Email */}
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -634,7 +711,17 @@ export default function EditEmployeeProfilePage() {
 
                         {/* Identification Documents */}
                         <div className="mb-4">
-                            <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Identification Documents</h3>
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-md font-medium text-gray-700 border-l-2 border-green-500 pl-2">Identification Documents</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => handleCleanSection('identification')}
+                                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                >
+                                    <FaBroom className="w-4 h-4" />
+                                    Clean
+                                </button>
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -695,7 +782,17 @@ export default function EditEmployeeProfilePage() {
 
                     {/* Educational Details Section */}
                     <div className="mb-4">
-                        <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Educational Details</h2>
+                        <div className="flex items-center justify-between mb-2">
+                            <h2 className="text-lg font-semibold text-gray-800 border-l-4 border-blue-500 pl-2">Educational Details</h2>
+                            <button
+                                type="button"
+                                onClick={() => handleCleanSection('educational')}
+                                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                            >
+                                <FaBroom className="w-4 h-4" />
+                                Clean
+                            </button>
+                        </div>
                         {/* Higher Education */}
                         <div className="mb-4">
                             <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Higher Education</h3>

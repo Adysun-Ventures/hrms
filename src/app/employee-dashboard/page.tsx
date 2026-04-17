@@ -228,44 +228,62 @@ export default function EmployeeDashboardPage() {
           )}
         </div>
 
-        {/* Employment Basic Info Card */}
-        {!employmentLoading && currentEmployment && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="-mx-6 px-6 flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">Employment Information</h2>
-              <div className="flex items-center gap-3">
+        {/* Employment Basic Info Card (always visible) */}
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="-mx-6 px-6 flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
+            <h2 className="text-xl font-semibold text-gray-800">Employment Information</h2>
+            <div className="flex items-center gap-3">
+              {!employmentLoading && !currentEmployment ? (
                 <button
                   type="button"
-                  disabled={!(currentEmployment as any)?.id}
-                  onClick={() => {
-                    const employmentId = (currentEmployment as any)?.id;
-                    if (!employmentId) return;
-                    router.push(`/employments/${employmentId}`);
-                  }}
+                  onClick={() => router.push('/employments/add')}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-                  aria-label="View Employment"
+                  aria-label="Add Employment"
                 >
-                  <FiEye className="w-4 h-4" />
-                  <span className="hidden sm:inline">View Employment</span>
+                  <FiBriefcase className="w-4 h-4" />
+                  <span className="hidden sm:inline">Add Employment</span>
                 </button>
-                <button
-                  type="button"
-                  disabled={!(currentEmployment as any)?.id}
-                  onClick={() => {
-                    const employmentId = (currentEmployment as any)?.id;
-                    if (!employmentId) return;
-                    router.push(`/employments/${employmentId}/edit`);
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition"
-                  aria-label="Edit Employment"
-                >
-                  <FiEdit2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Edit Employment</span>
-                </button>
-              </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    disabled={!(currentEmployment as any)?.id}
+                    onClick={() => {
+                      const employmentId = (currentEmployment as any)?.id;
+                      if (!employmentId) return;
+                      router.push(`/employments/${employmentId}`);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    aria-label="View Employment"
+                  >
+                    <FiEye className="w-4 h-4" />
+                    <span className="hidden sm:inline">View Employment</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!(currentEmployment as any)?.id}
+                    onClick={() => {
+                      const employmentId = (currentEmployment as any)?.id;
+                      if (!employmentId) return;
+                      router.push(`/employments/${employmentId}/edit`);
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                    aria-label="Edit Employment"
+                  >
+                    <FiEdit2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Edit Employment</span>
+                  </button>
+                </>
+              )}
             </div>
+          </div>
+
+          {employmentLoading ? (
+            <div className="text-center py-4">
+              <p className="text-gray-500">Loading employment information...</p>
+            </div>
+          ) : currentEmployment ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* First row (priority) */}
               {(currentEmployment.employmentId || fullEmployeeData?.employeeId) && (
                 <div>
                   <p className="font-medium text-gray-900">
@@ -284,8 +302,7 @@ export default function EmployeeDashboardPage() {
                 </div>
               )}
 
-              {((currentEmployment as any).joiningCtc ??
-                (currentEmployment as any).joiningCTC) && (
+              {((currentEmployment as any).joiningCtc ?? (currentEmployment as any).joiningCTC) && (
                 <div>
                   <p className="font-medium text-gray-900">
                     ₹
@@ -318,48 +335,19 @@ export default function EmployeeDashboardPage() {
 
               {(currentEmployment.jobTitle || currentEmployment.designation) && (
                 <div>
-                  <p className="font-medium text-gray-900">{toTitleCase(currentEmployment.jobTitle || currentEmployment.designation)}</p>
+                  <p className="font-medium text-gray-900">
+                    {toTitleCase(currentEmployment.jobTitle || currentEmployment.designation)}
+                  </p>
                   <p className="text-sm text-gray-600">Designation</p>
                 </div>
               )}
-
-              {currentEmployment.department && (
-                <div>
-                  <p className="font-medium text-gray-900">{toTitleCase(currentEmployment.department)}</p>
-                  <p className="text-sm text-gray-600">Department</p>
-                </div>
-              )}
-
-              {currentEmployment.location && (
-                <div>
-                  <p className="font-medium text-gray-900">{toTitleCase(currentEmployment.location)}</p>
-                  <p className="text-sm text-gray-600">Location</p>
-                </div>
-              )}
-
-              {currentEmployment.reportingManager && currentEmployment.reportingManager.trim() !== '' && (
-                <div>
-                  <p className="font-medium text-gray-900">{toTitleCase(currentEmployment.reportingManager)}</p>
-                  <p className="text-sm text-gray-600">Reporting Manager</p>
-                </div>
-              )}
-
-              {currentEmployment.contractType && currentEmployment.contractType.trim() !== '' && (
-                <div>
-                  <p className="font-medium text-gray-900">{toTitleCase(currentEmployment.contractType)}</p>
-                  <p className="text-sm text-gray-600">Contract Type</p>
-                </div>
-              )}
-
-              {currentEmployment.employmentType && (
-                <div>
-                  <p className="font-medium text-gray-900">{toTitleCase(currentEmployment.employmentType)}</p>
-                  <p className="text-sm text-gray-600">Employment Type</p>
-                </div>
-              )}
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-4">
+              <p className="text-gray-500">No employment information added yet.</p>
+            </div>
+          )}
+        </div>
 
         {/* Salary Information Card */}
         <div className="bg-white rounded-lg shadow-sm p-6">

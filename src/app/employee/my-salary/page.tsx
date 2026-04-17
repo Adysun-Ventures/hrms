@@ -370,10 +370,11 @@ export default function EmployeeMySalaryPage() {
           showStats={true}
           showSearch={true}
           showFilter={incrementOptions.length > 0}
+          showFilterIcon={false}
           filterValue={incrementFilter}
           onFilterChange={setIncrementFilter}
           filterOptions={[
-            { value: 'all', label: 'All Increments' },
+            { value: 'all', label: 'Increments' },
             ...incrementOptions.map((inc) => ({ value: inc.value, label: inc.label })),
           ]}
           secondFilterValue={yearFilter}

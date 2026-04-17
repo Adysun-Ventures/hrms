@@ -33,6 +33,7 @@ export interface Employee {
   // Personal Details
   name: string;
   dateOfBirth?: string;
+  bloodGroup?: string;
   // employeeId removed - now only in Employment.employmentId
   // Note: Use 'status' field ('active' | 'inactive') as the single source of truth for employee active/inactive state
   homeTown?: string;

@@ -14,6 +14,7 @@ import TableHeader from '@/components/ui/TableHeader';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 import CustomDateInput from '@/components/ui/CustomDateInput';
+import { FaBroom } from 'react-icons/fa6';
 
 
 type PageParams = {
@@ -105,6 +106,52 @@ export default function EditEmployeePage({ params }: PageParams) {
         ? { ...entry, type: newType }
         : entry
     ));
+  };
+
+  const handleCleanSection = (section: 'personal' | 'educational' | 'additional' | 'contact' | 'identification') => {
+    if (section === 'personal') {
+      setValue('name', '' as any);
+      setValue('phone', '' as any);
+      setValue('password', '' as any);
+      setValue('employeeType', 'internal' as any);
+      setValue('dateOfBirth', '' as any);
+      setValue('bloodGroup', '' as any);
+      setValue('homeTown', '' as any);
+      setValue('email', '' as any);
+      setValue('currentAddress', '' as any);
+      setValue('permanentAddress', '' as any);
+      setValue('panCard', '' as any);
+      setValue('aadharCard', '' as any);
+      setSameAsCurrentAddress(false);
+      return;
+    }
+
+    if (section === 'additional') {
+      setValue('dateOfBirth', '' as any);
+      setValue('bloodGroup', '' as any);
+      setValue('homeTown', '' as any);
+      return;
+    }
+
+    if (section === 'contact') {
+      setValue('email', '' as any);
+      setValue('currentAddress', '' as any);
+      setValue('permanentAddress', '' as any);
+      setSameAsCurrentAddress(false);
+      return;
+    }
+
+    if (section === 'identification') {
+      setValue('aadharCard', '' as any);
+      setValue('panCard', '' as any);
+      setValue('drivingLicense', '' as any);
+      return;
+    }
+
+    setEducationEntries([{ id: crypto.randomUUID(), type: '12th' }]);
+    setValue('secondaryEducation', [] as any);
+    setValue('graduationData' as any, {} as any);
+    setValue('postGraduationData' as any, {} as any);
   };
 
   useEffect(() => {
@@ -313,7 +360,17 @@ export default function EditEmployeePage({ params }: PageParams) {
         <form onSubmit={handleSubmit(onSubmit)}>
           {/* Personal Details Section */}
           <div className="bg-white p-4 mb-4 rounded-lg">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Personal Details</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold text-gray-800 border-l-4 border-blue-500 pl-2">Personal Details</h2>
+              <button
+                type="button"
+                onClick={() => handleCleanSection('personal')}
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+              >
+                <FaBroom className="w-4 h-4" />
+                Clean
+              </button>
+            </div>
             <div className="bg-white p-4 rounded-lg mb-4">
               <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Basic Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -400,7 +457,17 @@ export default function EditEmployeePage({ params }: PageParams) {
 
             {/* Additional (optional) details */}
             <div className="bg-white p-4 rounded-lg mb-4">
-              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Additional Details</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-md font-medium text-gray-700 border-l-2 border-green-500 pl-2">Additional Details</h3>
+                <button
+                  type="button"
+                  onClick={() => handleCleanSection('additional')}
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                >
+                  <FaBroom className="w-4 h-4" />
+                  Clean
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -446,6 +513,26 @@ export default function EditEmployeePage({ params }: PageParams) {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Blood Group
+                  </label>
+                  <select
+                    {...register('bloodGroup')}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  >
+                    <option value="">Select blood group</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Home Town
                   </label>
                   <input
@@ -468,7 +555,17 @@ export default function EditEmployeePage({ params }: PageParams) {
 
             {/* Contact Information */}
             <div className="bg-white p-4 rounded-lg mb-4">
-              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Contact Information</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-md font-medium text-gray-700 border-l-2 border-green-500 pl-2">Contact Information</h3>
+                <button
+                  type="button"
+                  onClick={() => handleCleanSection('contact')}
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                >
+                  <FaBroom className="w-4 h-4" />
+                  Clean
+                </button>
+              </div>
               {/* Row 1: Email only */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-1">
@@ -526,7 +623,17 @@ export default function EditEmployeePage({ params }: PageParams) {
 
             {/* Identification Documents */}
             <div className="bg-white p-4 rounded-lg mb-4">
-              <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Identification Documents</h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-md font-medium text-gray-700 border-l-2 border-green-500 pl-2">Identification Documents</h3>
+                <button
+                  type="button"
+                  onClick={() => handleCleanSection('identification')}
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                >
+                  <FaBroom className="w-4 h-4" />
+                  Clean
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -594,7 +701,17 @@ export default function EditEmployeePage({ params }: PageParams) {
           </div>
           {/* Educational Details Section */}
           <div className="bg-white p-4 mb-4 rounded-lg">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">Educational Details</h2>
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="text-lg font-semibold text-gray-800 border-l-4 border-blue-500 pl-2">Educational Details</h2>
+              <button
+                type="button"
+                onClick={() => handleCleanSection('educational')}
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+              >
+                <FaBroom className="w-4 h-4" />
+                Clean
+              </button>
+            </div>
             {/* Higher Education */}
             <div className="bg-white p-4 rounded-lg mb-4">
               <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Higher Education</h3>

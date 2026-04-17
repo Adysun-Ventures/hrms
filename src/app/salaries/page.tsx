@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiEdit, FiTrash2, FiEye, FiDownload, FiCpu, FiSettings, FiX } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiEye, FiDownload, FiCpu, FiSettings, FiX, FiCheckCircle } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Salary } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
@@ -19,6 +19,7 @@ import { useSearchParams } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
 import { FaRegSquarePlus } from 'react-icons/fa6';
+import { FaHandSparkles } from 'react-icons/fa6';
 import { pdf } from '@react-pdf/renderer';
 import { SalarySlipPDF } from '@/app/doc_pages/pages/v2/SalarySlipGenerator';
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
@@ -862,11 +863,11 @@ const handleDownload = async (salary: Salary) => {
           stackExtraStat={true}
           dropdown={
             incrementHeaderMeta.length > 0 ? (
-              <span className="pr-2 py-1 inline-flex flex-row flex-wrap items-center gap-2">
+              <span className="pr-2 py-1 inline-flex w-full flex-row flex-wrap items-center justify-center gap-2 text-center">
                 {incrementHeaderMeta.map((inc) => (
                   <span
                     key={`${inc.index}-${inc.incrementDate}`}
-                    className="rounded-md border border-gray-200 px-2 py-1 inline-flex flex-col leading-tight"
+                    className="rounded-md border border-gray-200 px-2 py-1 inline-flex flex-col items-center leading-tight text-center"
                   >
                     <span className="font-semibold">{`Increment ${inc.index}`}</span>
                     <span>{formatDateToDayMonYear(inc.incrementDate)}</span>
@@ -895,8 +896,8 @@ const handleDownload = async (salary: Salary) => {
           actionButtons={[
             {
               label: isAiCreating ? 'Creating...' : 'Create with AI',
-              icon: <FiCpu />,
-              variant: 'purple' as const,
+              icon: <FaHandSparkles className="w-4 h-4" />,
+              variant: 'primary' as const,
               pill: true,
               onClick: handleCreateWithAi,
               disabled: isAiCreating || !employeeId,
@@ -942,7 +943,7 @@ const handleDownload = async (salary: Salary) => {
                         disabled={isBulkDeleting}
                         aria-label="Delete selected salaries"
                         title="Delete selected salaries"
-                        className="p-1 rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                        className="border border-gray-300 rounded-md p-2 w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <FiTrash2 className="w-5 h-5" />
                       </button>

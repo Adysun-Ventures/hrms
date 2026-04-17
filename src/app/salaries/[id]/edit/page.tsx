@@ -101,6 +101,10 @@ export default function EditSalaryPage({ params }: PageParams) {
     maximumFractionDigits: 2
   }).format(num);
 };
+  const round2 = (value: number) => Math.round((Number(value) || 0) * 100) / 100;
+  const roundSalaryFieldOnBlur = (field: keyof SalaryFormData) => () => {
+    setValue(field, round2(watch(field) as number) as any, { shouldValidate: true, shouldDirty: true });
+  };
 
   // Real-time calculation using useMemo - calculates on every render when inputs change
   const calculations: MonthlySalaryResult = useMemo(() => {
@@ -202,7 +206,6 @@ export default function EditSalaryPage({ params }: PageParams) {
     const ctcNum = Number(ctc) || 0;
     const variableNum = Number(variablePay) || 0;
     const fixedNum = Number(fixedPay) || 0;
-    const otherNum = Number(otherAllowance) || 0;
 
     const maybeSet = (name: keyof SalaryFormData, next: number, current: number) => {
       if (Math.abs((current || 0) - (next || 0)) > 0.01) {
@@ -212,46 +215,31 @@ export default function EditSalaryPage({ params }: PageParams) {
 
     if (salaryCalcMode === 'ctc' || salaryCalcMode === 'variable') {
       const nextFixed = Math.max(0, ctcNum - variableNum);
-      const monthlyFixed = nextFixed / 12;
-      const basic = monthlyFixed * 0.5;
-      const hra = basic * 0.4;
-      const conveyance = 2000;
-      const nextOther = monthlyFixed - (basic + hra + conveyance);
       maybeSet('fixedPay', nextFixed, fixedNum);
-      maybeSet('otherAllowance', nextOther, otherNum);
       return;
     }
 
     if (salaryCalcMode === 'fixed') {
       const nextCtc = fixedNum + variableNum;
-      const monthlyFixed = fixedNum / 12;
-      const basic = monthlyFixed * 0.5;
-      const hra = basic * 0.4;
-      const conveyance = 2000;
-      const nextOther = monthlyFixed - (basic + hra + conveyance);
       maybeSet('ctc', nextCtc, ctcNum);
-      maybeSet('otherAllowance', nextOther, otherNum);
       return;
     }
 
-    const monthlyFixedFromOther = (otherNum + 2000) / 0.3;
-    const nextFixed = monthlyFixedFromOther * 12;
-    const nextCtc = nextFixed + variableNum;
-    maybeSet('fixedPay', nextFixed, fixedNum);
-    maybeSet('ctc', nextCtc, ctcNum);
+    // Do not reverse-sync CTC/Fixed when user edits Other Allowance.
+    // Other Allowance should be user-editable without forcing other inputs.
   }, [ctc, variablePay, fixedPay, otherAllowance, salaryCalcMode, setValue]);
 
   // Update form values in real-time when calculations change
   useEffect(() => {
     setValue('workDays', adjustedWorkDays, { shouldValidate: false, shouldDirty: false });
-    setValue('basic', payableComponents.basic, { shouldValidate: false, shouldDirty: false });
-    setValue('hra', payableComponents.hra, { shouldValidate: false, shouldDirty: false });
-    setValue('conveyanceAllowance', payableComponents.conveyanceAllowance, { shouldValidate: false, shouldDirty: false });
-    setValue('otherAllowance', payableComponents.otherAllowance, { shouldValidate: false, shouldDirty: false });
-    setValue('leavesDeductAmt', calculations.leavesDeductAmt, { shouldValidate: false, shouldDirty: false });
+    setValue('basic', round2(payableComponents.basic), { shouldValidate: false, shouldDirty: false });
+    setValue('hra', round2(payableComponents.hra), { shouldValidate: false, shouldDirty: false });
+    setValue('conveyanceAllowance', round2(payableComponents.conveyanceAllowance), { shouldValidate: false, shouldDirty: false });
+    setValue('otherAllowance', round2(payableComponents.otherAllowance), { shouldValidate: false, shouldDirty: false });
+    setValue('leavesDeductAmt', round2(calculations.leavesDeductAmt), { shouldValidate: false, shouldDirty: false });
     
     // Keep PT deduction aligned with selected month rule.
-    setValue('ptDeduct', calculations.ptDeduct, { shouldValidate: false, shouldDirty: false });
+    setValue('ptDeduct', round2(calculations.ptDeduct), { shouldValidate: false, shouldDirty: false });
   }, [calculations, adjustedWorkDays, payableComponents, setValue, ptDeduct]);
 
   // Watch for form changes
@@ -710,7 +698,7 @@ export default function EditSalaryPage({ params }: PageParams) {
           {/* Salary Input Fields */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-4">Salary Inputs</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-y-4 gap-x-0">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* CTC */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -722,9 +710,10 @@ export default function EditSalaryPage({ params }: PageParams) {
                   {...register('ctc', { 
                     required: 'CTC is required',
                     min: { value: 0, message: 'CTC cannot be negative' },
-                    valueAsNumber: true,
+                    setValueAs: (v) => round2(Number(v)),
                     onChange: () => setSalaryCalcMode('ctc'),
                   })}
+                  onBlur={roundSalaryFieldOnBlur('ctc')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
@@ -743,9 +732,10 @@ export default function EditSalaryPage({ params }: PageParams) {
                   {...register('variablePay', { 
                     required: 'Pay is required',
                     min: { value: 0, message: 'Pay cannot be negative' },
-                    valueAsNumber: true,
+                    setValueAs: (v) => round2(Number(v)),
                     onChange: () => setSalaryCalcMode('variable'),
                   })}
+                  onBlur={roundSalaryFieldOnBlur('variablePay')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
@@ -766,9 +756,10 @@ export default function EditSalaryPage({ params }: PageParams) {
                   {...register('fixedPay', { 
                     required: 'Fixed Pay is required',
                     min: { value: 0, message: 'Fixed Pay cannot be negative' },
-                    valueAsNumber: true,
+                    setValueAs: (v) => round2(Number(v)),
                     onChange: () => setSalaryCalcMode('fixed'),
                   })}
+                  onBlur={roundSalaryFieldOnBlur('fixedPay')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
@@ -899,9 +890,10 @@ export default function EditSalaryPage({ params }: PageParams) {
                   {...register('otherAllowance', { 
                     required: 'Other allowance is required',
                     min: { value: 0, message: 'Other allowance cannot be negative' },
-                    valueAsNumber: true,
+                    setValueAs: (v) => round2(Number(v)),
                     onChange: () => setSalaryCalcMode('other'),
                   })}
+                  onBlur={roundSalaryFieldOnBlur('otherAllowance')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
@@ -983,8 +975,9 @@ export default function EditSalaryPage({ params }: PageParams) {
                   {...register('ptDeduct', { 
                     required: 'PT deduction is required',
                     min: { value: 0, message: 'PT deduction cannot be negative' },
-                    valueAsNumber: true
+                    setValueAs: (v) => round2(Number(v))
                   })}
+                  onBlur={roundSalaryFieldOnBlur('ptDeduct')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />
@@ -1004,8 +997,9 @@ export default function EditSalaryPage({ params }: PageParams) {
                   step="0.01"
                   {...register('otherDeduction', {
                     min: { value: 0, message: 'Other deduction cannot be negative' },
-                    valueAsNumber: true,
+                    setValueAs: (v) => round2(Number(v)),
                   })}
+                  onBlur={roundSalaryFieldOnBlur('otherDeduction')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                 />

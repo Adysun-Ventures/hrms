@@ -203,17 +203,20 @@ const SalaryActionButton = ({ employeeId }: SalaryActionButtonProps) => {
   const { data: salaries = [] } = useSalariesByEmployee(employeeId);
 
   const hasSalary = salaries.length > 0;
+  const salaryHref = hasSalary
+    ? `/salaries?employeeId=${employeeId}`
+    : `/salaries/add?employeeId=${employeeId}`;
 
   return (
     <ActionButton
       icon={<FaRupeeSign className="w-5 h-5" />}
-      title="View Salaries"
+      title={hasSalary ? "View Salaries" : "Add Salary"}
       colorClass={
         hasSalary
           ? "bg-purple-100 text-purple-600 hover:text-purple-900"
-          : "bg-gray-100 text-gray-400 cursor-not-allowed"
+          : "bg-gray-100 text-gray-400 hover:text-gray-600"
       }
-      href={hasSalary ? `/salaries?employeeId=${employeeId}` : "#"}
+      href={salaryHref}
     />
   );
 };
@@ -226,21 +229,18 @@ const EmploymentActionButton = ({ employeeId }: { employeeId: string }) => {
 
   // Get the first (and only) employment
   const employment = employments[0];
-
-  if (!employment) {
-    return (
-      <div className="w-10 h-10 border border-gray-300 rounded-md p-2 flex items-center justify-center bg-gray-100 text-gray-400 cursor-not-allowed">
-        <FiBriefcase className="w-5 h-5" />
-      </div>
-    );
-  }
+  const hasEmployment = Boolean(employment);
   
   return (
     <ActionButton
       icon={<FiBriefcase className="w-5 h-5" />}
-      title="View Employment"
-      colorClass="bg-green-100 text-green-600 hover:text-green-900"
-      href={`/employments/${employment.id}`}
+      title={hasEmployment ? "View Employment" : "Add Employment"}
+      colorClass={
+        hasEmployment
+          ? "bg-green-100 text-green-600 hover:text-green-900"
+          : "bg-gray-100 text-gray-400 hover:text-gray-600"
+      }
+      href={hasEmployment ? `/employments/${employment.id}` : `/employments/add?employeeId=${employeeId}`}
     />
   );
 };

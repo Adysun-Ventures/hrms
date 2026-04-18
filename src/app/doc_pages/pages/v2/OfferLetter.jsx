@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { FiDownload, FiX } from 'react-icons/fi';
+import { FiChevronDown, FiDownload, FiX } from 'react-icons/fi';
 import TableHeader from '@/components/ui/TableHeader';
 import { Combobox } from '@headlessui/react'
 import {
@@ -863,6 +863,13 @@ function OfferLetterV2({ isForm16 = false }) {
   const [documentGenerateDate, setDocumentGenerateDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [effectiveDate, setEffectiveDate] = useState('');
   const [employeeSignPlace, setEmployeeSignPlace] = useState("");
+  const [financialYearStart, setFinancialYearStart] = useState(() => {
+    const now = new Date();
+    return now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  });
+  const [missingSalaryPopupOpen, setMissingSalaryPopupOpen] = useState(false);
+  const [missingSalaryDetails, setMissingSalaryDetails] = useState([]);
+  const [isCheckingMissingSalary, setIsCheckingMissingSalary] = useState(false);
   
 
 
@@ -876,7 +883,8 @@ function OfferLetterV2({ isForm16 = false }) {
 
   const fetchEmployees = async () => {
     const qs = await getDocs(collection(db, 'employees'));
-    const list = qs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    // Ensure Firestore doc.id always wins over any stored `id` field.
+    const list = qs.docs.map(doc => ({ ...doc.data(), id: doc.id }));
     const restrictToSelf = Boolean(selfEmployeeId) && !isForm16;
     const visibleList = restrictToSelf ? list.filter((e) => e.id === selfEmployeeId) : list;
     setCandidates(visibleList);
@@ -946,7 +954,140 @@ function OfferLetterV2({ isForm16 = false }) {
 
   useEffect(() => { setPdfKey(k => k + 1); }, [enablePF]);
 
-  const canGenerate = Boolean(employee);
+  const hasMissingSalary = isForm16 && missingSalaryDetails.length > 0;
+  const canGenerate = isForm16
+    ? selectedEmployees.length > 0 && !hasMissingSalary && !isCheckingMissingSalary
+    : Boolean(employee);
+
+  const toDateSafe = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+    if (typeof value === 'string' || typeof value === 'number') {
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    if (typeof value?.toDate === 'function') {
+      const d = value.toDate();
+      return d instanceof Date && !Number.isNaN(d.getTime()) ? d : null;
+    }
+    const seconds = value?.seconds ?? value?._seconds;
+    if (typeof seconds === 'number') {
+      const d = new Date(seconds * 1000);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
+    return null;
+  };
+
+  const toMonthKey = (year, monthIndex0) => `${year}-${String(monthIndex0 + 1).padStart(2, '0')}`;
+  const monthNameShort = (monthIndex0) =>
+    ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][monthIndex0] || '';
+
+  const buildFinancialYearOptions = () => {
+    const now = new Date();
+    const currentStart = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+    return Array.from({ length: 8 }, (_, i) => {
+      const start = currentStart - i;
+      return {
+        value: start,
+        label: `FY ${start}-${String(start + 1).slice(-2)}`,
+      };
+    });
+  };
+
+  const financialYearOptions = buildFinancialYearOptions();
+
+  useEffect(() => {
+    if (!isForm16) return;
+    if (!selectedEmployees.length) {
+      setMissingSalaryDetails([]);
+      return;
+    }
+
+    const checkMissingForFY = async () => {
+      setIsCheckingMissingSalary(true);
+      try {
+        const fyStartDate = new Date(financialYearStart, 3, 1); // 1 Apr
+        const fyEndDate = new Date(financialYearStart + 1, 2, 31); // 31 Mar
+        const nextMissing = [];
+
+        for (const emp of selectedEmployees) {
+          const employeeId = emp?.id;
+          if (!employeeId) continue;
+
+          const empName = emp?.name || 'Unknown';
+          const employmentsSnap = await getDocs(
+            query(collection(db, 'employments'), where('employeeId', '==', employeeId))
+          );
+          const salarySnap = await getDocs(
+            query(collection(db, 'salaries'), where('employeeId', '==', employeeId))
+          );
+
+          const salaryMonthSet = new Set(
+            salarySnap.docs
+              .map((d) => d.data())
+              .map((s) => {
+                const y = Number(s?.year);
+                const m1 = Number(s?.month);
+                if (!Number.isFinite(y) || !Number.isFinite(m1) || m1 < 1 || m1 > 12) return null;
+                const date = new Date(y, m1 - 1, 1);
+                if (date < new Date(financialYearStart, 3, 1) || date > new Date(financialYearStart + 1, 2, 1)) return null;
+                return toMonthKey(y, m1 - 1);
+              })
+              .filter(Boolean)
+          );
+
+          const expectedSet = new Set();
+          for (const docItem of employmentsSnap.docs) {
+            const row = docItem.data();
+            const startRaw = row?.joiningDate || row?.startDate;
+            const endRaw = row?.lastWorkingDate || row?.endDate || null;
+            const startDate = toDateSafe(startRaw);
+            const endDate = toDateSafe(endRaw) || new Date();
+            if (!startDate) continue;
+
+            const effectiveStart = startDate > fyStartDate ? startDate : fyStartDate;
+            const effectiveEnd = endDate < fyEndDate ? endDate : fyEndDate;
+            if (effectiveStart > effectiveEnd) continue;
+
+            let cursor = new Date(effectiveStart.getFullYear(), effectiveStart.getMonth(), 1);
+            const cap = new Date(effectiveEnd.getFullYear(), effectiveEnd.getMonth(), 1);
+            while (cursor <= cap) {
+              expectedSet.add(toMonthKey(cursor.getFullYear(), cursor.getMonth()));
+              cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+            }
+          }
+
+          const missingKeys = Array.from(expectedSet).filter((k) => !salaryMonthSet.has(k));
+          if (missingKeys.length > 0) {
+            const monthLabels = missingKeys
+              .map((k) => {
+                const [y, m] = String(k).split('-');
+                const year = Number(y);
+                const monthIndex0 = Number(m) - 1;
+                return `${monthNameShort(monthIndex0)} ${year}`;
+              })
+              .sort((a, b) => new Date(`01 ${a}`).getTime() - new Date(`01 ${b}`).getTime());
+            nextMissing.push({
+              employeeId,
+              employeeName: empName,
+              months: monthLabels,
+            });
+          }
+        }
+
+        setMissingSalaryDetails(nextMissing);
+        if (nextMissing.length > 0) {
+          setMissingSalaryPopupOpen(true);
+        }
+      } catch (err) {
+        console.error('Failed to check missing salary for Form 16:', err);
+      } finally {
+        setIsCheckingMissingSalary(false);
+      }
+    };
+
+    checkMissingForFY();
+  }, [isForm16, selectedEmployees, financialYearStart]);
 
   const placeOptions = Array.from(
     new Set(["Pune", "Mumbai", employment?.location].filter(Boolean))
@@ -970,17 +1111,23 @@ function OfferLetterV2({ isForm16 = false }) {
           showFilter={false}
           headerClassName="px-8 pt-8 mb-0"
           actionButtons={[
-            {
-              label: 'Generate',
-              icon: <FiDownload size={18} />,
-              variant: 'success',
-              disabled: !canGenerate,
-              onClick: () => {
-                if (!employee) return toast.error('Employee is required');
-                setShowPDF(true);
-                setPdfKey((k) => k + 1);
+            ...((!isForm16 || !hasMissingSalary) ? [
+              {
+                label: isCheckingMissingSalary ? 'Checking...' : 'Generate',
+                icon: <FiDownload size={18} />,
+                variant: 'success',
+                disabled: !canGenerate,
+                onClick: () => {
+                  if (isForm16) {
+                    if (!selectedEmployees.length) return toast.error('At least one employee is required');
+                  } else {
+                    if (!employee) return toast.error('Employee is required');
+                  }
+                  setShowPDF(true);
+                  setPdfKey((k) => k + 1);
+                },
               },
-            },
+            ] : []),
           ]}
         />
 <div className="-mx-8 border-t border-gray-200 my-4"></div>
@@ -996,57 +1143,84 @@ function OfferLetterV2({ isForm16 = false }) {
 {(!isEmployeeUser || isForm16) && (
 <div>
   <label className="block text-sm font-medium text-slate-800 mb-1">
-    Employee <span className="text-red-500">*</span>
+    {isForm16 ? 'Employees' : 'Employee'} <span className="text-red-500">*</span>
+    {isForm16 && (
+      <span className="ml-2 text-xs font-normal text-gray-500">(multi-select)</span>
+    )}
   </label>
 
   <Combobox
-  multiple
-  value={selectedEmployees}
+  multiple={isForm16}
+  value={isForm16 ? selectedEmployees : employee}
+  by="id"
   onChange={(next) => {
-    const nextList = Array.isArray(next) ? next.filter(Boolean) : [];
-    setSelectedEmployees(nextList);
-    const active = nextList.length ? nextList[nextList.length - 1] : null;
-    const activeEmployment = employments[active?.id] || null;
-    setEmployee(active);
+    if (isForm16) {
+      const nextList = Array.isArray(next) ? next.filter(Boolean) : [];
+      setSelectedEmployees(nextList);
+      const active = nextList.length ? nextList[nextList.length - 1] : null;
+      const activeEmployment = employments[active?.id] || null;
+      setEmployee(active);
+      setEmployment(activeEmployment);
+      setSearchTerm('');
+      setDesignationOverride(activeEmployment?.jobTitle || activeEmployment?.designation || '');
+      setEmployeeSignPlace(activeEmployment?.location || '');
+      const joiningDateForDoc = normalizeDateForInput(
+        activeEmployment?.joiningDate || activeEmployment?.startDate || ''
+      );
+      setDocumentGenerateDate(joiningDateForDoc || new Date().toISOString().slice(0, 10));
+      setEffectiveDate(joiningDateForDoc || '');
+      // For multi-select UX, keep dropdown usable for next selection.
+      return;
+    }
+    const emp = next || null;
+    setEmployee(emp);
+    setSelectedEmployees(emp ? [emp] : []);
+    const activeEmployment = employments[emp?.id] || null;
     setEmployment(activeEmployment);
     setSearchTerm('');
-    // Auto-fill designation from employment data
     setDesignationOverride(activeEmployment?.jobTitle || activeEmployment?.designation || '');
-
-    // Auto-fill place from employment location
     setEmployeeSignPlace(activeEmployment?.location || '');
-
-    // Auto-fill document generate date from employee joining date
     const joiningDateForDoc = normalizeDateForInput(
       activeEmployment?.joiningDate || activeEmployment?.startDate || ''
     );
     setDocumentGenerateDate(joiningDateForDoc || new Date().toISOString().slice(0, 10));
     setEffectiveDate(joiningDateForDoc || '');
-
-    // Close dropdown after selecting one (multi-select).
-    setTimeout(closeEmployeePicker, 0);
   }}
 >
   {({ open }) => {
-    const selectedNames = (Array.isArray(selectedEmployees) ? selectedEmployees : [])
-      .map((e) => e?.name)
-      .filter(Boolean)
-      .join(', ');
+    const selectedNames = isForm16
+      ? (Array.isArray(selectedEmployees) ? selectedEmployees : [])
+          .map((e) => e?.name)
+          .filter(Boolean)
+          .join(', ')
+      : (employee?.name || '');
 
     return (
       <div className="relative">
-        <Combobox.Input
-          ref={employeePickerInputRef}
-          className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-          placeholder="Select or Search employee..."
-          value={open ? searchTerm : selectedNames}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          onFocus={() => {
-            // When reopening, start fresh search without wiping selection.
-            setSearchTerm('');
-          }}
-        />
-    {(selectedEmployees?.length > 0 || searchTerm) && (
+        <div className="relative">
+          <Combobox.Input
+            ref={employeePickerInputRef}
+            className="w-full p-2.5 pr-20 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            placeholder={isForm16 ? "Select employees..." : "Select employee..."}
+            value={open ? searchTerm : selectedNames}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            onFocus={() => {
+              setSearchTerm('');
+            }}
+          />
+
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+            <Combobox.Button
+              type="button"
+              className="p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              aria-label="Toggle employee dropdown"
+              title="Toggle"
+            >
+              <FiChevronDown className="w-4 h-4" />
+            </Combobox.Button>
+          </div>
+        </div>
+    {((isForm16 ? selectedEmployees?.length > 0 : Boolean(employee)) || searchTerm) && (
       <button
         type="button"
         onClick={() => {
@@ -1060,7 +1234,7 @@ function OfferLetterV2({ isForm16 = false }) {
           setDocumentGenerateDate(new Date().toISOString().slice(0, 10));
           setEffectiveDate('');
         }}
-        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+        className="absolute right-10 top-1/2 -translate-y-1/2 p-1 rounded text-gray-500 hover:text-gray-700 hover:bg-gray-100"
         aria-label="Clear employee selection"
         title="Clear"
       >
@@ -1075,11 +1249,20 @@ function OfferLetterV2({ isForm16 = false }) {
           <Combobox.Option
             key={emp.id}
             value={emp}
-            className={({ active }) =>
-              `cursor-pointer px-3 py-2 ${active ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'}`
+            className={({ focus, selected }) =>
+              `cursor-pointer px-3 py-2 flex items-center justify-between gap-2 ${
+                focus ? 'bg-blue-600 text-white' : 'bg-white text-gray-900'
+              } ${isForm16 && selected && !focus ? 'bg-blue-50' : ''}`
             }
           >
-            {emp.name}
+            {({ selected }) => (
+              <>
+                <span className="flex-1 truncate">{emp.name}</span>
+                {isForm16 && selected && (
+                  <span className={`shrink-0 text-xs font-semibold ${selected ? 'text-blue-700' : ''}`}>✓</span>
+                )}
+              </>
+            )}
           </Combobox.Option>
         ))}
 
@@ -1095,6 +1278,25 @@ function OfferLetterV2({ isForm16 = false }) {
 </Combobox>
 </div>
 )}
+
+              {isForm16 && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                    Financial Year <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={financialYearStart}
+                    onChange={(e) => setFinancialYearStart(Number(e.target.value))}
+                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  >
+                    {financialYearOptions.map((fy) => (
+                      <option key={fy.value} value={fy.value}>
+                        {fy.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {!isForm16 && <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1">
@@ -1212,26 +1414,77 @@ function OfferLetterV2({ isForm16 = false }) {
               Cancel
             </button>
 
-            <button
-              type="button"
-              disabled={!canGenerate}
-              onClick={() => {
-                if (!employee) return toast.error('Employee is required');
-                setShowPDF(true);
-                setPdfKey(k => k + 1);
-              }}
-              className={`flex items-center px-6 py-2.5 rounded-md shadow hover:shadow-md transition ${
-                canGenerate
-                  ? 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              <FiDownload size={18} className="mr-2" />
-              Generate
-            </button>
+            {(!isForm16 || !hasMissingSalary) && (
+              <button
+                type="button"
+                disabled={!canGenerate}
+                onClick={() => {
+                  if (isForm16) {
+                    if (!selectedEmployees.length) return toast.error('At least one employee is required');
+                  } else {
+                    if (!employee) return toast.error('Employee is required');
+                  }
+                  setShowPDF(true);
+                  setPdfKey(k => k + 1);
+                }}
+                className={`flex items-center px-6 py-2.5 rounded-md shadow hover:shadow-md transition ${
+                  canGenerate
+                    ? 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800'
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <FiDownload size={18} className="mr-2" />
+                {isCheckingMissingSalary ? 'Checking...' : 'Generate'}
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {isForm16 && missingSalaryPopupOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setMissingSalaryPopupOpen(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 relative max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setMissingSalaryPopupOpen(false)}
+              aria-label="Close missing salary popup"
+              className="absolute top-4 right-4 h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center"
+            >
+              <FiX className="w-4 h-4" />
+            </button>
+            <h2 className="text-base font-semibold text-gray-900">Salary Missing</h2>
+            <p className="mt-1 text-xs text-gray-500">
+              Missing salary found in FY {financialYearStart}-{String(financialYearStart + 1).slice(-2)}. Please complete salaries before generating Form 16.
+            </p>
+
+            <div className="mt-4 space-y-3 text-sm text-gray-800">
+              {missingSalaryDetails.map((row) => (
+                <div key={row.employeeId} className="rounded-md border border-gray-200 p-3">
+                  <p className="font-medium">{row.employeeName}</p>
+                  <p className="mt-1 text-gray-700">{row.months.join(', ')}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex items-center justify-start gap-3">
+              <button
+                type="button"
+                onClick={() => setMissingSalaryPopupOpen(false)}
+                className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2"
+              >
+                <FiX className="w-4 h-4" />
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showPDF && employee && employment && (
         <div className="bg-white rounded-lg shadow-lg p-4 mb-8">

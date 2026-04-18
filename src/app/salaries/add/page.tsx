@@ -1059,7 +1059,7 @@ export default function AddSalaryPage() {
             <div className="md:col-span-6 p-4 bg-green-50 rounded-md">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Net Salary (InHand)
+                  Net Salary (InHand) (C=A-B)
                 </label>
                 <span className="text-lg font-bold text-green-700">
                   ₹{formatINR(netSalary)}

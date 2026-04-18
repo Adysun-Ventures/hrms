@@ -10,7 +10,7 @@ interface SearchBarProps {
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ value, onChange, placeholder = 'Search', ariaLabel = 'Search', className = '' }) => (
-  <div className={`relative w-full min-w-[200px] ${className}`}>
+  <div className={`relative w-full min-w-0 ${className}`}>
     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
       <FiSearch className="text-gray-400" />
     </div>

@@ -44,6 +44,7 @@ interface TableHeaderProps {
   onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   searchPlaceholder?: string;
   searchAriaLabel?: string;
+  searchContainerClassName?: string;
   dropdown?: React.ReactNode;
   onRefresh?: () => void;
   isRefreshing?: boolean;
@@ -65,6 +66,7 @@ interface TableHeaderProps {
   secondFilterLabel?: string;
   showSecondFilterIcon?: boolean;
   secondFilterOptGroupLabel?: string;
+  secondFilterContainerClassName?: string;
   // Third filter props
   thirdFilterValue?: string;
   onThirdFilterChange?: (value: string) => void;
@@ -115,6 +117,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   onSearchChange,
   searchPlaceholder = 'Search',
   searchAriaLabel = 'Search',
+  searchContainerClassName,
   dropdown,
   onRefresh,
   isRefreshing = false,
@@ -140,6 +143,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   secondFilterLabel = 'Filter',
   showSecondFilterIcon = true,
   secondFilterOptGroupLabel,
+  secondFilterContainerClassName,
   // Third filter props
   thirdFilterValue = 'all',
   onThirdFilterChange,
@@ -643,7 +647,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                 )}
                 
                 {showSecondFilter && onSecondFilterChange && (
-                  <div className="relative w-full sm:w-auto">
+                  <div className={`relative w-full ${secondFilterContainerClassName || 'sm:w-auto'}`}>
                     <select
                       value={secondFilterValue}
                       onChange={(e) => onSecondFilterChange(e.target.value)}
@@ -728,7 +732,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                 
                 {/* Search Bar - Full width on mobile */}
                 {showSearch && (
-                  <div className="w-full sm:w-64">
+                  <div className={`w-full ${searchContainerClassName || 'sm:w-64'}`}>
                     <SearchBar
                       value={searchValue}
                       onChange={onSearchChange}

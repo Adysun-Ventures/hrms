@@ -1061,7 +1061,7 @@ export default function EditSalaryPage({ params }: PageParams) {
             </div>
           </div>
 
-          {/* Calculated Total Deduction */}
+          {/* Calculated Total Deduction */}e
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
             {/* Calculated Total Deduction */}
             <div className="md:col-span-6 p-4 bg-red-50 rounded-md">
@@ -1082,7 +1082,7 @@ export default function EditSalaryPage({ params }: PageParams) {
             <div className="md:col-span-6 p-4 bg-green-50 rounded-md">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-gray-700">
-                  Net Salary (InHand)
+                  Net Salary (InHand) (C=A-B)
                 </label>
                 <span className="text-lg font-bold text-green-700">
                   ₹{formatINR(netSalary)}

@@ -1067,11 +1067,13 @@ const handleDownload = async (salary: Salary) => {
           onSecondFilterChange={setYearFilter}
           secondFilterOptions={getYearOptions()}
           showSecondFilterIcon={false}
+          secondFilterContainerClassName="sm:w-34 text-sm py-1 px-2"
           showThirdFilter={true}
           thirdFilterValue={calendarYearFilter}
           onThirdFilterChange={setCalendarYearFilter}
           thirdFilterOptions={getCalendarYearOptions()}
           showThirdFilterIcon={false}
+          searchContainerClassName="sm:w-36"
           onRefresh={handleRefresh}
           isRefreshing={isLoading}
           actionButtons={[
@@ -1125,18 +1127,21 @@ const handleDownload = async (salary: Salary) => {
               <tr>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <div className="flex items-center justify-center gap-2">
-                    {selectedRows.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={openBulkDeleteModal}
-                        disabled={isBulkDeleting}
-                        aria-label="Delete selected salaries"
-                        title="Delete selected salaries"
-                        className="border border-gray-300 rounded-md p-2 w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <FiTrash2 className="w-5 h-5" />
-                      </button>
-                    )}
+                    {/* Reserve space so header width doesn't jump */}
+                    <div className="w-8 h-8 flex items-center justify-center">
+                      {selectedRows.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={openBulkDeleteModal}
+                          disabled={isBulkDeleting}
+                          aria-label="Delete selected salaries"
+                          title="Delete selected salaries"
+                          className="border border-gray-300 rounded-md p-1 w-8 h-8 flex items-center justify-center bg-red-100 text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <FiTrash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                     <input
                       ref={masterCheckboxRef}
                       type="checkbox"
@@ -1315,7 +1320,7 @@ const handleDownload = async (salary: Salary) => {
                   type="button"
                   onClick={closeBulkDeleteModal}
                   disabled={isBulkDeleting}
-                  className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+                  className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                 >
                   <FiX className="w-4 h-4" />
                   Cancel
@@ -1374,13 +1379,14 @@ const handleDownload = async (salary: Salary) => {
                 </div>
               )}
 
-              <div className="mt-6 flex items-center justify-end gap-3">
+              <div className="mt-6 flex items-center justify-between gap-3">
                 <button
                   type="button"
                   onClick={() => setMissingSalaryModalOpen(false)}
-                  className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200 inline-flex items-center gap-2"
                 >
-                  Close
+                  <FiX className="w-4 h-4" />
+                  Cancle
                 </button>
                 <button
                   type="button"

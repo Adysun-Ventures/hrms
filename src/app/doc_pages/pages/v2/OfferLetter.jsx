@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { FiDownload, FiX } from 'react-icons/fi';
 import TableHeader from '@/components/ui/TableHeader';
 import { Combobox } from '@headlessui/react'
@@ -844,14 +844,17 @@ async function buildOfferLetterDocx(
 }
 
 /* ---------------- MAIN COMPONENT ---------------- */
-function OfferLetterV2() {
+function OfferLetterV2({ isForm16 = false }) {
   const { currentUserData } = useAuth();
   const isEmployeeUser = currentUserData?.userType === 'employee';
   const selfEmployeeId = isEmployeeUser ? currentUserData?.id : null;
 
+  const employeePickerInputRef = useRef(null);
+
   const [candidates, setCandidates] = useState([]);
   const [employments, setEmployments] = useState({});
   const [employee, setEmployee] = useState(null);
+  const [selectedEmployees, setSelectedEmployees] = useState([]);
   const [employment, setEmployment] = useState(null);
   const [showPDF, setShowPDF] = useState(false);
   const [enablePF, setEnablePF] = useState(false);
@@ -874,7 +877,8 @@ function OfferLetterV2() {
   const fetchEmployees = async () => {
     const qs = await getDocs(collection(db, 'employees'));
     const list = qs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const visibleList = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+    const restrictToSelf = Boolean(selfEmployeeId) && !isForm16;
+    const visibleList = restrictToSelf ? list.filter((e) => e.id === selfEmployeeId) : list;
     setCandidates(visibleList);
 
     const map = {};
@@ -888,6 +892,7 @@ function OfferLetterV2() {
       const selfEmp = visibleList[0];
       const nextEmployment = map[selfEmp.id] || null;
       setEmployee(selfEmp);
+      setSelectedEmployees([selfEmp]);
       setEmployment(nextEmployment);
       setDesignationOverride(nextEmployment?.jobTitle || nextEmployment?.designation || '');
       setEmployeeSignPlace(nextEmployment?.location || '');
@@ -901,6 +906,18 @@ function OfferLetterV2() {
         setEffectiveDate('');
       }
       setPdfKey((k) => k + 1);
+    }
+  };
+
+  const closeEmployeePicker = () => {
+    const el = employeePickerInputRef.current;
+    if (!el) return;
+    try {
+      // HeadlessUI Combobox closes reliably on Escape.
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    } catch {
+      // fallback
+      el.blur?.();
     }
   };
 
@@ -941,7 +958,7 @@ function OfferLetterV2() {
 
       <div className="bg-white rounded-lg shadow-lg mb-8">
         <TableHeader
-          title="Offer Letter"
+          title={isForm16 ? "Form 16" : "Offer Letter"}
           backButton={{
             href: isEmployeeUser ? '/employee/documents' : '/dashboard/documents',
             label: 'Back',
@@ -976,47 +993,65 @@ function OfferLetterV2() {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
-{!isEmployeeUser && (
+{(!isEmployeeUser || isForm16) && (
 <div>
   <label className="block text-sm font-medium text-slate-800 mb-1">
     Employee <span className="text-red-500">*</span>
   </label>
 
   <Combobox
-  value={employee}
-  onChange={(e) => {
-    const selectedEmployee = e || null;
-    const selectedEmployment = employments[selectedEmployee?.id] || null;
-    setEmployee(selectedEmployee);
-    setEmployment(selectedEmployment);
-
+  multiple
+  value={selectedEmployees}
+  onChange={(next) => {
+    const nextList = Array.isArray(next) ? next.filter(Boolean) : [];
+    setSelectedEmployees(nextList);
+    const active = nextList.length ? nextList[nextList.length - 1] : null;
+    const activeEmployment = employments[active?.id] || null;
+    setEmployee(active);
+    setEmployment(activeEmployment);
+    setSearchTerm('');
     // Auto-fill designation from employment data
-    setDesignationOverride(selectedEmployment?.jobTitle || selectedEmployment?.designation || '');
+    setDesignationOverride(activeEmployment?.jobTitle || activeEmployment?.designation || '');
 
     // Auto-fill place from employment location
-    setEmployeeSignPlace(selectedEmployment?.location || '');
+    setEmployeeSignPlace(activeEmployment?.location || '');
 
     // Auto-fill document generate date from employee joining date
     const joiningDateForDoc = normalizeDateForInput(
-      selectedEmployment?.joiningDate || selectedEmployment?.startDate || ''
+      activeEmployment?.joiningDate || activeEmployment?.startDate || ''
     );
     setDocumentGenerateDate(joiningDateForDoc || new Date().toISOString().slice(0, 10));
     setEffectiveDate(joiningDateForDoc || '');
+
+    // Close dropdown after selecting one (multi-select).
+    setTimeout(closeEmployeePicker, 0);
   }}
 >
-  <div className="relative">
+  {({ open }) => {
+    const selectedNames = (Array.isArray(selectedEmployees) ? selectedEmployees : [])
+      .map((e) => e?.name)
+      .filter(Boolean)
+      .join(', ');
 
-    <Combobox.Input
-      className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
-      placeholder="Select or Search employee..."
-      displayValue={(emp) => emp?.name ?? ""}
-      onChange={(event) => setSearchTerm(event.target.value)}
-    />
-    {(employee || searchTerm) && (
+    return (
+      <div className="relative">
+        <Combobox.Input
+          ref={employeePickerInputRef}
+          className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+          placeholder="Select or Search employee..."
+          value={open ? searchTerm : selectedNames}
+          onChange={(event) => setSearchTerm(event.target.value)}
+          onFocus={() => {
+            // When reopening, start fresh search without wiping selection.
+            setSearchTerm('');
+          }}
+        />
+    {(selectedEmployees?.length > 0 || searchTerm) && (
       <button
         type="button"
         onClick={() => {
           setEmployee(null);
+          setSelectedEmployees([]);
           setEmployment(null);
           setSearchTerm('');
           setShowPDF(false);
@@ -1054,12 +1089,14 @@ function OfferLetterV2() {
         </div>
       )}
     </Combobox.Options>
-  </div>
+      </div>
+    );
+  }}
 </Combobox>
 </div>
 )}
 
-              <div>
+              {!isForm16 && <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1">
                   Designation
                 </label>
@@ -1070,9 +1107,9 @@ function OfferLetterV2() {
                   onChange={(e) => setDesignationOverride(e.target.value)}
                   placeholder="Enter designation"
                 />
-              </div>
+              </div>}
 
-              <div>
+              {!isForm16 && <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1">
                   Document Generate Date
                 </label>
@@ -1093,9 +1130,9 @@ function OfferLetterV2() {
                 >
                   Joining Date
                 </button>
-              </div>
+              </div>}
 
-              <div>
+              {!isForm16 && <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1">
                   Effective date
                 </label>
@@ -1119,9 +1156,9 @@ function OfferLetterV2() {
                 {/* <p className="mt-1 text-xs text-slate-500">
                   In the PDF, the joining date is a hyperlink (opens Google Calendar with that date).
                 </p> */}
-              </div>
+              </div>}
 
-              <div>
+              {!isForm16 && <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1">
                   Place
                 </label>
@@ -1139,9 +1176,9 @@ function OfferLetterV2() {
                       </option>
                     ))}
                 </select>
-              </div>
+              </div>}
 
-              <div>
+              {!isForm16 && <div>
                 <label className="block text-sm font-medium text-slate-800 mb-1">
                   PF
                 </label>
@@ -1157,7 +1194,7 @@ function OfferLetterV2() {
                     Enable PF (12% of Basic)
                   </label>
                 </div>
-              </div>
+              </div>}
 
               <div></div>
             </div>

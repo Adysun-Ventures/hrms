@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { FiArrowLeft, FiCheckCircle, FiX } from 'react-icons/fi';
 import { FaSyncAlt } from 'react-icons/fa';
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -21,6 +21,13 @@ import {
 } from '@/utils/monthlySalaryCalculationUtils';
 import { use } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import {
+  computeReadOnlyDay,
+  getMonthOptions,
+  getYearOptions,
+  parseIsoDateParts,
+  type IsoDateParts,
+} from '@/utils/salaryPeriodUtils';
 
 // Simplify the SalaryFormData type
 type SalaryFormData = {
@@ -55,6 +62,7 @@ export default function EditSalaryPage({ params }: PageParams) {
   const [employeeId, setEmployeeId] = useState<string>('');
   const [employeeName, setEmployeeName] = useState<string>('');
   const [employmentId, setEmploymentId] = useState<string>('');
+  const [joiningDateParts, setJoiningDateParts] = useState<IsoDateParts | null>(null);
   const [hasPeriodChanges, setHasPeriodChanges] = useState(false);
   const [salaryCalcMode, setSalaryCalcMode] = useState<'ctc' | 'variable' | 'fixed' | 'other'>('variable');
 
@@ -81,7 +89,7 @@ export default function EditSalaryPage({ params }: PageParams) {
   const updateSalaryMutationEmployee = useEmployeeUpdateSalary();
   const updateSalaryMutation = isEmployeeUser ? updateSalaryMutationEmployee : updateSalaryMutationAdmin;
   
-  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<SalaryFormData>({
+  const { control, register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<SalaryFormData>({
     mode: 'onChange', // Enable real-time validation and updates
   });
 
@@ -273,6 +281,14 @@ export default function EditSalaryPage({ params }: PageParams) {
           if (employments && employments.length > 0) {
             const latestEmployment = employments[0];
             setEmploymentId(latestEmployment.id);
+            setJoiningDateParts(
+              parseIsoDateParts(
+                (latestEmployment as any).joiningDate ||
+                  (latestEmployment as any).startDate ||
+                  (latestEmployment as any).createdAt ||
+                  null
+              )
+            );
 
             // Edit Salary: Variable Pay comes from the salary document (reset below), not employment.
             setValue('employmentId', latestEmployment.id, { shouldValidate: false, shouldDirty: false });
@@ -287,6 +303,27 @@ export default function EditSalaryPage({ params }: PageParams) {
 
     fetchEmployeeData();
   }, [employeeId, isEmployeeUser, setValue]);
+
+  // --- Period (Year/Month/Day) constraints based on employee joiningDate ---
+  const yearOptions = useMemo(() => getYearOptions(joiningDateParts), [joiningDateParts]);
+  const monthOptions = useMemo(() => getMonthOptions(year || null, joiningDateParts), [year, joiningDateParts]);
+  const readOnlyDay = useMemo(
+    () => computeReadOnlyDay(year || null, month || null, joiningDateParts),
+    [year, month, joiningDateParts]
+  );
+
+  useEffect(() => {
+    if (!month || month < 1 || month > 12) return;
+    if (!joiningDateParts) return;
+    if (year !== joiningDateParts.year) return;
+    if (month < joiningDateParts.month) {
+      setValue('month', joiningDateParts.month as any, { shouldValidate: true, shouldDirty: true });
+    }
+  }, [year, month, joiningDateParts, setValue]);
+
+  useEffect(() => {
+    setValue('day', readOnlyDay as any, { shouldValidate: true, shouldDirty: true });
+  }, [readOnlyDay, setValue]);
 
   // Form reset logic - load existing salary data
   useEffect(() => {
@@ -308,7 +345,9 @@ export default function EditSalaryPage({ params }: PageParams) {
       reset({
         employeeId: salary.employeeId || employeeId || '',
         employmentId: salary.employmentId || '',
-        day: new Date().getDate(),
+        // Day is read-only and controlled by joining-date rules.
+        // Default to 1; effect will set joining day when applicable.
+        day: 1,
         month: salary.month || 1,
         year: salary.year || new Date().getFullYear(),
         ctc: ctcDb,
@@ -557,108 +596,94 @@ export default function EditSalaryPage({ params }: PageParams) {
         <form onSubmit={handleSubmit(onSubmit)} className="px-6 pb-6">
           {/* Period Information */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
-            {/* Month */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="text-red-500 mr-1">*</span>Month
-              </label>
-              <select
-                {...register('month', { required: 'Month is required' })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Month</option>
-                <option value={1}>January</option>
-                <option value={2}>February</option>
-                <option value={3}>March</option>
-                <option value={4}>April</option>
-                <option value={5}>May</option>
-                <option value={6}>June</option>
-                <option value={7}>July</option>
-                <option value={8}>August</option>
-                <option value={9}>September</option>
-                <option value={10}>October</option>
-                <option value={11}>November</option>
-                <option value={12}>December</option>
-              </select>
-              {errors.month && (
-                <p className="mt-1 text-sm text-red-600">{errors.month.message}</p>
-              )}
-            </div>
-
-            {/* Day */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                <span className="text-red-500 mr-1">*</span>Day
-              </label>
-              <select
-                {...register('day', { required: 'Day is required', valueAsNumber: true })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Day</option>
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-              {errors.day && (
-                <p className="mt-1 text-sm text-red-600">{errors.day.message}</p>
-              )}
-            </div>
-
             {/* Year */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                <span className="text-red-500 mr-1">*</span> Year 
               </label>
-              <select
-  {...register('year', { required: 'Year is required' })}
-  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
->
-  <option value="">Select Year</option>
-
-  {Array.from(
-    { length: (new Date().getFullYear() + 2) - 2020 + 1 },
-    (_, i) => {
-      const yr = 2020 + i;
-      return (
-        <option key={yr} value={yr}>
-          {yr}
-        </option>
-      );
-    }
-  )}
-</select>
-
-              {errors.year && (
-                <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>
-              )}
+              <Controller
+                control={control}
+                name="year"
+                rules={{ required: 'Year is required' }}
+                render={({ field }) => (
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={field.value ?? ''}
+                    onChange={(e) => {
+                      const nextYear = Number(e.target.value);
+                      field.onChange(nextYear);
+                      const join = joiningDateParts;
+                      const nextMonth = join && nextYear === join.year ? join.month : 1;
+                      setValue('month', nextMonth as any, { shouldValidate: true, shouldDirty: true });
+                    }}
+                  >
+                    <option value="">Select Year</option>
+                    {yearOptions.map((yr) => (
+                      <option key={yr} value={yr}>
+                        {yr}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+              {errors.year && <p className="mt-1 text-sm text-red-600">{errors.year.message}</p>}
             </div>
 
-            {/* Payable Days - Auto-calculated */}
-            <div className=' md:col-span-3'>
+            {/* Month */}
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Payable Days 
+                <span className="text-red-500 mr-1">*</span>Month
               </label>
-              <input
-                type="number"
-                {...register('workDays', { 
-                  required: 'Work days is required',
-                  min: { value: 0, message: 'Work days cannot be negative' },
-                  valueAsNumber: true
-                })}
-                value={adjustedWorkDays}
-                disabled
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
-                placeholder="Auto-calculated"
+              <Controller
+                control={control}
+                name="month"
+                rules={{ required: 'Month is required' }}
+                render={({ field }) => (
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={field.value ?? ''}
+                    onChange={(e) => {
+                      const nextMonth = Number(e.target.value);
+                      field.onChange(nextMonth);
+                    }}
+                  >
+                    <option value="">Select Month</option>
+                    {monthOptions.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
               />
-              {errors.workDays && (
-                <p className="mt-1 text-sm text-red-600">{errors.workDays.message}</p>
-              )}
-              <span className="text-xs text-gray-500">
-                (Auto-calculated: {calculations.monthDays} - ({day || 1} - 1) - {leavesCount} leaves)
-              </span>
+              {errors.month && <p className="mt-1 text-sm text-red-600">{errors.month.message}</p>}
+            </div>
+
+            {/* Day (Read Only) */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                <span className="text-red-500 mr-1">*</span>Day
+              </label>
+              <Controller
+                control={control}
+                name="day"
+                rules={{ required: 'Day is required' }}
+                render={({ field }) => (
+                  <select
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                    value={field.value ?? readOnlyDay}
+                    disabled
+                    onChange={() => {}}
+                  >
+                    {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              />
+              {errors.day && <p className="mt-1 text-sm text-red-600">{errors.day.message}</p>}
             </div>
 
             {/* Leaves Count */}
@@ -693,6 +718,32 @@ export default function EditSalaryPage({ params }: PageParams) {
     </p>
   )}
 </div>
+
+            {/* Payable Days - Auto-calculated */}
+            <div className=' md:col-span-3'>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Payable Days <span className="text-xs text-gray-500">(Auto-calculated)</span>
+              </label>
+              <input
+                type="number"
+                {...register('workDays', { 
+                  required: 'Work days is required',
+                  min: { value: 0, message: 'Work days cannot be negative' },
+                  valueAsNumber: true
+                })}
+                value={adjustedWorkDays}
+                disabled
+                readOnly
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+                placeholder="Auto-calculated"
+              />
+              {errors.workDays && (
+                <p className="mt-1 text-sm text-red-600">{errors.workDays.message}</p>
+              )}
+              {/* <span className="text-xs text-gray-500">
+                (Auto-calculated: {calculations.monthDays} - ({day || 1} - 1) - {leavesCount} leaves)
+              </span> */}
+            </div>
           </div>
 
           {/* Salary Input Fields */}
@@ -785,7 +836,7 @@ export default function EditSalaryPage({ params }: PageParams) {
               {/* Monthly Salary Payable (read-only) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Monthly Salary Payable (₹)
+                  Monthly Salary Payable (₹)<span className="text-xs text-gray-500">(Auto-calculated)</span>
                 </label>
                 <input
                   type="text"
@@ -794,9 +845,9 @@ export default function EditSalaryPage({ params }: PageParams) {
                   disabled
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
                 />
-                <span className="text-xs text-gray-500">
+                {/* <span className="text-xs text-gray-500">
                   Formula: Monthly Fixed / Total Days in month × Payable Days
-                </span>
+                </span> */}
               </div>
             </div>
           </div>

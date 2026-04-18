@@ -238,7 +238,6 @@ export default function AddEmploymentPage() {
       case 'currentSalary':
         setValue('jobTitle', '' as any, { shouldDirty: true });
         setValue('salary', 0 as any, { shouldDirty: true });
-        setValue('lastSalaryAmount', 0 as any, { shouldDirty: true });
         setValue('currentVariablePay', 0 as any, { shouldDirty: true });
         setValue('currentOtherAllowance', 0 as any, { shouldDirty: true });
         setValue('currentPfIncluded', false as any, { shouldDirty: true });
@@ -344,7 +343,6 @@ export default function AddEmploymentPage() {
   const currentVariablePayValue = watch('currentVariablePay');
   const currentFixedPayValue = watch('currentFixedPay');
   const currentOtherAllowanceManualValue = watch('currentOtherAllowance');
-  const currentLastDrawnCtcValue = watch('lastSalaryAmount');
 
   const computedJoiningFixedPay = useMemo(() => {
     const ctc = Number(joiningCtcValue ?? 0) || 0;
@@ -448,14 +446,6 @@ export default function AddEmploymentPage() {
       shouldDirty: false,
     });
   }, [dirtyFields, currentOtherAllowanceCalculated, setValue]);
-
-  useEffect(() => {
-    if ((dirtyFields as any)?.lastSalaryAmount) return;
-    setValue('lastSalaryAmount', Number(currentCtcValue ?? 0) || 0, {
-      shouldValidate: false,
-      shouldDirty: false,
-    });
-  }, [dirtyFields, currentCtcValue, setValue]);
 
   // Prefill Increment Details from Joining Salary Information
   useEffect(() => {
@@ -945,8 +935,7 @@ export default function AddEmploymentPage() {
         // Store normalized employmentId for consistent uniqueness checks
         employmentId: normalizedEmploymentId,
         salary: Number((data as any).salary ?? 0),
-        // Last Drawn CTC defaults from Current CTC, but remains editable.
-        lastSalaryAmount: Number((data as any).lastSalaryAmount ?? (data as any).salary ?? 0),
+        lastSalaryAmount: Number((data as any).salary ?? 0),
         joiningCtc: Number(data.joiningCtc ?? 0),
         inHandCtc: Number(data.inHandCtc ?? 0),
         relievingCtc: data.relievingCtc && data.relievingCtc !== '' ? Number(data.relievingCtc) : null,
@@ -2362,29 +2351,6 @@ export default function AddEmploymentPage() {
                     {errors.salary && (
                       <p className="mt-1 text-sm text-red-600">{errors.salary.message}</p>
                     )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Drawn CTC (₹)
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      placeholder="Auto from Current CTC"
-                      {...register('lastSalaryAmount', {
-                        min: { value: 0, message: 'Last Drawn CTC must be positive' },
-                        valueAsNumber: true,
-                      })}
-                      value={Number(currentLastDrawnCtcValue ?? 0) || 0}
-                      onChange={(e) => {
-                        setValue('lastSalaryAmount', Number(e.target.value || 0), {
-                          shouldValidate: true,
-                          shouldDirty: true,
-                        });
-                      }}
-                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                    />
                   </div>
 
                   <div>

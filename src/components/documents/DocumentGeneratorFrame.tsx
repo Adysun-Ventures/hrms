@@ -45,6 +45,8 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
       switch (documentType) {
         case 'v2/offer-letter':
           return <OfferLetterV2 />;
+        case 'v2/form-16':
+          return <OfferLetterV2 isForm16 />;
         case 'v2/relieving-letter':
           return <RelievingLetterV2 />;
         case 'v2/appraisal-letter':

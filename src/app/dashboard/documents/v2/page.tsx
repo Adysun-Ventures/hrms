@@ -25,6 +25,12 @@ const documents = [
     path: '/dashboard/documents/v2/salary-slip', 
     icon: <FiFile size={24} /> 
   },
+  {
+    title: 'Form 16',
+    description: 'Generate and manage Form 16 documents',
+    path: '/dashboard/documents/v2/form-16',
+    icon: <FiFileText size={24} />
+  },
   { 
     title: 'Relieving Letter (v2)',
     description: 'Generate selectable text relieving letters',

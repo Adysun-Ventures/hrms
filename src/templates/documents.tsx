@@ -10,7 +10,8 @@ export type DocumentTemplateKey =
   | 'relieving-letter'
   | 'increment-letter'
   | 'experience-letter'
-  | 'fnf-certificate';
+  | 'fnf-certificate'
+  | 'form-16';
 
 export type DocumentTemplate = {
   key: DocumentTemplateKey;
@@ -85,6 +86,15 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     description: 'Generate full and final settlement certificates',
     adminHref: '/dashboard/documents/v2/fnf-certificate',
     employeeHref: '/employee/documents/fnf-certificate',
+    roles: ['admin', 'employee'],
+    icon: <FiFileText size={24} />,
+  },
+  {
+    key: 'form-16',
+    title: 'Form 16',
+    description: 'Generate and manage Form 16 documents',
+    adminHref: '/dashboard/documents/v2/form-16',
+    employeeHref: '/employee/documents/form-16',
     roles: ['admin', 'employee'],
     icon: <FiFileText size={24} />,
   },

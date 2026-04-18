@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { FiEdit, FiTrash2, FiEye, FiDownload, FiCpu, FiSettings, FiX, FiCheckCircle } from 'react-icons/fi';
+import { FiEdit, FiTrash2, FiEye, FiDownload, FiCpu, FiX, FiCheckCircle } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Salary } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
@@ -27,6 +27,13 @@ import { db } from "@/firebase/config";
 import { saveAs } from "file-saver";
 import { addSalary, checkExistingSalary } from '@/utils/firebaseUtils';
 import { calculateMonthlySalary } from '@/utils/monthlySalaryCalculationUtils';
+import {
+  findMissingMonths,
+  getAllMonths,
+  groupByYear,
+  monthNumberToShortName,
+  type YearMonth,
+} from '@/utils/missingSalaryUtils';
 
 
 
@@ -65,12 +72,11 @@ export default function SalariesPage() {
   };
   const [searchTerm, setSearchTerm] = useState('');
   const [yearFilter, setYearFilter] = useState('all');
+  const [calendarYearFilter, setCalendarYearFilter] = useState('all');
   const [incrementFilter, setIncrementFilter] = useState('all');
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [selectionEnabled, setSelectionEnabled] = useState(false);
-  const [bulkDropdownOpen, setBulkDropdownOpen] = useState(false);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkDeleteIds, setBulkDeleteIds] = useState<string[]>([]);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
@@ -80,7 +86,20 @@ export default function SalariesPage() {
   const [pageSize, setPageSize] = useState(20);
   const [isAiCreating, setIsAiCreating] = useState(false);
   const [incrementHeaderMeta, setIncrementHeaderMeta] = useState<IncrementHeaderMeta[]>([]);
-  const bulkDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [isCheckingMissingSalaries, setIsCheckingMissingSalaries] = useState(false);
+  const [missingSalaryModalOpen, setMissingSalaryModalOpen] = useState(false);
+  const [missingSalariesByYear, setMissingSalariesByYear] = useState<Record<number, number[]>>({});
+  const [missingMonthsList, setMissingMonthsList] = useState<YearMonth[]>([]);
+  const [missingSummary, setMissingSummary] = useState<{ expected: number; existing: number; missing: number }>({
+    expected: 0,
+    existing: 0,
+    missing: 0,
+  });
+  const masterCheckboxRef = useRef<HTMLInputElement | null>(null);
+  const masterClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const filteredRowIdsRef = useRef<string[]>([]);
+  const selectionEnabledRef = useRef(false);
+  const selectedRowsRef = useRef<string[]>([]);
   
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -430,6 +449,13 @@ const handleDownload = async (salary: Salary) => {
 
     try {
       setIsAiCreating(true);
+      if (!missingMonthsList.length) {
+        // No missing salaries — do not hit API.
+        setMissingSalaryModalOpen(true);
+        toast.error('No missing salaries to generate.', { id: 'ai-salary-create' });
+        return;
+      }
+
       toast.loading('AI salary creation started...', { id: 'ai-salary-create' });
 
       const employments = await getEmploymentsByEmployee(employeeId);
@@ -445,8 +471,9 @@ const handleDownload = async (salary: Salary) => {
       });
 
       let createdCount = 0;
-      let skippedCount = 0;
       let failedCount = 0;
+
+      const missingKeySet = new Set(missingMonthsList.map((m) => `${m.year}-${m.month}`));
 
       for (const employment of chronologicalEmployments as any[]) {
         const periodStart = getPeriodStart(employment);
@@ -491,11 +518,7 @@ const handleDownload = async (salary: Salary) => {
         ) {
           const month = current.getMonth() + 1;
           const year = current.getFullYear();
-          const existing = await checkExistingSalary(employeeId, month, year);
-          if (existing) {
-            skippedCount += 1;
-            continue;
-          }
+          if (!missingKeySet.has(`${year}-${month}`)) continue;
 
           const applicableIncrement = incrementTimeline
             .filter((inc) => inc.incrementDateObj <= monthEnd(current))
@@ -579,14 +602,18 @@ const handleDownload = async (salary: Salary) => {
 
       if (createdCount > 0) {
         toast.success(
-          `Created ${createdCount} salaries. Skipped ${skippedCount} existing${failedCount ? `, failed ${failedCount}` : ''}.`,
+          `Created ${createdCount} salaries${failedCount ? `, failed ${failedCount}` : ''}.`,
           { id: 'ai-salary-create' }
         );
+        // Re-check missing after generation to keep modal consistent.
+        setTimeout(() => {
+          handleCheckMissingSalaries();
+        }, 0);
       } else {
         toast.error(
           failedCount > 0
-            ? `No salary created. Failed ${failedCount}, skipped ${skippedCount}.`
-            : `No new salaries created. ${skippedCount} already exist.`,
+            ? `No salary created. Failed ${failedCount}.`
+            : `No new salaries created.`,
           { id: 'ai-salary-create' }
         );
       }
@@ -595,6 +622,70 @@ const handleDownload = async (salary: Salary) => {
       toast.error(error?.message || 'Failed to create salaries with AI.', { id: 'ai-salary-create' });
     } finally {
       setIsAiCreating(false);
+    }
+  };
+
+  const toSafeDate = (value?: string | null): Date | null => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const handleCheckMissingSalaries = async () => {
+    if (!employeeId) {
+      toast.error('Please open salaries for a specific employee.');
+      return;
+    }
+
+    try {
+      setIsCheckingMissingSalaries(true);
+      const employments = await getEmploymentsByEmployee(employeeId);
+      if (!employments?.length) {
+        setMissingSalariesByYear({});
+        setMissingMonthsList([]);
+        setMissingSummary({ expected: 0, existing: 0, missing: 0 });
+        setMissingSalaryModalOpen(true);
+        return;
+      }
+
+      const expectedMonths: YearMonth[] = [];
+      for (const employment of employments as any[]) {
+        const startDate = toSafeDate(employment?.joiningDate || employment?.startDate);
+        if (!startDate) continue;
+
+        const endDateRaw = employment?.lastWorkingDate || employment?.endDate || null;
+        const endDate = toSafeDate(endDateRaw) || new Date();
+        expectedMonths.push(...getAllMonths(startDate, endDate));
+      }
+
+      const paidMonths: YearMonth[] = (employeeSalaries || [])
+        .map((salary: any) => {
+          const year = Number(salary?.year);
+          const month = Number(salary?.month);
+          if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return null;
+          return { year, month } as YearMonth;
+        })
+        .filter(Boolean) as YearMonth[];
+
+      const missingMonths = findMissingMonths(expectedMonths, paidMonths);
+      const grouped = groupByYear(missingMonths);
+      setMissingSalariesByYear(grouped);
+      setMissingMonthsList(missingMonths);
+
+      // Summary counts (deduped months)
+      const expectedDedup = new Set(expectedMonths.map((m) => `${m.year}-${m.month}`));
+      const paidDedup = new Set(paidMonths.map((m) => `${m.year}-${m.month}`));
+      setMissingSummary({
+        expected: expectedDedup.size,
+        existing: paidDedup.size,
+        missing: missingMonths.length,
+      });
+      setMissingSalaryModalOpen(true);
+    } catch (error) {
+      console.error('Failed to check missing salaries:', error);
+      toast.error('Failed to check missing salaries');
+    } finally {
+      setIsCheckingMissingSalaries(false);
     }
   };
 
@@ -625,12 +716,19 @@ const handleDownload = async (salary: Salary) => {
       const salaryYear = toIntOrNull(salary.year);
       const salaryFinancialYear = getFinancialYearFromMonthYear(salaryMonth, salaryYear);
       const selectedFinancialYear = toIntOrNull(yearFilter);
+      const selectedCalendarYear = toIntOrNull(calendarYearFilter);
 
       const matchesYear =
         yearFilter === 'all' ||
         (salaryFinancialYear !== null &&
           selectedFinancialYear !== null &&
           salaryFinancialYear === selectedFinancialYear);
+
+      const matchesCalendarYear =
+        calendarYearFilter === 'all' ||
+        (salaryYear !== null &&
+          selectedCalendarYear !== null &&
+          salaryYear === selectedCalendarYear);
 
       const selectedIncrementNumber = toIntOrNull(incrementFilter);
       const selectedIncrementIndex =
@@ -654,7 +752,7 @@ const handleDownload = async (salary: Salary) => {
 
       const matchesEmployeeId = employeeId ? salary.employeeId === employeeId : true;
 
-      return matchesSearch && matchesYear && matchesIncrement && matchesEmployeeId;
+      return matchesSearch && matchesYear && matchesCalendarYear && matchesIncrement && matchesEmployeeId;
     })
     .sort((a, b) => {
       const yearA = Number((a as any).year) || 0;
@@ -669,6 +767,10 @@ const handleDownload = async (salary: Salary) => {
   const filteredRowIds = useMemo(() => filteredSalaries.map((s) => s.id), [filteredSalaries]);
   const filteredRowIdsKey = useMemo(() => filteredRowIds.join('|'), [filteredRowIds]);
 
+  filteredRowIdsRef.current = filteredRowIds;
+  selectionEnabledRef.current = selectionEnabled;
+  selectedRowsRef.current = selectedRows;
+
   // Keep selected rows in sync with currently applied filters.
   useEffect(() => {
     if (!selectionEnabled) return;
@@ -676,51 +778,102 @@ const handleDownload = async (salary: Salary) => {
     setSelectedRows((prev) => prev.filter((id) => idSet.has(id)));
   }, [filteredRowIdsKey, selectionEnabled]);
 
-  useEffect(() => {
-    if (!selectionEnabled) {
-      setSelectAll(false);
-      return;
-    }
-    setSelectAll(filteredRowIds.length > 0 && selectedRows.length === filteredRowIds.length);
-  }, [filteredRowIdsKey, selectionEnabled, selectedRows.length]);
+  const masterAllSelected =
+    selectionEnabled &&
+    filteredRowIds.length > 0 &&
+    selectedRows.length === filteredRowIds.length;
+  const masterIndeterminate =
+    selectionEnabled &&
+    selectedRows.length > 0 &&
+    selectedRows.length < filteredRowIds.length;
 
-  // Close bulk dropdown on outside click (bonus requirement).
   useEffect(() => {
-    if (!bulkDropdownOpen) return;
-    const onMouseDown = (e: MouseEvent) => {
-      const target = e.target as Node | null;
-      if (!target) return;
-      if (bulkDropdownRef.current && bulkDropdownRef.current.contains(target)) return;
-      setBulkDropdownOpen(false);
+    const el = masterCheckboxRef.current;
+    if (el) el.indeterminate = masterIndeterminate;
+  }, [masterIndeterminate, masterAllSelected, selectionEnabled]);
+
+  useEffect(() => {
+    return () => {
+      if (masterClickTimerRef.current) {
+        clearTimeout(masterClickTimerRef.current);
+        masterClickTimerRef.current = null;
+      }
     };
-    document.addEventListener('mousedown', onMouseDown);
-    return () => document.removeEventListener('mousedown', onMouseDown);
-  }, [bulkDropdownOpen]);
+  }, []);
+
+  useEffect(() => {
+    if (!selectionEnabled || selectedRows.length > 0) return;
+
+    const handleOutsideCheckboxClick = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+
+      if (target.closest('input[type="checkbox"]')) return;
+
+      resetSelectionState();
+    };
+
+    document.addEventListener('mousedown', handleOutsideCheckboxClick);
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideCheckboxClick);
+    };
+  }, [selectionEnabled, selectedRows.length]);
+
+  const resetSelectionState = () => {
+    setSelectedRows([]);
+    setSelectionEnabled(false);
+    if (masterClickTimerRef.current) {
+      clearTimeout(masterClickTimerRef.current);
+      masterClickTimerRef.current = null;
+    }
+  };
 
   const toggleRowSelection = (id: string) => {
     setSelectedRows((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
-  const handleAllOptionClick = () => {
-    if (!selectionEnabled) setSelectionEnabled(true);
-    if (filteredRowIds.length === 0) return;
-    const allCurrentlySelected = selectedRows.length === filteredRowIds.length;
-    setSelectedRows(allCurrentlySelected ? [] : filteredRowIds);
-    setSelectAll(!allCurrentlySelected);
-    setBulkDropdownOpen(false);
+  const runMasterSingleClick = () => {
+    const ids = filteredRowIdsRef.current;
+    if (ids.length === 0) return;
+    if (!selectionEnabledRef.current) {
+      setSelectionEnabled(true);
+      setSelectedRows([...ids]);
+      return;
+    }
+    const sel = selectedRowsRef.current;
+    const allSelected = ids.length > 0 && sel.length === ids.length && ids.every((id) => sel.includes(id));
+    if (allSelected) {
+      setSelectedRows([]);
+    } else {
+      setSelectedRows([...ids]);
+    }
+  };
+
+  const handleMasterCheckboxClick = () => {
+    if (masterClickTimerRef.current) {
+      clearTimeout(masterClickTimerRef.current);
+      masterClickTimerRef.current = null;
+    }
+    masterClickTimerRef.current = setTimeout(() => {
+      masterClickTimerRef.current = null;
+      runMasterSingleClick();
+    }, 280);
+  };
+
+  const handleMasterCheckboxDoubleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (masterClickTimerRef.current) {
+      clearTimeout(masterClickTimerRef.current);
+      masterClickTimerRef.current = null;
+    }
+    resetSelectionState();
   };
 
   const openBulkDeleteModal = () => {
     if (selectedRows.length === 0) return;
     setBulkDeleteIds(selectedRows);
     setBulkDeleteOpen(true);
-  };
-
-  const resetSelectionState = () => {
-    setSelectedRows([]);
-    setSelectAll(false);
-    setSelectionEnabled(false);
-    setBulkDropdownOpen(false);
   };
 
   const confirmBulkDelete = async () => {
@@ -775,6 +928,10 @@ const handleDownload = async (salary: Salary) => {
     setCurrentPage(1);
   }, [searchTerm, yearFilter, incrementFilter, employeeId]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [calendarYearFilter]);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
@@ -802,7 +959,7 @@ const handleDownload = async (salary: Salary) => {
     });
 
     return [
-      { value: 'all', label: 'Financial Years' },
+      { value: 'all', label: 'Fin. Year' },
       ...Array.from(years)
         .sort((a, b) => b - a)
         .map((fyStart) => ({
@@ -814,11 +971,29 @@ const handleDownload = async (salary: Salary) => {
 
   const getIncrementOptions = () => {
     return [
-      { value: 'all', label: 'All Increments' },
+      { value: 'all', label: 'Increments' },
       ...incrementHeaderMeta.map((inc) => ({
         value: String(inc.index),
         label: `Increment ${inc.index}`,
       })),
+    ];
+  };
+
+  const getCalendarYearOptions = () => {
+    const years = new Set<number>();
+    salaries.forEach((salary) => {
+      const year = toIntOrNull((salary as any).year);
+      if (year !== null) years.add(year);
+    });
+
+    return [
+      { value: 'all', label: 'Year' },
+      ...Array.from(years)
+        .sort((a, b) => b - a)
+        .map((year) => ({
+          value: String(year),
+          label: String(year),
+        })),
     ];
   };
 
@@ -883,6 +1058,7 @@ const handleDownload = async (salary: Salary) => {
           showStats={true}
           showSearch={true}
           showFilter={incrementHeaderMeta.length > 0}
+          showFilterIcon={false}
           filterValue={incrementFilter}
           onFilterChange={setIncrementFilter}
           filterOptions={getIncrementOptions()}
@@ -891,16 +1067,29 @@ const handleDownload = async (salary: Salary) => {
           onSecondFilterChange={setYearFilter}
           secondFilterOptions={getYearOptions()}
           showSecondFilterIcon={false}
+          showThirdFilter={true}
+          thirdFilterValue={calendarYearFilter}
+          onThirdFilterChange={setCalendarYearFilter}
+          thirdFilterOptions={getCalendarYearOptions()}
+          showThirdFilterIcon={false}
           onRefresh={handleRefresh}
           isRefreshing={isLoading}
           actionButtons={[
+            {
+              label: isCheckingMissingSalaries ? 'Checking...' : 'Check Missing Salaries',
+              variant: 'primary' as const,
+              hollow: true,
+              onClick: handleCheckMissingSalaries,
+              disabled: isCheckingMissingSalaries || !employeeId,
+            },
             {
               label: isAiCreating ? 'Creating...' : 'Create with AI',
               icon: <FaHandSparkles className="w-4 h-4" />,
               variant: 'primary' as const,
               pill: true,
-              onClick: handleCreateWithAi,
-              disabled: isAiCreating || !employeeId,
+              // First check missing salaries; only generate if missing.
+              onClick: handleCheckMissingSalaries,
+              disabled: isAiCreating || isCheckingMissingSalaries || !employeeId,
             },
             { 
               label: 'Create Salary', 
@@ -948,33 +1137,19 @@ const handleDownload = async (salary: Salary) => {
                         <FiTrash2 className="w-5 h-5" />
                       </button>
                     )}
-                    <div className="relative" ref={bulkDropdownRef}>
-                      <button
-                        type="button"
-                        aria-label="Bulk actions"
-                        onClick={() => {
-                          setSelectionEnabled(true);
-                          setBulkDropdownOpen((v) => !v);
-                        }}
-                        className="p-1 rounded hover:bg-gray-100 text-gray-600"
-                      >
-                        <FiSettings className="w-4 h-4" />
-                      </button>
-
-                      {bulkDropdownOpen && (
-                        <div className="absolute left-0 top-full z-30 mt-2 w-28 bg-white border border-gray-200 rounded-md shadow-lg">
-                          <button
-                            type="button"
-                            onClick={handleAllOptionClick}
-                            className={`block w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 ${
-                              selectAll ? 'bg-gray-100' : ''
-                            }`}
-                          >
-                            All
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <input
+                      ref={masterCheckboxRef}
+                      type="checkbox"
+                      aria-label="Select all salaries for bulk actions. Double-click to cancel selection mode."
+                      title="Select all (double-click to exit selection mode)"
+                      className="h-4 w-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+                      checked={masterAllSelected}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleMasterCheckboxClick();
+                      }}
+                      onDoubleClick={handleMasterCheckboxDoubleClick}
+                    />
                     <span>Sr. No</span>
                   </div>
                 </th>
@@ -982,7 +1157,7 @@ const handleDownload = async (salary: Salary) => {
                   Period
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Working Days
+                  Payable Days
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Leaves
@@ -1011,7 +1186,7 @@ const handleDownload = async (salary: Salary) => {
                           type="checkbox"
                           checked={selectedRows.includes(salary.id)}
                           onChange={() => toggleRowSelection(salary.id)}
-                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 accent-blue-600"
                         />
                       )}
                       <span>{startIndex + idx + 1}</span>
@@ -1057,7 +1232,7 @@ const handleDownload = async (salary: Salary) => {
                       <div className="flex items-center justify-center space-x-3">
                         <ActionButton
                           icon={<FiDownload className="w-5 h-5" />}
-                          title="Download Salary Details"
+                          title="Download Salary Slip"
                           colorClass="bg-green-100 text-green-600 hover:text-green-900"
                           href={null as any}
                           onClick={()=> handleDownload(salary)}
@@ -1096,7 +1271,7 @@ const handleDownload = async (salary: Salary) => {
                 {employeeId ? 'No salary records found' : 'No salaries found'}
               </h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || yearFilter !== 'all' || incrementFilter !== 'all'
+                {searchTerm || yearFilter !== 'all' || calendarYearFilter !== 'all' || incrementFilter !== 'all'
                   ? 'Try adjusting your search, month, or year filter.'
                   : 'Get started by adding a salary record.'
                 }
@@ -1153,6 +1328,67 @@ const handleDownload = async (salary: Salary) => {
                 >
                   <FiTrash2 className="w-4 h-4" />
                   {isBulkDeleting ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {missingSalaryModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+            onClick={() => setMissingSalaryModalOpen(false)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-xl w-full max-w-xl p-6 relative max-h-[80vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setMissingSalaryModalOpen(false)}
+                aria-label="Close missing salaries popup"
+                className="absolute top-4 right-4 h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+
+              <h2 className="text-base font-semibold text-gray-900">Missing Salaries</h2>
+              <p className="mt-1 text-xs text-gray-500">
+                Expected: <span className="font-medium text-gray-700">{missingSummary.expected}</span> • Existing:{' '}
+                <span className="font-medium text-gray-700">{missingSummary.existing}</span> • Missing:{' '}
+                <span className="font-medium text-gray-700">{missingSummary.missing}</span>
+              </p>
+
+              {Object.keys(missingSalariesByYear).length === 0 ? (
+                <p className="mt-4 text-sm text-gray-700">No Missing Salaries ✅</p>
+              ) : (
+                <div className="mt-4 space-y-2 text-sm text-gray-800">
+                  {Object.entries(missingSalariesByYear)
+                    .sort((a, b) => Number(a[0]) - Number(b[0]))
+                    .map(([year, months]) => (
+                      <p key={year}>
+                        <span className="font-medium">{year}</span> {'\u2192'}{' '}
+                        {months.map((m) => monthNumberToShortName(m)).join(', ')}
+                      </p>
+                    ))}
+                </div>
+              )}
+
+              <div className="mt-6 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMissingSalaryModalOpen(false)}
+                  className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCreateWithAi}
+                  disabled={isAiCreating || !employeeId || missingMonthsList.length === 0}
+                  className="border border-blue-500 text-blue-500 px-4 py-2 rounded-md hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isAiCreating ? 'Generating...' : 'Generate Missing Salaries'}
                 </button>
               </div>
             </div>

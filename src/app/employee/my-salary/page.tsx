@@ -62,6 +62,7 @@ export default function EmployeeMySalaryPage() {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [yearFilter, setYearFilter] = useState('all');
+  const [calendarYearFilter, setCalendarYearFilter] = useState('all');
   const [incrementFilter, setIncrementFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -138,12 +139,19 @@ export default function EmployeeMySalaryPage() {
       const salaryYear = toIntOrNull(salary.year);
       const salaryFinancialYear = getFinancialYearFromMonthYear(salaryMonth, salaryYear);
       const selectedFinancialYear = toIntOrNull(yearFilter);
+      const selectedCalendarYear = toIntOrNull(calendarYearFilter);
 
       const matchesYear =
         yearFilter === 'all' ||
         (salaryFinancialYear !== null &&
           selectedFinancialYear !== null &&
           salaryFinancialYear === selectedFinancialYear);
+
+      const matchesCalendarYear =
+        calendarYearFilter === 'all' ||
+        (salaryYear !== null &&
+          selectedCalendarYear !== null &&
+          salaryYear === selectedCalendarYear);
 
       const selectedIncrementNumber = toIntOrNull(incrementFilter);
       const selectedIncrementIndex =
@@ -165,7 +173,7 @@ export default function EmployeeMySalaryPage() {
             Number.isNaN(previousIncrementDate.getTime()) ||
             salaryMonthDate > previousIncrementDate));
 
-      return matchesSearch && matchesYear && matchesIncrement;
+      return matchesSearch && matchesYear && matchesCalendarYear && matchesIncrement;
     })
     .sort((a, b) => {
       const yearA = Number((a as any).year) || 0;
@@ -199,7 +207,7 @@ export default function EmployeeMySalaryPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, yearFilter, incrementFilter]);
+  }, [searchTerm, yearFilter, calendarYearFilter, incrementFilter]);
 
   const getYearOptions = () => {
     const financialYears = Array.from(
@@ -220,6 +228,24 @@ export default function EmployeeMySalaryPage() {
       ...financialYears.map((fyStart) => ({
         label: `FY ${fyStart}\u2013${String(fyStart + 1).slice(-2)}`,
         value: String(fyStart),
+      })),
+    ];
+  };
+
+  const getCalendarYearOptions = () => {
+    const years = Array.from(
+      new Set(
+        salaries
+          .map((s) => toIntOrNull((s as any).year))
+          .filter((y): y is number => y !== null),
+      ),
+    ).sort((a, b) => b - a);
+
+    return [
+      { label: 'Year', value: 'all' },
+      ...years.map((year) => ({
+        label: String(year),
+        value: String(year),
       })),
     ];
   };
@@ -381,6 +407,11 @@ export default function EmployeeMySalaryPage() {
           onSecondFilterChange={setYearFilter}
           secondFilterOptions={getYearOptions()}
           showSecondFilter={true}
+          showThirdFilter={true}
+          thirdFilterValue={calendarYearFilter}
+          onThirdFilterChange={setCalendarYearFilter}
+          thirdFilterOptions={getCalendarYearOptions()}
+          showThirdFilterIcon={false}
         />
 
         <div className="overflow-x-auto px-6 mt-4">
@@ -449,7 +480,7 @@ export default function EmployeeMySalaryPage() {
                     <div className="flex items-center justify-center space-x-3">
                       <ActionButton
                         icon={<FiDownload className="w-5 h-5" />}
-                        title="Download Salary Details"
+                        title="Download Salary Slip"
                         colorClass="bg-green-100 text-green-600 hover:text-green-900"
                         href={null as any}
                         onClick={() => handleDownload(salary)}
@@ -478,7 +509,7 @@ export default function EmployeeMySalaryPage() {
               <FaRupeeSign className="mx-auto h-8 w-8 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No salary records found</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || yearFilter !== 'all' || incrementFilter !== 'all'
+                {searchTerm || yearFilter !== 'all' || calendarYearFilter !== 'all' || incrementFilter !== 'all'
                   ? 'Try adjusting your search, month, or year filter.'
                   : 'No salary slips have been generated yet.'}
               </p>

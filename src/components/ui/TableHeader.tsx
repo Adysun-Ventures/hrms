@@ -65,6 +65,14 @@ interface TableHeaderProps {
   secondFilterLabel?: string;
   showSecondFilterIcon?: boolean;
   secondFilterOptGroupLabel?: string;
+  // Third filter props
+  thirdFilterValue?: string;
+  onThirdFilterChange?: (value: string) => void;
+  thirdFilterOptions?: FilterOption[];
+  showThirdFilter?: boolean;
+  thirdFilterLabel?: string;
+  showThirdFilterIcon?: boolean;
+  thirdFilterOptGroupLabel?: string;
   headerClassName?: string;
   // Attendance marking props
   showAttendanceMarking?: boolean;
@@ -132,6 +140,14 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   secondFilterLabel = 'Filter',
   showSecondFilterIcon = true,
   secondFilterOptGroupLabel,
+  // Third filter props
+  thirdFilterValue = 'all',
+  onThirdFilterChange,
+  thirdFilterOptions = [],
+  showThirdFilter = false,
+  thirdFilterLabel = 'Filter',
+  showThirdFilterIcon = true,
+  thirdFilterOptGroupLabel,
   headerClassName = 'px-4 sm:px-6 pt-6 pb-6',
   showAttendanceMarking = false,
   attendanceData,
@@ -383,7 +399,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
       )}
 
       {/* Stats and Search Section */}
-      {(showStats || showSearch || showFilter || showSecondFilter || showCustomFilters) && (
+      {(showStats || showSearch || showFilter || showSecondFilter || showThirdFilter || showCustomFilters) && (
         <div className="px-4 sm:px-6 pb-6">
           {/* Mobile: Stack everything vertically, Desktop: Side by side */}
           <div className={`flex flex-col lg:flex-row ${showStats ? 'lg:justify-between' : 'lg:justify-end'} lg:items-center gap-4 mt-4`}>
@@ -393,8 +409,8 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                 {typeof total === 'number' && (
                   stackTotalStat ? (
                     <span className="pr-2 py-1 rounded-full inline-flex flex-col items-center leading-tight">
-                      <span className="font-medium">{total}</span>
-                      <span>{totalLabel}</span>
+                      <span className="font-medium text-gray-900">{total}</span>
+                      <span className="text-gray-500">{totalLabel}</span>
                     </span>
                   ) : (
                     <span className="pr-2 py-1 rounded-full">{totalLabel}: <span className="font-medium">{total}</span></span>
@@ -403,11 +419,11 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                 {typeof extraStatValue === 'number' && extraStatLabel && (
                   stackExtraStat ? (
                     <span className="pr-2 py-1 rounded-full inline-flex flex-col items-center leading-tight">
-                      <span className="font-medium inline-flex items-center">
+                      <span className="font-medium text-gray-900 inline-flex items-center">
                         {extraStatValuePrefix}
                         {extraStatValue.toLocaleString('en-IN')}
                       </span>
-                      <span>{extraStatLabel}</span>
+                      <span className="text-gray-500">{extraStatLabel}</span>
                     </span>
                   ) : (
                     <span className="pr-2 py-1 rounded-full">
@@ -589,7 +605,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                     <select
                       value={filterValue}
                       onChange={(e) => onFilterChange(e.target.value)}
-                      className={`appearance-none border border-gray-300 rounded-md ${showFilterIcon ? 'pl-10' : 'pl-3'} pr-8 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto`}
+                      className={`appearance-none border border-gray-300 rounded-md ${showFilterIcon ? 'pl-10' : 'pl-3'} ${filterValue !== 'all' ? 'pr-14' : 'pr-8'} py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto`}
                     >
                       {filterOptGroupLabel ? (
                         <optgroup label={filterOptGroupLabel}>
@@ -612,6 +628,17 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                         <FiFilter className="w-4 h-4 text-gray-500" />
                       </div>
                     )}
+                    {filterValue !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => onFilterChange('all')}
+                        className="absolute inset-y-0 right-7 flex items-center text-gray-500 hover:text-gray-700"
+                        aria-label="Clear filter"
+                        title="Clear filter"
+                      >
+                        <FiX className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 )}
                 
@@ -620,7 +647,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                     <select
                       value={secondFilterValue}
                       onChange={(e) => onSecondFilterChange(e.target.value)}
-                      className={`appearance-none border border-gray-300 rounded-md ${showSecondFilterIcon ? 'pl-10' : 'pl-3'} pr-8 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto`}
+                      className={`appearance-none border border-gray-300 rounded-md ${showSecondFilterIcon ? 'pl-10' : 'pl-3'} ${secondFilterValue !== 'all' ? 'pr-14' : 'pr-8'} py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto`}
                     >
                       {secondFilterOptGroupLabel ? (
                         <optgroup label={secondFilterOptGroupLabel}>
@@ -642,6 +669,59 @@ const TableHeader: React.FC<TableHeaderProps> = ({
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <FiFilter className="w-4 h-4 text-gray-500" />
                       </div>
+                    )}
+                    {secondFilterValue !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => onSecondFilterChange('all')}
+                        className="absolute inset-y-0 right-7 flex items-center text-gray-500 hover:text-gray-700"
+                        aria-label={`Clear ${secondFilterLabel}`}
+                        title={`Clear ${secondFilterLabel}`}
+                      >
+                        <FiX className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {showThirdFilter && onThirdFilterChange && (
+                  <div className="relative w-full sm:w-auto">
+                    <select
+                      value={thirdFilterValue}
+                      onChange={(e) => onThirdFilterChange(e.target.value)}
+                      className={`appearance-none border border-gray-300 rounded-md ${showThirdFilterIcon ? 'pl-10' : 'pl-3'} ${thirdFilterValue !== 'all' ? 'pr-14' : 'pr-8'} py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-full sm:w-auto`}
+                    >
+                      {thirdFilterOptGroupLabel ? (
+                        <optgroup label={thirdFilterOptGroupLabel}>
+                          {thirdFilterOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ) : (
+                        thirdFilterOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    {showThirdFilterIcon && (
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FiFilter className="w-4 h-4 text-gray-500" />
+                      </div>
+                    )}
+                    {thirdFilterValue !== 'all' && (
+                      <button
+                        type="button"
+                        onClick={() => onThirdFilterChange('all')}
+                        className="absolute inset-y-0 right-7 flex items-center text-gray-500 hover:text-gray-700"
+                        aria-label={`Clear ${thirdFilterLabel}`}
+                        title={`Clear ${thirdFilterLabel}`}
+                      >
+                        <FiX className="w-4 h-4" />
+                      </button>
                     )}
                   </div>
                 )}

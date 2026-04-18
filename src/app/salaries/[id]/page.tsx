@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { FiArrowLeft, FiEdit, FiTrash2, FiDollarSign } from 'react-icons/fi';
+import { FiArrowLeft, FiDownload, FiEdit } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { Salary } from '@/types';
@@ -16,6 +16,11 @@ import { useSearchParams } from 'next/navigation';
 import { use } from 'react';
 import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
 import { useAuth } from '@/context/AuthContext';
+import { pdf } from '@react-pdf/renderer';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { saveAs } from 'file-saver';
+import { SalarySlipPDF } from '@/app/doc_pages/pages/v2/SalarySlipGenerator';
 
 
 type PageParams = {
@@ -125,6 +130,106 @@ export default function SalaryViewPage({ params }: PageParams) {
     const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
                    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
     return months[month - 1] || 'UNK';
+  };
+
+  const getDaysInMonth = (month1to12: number, year: number) => {
+    const m = Math.min(12, Math.max(1, Number(month1to12) || 1));
+    const y = Number(year) || new Date().getFullYear();
+    return new Date(y, m, 0).getDate();
+  };
+
+  const handleDownload = async (salaryToDownload: Salary) => {
+    try {
+      const empDoc = await getDoc(doc(db, 'employees', salaryToDownload.employeeId));
+      const employeeData = empDoc.exists() ? empDoc.data() : {};
+
+      let employmentData: any = {};
+      const empQuery = query(collection(db, 'employments'), where('employeeId', '==', salaryToDownload.employeeId));
+      const empSnap = await getDocs(empQuery);
+
+      if (!empSnap.empty) {
+        const rows = empSnap.docs.map((d) => d.data());
+        rows.sort(
+          (a, b) => new Date((b as any).startDate).getTime() - new Date((a as any).startDate).getTime(),
+        );
+        employmentData = rows[0];
+      }
+
+      const f: any = {
+        ...employeeData,
+        ...employmentData,
+        ...salaryToDownload,
+      };
+
+      const employeeNameText =
+        (f as any).employeeNameText ||
+        (f as any).employeeName ||
+        (employeeData as any)?.name ||
+        (employmentData as any)?.employeeName ||
+        'Unknown Employee';
+
+      const firstName =
+        String(employeeNameText || 'Employee')
+          .trim()
+          .split(/\s+/)[0]
+          .replace(/[^A-Za-z0-9_-]/g, '') || 'Employee';
+
+      const monthName = getMonthName((f as any).month);
+      const monthShort = monthName.slice(0, 3);
+      const pf = Number((f as any).pf ?? 0) || 0;
+      const pt = Number((f as any).ptDeduct ?? 200) || 0;
+      const otherDeduction = Number((f as any).otherDeduction ?? (f as any).otherDeductions ?? 0) || 0;
+      const payYear = Number((f as any).year) || new Date().getFullYear();
+      const payMonth1 = Number((f as any).month) || 1;
+      const monthIndex0 = Math.max(0, Math.min(11, payMonth1 - 1));
+      const leavesCount = Number((f as any).leavesCount ?? 0) || 0;
+      const payableDays = Math.max(0, getDaysInMonth(payMonth1, payYear) - leavesCount);
+      const employeeCode =
+        String(
+          (employmentData as any)?.employmentId ||
+          (f as any).employmentId ||
+          ''
+        ).trim();
+
+      const slipFormData: any = {
+        companyName: (f as any).companyName || 'Adysun Ventures Pvt. Ltd.',
+        employeeName: [(employeeNameText || '').trim()].filter(Boolean),
+        employeeNameText,
+        employeeId: employeeCode,
+        designation: (f as any).jobTitle || (f as any).designation || '',
+        department: (f as any).department || '',
+        payDate: `${payYear}-${String(payMonth1).padStart(2, '0')}-01`,
+        location: (f as any).location || '',
+        payableDays: String((f as any).payableDays ?? payableDays),
+        leaves: String(leavesCount),
+        month: String(monthIndex0),
+        year: String(payYear),
+        panNumber:
+          String((f as any).panCard || (f as any).panNumber || (f as any).pan || '')
+            .trim() || '',
+        bankName: (f as any).bankName || '',
+        accountNo: (f as any).accountNo || '',
+        ifscCode: (f as any).ifscCode || '',
+        basicSalary: Number((f as any).basic ?? 0) || 0,
+        da: Number((f as any).hra ?? 0) || 0,
+        conveyanceAllowance: Number((f as any).conveyanceAllowance ?? 0) || 0,
+        otherAllowance: Number((f as any).otherAllowance ?? 0) || 0,
+        medicalAllowance: 0,
+        cca: 0,
+        professionalTax: pt,
+        otherDeductions: otherDeduction,
+        leavesDeduction: Number((f as any).leavesDeductAmt ?? 0) || 0,
+        pfEmployee: pf,
+        enablePF: pf > 0,
+        companyLogo: (f as any).companyLogo || '/assets/adysunventures_logo.png',
+      };
+
+      const blob = await pdf(<SalarySlipPDF formData={slipFormData} />).toBlob();
+      saveAs(blob, `${firstName}_Salary_Slip_${monthShort}_${(f as any).year}.pdf`);
+    } catch (error) {
+      console.error('Error generating salary PDF:', error);
+      toast.error('Failed to download salary slip');
+    }
   };
 
   if (isLoading) {
@@ -271,7 +376,13 @@ export default function SalaryViewPage({ params }: PageParams) {
               : adminSalary
                 ? [
                     {
-                      label: 'Edit Salary',
+                      label: 'Salary Slip',
+                      icon: <FiDownload />,
+                      variant: 'info' as const,
+                      onClick: () => handleDownload(salary as Salary),
+                    },
+                    {
+                      label: 'Edit',
                       icon: <FiEdit />,
                       variant: 'orange' as const,
                       href: `/salaries/${id}/edit?employeeId=${salary?.employeeId}`,

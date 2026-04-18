@@ -15,7 +15,7 @@ export default function SalaryModulePage() {
   const [otherAllowance, setOtherAllowance] = useState<number>(0);
   const [otherAllowanceEdited, setOtherAllowanceEdited] = useState<boolean>(false);
   const [otherDeduction, setOtherDeduction] = useState<number>(0);
-  const [ptDeduct, setPtDeduct] = useState<number>(200);
+  const [ptDeduct, setPtDeduct] = useState<number>(208.33);
 
   const fixedPay = useMemo(() => Math.max(0, Number(ctc || 0) - Number(variablePay || 0)), [ctc, variablePay]);
   const monthlyFixed = useMemo(() => fixedPay / 12, [fixedPay]);
@@ -68,8 +68,8 @@ export default function SalaryModulePage() {
         { label: 'Salary Module', isCurrent: true },
       ]}
     >
-      <div className="max-w-6xl mx-auto bg-white rounded-xl shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="w-full mx-auto bg-white rounded-xl shadow-md p-6">
+        <div className="flex items-center justify-center mb-6 ">
           <h1 className="text-2xl font-semibold text-gray-800">Salary Calculation Module</h1>
           <Link href="/calculator" className="text-sm text-blue-600 hover:text-blue-800 underline">
             Back
@@ -114,9 +114,9 @@ export default function SalaryModulePage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div>
+          <div >
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Monthly</h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Fixed</label>
                 <input
@@ -175,16 +175,17 @@ export default function SalaryModulePage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 />
               </div>
-              <div className="p-4 bg-blue-50 rounded-md">
-                <p className="text-sm text-gray-700 font-semibold">Gross Salary (Monthly)</p>
+              <div className="p-2 bg-blue-50 rounded-md md:col-span-2">
+                <p className="text-sm text-gray-700 font-semibold">Gross Salary (Monthly)(A)</p>
                 <p className="text-xl font-bold text-blue-700 mt-1">₹{formatINR(grossSalary)}</p>
               </div>
             </div>
           </div>
+          
 
           <div>
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Annually</h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Fixed (Annual)</label>
                 <input
@@ -235,8 +236,8 @@ export default function SalaryModulePage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
                 />
               </div>
-              <div className="p-4 bg-blue-50 rounded-md">
-                <p className="text-sm text-gray-700 font-semibold">Gross Salary (Annual)</p>
+              <div className="p-2 bg-blue-50 rounded-md md:col-span-2">
+                <p className="text-sm text-gray-700 font-semibold">Gross Salary (Annual)(A)</p>
                 <p className="text-xl font-bold text-blue-700 mt-1">₹{formatINR(annualGrossSalary)}</p>
               </div>
             </div>
@@ -248,7 +249,17 @@ export default function SalaryModulePage() {
           <div className="space-y-4">
             <h3 className="text-base font-semibold text-gray-700">Monthly</h3>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">PF (DEDUCT)</label>
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <label className="block text-sm font-medium text-gray-700">PF (DEDUCT)</label>
+                <button
+                  type="button"
+                  onClick={() => setIsPfEnabled((v) => !v)}
+                  className="text-xs text-blue-600 underline whitespace-nowrap"
+                >
+                  Is PF: {isPfEnabled ? 'ON' : 'OFF'}
+                </button>
+              </div>
+              
               <input
                 type="text"
                 value={Number(pfDeduct || 0).toFixed(2)}
@@ -257,9 +268,6 @@ export default function SalaryModulePage() {
                 placeholder="Auto from salary"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
               />
-              <button type="button" onClick={() => setIsPfEnabled((v) => !v)} className="mt-2 text-xs text-blue-600 underline">
-                Is PF: {isPfEnabled ? 'ON' : 'OFF'}
-              </button>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">PT (DEDUCT)</label>
@@ -271,7 +279,7 @@ export default function SalaryModulePage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               />
             </div>
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Leaves Deduct Amt</label>
               <input
                 type="text"
@@ -281,7 +289,7 @@ export default function SalaryModulePage() {
                 placeholder="Auto from salary"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
               />
-            </div>
+            </div> */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Other Deduction</label>
               <input
@@ -292,12 +300,12 @@ export default function SalaryModulePage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               />
             </div>
-            <div className="p-4 bg-red-50 rounded-md">
-              <p className="text-sm text-gray-700 font-semibold">Total Deduction (Monthly)</p>
+            <div className="p-2 bg-red-50 rounded-md">
+              <p className="text-sm text-gray-700 font-semibold">Total Deduction (Monthly) (B)</p>
               <p className="text-xl font-bold text-red-700 mt-1">₹{formatINR(totalDeduction)}</p>
             </div>
-            <div className="p-4 bg-green-50 rounded-md">
-              <p className="text-sm text-gray-700 font-semibold">Net Salary (Monthly)</p>
+            <div className="p-2 bg-green-50 rounded-md">
+              <p className="text-sm text-gray-700 font-semibold">Net Salary (Monthly) (C=A-B)</p>
               <p className="text-xl font-bold text-green-700 mt-1">₹{formatINR(netSalary)}</p>
             </div>
           </div>
@@ -324,7 +332,7 @@ export default function SalaryModulePage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
               />
             </div>
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Leaves Deduct Annual</label>
               <input
                 type="text"
@@ -333,7 +341,7 @@ export default function SalaryModulePage() {
                 disabled
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
               />
-            </div>
+            </div> */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Other Deduction Annual</label>
               <input
@@ -344,12 +352,12 @@ export default function SalaryModulePage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
               />
             </div>
-            <div className="p-4 bg-red-50 rounded-md">
-              <p className="text-sm text-gray-700 font-semibold">Total Deduction (Annual)</p>
+            <div className="p-2 bg-red-50 rounded-md">
+              <p className="text-sm text-gray-700 font-semibold">Total Deduction (Annual)(B)</p>
               <p className="text-xl font-bold text-red-700 mt-1">₹{formatINR(annualTotalDeduction)}</p>
             </div>
-            <div className="p-4 bg-green-50 rounded-md">
-              <p className="text-sm text-gray-700 font-semibold">Net Salary (Annual)</p>
+            <div className="p-2 bg-green-50 rounded-md">
+              <p className="text-sm text-gray-700 font-semibold">Net Salary (Annual)(C=A-B)</p>
               <p className="text-xl font-bold text-green-700 mt-1">₹{formatINR(annualNetSalary)}</p>
             </div>
           </div>

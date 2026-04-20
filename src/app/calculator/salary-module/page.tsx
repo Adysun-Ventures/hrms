@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { FaBroom } from 'react-icons/fa6';
+import { FiChevronLeft } from 'react-icons/fi';
 import {
   calculateMonthlySalary,
   type MonthlySalaryResult,
@@ -31,6 +33,29 @@ export default function SalaryModulePage() {
     if (otherAllowanceEdited) return;
     setOtherAllowance(Number(computedOtherAllowance.toFixed(2)));
   }, [computedOtherAllowance, otherAllowanceEdited]);
+
+  const clearSalaryInputs = () => {
+    setCtc(0);
+    setVariablePay(0);
+    setOtherAllowanceEdited(false);
+    setOtherAllowance(0);
+  };
+
+  const clearMonthly = () => {
+    setOtherAllowanceEdited(false);
+    setOtherAllowance(Number(computedOtherAllowance.toFixed(2)));
+  };
+
+  const clearAnnually = () => {
+    setOtherAllowanceEdited(false);
+    setOtherAllowance(Number(computedOtherAllowance.toFixed(2)));
+  };
+
+  const clearDeduction = () => {
+    setIsPfEnabled(false);
+    setOtherDeduction(0);
+    setPtDeduct(208.33);
+  };
 
   const calculations: MonthlySalaryResult = useMemo(() => {
     const d = new Date();
@@ -65,19 +90,34 @@ export default function SalaryModulePage() {
       breadcrumbItems={[
         { label: 'Dashboard', href: '/dashboard' },
         { label: 'Calculator', href: '/calculator' },
-        { label: 'Salary Module', isCurrent: true },
+        { label: 'Salary Calculator', isCurrent: true },
       ]}
     >
       <div className="w-full mx-auto bg-white rounded-xl shadow-md p-6">
-        <div className="flex items-center justify-center mb-6 ">
-          <h1 className="text-2xl font-semibold text-gray-800">Salary Calculation Module</h1>
-          <Link href="/calculator" className="text-sm text-blue-600 hover:text-blue-800 underline">
-            Back
+        <div className="relative flex items-center justify-center mb-6">
+          <Link
+            href="/calculator"
+            className="absolute left-0 px-3 py-2 rounded-full flex items-center gap-2 transition-colors duration-200 bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300"
+            aria-label="Back"
+          >
+            <FiChevronLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Back</span>
           </Link>
+          <h1 className="text-2xl font-semibold text-gray-800">Salary Calculator</h1>
         </div>
 
         <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-800 mb-3">Salary Inputs</h2>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="text-lg font-semibold text-gray-800">Salary Inputs</h2>
+            <button
+              type="button"
+              onClick={clearSalaryInputs}
+              className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
+            >
+              <FaBroom className="w-4 h-4" />
+              Clear
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">CTC</label>
@@ -113,9 +153,21 @@ export default function SalaryModulePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div >
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">Monthly</h2>
+        <div className="border-t border-gray-200 mb-6" />
+
+        <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h2 className="text-lg font-semibold text-gray-800">Monthly</h2>
+              <button
+                type="button"
+                onClick={clearMonthly}
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
+              >
+                <FaBroom className="w-4 h-4" />
+                Clear
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Fixed</label>
@@ -184,7 +236,17 @@ export default function SalaryModulePage() {
           
 
           <div>
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">Annually</h2>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h2 className="text-lg font-semibold text-gray-800">Annually</h2>
+              <button
+                type="button"
+                onClick={clearAnnually}
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
+              >
+                <FaBroom className="w-4 h-4" />
+                Clear
+              </button>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Fixed (Annual)</label>
@@ -242,9 +304,22 @@ export default function SalaryModulePage() {
               </div>
             </div>
           </div>
+
+          {/* Vertical divider between Monthly and Annually (no layout shift) */}
+          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-gray-200" aria-hidden />
         </div>
 
-        <h2 className="text-lg font-semibold text-gray-800 mb-3">Deduction</h2>
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h2 className="text-lg font-semibold text-gray-800">Deduction</h2>
+          <button
+            type="button"
+            onClick={clearDeduction}
+            className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
+          >
+            <FaBroom className="w-4 h-4" />
+            Clear
+          </button>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h3 className="text-base font-semibold text-gray-700">Monthly</h3>

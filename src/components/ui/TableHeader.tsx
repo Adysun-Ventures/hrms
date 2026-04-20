@@ -99,6 +99,8 @@ interface TableHeaderProps {
   onClearFilters?: () => void;
   hasActiveFilters?: boolean;
   customReloadButton?: React.ReactNode;
+  /** Optional custom content rendered in the right action area (before actionButtons). */
+  rightSlot?: React.ReactNode;
   actionButtonsBeforeAttendance?: boolean;
   totalLabel?: string;
   stackTotalStat?: boolean;
@@ -175,6 +177,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   onClearFilters,
   hasActiveFilters = false,
   customReloadButton,
+  rightSlot,
   actionButtonsBeforeAttendance = false,
   totalLabel = 'Total',
   stackTotalStat = false,
@@ -277,6 +280,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
 
           {/* Right Side - Action Buttons */}
           <div className={`${actionButtons.length === 1 ? 'flex justify-end' : 'grid grid-cols-2 gap-2'} sm:flex sm:items-center sm:gap-3 sm:flex-wrap sm:justify-end`}>
+            {rightSlot}
             {/* Regular Action Buttons - Render before attendance if prop is set */}
             {actionButtonsBeforeAttendance && actionButtons.map((button, index) => {
               const buttonContent = (

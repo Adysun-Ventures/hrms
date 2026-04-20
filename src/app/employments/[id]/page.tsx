@@ -472,6 +472,16 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
     };
   }, [idCardData]);
 
+  const downloadDataUrl = (dataUrl: string, filename: string) => {
+    if (!dataUrl) return;
+    const a = document.createElement('a');
+    a.href = dataUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   useEffect(() => {
     const makePreviewPngs = async () => {
       if (!frontRenderRef.current || !backRenderRef.current) return;
@@ -932,10 +942,10 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
             {/* ID card space (front/back) */}
             <div className="lg:col-span-3">
-              <div className="rounded-sm bg-white p-3 h-full min-h-[340px]">
+              <div className="rounded-sm border border-gray-800 bg-white p-3 h-full min-h-[340px]">
                 <div className="grid grid-cols-2 gap-3 h-full">
                   <div className="flex flex-col items-center">
-                    <div className="h-full min-h-[300px] w-full border border-gray-400 bg-gray-100 overflow-hidden">
+                    <div className="h-full min-h-[300px] w-full bg-gray-100 overflow-hidden">
                       {frontPng ? (
                         <img src={frontPng} alt="ID Card Front" className="w-full h-full object-contain" />
                       ) : (
@@ -944,10 +954,17 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                         </div>
                       )}
                     </div>
-                    <p className="mt-2 text-xs text-gray-700">Front</p>
+                    <button
+                      type="button"
+                      className="mt-2 text-xs text-blue-700 hover:underline disabled:text-gray-400 disabled:no-underline"
+                      disabled={!frontPng}
+                      onClick={() => downloadDataUrl(frontPng || '', `${employment?.employmentId || 'employee'}-id-front.png`)}
+                    >
+                      Front
+                    </button>
                   </div>
                   <div className="flex flex-col items-center">
-                    <div className="h-full min-h-[300px] w-full border border-gray-400 bg-gray-100 overflow-hidden">
+                    <div className="h-full min-h-[300px] w-full bg-gray-100 overflow-hidden">
                       {backPng ? (
                         <img src={backPng} alt="ID Card Back" className="w-full h-full object-contain" />
                       ) : (
@@ -956,7 +973,14 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                         </div>
                       )}
                     </div>
-                    <p className="mt-2 text-xs text-gray-700">Back</p>
+                    <button
+                      type="button"
+                      className="mt-2 text-xs text-blue-700 hover:underline disabled:text-gray-400 disabled:no-underline"
+                      disabled={!backPng}
+                      onClick={() => downloadDataUrl(backPng || '', `${employment?.employmentId || 'employee'}-id-back.png`)}
+                    >
+                      Back
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1317,7 +1341,20 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <p className="text-lg font-medium text-gray-900">{employment.employmentId || '-'}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-lg font-medium text-gray-900">{employment.employmentId || '-'}</p>
+                  {(() => {
+                    const raw = String((employment as any)?.profilePhoto || '');
+                    const safe = raw.trim().startsWith('data:image/') || raw.trim().startsWith('/');
+                    return safe && raw ? (
+                      <img
+                        src={raw}
+                        alt="Profile"
+                        className="h-10 w-10 rounded-full object-cover border border-gray-200 shrink-0"
+                      />
+                    ) : null;
+                  })()}
+                </div>
                 <p className="text-sm text-gray-500">Employment ID</p>
               </div>
 

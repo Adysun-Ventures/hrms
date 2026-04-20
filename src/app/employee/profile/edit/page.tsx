@@ -463,10 +463,10 @@ export default function EditEmployeeProfilePage() {
                             <button
                                 type="button"
                                 onClick={() => handleCleanSection('personal')}
-                                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                             >
                                 <FaBroom className="w-4 h-4" />
-                                Clean
+                                Clear
                             </button>
                         </div>
                         <div className="mb-4">
@@ -569,14 +569,14 @@ export default function EditEmployeeProfilePage() {
                         <div className="mb-4">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-md font-medium text-gray-700 border-l-2 border-green-500 pl-2">Contact Information</h3>
-                                <button
-                                    type="button"
-                                    onClick={() => handleCleanSection('contact')}
-                                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                                >
-                                    <FaBroom className="w-4 h-4" />
-                                    Clean
-                                </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCleanSection('contact')}
+                                        className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
+                                    >
+                                        <FaBroom className="w-4 h-4" />
+                                        Clear
+                                    </button>
                             </div>
                             
                             {/* Row 1: Phone & Email */}
@@ -713,14 +713,14 @@ export default function EditEmployeeProfilePage() {
                         <div className="mb-4">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-md font-medium text-gray-700 border-l-2 border-green-500 pl-2">Identification Documents</h3>
-                                <button
-                                    type="button"
-                                    onClick={() => handleCleanSection('identification')}
-                                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                                >
-                                    <FaBroom className="w-4 h-4" />
-                                    Clean
-                                </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleCleanSection('identification')}
+                                        className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
+                                    >
+                                        <FaBroom className="w-4 h-4" />
+                                        Clear
+                                    </button>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
@@ -787,10 +787,10 @@ export default function EditEmployeeProfilePage() {
                             <button
                                 type="button"
                                 onClick={() => handleCleanSection('educational')}
-                                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                             >
                                 <FaBroom className="w-4 h-4" />
-                                Clean
+                                Clear
                             </button>
                         </div>
                         {/* Higher Education */}

@@ -12,6 +12,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import SearchBar from '@/components/ui/SearchBar';
 import TableHeader from '@/components/ui/TableHeader';
 import Pagination from '@/components/ui/Pagination';
+import MissingSalaryModal from '@/components/ui/MissingSalaryModal';
 import { useSalaries, useDeleteSalary, useSalariesByEmployee } from '@/hooks/useSalaries';
 import { getEmployeeNameById, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
 import SimpleBreadcrumb from '@/components/ui/SimpleBreadcrumb';
@@ -1339,67 +1340,30 @@ const handleDownload = async (salary: Salary) => {
           </div>
         )}
 
-        {missingSalaryModalOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-            onClick={() => setMissingSalaryModalOpen(false)}
-          >
-            <div
-              className="bg-white rounded-lg shadow-xl w-full max-w-xl p-6 relative max-h-[80vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                onClick={() => setMissingSalaryModalOpen(false)}
-                aria-label="Close missing salaries popup"
-                className="absolute top-4 right-4 h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center"
-              >
-                <FiX className="w-4 h-4" />
-              </button>
-
-              <h2 className="text-base font-semibold text-gray-900">Missing Salaries</h2>
-              <p className="mt-1 text-xs text-gray-500">
-                Expected: <span className="font-medium text-gray-700">{missingSummary.expected}</span> • Existing:{' '}
-                <span className="font-medium text-gray-700">{missingSummary.existing}</span> • Missing:{' '}
-                <span className="font-medium text-gray-700">{missingSummary.missing}</span>
-              </p>
-
-              {Object.keys(missingSalariesByYear).length === 0 ? (
-                <p className="mt-4 text-sm text-gray-700">No Missing Salaries ✅</p>
-              ) : (
-                <div className="mt-4 space-y-2 text-sm text-gray-800">
-                  {Object.entries(missingSalariesByYear)
-                    .sort((a, b) => Number(a[0]) - Number(b[0]))
-                    .map(([year, months]) => (
-                      <p key={year}>
-                        <span className="font-medium">{year}</span> {'\u2192'}{' '}
-                        {months.map((m) => monthNumberToShortName(m)).join(', ')}
-                      </p>
-                    ))}
-                </div>
-              )}
-
-              <div className="mt-6 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => setMissingSalaryModalOpen(false)}
-                  className="px-4 py-2 rounded-md bg-gray-100 text-gray-800 hover:bg-gray-200 inline-flex items-center gap-2"
-                >
-                  <FiX className="w-4 h-4" />
-                  Cancle
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateWithAi}
-                  disabled={isAiCreating || !employeeId || missingMonthsList.length === 0}
-                  className="border border-blue-500 text-blue-500 px-4 py-2 rounded-md hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isAiCreating ? 'Generating...' : 'Generate Missing Salaries'}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <MissingSalaryModal
+          isOpen={missingSalaryModalOpen}
+          onClose={() => setMissingSalaryModalOpen(false)}
+          summary={
+            <>
+              Expected: <span className="font-medium text-gray-700">{missingSummary.expected}</span> • Existing:{' '}
+              <span className="font-medium text-gray-700">{missingSummary.existing}</span> • Missing:{' '}
+              <span className="font-medium text-gray-700">{missingSummary.missing}</span>
+            </>
+          }
+          rows={Object.entries(missingSalariesByYear)
+            .sort((a, b) => Number(a[0]) - Number(b[0]))
+            .map(([year, months]) => ({
+              id: String(year),
+              label: String(year),
+              value: months.map((m) => monthNumberToShortName(m)).join(', '),
+            }))}
+          cancelText="Cancle"
+          primaryAction={{
+            label: isAiCreating ? 'Generating...' : 'Generate Missing Salaries',
+            onClick: handleCreateWithAi,
+            disabled: isAiCreating || !employeeId || missingMonthsList.length === 0,
+          }}
+        />
         
         {/* Pagination */}
         {totalItems > 0 && (

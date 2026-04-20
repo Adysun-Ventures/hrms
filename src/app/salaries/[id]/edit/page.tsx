@@ -587,6 +587,7 @@ export default function EditSalaryPage({ params }: PageParams) {
               label: 'Save',
               icon: <FiCheckCircle />,
               variant: 'success',
+              pill: true,
               onClick: handleSubmit(onSubmit),
               disabled: isSubmitting
             }
@@ -1105,7 +1106,7 @@ export default function EditSalaryPage({ params }: PageParams) {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-5 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <FiCheckCircle className="w-4 h-4" />
               Save

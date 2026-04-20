@@ -169,10 +169,30 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         setValue('whereWereYouEmploid', '' as any, { shouldDirty: true });
         break;
       case 'professionalReference':
-        setValue('teamLead', {} as any, { shouldDirty: true });
-        setValue('colleague1', {} as any, { shouldDirty: true });
-        setValue('colleague3', {} as any, { shouldDirty: true });
-        setValue('reportingManagerRef', {} as any, { shouldDirty: true });
+        setValue('teamLead.name' as any, '', { shouldDirty: true });
+        setValue('teamLead.employeeId' as any, '', { shouldDirty: true });
+        setValue('teamLead.mobileNo' as any, '', { shouldDirty: true });
+        setValue('teamLead.email' as any, '', { shouldDirty: true });
+        setValue('teamLead.designation' as any, '', { shouldDirty: true });
+        setValue('teamLead.location' as any, '', { shouldDirty: true });
+        setValue('colleague1.name' as any, '', { shouldDirty: true });
+        setValue('colleague1.employeeId' as any, '', { shouldDirty: true });
+        setValue('colleague1.mobileNo' as any, '', { shouldDirty: true });
+        setValue('colleague1.email' as any, '', { shouldDirty: true });
+        setValue('colleague1.designation' as any, '', { shouldDirty: true });
+        setValue('colleague1.location' as any, '', { shouldDirty: true });
+        setValue('colleague3.name' as any, '', { shouldDirty: true });
+        setValue('colleague3.employeeId' as any, '', { shouldDirty: true });
+        setValue('colleague3.mobileNo' as any, '', { shouldDirty: true });
+        setValue('colleague3.email' as any, '', { shouldDirty: true });
+        setValue('colleague3.designation' as any, '', { shouldDirty: true });
+        setValue('colleague3.location' as any, '', { shouldDirty: true });
+        setValue('reportingManagerRef.name' as any, '', { shouldDirty: true });
+        setValue('reportingManagerRef.employeeId' as any, '', { shouldDirty: true });
+        setValue('reportingManagerRef.mobileNo' as any, '', { shouldDirty: true });
+        setValue('reportingManagerRef.email' as any, '', { shouldDirty: true });
+        setValue('reportingManagerRef.designation' as any, '', { shouldDirty: true });
+        setValue('reportingManagerRef.location' as any, '', { shouldDirty: true });
         break;
       case 'resignation':
         setValue('isResignation', false as any, { shouldDirty: true });
@@ -1533,6 +1553,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
               label: 'Save',
               icon: <FiCheckCircle />,
               variant: 'success',
+              pill: true,
               onClick: () => handleSubmit(onSubmit)()
             }
           ]}
@@ -2211,14 +2232,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   Joining Salary Information
                 </h2>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleCleanSection('joiningSalary')}
-                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
-                  >
-                    <FaBroom className="w-4 h-4" />
-                      Clear
-                  </button>
                   <Controller
                     name="joiningPfIncluded"
                     control={control}
@@ -2248,6 +2261,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       </button>
                     )}
                   />
+                  <button
+                    type="button"
+                    onClick={() => handleCleanSection('joiningSalary')}
+                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
+                  >
+                    <FaBroom className="w-4 h-4" />
+                    Clear
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -2436,19 +2457,11 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 <h2 className="text-lg font-medium text-gray-800 border-l-4 border-purple-500 pl-2">
                   Increment Details
                 </h2>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleCleanSection('increments')}
-                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
-                  >
-                    <FaBroom className="w-4 h-4" />
-                      Clear
-                  </button>
+                <div className="flex items-center gap-2">
                   <select
                     value={aiIncrementCount}
                     onChange={(e) => setAiIncrementCount(Number(e.target.value) || 1)}
-                    className="px-2 py-1 text-sm border border-purple-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="px-2 py-1 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     {Array.from({ length: 7 }, (_, i) => i + 1).map((count) => (
                       <option key={count} value={count}>
@@ -2459,7 +2472,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <button
                     type="button"
                     onClick={handleCreateIncrementsWithAi}
-                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-full hover:bg-blue-700 inline-flex items-center gap-2"
+                    className="px-3 py-1 text-xs bg-blue-600 text-white border border-blue-700 rounded-md hover:bg-blue-700 inline-flex items-center gap-1.5"
                   >
                     <FaHandSparkles className="w-4 h-4" />
                     Create with AI
@@ -2471,6 +2484,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   >
                     <FiPlus className="w-4 h-4" />
                     Add Increment
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleCleanSection('increments')}
+                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
+                  >
+                    <FaBroom className="w-4 h-4" />
+                    Clear
                   </button>
                 </div>
               </div>
@@ -2804,14 +2825,6 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={() => handleCleanSection('currentSalary')}
-                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
-                  >
-                    <FaBroom className="w-4 h-4" />
-                      Clear
-                  </button>
-                  <button
-                    type="button"
                     onClick={() => {
                       const latestIncrement =
                         incrementFields.length > 0
@@ -2870,6 +2883,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                       </button>
                     )}
                   />
+                  <button
+                    type="button"
+                    onClick={() => handleCleanSection('currentSalary')}
+                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
+                  >
+                    <FaBroom className="w-4 h-4" />
+                    Clear
+                  </button>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

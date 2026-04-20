@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useMemo, useRef, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { FiArrowLeft, FiEdit, FiUser, FiBriefcase, FiCalendar, FiDollarSign, FiMapPin, FiTrendingUp, FiDownload, FiBook } from 'react-icons/fi';
@@ -19,6 +19,9 @@ import EmploymentDetailsPDF from '@/components/pdf/EmploymentDetailsPDF';
 import { pdf } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
 import { getAdminNameById, getEmployeeNameById } from '@/utils/firebaseUtils';
+import IdCardFront, { type EmployeeIdCardData } from '@/components/id-card/IdCardFront';
+import IdCardBack from '@/components/id-card/IdCardBack';
+import { toCanvas } from 'html-to-image';
 
 function professionalReferenceCell(
   refs: ProfessionalReference[] | undefined,
@@ -194,6 +197,28 @@ function whereEmployedRaw(employment: any): string {
   return s;
 }
 
+async function waitForImages(node: HTMLElement) {
+  const images = node.querySelectorAll('img');
+  await Promise.all(
+    Array.from(images).map((img) =>
+      img.complete
+        ? Promise.resolve()
+        : new Promise((res, rej) => {
+            img.onload = res;
+            img.onerror = rej;
+          })
+    )
+  );
+}
+
+function settleLayout(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+}
+
 export default function EmploymentViewPage({ params }: { params: Promise<{ id: string }> }) {
 
   const router = useRouter();
@@ -202,6 +227,10 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
   const [employmentFullPagePdfLoading, setEmploymentFullPagePdfLoading] = useState(false);
   const [createdByName, setCreatedByName] = useState<string>('');
   const [updatedByName, setUpdatedByName] = useState<string>('');
+  const frontRenderRef = useRef<HTMLDivElement | null>(null);
+  const backRenderRef = useRef<HTMLDivElement | null>(null);
+  const [frontPng, setFrontPng] = useState<string>('');
+  const [backPng, setBackPng] = useState<string>('');
 
   const isEmployeeUser = currentUserData?.userType === 'employee';
   const Layout: any = isEmployeeUser ? EmployeeLayout : DashboardLayout;
@@ -410,6 +439,71 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
     Boolean((employment as any)?.isResignation) ||
     Boolean((employment as any)?.is_resigned) ||
     String((employment as any)?.employmentStatus || '').toLowerCase() === 'resigned';
+
+  const idCardData: EmployeeIdCardData = useMemo(
+    () => ({
+      name: String((employee as any)?.name || ''),
+      employeeId: String((employment as any)?.employmentId || (employee as any)?.employeeId || ''),
+      companyName: String((employment as any)?.companyName || (employee as any)?.companyName || 'Adysun Ventures Pvt Ltd'),
+      position: String((employment as any)?.jobTitle || (employment as any)?.designation || ''),
+      phone: String((employee as any)?.phone || ''),
+      joinDate: String((employment as any)?.joiningDate || (employment as any)?.startDate || ''),
+      address: String((employee as any)?.currentAddress || (employee as any)?.permanentAddress || (employment as any)?.location || ''),
+      website: String((employment as any)?.website || (employee as any)?.website || 'www.adysunventures.com'),
+      profileImage: String((employment as any)?.profilePhoto || (employee as any)?.imageUrl || ''),
+      companyLogo: String((employee as any)?.logo || (employee as any)?.companyLogo || '/adysun-logo.png'),
+    }),
+    [employee, employment]
+  );
+
+  const idCardPngRenderData: EmployeeIdCardData = useMemo(() => {
+    const isSafeImage = (value: string) => {
+      if (typeof value !== 'string') return false;
+      const v = value.trim();
+      return v.startsWith('data:image/') || v.startsWith('/');
+    };
+
+    return {
+      ...idCardData,
+      // Prevent html-to-image CORS/taint issues from external URLs
+      // while still rendering stable PNG previews.
+      profileImage: isSafeImage(idCardData.profileImage) ? idCardData.profileImage : '',
+      companyLogo: isSafeImage(idCardData.companyLogo) ? idCardData.companyLogo : '/adysun-logo.png',
+    };
+  }, [idCardData]);
+
+  useEffect(() => {
+    const makePreviewPngs = async () => {
+      if (!frontRenderRef.current || !backRenderRef.current) return;
+      try {
+        await settleLayout();
+        await waitForImages(frontRenderRef.current);
+        await waitForImages(backRenderRef.current);
+        const [frontCanvas, backCanvas] = await Promise.all([
+          toCanvas(frontRenderRef.current, {
+            cacheBust: true,
+            pixelRatio: 2.5,
+            backgroundColor: '#ffffff',
+            skipFonts: true,
+          }),
+          toCanvas(backRenderRef.current, {
+            cacheBust: true,
+            pixelRatio: 2.5,
+            backgroundColor: '#ffffff',
+            skipFonts: true,
+          }),
+        ]);
+        setFrontPng(frontCanvas.toDataURL('image/png'));
+        setBackPng(backCanvas.toDataURL('image/png'));
+      } catch (err) {
+        console.error('Failed generating ID card PNG preview:', err);
+        setFrontPng('');
+        setBackPng('');
+      }
+    };
+
+    makePreviewPngs();
+  }, [idCardPngRenderData]);
 
   // Calculate real leave statistics
   const calculateLeaveStats = () => {
@@ -677,159 +771,205 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
         <div className="px-6 pb-2">
           <div className="employment-view-pdf-capture space-y-0">
-          <div className="mb-8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Where Were You Employed & Address
-              </h2>
+          <div className="mb-8 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+            <div className="lg:col-span-9 space-y-8">
+              <div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Where Were You Employed & Address
+                  </h2>
+                </div>
+
+                <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
+                  <table className="w-full min-w-[360px] border-collapse text-sm text-gray-900">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[40%]"
+                        >
+                          Where Were You Employed
+                        </th>
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle"
+                        >
+                          Address
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {whereEmployedRaw(employment as any) || '\u00a0'}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {(() => {
+                            const raw =
+                              (employment as any).whereWereYouEmploid ||
+                              (employment as any).whereWereYouEmployed ||
+                              (employment as any).whereWereYouEmployd ||
+                              '';
+                            const key = String(raw).toLowerCase();
+
+                            const isPune =
+                              key.includes('pune') ||
+                              key.includes('registred corporate office') ||
+                              key.includes('registered corporate office') ||
+                              key.includes('head office');
+                            const isMumbai =
+                              key.includes('mumbai') ||
+                              key.includes('branch office') ||
+                              key.includes('thane');
+
+                            if (isPune) {
+                              return (
+                                <>
+                                  Adysun Ventures Pvt. Ltd.
+                                  Workplex, S no 47, Near Bhapkar Petrol Pump, Pune, Maharashtra - 411009
+                                  Pune Office (Head Office)
+                                </>
+                              );
+                            }
+
+                            if (isMumbai) {
+                              return (
+                                <>
+                                  Adysun Ventures Pvt. Ltd.
+                                  A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607
+                                  Mumbai Office
+                                </>
+                              );
+                            }
+
+                            return '\u00a0';
+                          })()}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Employment Period / Department / Employee Id / Designation */}
+              <div>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Employment Details
+                  </h2>
+                </div>
+
+                <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
+                  <table className="w-full min-w-[640px] border-collapse text-sm text-gray-900">
+                    <thead>
+                      <tr className="bg-gray-100">
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[25%]"
+                        >
+                          Period Of Employment
+                        </th>
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
+                        >
+                          Department
+                        </th>
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[25%]"
+                        >
+                          Employee Id
+                        </th>
+                        <th
+                          scope="col"
+                          className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[30%]"
+                        >
+                          Designation
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {(() => {
+                            const joiningText = employment.joiningDate
+                              ? formatDateToDayMonYear(employment.joiningDate)
+                              : employment.startDate
+                                ? formatDateToDayMonYear(employment.startDate)
+                                : '-';
+
+                            const isResigned = Boolean(employment.isResignation) || (employment as any).employmentStatus === 'resigned';
+
+                            const resignText = isResigned
+                              ? (employment.resignationDate
+                                  ? formatDateToDayMonYear(employment.resignationDate)
+                                  : employment.lastWorkingDate
+                                    ? formatDateToDayMonYear(employment.lastWorkingDate)
+                                    : '-')
+                              : 'Present';
+
+                            return `${joiningText} to ${resignText}`;
+                          })()}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {employment.department || '\u00a0'}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {employment.employmentId || '\u00a0'}
+                        </td>
+                        <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          {employment.jobTitle ||
+                            employment.designation ||
+                            '\u00a0'}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
-            <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-              <table className="w-full min-w-[360px] border-collapse text-sm text-gray-900">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th
-                      scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[40%]"
-                    >
-                      Where Were You Employed
-                    </th>
-                    <th
-                      scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle"
-                    >
-                      Address
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {whereEmployedRaw(employment as any) || '\u00a0'}
-                    </td>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {(() => {
-                        const raw =
-                          (employment as any).whereWereYouEmploid ||
-                          (employment as any).whereWereYouEmployed ||
-                          (employment as any).whereWereYouEmployd ||
-                          '';
-                        const key = String(raw).toLowerCase();
-
-                        const isPune =
-                          key.includes('pune') ||
-                          key.includes('registred corporate office') ||
-                          key.includes('registered corporate office') ||
-                          key.includes('head office');
-                        const isMumbai =
-                          key.includes('mumbai') ||
-                          key.includes('branch office') ||
-                          key.includes('thane');
-
-                        if (isPune) {
-                          return (
-                            <>
-                              Adysun Ventures Pvt. Ltd.
-                              Workplex, S no 47, Near Bhapkar Petrol Pump, Pune, Maharashtra - 411009
-                              Pune Office (Head Office)
-                            </>
-                          );
-                        }
-
-                        if (isMumbai) {
-                          return (
-                            <>
-                              Adysun Ventures Pvt. Ltd.
-                              A2, 704, Kanchanpushp Society Kavesar, Thane West, Thane, Maharashtra - 400607
-                              Mumbai Office
-                            </>
-                          );
-                        }
-
-                        return '\u00a0';
-                      })()}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            {/* ID card space (front/back) */}
+            <div className="lg:col-span-3">
+              <div className="rounded-sm bg-white p-3 h-full min-h-[340px]">
+                <div className="grid grid-cols-2 gap-3 h-full">
+                  <div className="flex flex-col items-center">
+                    <div className="h-full min-h-[300px] w-full border border-gray-400 bg-gray-100 overflow-hidden">
+                      {frontPng ? (
+                        <img src={frontPng} alt="ID Card Front" className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                          Front Preview
+                        </div>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-700">Front</p>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="h-full min-h-[300px] w-full border border-gray-400 bg-gray-100 overflow-hidden">
+                      {backPng ? (
+                        <img src={backPng} alt="ID Card Back" className="w-full h-full object-contain" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                          Back Preview
+                        </div>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs text-gray-700">Back</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Employment Period / Department / Employee Id / Designation */}
-          <div className="mb-8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Employment Details
-              </h2>
+          {/* Off-screen rendered nodes used only for PNG generation */}
+          <div className="fixed -left-[99999px] top-0 pointer-events-none" aria-hidden>
+            <div ref={frontRenderRef}>
+              <IdCardFront data={idCardPngRenderData} />
             </div>
-
-            <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-              <table className="w-full min-w-[640px] border-collapse text-sm text-gray-900">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th
-                      scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[25%]"
-                    >
-                      Period Of Employment
-                    </th>
-                    <th
-                      scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]"
-                    >
-                      Department
-                    </th>
-                    <th
-                      scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[25%]"
-                    >
-                      Employee Id
-                    </th>
-                    <th
-                      scope="col"
-                      className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[30%]"
-                    >
-                      Designation
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {(() => {
-                        const joiningText = employment.joiningDate
-                          ? formatDateToDayMonYear(employment.joiningDate)
-                          : employment.startDate
-                            ? formatDateToDayMonYear(employment.startDate)
-                            : '-';
-
-                        const isResigned = Boolean(employment.isResignation) || (employment as any).employmentStatus === 'resigned';
-
-                        const resignText = isResigned
-                          ? (employment.resignationDate
-                              ? formatDateToDayMonYear(employment.resignationDate)
-                              : employment.lastWorkingDate
-                                ? formatDateToDayMonYear(employment.lastWorkingDate)
-                                : '-')
-                          : 'Present';
-
-                        return `${joiningText} to ${resignText}`;
-                      })()}
-                    </td>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {employment.department || '\u00a0'}
-                    </td>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {employment.employmentId || '\u00a0'}
-                    </td>
-                    <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
-                      {employment.jobTitle ||
-                        employment.designation ||
-                        '\u00a0'}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            <div ref={backRenderRef}>
+              <IdCardBack data={idCardPngRenderData} />
             </div>
           </div>
 
@@ -879,7 +1019,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               return (
                 <div className="space-y-4">
                   <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-                    <table className="w-full min-w-[840px] border-collapse text-sm text-gray-900">
+                    <table className="w-full min-w-[840px] table-fixed border-collapse text-sm text-gray-900">
                       <thead>
                         <tr className="bg-gray-100">
                           <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
@@ -904,26 +1044,26 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                       </thead>
                       <tbody>
                         <tr>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {employment.joiningDate
                               ? formatDateToDayMonYear(employment.joiningDate)
                               : employment.startDate
                                 ? formatDateToDayMonYear(employment.startDate)
                                 : '-'}
                           </td>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currencyOrDash(joiningCtc)}
                           </td>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currencyOrDash(joiningVariablePay)}
                           </td>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currencyOrDash(joiningFixedPay)}
                           </td>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currencyOrDash(joiningGrossSalary)}
                           </td>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {joiningIsPf}
                           </td>
                         </tr>
@@ -933,25 +1073,25 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
                   {hasIncrementDetails && (
                     <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-                      <table className="w-full min-w-[980px] border-collapse text-sm text-gray-900">
+                      <table className="w-full min-w-[980px] table-fixed border-collapse text-sm text-gray-900">
                         <thead>
                           <tr className="bg-gray-100">
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                               Increment Date
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                               Increment CTC
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                               Increment Variable
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                               Increment Fixed
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[20%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                               Gross Salary
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
                               Is PF
                             </th>
                           </tr>
@@ -959,18 +1099,18 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                         <tbody>
                           {incrementRows.map((inc: any, idx: number) => (
                             <tr key={inc.id || idx}>
-                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                                 {inc.incrementDate ? formatDateToDayMonYear(inc.incrementDate) : '-'}
                               </td>
-                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                                 {(Number(inc.incrementedCtc ?? 0) || Number(inc.newSalary ?? 0))
                                   ? formatCurrency(Number(inc.incrementedCtc ?? inc.newSalary))
                                   : '-'}
                               </td>
-                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                                 {inc.incrementVariablePay ? formatCurrency(Number(inc.incrementVariablePay)) : '-'}
                               </td>
-                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                                 {(() => {
                                   const ctc = Number(inc.incrementedCtc ?? 0) || 0;
                                   const variable = Number(inc.incrementVariablePay ?? 0) || 0;
@@ -978,7 +1118,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                                   return fixed > 0 ? formatCurrency(fixed) : '-';
                                 })()}
                               </td>
-                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                                 {(() => {
                                   const ctc = Number(inc.incrementedCtc ?? 0) || 0;
                                   const variable = Number(inc.incrementVariablePay ?? 0) || 0;
@@ -994,7 +1134,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                                   return gross > 0 ? formatCurrency(gross) : '-';
                                 })()}
                               </td>
-                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                                 {Boolean(inc.incrementPfIncluded) ? 'Yes' : 'No'}
                               </td>
                             </tr>
@@ -1005,7 +1145,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   )}
 
                   <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-                    <table className="w-full min-w-[840px] border-collapse text-sm text-gray-900">
+                    <table className="w-full min-w-[840px] table-fixed border-collapse text-sm text-gray-900">
                       <thead>
                         <tr className="bg-gray-100">
                           <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[16.6%]">
@@ -1030,24 +1170,24 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                       </thead>
                       <tbody>
                         <tr>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {employment.lastWorkingDate
                               ? formatDateToDayMonYear(employment.lastWorkingDate)
                               : 'Present'}
                           </td>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currencyOrDash(currentCtc)}
                           </td>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currencyOrDash(currentVariablePay)}
                           </td>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currencyOrDash(currentFixedPay)}
                           </td>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currencyOrDash(currentGrossSalary)}
                           </td>
-                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-pre-wrap">
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currentIsPf}
                           </td>
                         </tr>

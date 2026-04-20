@@ -588,31 +588,6 @@ export default function AddEmployeePage() {
         )}
 
         <form onSubmit={handleSubmit((data) => onSubmit(data, false))}>
-          <div className="bg-white p-4 mb-4 rounded-lg">
-            <h2 className="text-lg font-semibold text-gray-800 mb-2 border-l-4 border-blue-500 pl-2">
-              Auto Fill Employee Details
-            </h2>
-            <div className="space-y-3">
-              <textarea
-                value={autoFillInput}
-                onChange={(e) => setAutoFillInput(e.target.value)}
-                placeholder="Paste employee details (supports comma-separated or free text)"
-                className="w-full min-h-28 p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-              />
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleAutoFillFromText()}
-                  disabled={isAutoFilling}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2"
-                >
-                  <FaHandSparkles className="w-4 h-4" />
-                  {isAutoFilling ? 'Creating With AI...' : 'Create With AI'}
-                </button>
-                {autoFillError && <p className="text-sm text-red-600">{autoFillError}</p>}
-              </div>
-            </div>
-          </div>
 
           {/* Personal Details Section */}
           <div className="bg-white p-4 mb-4 rounded-lg">

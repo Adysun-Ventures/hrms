@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { FiUser, FiEdit, FiTrash2, FiArrowLeft, FiBriefcase, FiDollarSign, FiBook } from 'react-icons/fi';
+import { FiUser, FiEdit, FiTrash2, FiArrowLeft, FiBriefcase, FiDollarSign, FiBook, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Employee } from '@/types';
 import { formatDateToDayMonYear, formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
@@ -223,18 +223,36 @@ export default function EmployeeViewPage({ params }: PageParams) {
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+          onClick={cancelDelete}
+          role="presentation"
+        >
+          <div
+            className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <button
+              type="button"
+              onClick={cancelDelete}
+              aria-label="Close delete popup"
+              className="absolute top-4 right-4 h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center"
+            >
+              <FiX className="w-4 h-4" />
+            </button>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Confirm Delete</h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete employee "{employee.name}"? This action cannot be undone.
             </p>
-            <div className="flex justify-end space-x-3">
+            <div className="flex items-center justify-between gap-3">
               <button
                 onClick={cancelDelete}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50 inline-flex items-center gap-2"
               >
                 Cancel
+                <FiX className="w-4 h-4" />
               </button>
               <button
                 onClick={confirmDelete}

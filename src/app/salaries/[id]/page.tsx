@@ -9,6 +9,7 @@ import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { Salary } from '@/types';
 import { formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import TableHeader from '@/components/ui/TableHeader';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { useEmployeeSelfSalariesByEmployee, useSalary } from '@/hooks/useSalaries';
 import { getAdminNameById, getEmployeeNameById, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
 import toast, { Toaster } from 'react-hot-toast';
@@ -363,32 +364,35 @@ export default function SalaryViewPage({ params }: PageParams) {
                 : '/salaries', 
             label: 'Back' 
           }}
+          rightSlot={
+            <div className="flex items-center justify-end gap-3">
+              {isEmployeeView ? (
+                <ActionButton
+                  icon={<FiEdit className="w-5 h-5" />}
+                  title="Edit"
+                  colorClass="bg-orange-100 text-orange-600 hover:text-orange-900"
+                  href={`/salaries/${id}/edit?from=employee`}
+                />
+              ) : adminSalary ? (
+                <>
+                  <ActionButton
+                    icon={<FiDownload className="w-5 h-5" />}
+                    title="Download Salary Slip"
+                    colorClass="bg-green-100 text-green-600 hover:text-green-900"
+                    onClick={() => handleDownload(salary as Salary)}
+                  />
+                  <ActionButton
+                    icon={<FiEdit className="w-5 h-5" />}
+                    title="Edit"
+                    colorClass="bg-orange-100 text-orange-600 hover:text-orange-900"
+                    href={`/salaries/${id}/edit?employeeId=${salary?.employeeId}`}
+                  />
+                </>
+              ) : null}
+            </div>
+          }
           actionButtons={
-            isEmployeeView
-              ? [
-                  {
-                    label: 'Edit Salary',
-                    icon: <FiEdit />,
-                    variant: 'orange' as const,
-                    href: `/salaries/${id}/edit?from=employee`,
-                  },
-                ]
-              : adminSalary
-                ? [
-                    {
-                      label: 'Salary Slip',
-                      icon: <FiDownload />,
-                      variant: 'info' as const,
-                      onClick: () => handleDownload(salary as Salary),
-                    },
-                    {
-                      label: 'Edit',
-                      icon: <FiEdit />,
-                      variant: 'orange' as const,
-                      href: `/salaries/${id}/edit?employeeId=${salary?.employeeId}`,
-                    },
-                  ]
-                : []
+            []
           }
         />
 

@@ -352,6 +352,7 @@ export default function EditEmployeePage({ params }: PageParams) {
               label: isSubmitting ? 'Saving...' : 'Save',
               icon: <FiCheckCircle />,
               variant: 'success',
+              pill: true,
               onClick: handleSubmit(onSubmit),
               disabled: isSubmitting
             }
@@ -365,10 +366,10 @@ export default function EditEmployeePage({ params }: PageParams) {
               <button
                 type="button"
                 onClick={() => handleCleanSection('personal')}
-                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
               >
                 <FaBroom className="w-4 h-4" />
-                Clean
+                Clear
               </button>
             </div>
             <div className="bg-white p-4 rounded-lg mb-4">
@@ -462,10 +463,10 @@ export default function EditEmployeePage({ params }: PageParams) {
                 <button
                   type="button"
                   onClick={() => handleCleanSection('additional')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -560,10 +561,10 @@ export default function EditEmployeePage({ params }: PageParams) {
                 <button
                   type="button"
                   onClick={() => handleCleanSection('contact')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
               {/* Row 1: Email only */}
@@ -628,10 +629,10 @@ export default function EditEmployeePage({ params }: PageParams) {
                 <button
                   type="button"
                   onClick={() => handleCleanSection('identification')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -706,10 +707,10 @@ export default function EditEmployeePage({ params }: PageParams) {
               <button
                 type="button"
                 onClick={() => handleCleanSection('educational')}
-                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
               >
                 <FaBroom className="w-4 h-4" />
-                Clean
+                Clear
               </button>
             </div>
             {/* Higher Education */}
@@ -1016,7 +1017,7 @@ export default function EditEmployeePage({ params }: PageParams) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
+            className="px-5 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
             onClick={handleSubmit(onSubmit)}
           >
             <FiCheckCircle />

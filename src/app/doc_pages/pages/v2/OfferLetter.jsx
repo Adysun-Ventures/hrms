@@ -3,6 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { FiChevronDown, FiDownload, FiX } from 'react-icons/fi';
 import TableHeader from '@/components/ui/TableHeader';
+import MissingSalaryModal from '@/components/ui/MissingSalaryModal';
 import { Combobox } from '@headlessui/react'
 import {
   Document,
@@ -1111,23 +1112,21 @@ function OfferLetterV2({ isForm16 = false }) {
           showFilter={false}
           headerClassName="px-8 pt-8 mb-0"
           actionButtons={[
-            ...((!isForm16 || !hasMissingSalary) ? [
-              {
-                label: isCheckingMissingSalary ? 'Checking...' : 'Generate',
-                icon: <FiDownload size={18} />,
-                variant: 'success',
-                disabled: !canGenerate,
-                onClick: () => {
-                  if (isForm16) {
-                    if (!selectedEmployees.length) return toast.error('At least one employee is required');
-                  } else {
-                    if (!employee) return toast.error('Employee is required');
-                  }
-                  setShowPDF(true);
-                  setPdfKey((k) => k + 1);
-                },
+            {
+              label: isCheckingMissingSalary ? 'Checking...' : 'Generate',
+              icon: <FiDownload size={18} />,
+              variant: 'success',
+              disabled: !canGenerate,
+              onClick: () => {
+                if (isForm16) {
+                  if (!selectedEmployees.length) return toast.error('At least one employee is required');
+                } else {
+                  if (!employee) return toast.error('Employee is required');
+                }
+                setShowPDF(true);
+                setPdfKey((k) => k + 1);
               },
-            ] : []),
+            },
           ]}
         />
 <div className="-mx-8 border-t border-gray-200 my-4"></div>
@@ -1169,7 +1168,10 @@ function OfferLetterV2({ isForm16 = false }) {
       );
       setDocumentGenerateDate(joiningDateForDoc || new Date().toISOString().slice(0, 10));
       setEffectiveDate(joiningDateForDoc || '');
-      // For multi-select UX, keep dropdown usable for next selection.
+      // For multi-select UX, keep field focused so next selection is immediate.
+      setTimeout(() => {
+        employeePickerInputRef.current?.focus?.();
+      }, 0);
       return;
     }
     const emp = next || null;
@@ -1414,77 +1416,54 @@ function OfferLetterV2({ isForm16 = false }) {
               Cancel
             </button>
 
-            {(!isForm16 || !hasMissingSalary) && (
-              <button
-                type="button"
-                disabled={!canGenerate}
-                onClick={() => {
-                  if (isForm16) {
-                    if (!selectedEmployees.length) return toast.error('At least one employee is required');
-                  } else {
-                    if (!employee) return toast.error('Employee is required');
-                  }
-                  setShowPDF(true);
-                  setPdfKey(k => k + 1);
-                }}
-                className={`flex items-center px-6 py-2.5 rounded-md shadow hover:shadow-md transition ${
-                  canGenerate
-                    ? 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800'
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <FiDownload size={18} className="mr-2" />
-                {isCheckingMissingSalary ? 'Checking...' : 'Generate'}
-              </button>
-            )}
+            <button
+              type="button"
+              disabled={!canGenerate}
+              onClick={() => {
+                if (isForm16) {
+                  if (!selectedEmployees.length) return toast.error('At least one employee is required');
+                } else {
+                  if (!employee) return toast.error('Employee is required');
+                }
+                setShowPDF(true);
+                setPdfKey(k => k + 1);
+              }}
+              className={`flex items-center px-6 py-2.5 rounded-md shadow hover:shadow-md transition ${
+                canGenerate
+                  ? 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <FiDownload size={18} className="mr-2" />
+              {isCheckingMissingSalary ? 'Checking...' : 'Generate'}
+            </button>
           </div>
         </div>
       </div>
 
-      {isForm16 && missingSalaryPopupOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-          onClick={() => setMissingSalaryPopupOpen(false)}
-        >
-          <div
-            className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6 relative max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setMissingSalaryPopupOpen(false)}
-              aria-label="Close missing salary popup"
-              className="absolute top-4 right-4 h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center"
-            >
-              <FiX className="w-4 h-4" />
-            </button>
-            <h2 className="text-base font-semibold text-gray-900">Salary Missing</h2>
-            <p className="mt-1 text-xs text-gray-500">
-              Missing salary found in FY {financialYearStart}-{String(financialYearStart + 1).slice(-2)}. Please complete salaries before generating Form 16.
-            </p>
-
-            <div className="mt-4 space-y-3 text-sm text-gray-800">
-              {missingSalaryDetails.map((row) => (
-                <div key={row.employeeId} className="rounded-md border border-gray-200 p-3">
-                  <p className="font-medium">{row.employeeName}</p>
-                  <p className="mt-1 text-gray-700">{row.months.join(', ')}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-6 flex items-center justify-start gap-3">
-              <button
-                type="button"
-                onClick={() => setMissingSalaryPopupOpen(false)}
-                className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 inline-flex items-center gap-2"
-              >
-                <FiX className="w-4 h-4" />
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <MissingSalaryModal
+        isOpen={Boolean(isForm16 && missingSalaryPopupOpen)}
+        onClose={() => setMissingSalaryPopupOpen(false)}
+        title="Missing Salaries"
+        summary={`Missing salary found in FY ${financialYearStart}-${String(financialYearStart + 1).slice(-2)}. Please complete salaries before generating Form 16.`}
+        rows={missingSalaryDetails.map((row) => ({
+          id: String(row.employeeId),
+          label: String(row.employeeName || 'Unknown'),
+          value: Array.isArray(row.months) ? row.months.join(', ') : '',
+        }))}
+        cancelText="Cancel"
+        primaryAction={{
+          label: 'Generate',
+          onClick: () => {
+            if (employee?.id) {
+              window.location.href = `/salaries?employeeId=${employee.id}`;
+              return;
+            }
+            window.location.href = '/salaries';
+          },
+          className: 'px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700',
+        }}
+      />
 
       {showPDF && employee && employment && (
         <div className="bg-white rounded-lg shadow-lg p-4 mb-8">

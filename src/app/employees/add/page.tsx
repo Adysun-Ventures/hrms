@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { addEmployee } from '@/utils/firebaseUtils';
@@ -63,11 +64,12 @@ export default function AddEmployeePage() {
   ]);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const { register, handleSubmit, formState: { errors }, watch, setValue, control, setError: setFieldError } = useForm<EmployeeFormData>({
     defaultValues: {
       status: 'active',
-      employeeType: 'internal', // Default to internal
+      employeeType: 'external', // Default to External
       is_resigned: false,
       employmentStatus: 'working',
     }
@@ -153,7 +155,7 @@ export default function AddEmployeePage() {
       setValue('name', '' as any);
       setValue('phone', '' as any);
       setValue('password', '' as any);
-      setValue('employeeType', 'internal' as any);
+      setValue('employeeType', 'external' as any);
       setValue('dateOfBirth', '' as any);
       setValue('bloodGroup', '' as any);
       setValue('homeTown', '' as any);
@@ -296,8 +298,8 @@ export default function AddEmployeePage() {
     }
   };
 
-  const handleAutoFillFromText = async () => {
-    const text = autoFillInput.trim();
+  const handleAutoFillFromText = async (textOverride?: string) => {
+    const text = String(textOverride ?? autoFillInput).trim();
     if (!text) {
       setAutoFillError('Please paste employee details first.');
       return;
@@ -345,6 +347,19 @@ export default function AddEmployeePage() {
       setIsAutoFilling(false);
     }
   };
+
+  useEffect(() => {
+    const aiText = searchParams?.get('aiText');
+    if (!aiText) return;
+    const decoded = decodeURIComponent(aiText);
+    if (!decoded.trim()) return;
+    setAutoFillInput(decoded);
+    // Run after state update so the UI also shows the text.
+    setTimeout(() => {
+      handleAutoFillFromText(decoded);
+    }, 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const onSubmit = async (data: EmployeeFormData, redirectToCreatedEmployeeView = false) => {
     try {
@@ -587,7 +602,7 @@ export default function AddEmployeePage() {
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={handleAutoFillFromText}
+                  onClick={() => handleAutoFillFromText()}
                   disabled={isAutoFilling}
                   className="px-4 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-2"
                 >
@@ -606,10 +621,10 @@ export default function AddEmployeePage() {
               <button
                 type="button"
                 onClick={() => handleCleanSection('personal')}
-                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
               >
                 <FaBroom className="w-4 h-4" />
-                Clean
+                Clear
               </button>
             </div>
 
@@ -723,10 +738,10 @@ export default function AddEmployeePage() {
                 <button
                   type="button"
                   onClick={() => handleCleanSection('additional')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -823,10 +838,10 @@ export default function AddEmployeePage() {
                 <button
                   type="button"
                   onClick={() => handleCleanSection('contact')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
 
@@ -914,10 +929,10 @@ export default function AddEmployeePage() {
                 <button
                   type="button"
                   onClick={() => handleCleanSection('identification')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1010,10 +1025,10 @@ export default function AddEmployeePage() {
               <button
                 type="button"
                 onClick={() => handleCleanSection('educational')}
-                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
               >
                 <FaBroom className="w-4 h-4" />
-                Clean
+                Clear
               </button>
             </div>
 

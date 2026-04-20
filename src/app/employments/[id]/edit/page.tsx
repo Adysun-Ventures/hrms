@@ -1561,10 +1561,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 <button
                   type="button"
                   onClick={() => handleCleanSection('employmentInfo')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1638,10 +1638,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 <button
                   type="button"
                   onClick={() => handleCleanSection('jobDetails')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -1728,10 +1728,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 <button
                   type="button"
                   onClick={() => handleCleanSection('professionalReference')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
 
@@ -2077,10 +2077,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 <button
                   type="button"
                   onClick={() => handleCleanSection('resignation')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -2214,10 +2214,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <button
                     type="button"
                     onClick={() => handleCleanSection('joiningSalary')}
-                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                   >
                     <FaBroom className="w-4 h-4" />
-                    Clean
+                      Clear
                   </button>
                   <Controller
                     name="joiningPfIncluded"
@@ -2440,10 +2440,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <button
                     type="button"
                     onClick={() => handleCleanSection('increments')}
-                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                   >
                     <FaBroom className="w-4 h-4" />
-                    Clean
+                      Clear
                   </button>
                   <select
                     value={aiIncrementCount}
@@ -2805,10 +2805,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <button
                     type="button"
                     onClick={() => handleCleanSection('currentSalary')}
-                    className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                      className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                   >
                     <FaBroom className="w-4 h-4" />
-                    Clean
+                      Clear
                   </button>
                   <button
                     type="button"
@@ -3057,10 +3057,10 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                 <button
                   type="button"
                   onClick={() => handleCleanSection('bankDetails')}
-                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                  className="inline-flex items-center gap-2 px-3 py-1 text-sm rounded-full border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50"
                 >
                   <FaBroom className="w-4 h-4" />
-                  Clean
+                  Clear
                 </button>
               </div>
 

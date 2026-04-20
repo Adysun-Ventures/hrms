@@ -1,5 +1,5 @@
 import React from 'react';
-import { FiAlertTriangle } from 'react-icons/fi';
+import { FiAlertTriangle, FiX } from 'react-icons/fi';
 
 interface ConfirmationModalProps {
   isOpen: boolean;
@@ -53,27 +53,48 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   };
   
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/30">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-lg">
-        <div className={`p-4 rounded-t-lg border-b ${getVariantClasses()}`}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm bg-black/30"
+      onClick={onCancel}
+      role="presentation"
+    >
+      <div
+        className="w-full max-w-md bg-white rounded-lg shadow-lg"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className={`relative p-4 rounded-t-lg border-b ${getVariantClasses()}`}>
           <div className="flex items-center">
             <FiAlertTriangle className="w-6 h-6 mr-2" />
             <h3 className="text-lg font-medium">{title}</h3>
           </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label="Close"
+            disabled={disabled}
+            className="absolute top-3 right-3 h-8 w-8 rounded-full border border-gray-300 text-gray-500 hover:text-gray-700 hover:bg-gray-100 inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FiX className="w-4 h-4" />
+          </button>
         </div>
         
         <div className="p-6">
           <p className="text-gray-700">{message}</p>
         </div>
         
-        <div className="flex justify-end gap-3 p-4 border-t border-gray-200">
+        <div className="flex items-center justify-between gap-3 p-4 border-t border-gray-200">
           <button
             type="button"
             onClick={onCancel}
             disabled={disabled}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {cancelText}
+            <span className="inline-flex items-center gap-2">
+              {cancelText}
+              <FiX className="w-4 h-4" />
+            </span>
           </button>
           <button
             type="button"

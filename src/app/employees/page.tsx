@@ -798,7 +798,7 @@ useEffect(() => {
                   value={createAiText}
                   onChange={(e) => setCreateAiText(e.target.value)}
                   placeholder="Paste employee details (supports comma-separated or free text)"
-                  className="w-full min-h-28 p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  className="w-full min-h-40 p-3 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                 />
                 {createAiError ? <p className="text-sm text-red-600">{createAiError}</p> : null}
               </div>
@@ -809,8 +809,8 @@ useEffect(() => {
                   onClick={() => setCreateAiOpen(false)}
                   className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 bg-transparent hover:bg-gray-50 inline-flex items-center gap-2"
                 >
-                  Cancel
                   <FiX className="w-4 h-4" />
+                  Cancel
                 </button>
                 <button
                   type="button"

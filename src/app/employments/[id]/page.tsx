@@ -1350,7 +1350,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                       <img
                         src={raw}
                         alt="Profile"
-                        className="h-10 w-10 rounded-full object-cover border border-gray-200 shrink-0"
+                        className="h-14 w-14 rounded-full object-cover border border-gray-200 shrink-0"
                       />
                     ) : null;
                   })()}

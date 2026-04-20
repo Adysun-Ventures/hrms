@@ -924,8 +924,17 @@ useEffect(() => {
                       <div className="text-sm text-gray-900">{startIndex + idx + 1}</div>
                     </td>
                     <td className="px-6 py-2 whitespace-nowrap text-center">
-                      <div className="flex items-center">
-                          <div className="text-sm font-medium text-gray-900">{employee.name}</div>
+                      <div className="flex items-center justify-center gap-2">
+                        {String((employee as any).imageUrl || '').trim() ? (
+                          <img
+                            src={String((employee as any).imageUrl)}
+                            alt={`${employee.name} profile`}
+                            className="h-8 w-8 rounded-full object-cover border border-gray-300 shrink-0"
+                          />
+                        ) : (
+                          <span className="h-8 w-8 rounded-full border border-gray-300 bg-transparent shrink-0" />
+                        )}
+                        <div className="text-sm font-medium text-gray-900">{employee.name}</div>
                       </div>
                     </td>
                     <td className="px-6 py-2 whitespace-nowrap text-center">

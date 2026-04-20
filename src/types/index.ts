@@ -159,6 +159,8 @@ export interface EmploymentIncrement {
 export interface Employment {
   id: string;
   employeeId: string;
+  /** Base64 image for ID card profile photo (uploaded in Employment). */
+  profilePhoto?: string;
   
   // Employment Information
   employmentId?: string;

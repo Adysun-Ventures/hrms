@@ -5,6 +5,8 @@ type MissingSalaryRow = {
   id: string;
   label: string;
   value: string;
+  employmentHref?: string;
+  salaryHref?: string;
 };
 
 type MissingSalaryPrimaryAction = {
@@ -64,11 +66,34 @@ export default function MissingSalaryModal({
         {rows.length === 0 ? (
           <p className="mt-4 text-sm text-gray-700">{emptyMessage}</p>
         ) : (
-          <div className="mt-4 space-y-2 text-sm text-gray-800">
+          <div className="mt-4 space-y-3 text-sm text-gray-800">
             {rows.map((row) => (
-              <p key={row.id}>
-                <span className="font-medium">{row.label}</span> {'\u2192'} {row.value}
-              </p>
+              <div key={row.id} className="rounded-md border border-gray-200 p-3 bg-gray-50">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-medium text-gray-900">{row.label}</span>
+                  {row.employmentHref ? (
+                    <a
+                      href={row.employmentHref}
+                      className="px-3 py-1.5 rounded-md border border-blue-600 text-blue-700 hover:bg-blue-50 text-xs font-medium"
+                    >
+                      View
+                    </a>
+                  ) : null}
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <span className="text-gray-700">
+                    Missing salaries: {row.value || '-'}
+                  </span>
+                  {row.salaryHref ? (
+                    <a
+                      href={row.salaryHref}
+                      className="px-3 py-1.5 rounded-md border border-blue-600 text-blue-700 hover:bg-blue-50 text-xs font-medium"
+                    >
+                      View
+                    </a>
+                  ) : null}
+                </div>
+              </div>
             ))}
           </div>
         )}

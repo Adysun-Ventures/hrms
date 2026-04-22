@@ -925,9 +925,17 @@ useEffect(() => {
                     </td>
                     <td className="px-6 py-2 whitespace-nowrap text-center">
                       <div className="flex items-center justify-center gap-2">
-                        {String((employee as any).imageUrl || '').trim() ? (
+                        {String(
+                          (employee as any).imageUrl ||
+                            (employmentByEmployeeId[employee.id] as any)?.profilePhoto ||
+                            ''
+                        ).trim() ? (
                           <img
-                            src={String((employee as any).imageUrl)}
+                            src={String(
+                              (employee as any).imageUrl ||
+                                (employmentByEmployeeId[employee.id] as any)?.profilePhoto ||
+                                ''
+                            )}
                             alt={`${employee.name} profile`}
                             className="h-8 w-8 rounded-full object-cover border border-gray-300 shrink-0"
                           />

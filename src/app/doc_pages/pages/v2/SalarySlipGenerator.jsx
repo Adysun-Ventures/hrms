@@ -12,52 +12,54 @@ import toast, { Toaster } from 'react-hot-toast';
 import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
+import { BODY_FONT_FAMILY, ensureDocumentFonts } from "@/components/pdf/documentFont";
 import { Combobox } from "@headlessui/react";
 import { useAuth } from "@/context/AuthContext";
 import { formatDateToDayMonYear } from "@/utils/documentUtils";
 
 const DEFAULT_COMPANY_NAME = 'Adysun Ventures Pvt. Ltd.';
+ensureDocumentFonts();
 
 // === DEFAULT LAYOUT STYLES ===
 const defaultSalarySlipStyles = StyleSheet.create({
-  title: { fontSize: 16, fontWeight: 'bold', marginBottom: 10, textAlign: 'center', fontFamily: 'Calibri' },
-  subtitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 8, fontFamily: 'Calibri' },
+  title: { fontSize: 16, fontWeight: 'bold', marginBottom: 10, textAlign: 'center', fontFamily: BODY_FONT_FAMILY },
+  subtitle: { fontSize: 14, fontWeight: 'bold', marginBottom: 8, fontFamily: BODY_FONT_FAMILY },
   section: { marginBottom: 10 },
   row: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderBottomStyle: 'solid', paddingVertical: 5 },
-  cell: { flex: 1, padding: 5, fontSize: 10, fontFamily: 'Calibri' },
-  headerCell: { flex: 1, padding: 5, fontSize: 11, fontWeight: 'bold', backgroundColor: '#f0f0f0', fontFamily: 'Calibri' },
+  cell: { flex: 1, padding: 5, fontSize: 10, fontFamily: BODY_FONT_FAMILY },
+  headerCell: { flex: 1, padding: 5, fontSize: 11, fontWeight: 'bold', backgroundColor: '#f0f0f0', fontFamily: BODY_FONT_FAMILY },
   bold: { fontWeight: 'bold' },
   employeeInfoContainer: { flexDirection: 'row', borderWidth: 1, borderColor: '#000', marginVertical: 10 },
   employeeInfoSection: { flex: 1, padding: 8 },
   infoRow: { flexDirection: 'row', marginBottom: 5 },
-  infoLabel: { flex: 1, fontSize: 10, fontWeight: 'bold', fontFamily: 'Calibri' },
-  infoValue: { flex: 2, fontSize: 10, fontFamily: 'Calibri' },
+  infoLabel: { flex: 1, fontSize: 10, fontWeight: 'bold', fontFamily: BODY_FONT_FAMILY },
+  infoValue: { flex: 2, fontSize: 10, fontFamily: BODY_FONT_FAMILY },
   earningsDeductionsContainer: { flexDirection: 'row', borderWidth: 1, borderColor: '#000', marginTop: 15 },
   earningsSection: { flex: 1, borderRightWidth: 1, borderRightColor: '#000' },
   deductionsSection: { flex: 1 },
   columnHeader: { backgroundColor: '#f0f0f0', flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', padding: 5 },
-  columnHeaderText: { flex: 1, fontSize: 11, fontWeight: 'bold', fontFamily: 'Calibri' },
-  amountColumnHeader: { flex: 1, fontSize: 11, fontWeight: 'bold', textAlign: 'right', fontFamily: 'Calibri' },
+  columnHeaderText: { flex: 1, fontSize: 11, fontWeight: 'bold', fontFamily: BODY_FONT_FAMILY },
+  amountColumnHeader: { flex: 1, fontSize: 11, fontWeight: 'bold', textAlign: 'right', fontFamily: BODY_FONT_FAMILY },
   item: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#ddd', padding: 5 },
-  itemName: { flex: 1, fontSize: 10, fontFamily: 'Calibri' },
-  itemAmount: { flex: 1, fontSize: 10, textAlign: 'right', fontFamily: 'Calibri' },
+  itemName: { flex: 1, fontSize: 10, fontFamily: BODY_FONT_FAMILY },
+  itemAmount: { flex: 1, fontSize: 10, textAlign: 'right', fontFamily: BODY_FONT_FAMILY },
   totalRow: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#000', padding: 5, backgroundColor: '#f0f0f0' },
-  totalLabel: { flex: 1, fontSize: 11, fontWeight: 'bold', fontFamily: 'Calibri' },
-  totalAmount: { flex: 1, fontSize: 11, fontWeight: 'bold', textAlign: 'right', fontFamily: 'Calibri' },
+  totalLabel: { flex: 1, fontSize: 11, fontWeight: 'bold', fontFamily: BODY_FONT_FAMILY },
+  totalAmount: { flex: 1, fontSize: 11, fontWeight: 'bold', textAlign: 'right', fontFamily: BODY_FONT_FAMILY },
   netPayContainer: { marginTop: 15, borderWidth: 1, borderColor: '#000' },
   netPayRow: { flexDirection: 'row', padding: 8, backgroundColor: '#e6e6e6' },
-  netPayLabel: { flex: 1, fontSize: 12, fontWeight: 'bold', fontFamily: 'Calibri' },
-  netPayAmount: { flex: 1, fontSize: 12, fontWeight: 'bold', textAlign: 'right', fontFamily: 'Calibri' },
-  netPayWords: { padding: 8, fontSize: 11, fontFamily: 'Calibri', fontStyle: 'italic' },
+  netPayLabel: { flex: 1, fontSize: 12, fontWeight: 'bold', fontFamily: BODY_FONT_FAMILY },
+  netPayAmount: { flex: 1, fontSize: 12, fontWeight: 'bold', textAlign: 'right', fontFamily: BODY_FONT_FAMILY },
+  netPayWords: { padding: 8, fontSize: 11, fontFamily: BODY_FONT_FAMILY, fontStyle: 'italic' },
   signature: { marginTop: 50, flexDirection: 'row' },
   signatureSection: { flex: 1, alignItems: 'center' },
-  signatureText: { fontSize: 11, marginTop: 20, fontFamily: 'Calibri' },
-  page: { padding: 40, paddingBottom: 60, fontFamily: 'Calibri', fontSize: 11, backgroundColor: 'white' },
+  signatureText: { fontSize: 11, marginTop: 20, fontFamily: BODY_FONT_FAMILY },
+  page: { padding: 40, paddingBottom: 60, fontFamily: BODY_FONT_FAMILY, fontSize: 11, backgroundColor: 'white' },
 });
 
 // === ADYSUN LAYOUT STYLES ===
 const adysunSalarySlipStyles = StyleSheet.create({
-  page: { paddingTop: 24, paddingBottom: 32, paddingHorizontal: 32, fontFamily: 'Calibri', fontSize: 10, backgroundColor: '#fff', color: '#111' },
+  page: { paddingTop: 24, paddingBottom: 32, paddingHorizontal: 32, fontFamily: BODY_FONT_FAMILY, fontSize: 10, backgroundColor: '#fff', color: '#111' },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   logoWrapper: { marginRight: 16 },
   logo: { width: 66, height: 66 },
@@ -382,7 +384,7 @@ return (
       paddingBottom: 18 * 2.83,
       paddingLeft: 10 * 2.83,
       paddingRight: 10 * 2.83,
-      fontFamily: "Helvetica",
+      fontFamily: BODY_FONT_FAMILY,
       fontSize: 9,
       display: "flex",
       flexDirection: "column"

@@ -105,6 +105,18 @@ export default function DashboardPage() {
       href: '/dashboard/documents/v2/appointment-letter',
       icon: <FiFileText className="w-6 h-6 text-blue-600" />,
     },
+    {
+      title: 'FnF Certificate',
+      description: 'Generate full and final certificate',
+      href: '/dashboard/documents/v2/fnf-certificate',
+      icon: <FiFileText className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'Form 16',
+      description: 'Generate Form 16 document',
+      href: '/dashboard/documents/v2/form-16',
+      icon: <FiFileText className="w-6 h-6 text-blue-600" />,
+    },
   ];
 
   return (

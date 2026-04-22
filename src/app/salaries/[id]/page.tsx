@@ -397,68 +397,157 @@ export default function SalaryViewPage({ params }: PageParams) {
         />
 
         <div className="px-6 pb-2">
-          {/* Essential Salary Information Only */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
               <FaRupeeSign className="mr-2" /> Salary Information
             </h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-lg font-medium text-gray-900">{employeeName}</p>
-                <p className="text-sm text-gray-500">Employee</p>
-              </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">{getMonthName(salary?.month || 1)} {salary?.year}</p>
-                <p className="text-sm text-gray-500">Period</p>
-              </div>
 
-              <div>
-                <p className="text-lg font-medium text-gray-900">{salary?.leavesCount?.toLocaleString() || '0'}</p>
-                <p className="text-sm text-gray-500">Leaves Count</p>
-              </div>
+            {(() => {
+              const month = Number((salary as any)?.month || 1);
+              const year = Number((salary as any)?.year || new Date().getFullYear());
+              const leaveCount = Number((salary as any)?.leavesCount ?? 0) || 0;
+              const payableDays =
+                Number((salary as any)?.workDays ??
+                  (salary as any)?.workingDays ??
+                  (salary as any)?.totalWorkingDays ??
+                  (salary as any)?.monthDays ??
+                  0) || 0;
 
-              <div>
-                <p className="text-lg font-medium text-gray-900">₹{salary?.leavesDeductAmt?.toLocaleString() || '0'}</p>
-                <p className="text-sm text-gray-500">Leaves Deduct Amount</p>
-              </div>
+              const ctc = Number((salary as any)?.ctc ?? 0) || 0;
+              const variablePay = Number((salary as any)?.variablePay ?? 0) || 0;
+              const fixedPay = Number((salary as any)?.fixedPay ?? 0) || 0;
+              const monthlyFixed = fixedPay / 12;
+              const monthlySalaryPayable = Number((salary as any)?.perMonth ?? 0) || 0;
 
-              <div>
-                <p className="text-lg font-medium text-gray-900">₹{salary?.basicSalary?.toLocaleString() || '0'}</p>
-                <p className="text-sm text-gray-500">Basic Salary</p>
-              </div>
+              const basic = Number((salary as any)?.basic ?? (salary as any)?.basicSalary ?? 0) || 0;
+              const hra = Number((salary as any)?.hra ?? (salary as any)?.da ?? 0) || 0;
+              const conveyance = Number((salary as any)?.conveyanceAllowance ?? 0) || 0;
+              const otherAllowance = Number((salary as any)?.otherAllowance ?? 0) || 0;
+              const grossSalary = Number((salary as any)?.grossSalary ?? (salary as any)?.totalSalary ?? 0) || 0;
 
-              <div>
-                <p className="text-lg font-medium text-gray-900">₹{salary?.fixedPay?.toLocaleString() || '0'}</p>
-                <p className="text-sm text-gray-500">Fixed Pay</p>
-              </div>
+              const pfDeduct = Number((salary as any)?.pf ?? 0) || 0;
+              const ptDeduct = Number((salary as any)?.ptDeduct ?? 0) || 0;
+              const leavesDeductAmt = Number((salary as any)?.leavesDeductAmt ?? 0) || 0;
+              const otherDeduction = Number((salary as any)?.otherDeduction ?? 0) || 0;
+              const totalDeduction =
+                Number((salary as any)?.totalDeduction ?? (pfDeduct + ptDeduct + leavesDeductAmt + otherDeduction)) ||
+                0;
+              const netSalary =
+                Number((salary as any)?.netSalary ?? (salary as any)?.inhandSalary ?? (grossSalary - totalDeduction)) ||
+                0;
 
-              <div>
-                <p className="text-lg font-medium text-gray-900">₹{salary?.variablePay?.toLocaleString() || '0'}</p>
-                <p className="text-sm text-gray-500">Variable Pay</p>
-              </div>
+              const formatAmount = (value: number) => `₹${value.toLocaleString('en-IN')}`;
 
-              <div>
-                <p className="text-lg font-medium text-gray-900">₹{salary?.ptDeduct?.toLocaleString() || '0'}</p>
-                <p className="text-sm text-gray-500">PT Deduct</p>
-              </div>
+              return (
+                <div className="space-y-6">
+                  <div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{employeeName}</p>
+                        <p className="text-sm text-gray-500">Name</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{getMonthName(month)} {year}</p>
+                        <p className="text-sm text-gray-500">Month / Year</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{leaveCount.toLocaleString('en-IN')}</p>
+                        <p className="text-sm text-gray-500">Leave Count</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{payableDays.toLocaleString('en-IN')}</p>
+                        <p className="text-sm text-gray-500">Payable Days</p>
+                      </div>
+                    </div>
+                  </div>
 
-              <div>
-                <p className="text-lg font-medium text-gray-900">₹{salary?.totalDeduction?.toLocaleString() || '0'}</p>
-                <p className="text-sm text-gray-500">Total Deduction</p>
-              </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Salary Inputs</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(ctc)}</p>
+                        <p className="text-sm text-gray-500">CTC</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(variablePay)}</p>
+                        <p className="text-sm text-gray-500">Variable Pay</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(fixedPay)}</p>
+                        <p className="text-sm text-gray-500">Fixed Pay</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(monthlyFixed)}</p>
+                        <p className="text-sm text-gray-500">Monthly Fixed</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(monthlySalaryPayable)}</p>
+                        <p className="text-sm text-gray-500">Monthly Salary Payable</p>
+                      </div>
+                    </div>
+                  </div>
 
-              <div>
-                <p className="text-lg font-medium text-gray-900">₹{salary?.inhandSalary?.toLocaleString() || '0'}</p>
-                <p className="text-sm text-gray-500">Inhand Salary</p>
-              </div>
-              
-              <div>
-                <p className="text-lg font-medium text-gray-900">₹{salary?.totalSalary?.toLocaleString() || '0'}</p>
-                <p className="text-sm text-gray-500">Total Salary</p>
-              </div>
-            </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Salary Components (Auto-calculated)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(basic)}</p>
+                        <p className="text-sm text-gray-500">Basic (Auto-calculated)</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(hra)}</p>
+                        <p className="text-sm text-gray-500">HRA (Auto-calculated)</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(conveyance)}</p>
+                        <p className="text-sm text-gray-500">Conveyance Allowance (Auto-calculated)</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(otherAllowance)}</p>
+                        <p className="text-sm text-gray-500">Other Allowance</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{formatAmount(grossSalary)}</p>
+                    <p className="text-sm text-gray-500">Gross Salary (A)</p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Deductions</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(pfDeduct)}</p>
+                        <p className="text-sm text-gray-500">PF (DEDUCT)</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(ptDeduct)}</p>
+                        <p className="text-sm text-gray-500">PT (DEDUCT)</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(leavesDeductAmt)}</p>
+                        <p className="text-sm text-gray-500">Leaves Deduct Amt</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-medium text-gray-900">{formatAmount(otherDeduction)}</p>
+                        <p className="text-sm text-gray-500">Other Deduction</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{formatAmount(totalDeduction)}</p>
+                    <p className="text-sm text-gray-500">Total Deduction</p>
+                  </div>
+
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">{formatAmount(netSalary)}</p>
+                    <p className="text-sm text-gray-500">Net Salary (InHand) (C=A-B)</p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="mt-6 pt-3 border-gray-200 flex items-center justify-between gap-4">

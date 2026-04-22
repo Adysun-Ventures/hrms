@@ -2458,25 +2458,27 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   Increment Details
                 </h2>
                 <div className="flex items-center gap-2">
-                  <select
-                    value={aiIncrementCount}
-                    onChange={(e) => setAiIncrementCount(Number(e.target.value) || 1)}
-                    className="px-2 py-1 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  >
-                    {Array.from({ length: 7 }, (_, i) => i + 1).map((count) => (
-                      <option key={count} value={count}>
-                        {count} Increment{count > 1 ? 's' : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleCreateIncrementsWithAi}
-                    className="px-3 py-1 text-xs bg-blue-600 text-white border border-blue-700 rounded-md hover:bg-blue-700 inline-flex items-center gap-1.5"
-                  >
-                    <FaHandSparkles className="w-4 h-4" />
-                    Create with AI
-                  </button>
+                  <div className="flex items-center gap-2 p-1.5 rounded-md border border-purple-200 bg-purple-50">
+                    <select
+                      value={aiIncrementCount}
+                      onChange={(e) => setAiIncrementCount(Number(e.target.value) || 1)}
+                      className="px-2 py-1 text-sm border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      {Array.from({ length: 7 }, (_, i) => i + 1).map((count) => (
+                        <option key={count} value={count}>
+                          {count} Increment{count > 1 ? 's' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={handleCreateIncrementsWithAi}
+                      className="px-3 py-1 text-xs bg-blue-600 text-white border border-blue-700 rounded-md hover:bg-blue-700 inline-flex items-center gap-1.5"
+                    >
+                      <FaHandSparkles className="w-4 h-4" />
+                      Create with AI
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={handleAddIncrement}

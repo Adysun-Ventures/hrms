@@ -26,6 +26,7 @@ import {
   WidthType,
 } from 'docx';
 import { createAdysunDocx } from '@/utils/docxAdysun';
+import * as XLSX from 'xlsx';
 import { useAuth } from '@/context/AuthContext';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 
@@ -35,6 +36,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { offerLetterStyles } from '@/components/pdf/PDFStyles';
 import GlobalPDFHeader from '@/components/components/docComponents/docHeader';
 import GlobalPDFFooter from '@/components/components/docComponents/docFooter';
+import { BODY_FONT_FAMILY, ensureDocumentFonts } from '@/components/pdf/documentFont';
 
 /* ---------------- HARD-CODED COMPANY & HR ---------------- */
 const COMPANY_DATA = {
@@ -48,6 +50,7 @@ const COMPANY_DATA = {
   logo: '/assets/adysunventures_logo.png',
   signature: '/assets/hr-sign.png'
 };
+ensureDocumentFonts();
 
 /* ---------------- WATERMARK COMPONENT ---------------- */
 const Watermark = ({ logoSrc }) => {
@@ -428,13 +431,13 @@ const OfferLetterPDF = ({
         paddingRight: 35,
         paddingBottom: 35,
         paddingLeft: 35,
-        fontFamily: "Helvetica",
+        fontFamily: BODY_FONT_FAMILY,
         fontSize: 12,
         lineHeight: 1.45
       }}
     >
       <Watermark logoSrc={COMPANY_DATA.logo} />
-      <GlobalPDFHeader fontFamily="Helvetica" />
+      <GlobalPDFHeader />
 
       <View style={{ borderBottom: "1px solid #000", marginBottom: 8 }} />
 
@@ -504,14 +507,14 @@ const OfferLetterPDF = ({
         paddingTop: 35,
         paddingRight: 35,
         paddingLeft: 35,
-        fontFamily: "Helvetica",
+        fontFamily: BODY_FONT_FAMILY,
         fontSize: 12,
         // lineHeight: 1.45
       }}
       wrap={false}
     >
       <Watermark logoSrc={COMPANY_DATA.logo} />
-      <GlobalPDFHeader fontFamily="Helvetica" />
+      <GlobalPDFHeader />
 
       <View style={{ borderBottom: "1px solid #000", marginBottom: 8 }} />
       
@@ -558,12 +561,12 @@ const OfferLetterPDF = ({
         paddingTop: 35,
         paddingRight: 35,
         paddingLeft: 35,
-        fontFamily: "Helvetica",
+        fontFamily: BODY_FONT_FAMILY,
         fontSize: 12
       }}
     >
       <Watermark logoSrc={COMPANY_DATA.logo} />
-      <GlobalPDFHeader fontFamily="Helvetica" />
+      <GlobalPDFHeader />
 
       <View style={{ borderBottom: "1px solid #000", marginBottom: 8 }} />
 
@@ -598,13 +601,13 @@ const OfferLetterPDF = ({
         paddingTop: 35,
         paddingRight: 35,
         paddingLeft: 35,
-        fontFamily: "Helvetica",
+        fontFamily: BODY_FONT_FAMILY,
         fontSize: 11
       }}
       wrap={false}
     >
       <Watermark logoSrc={COMPANY_DATA.logo} />
-      <GlobalPDFHeader fontFamily="Helvetica" />
+      <GlobalPDFHeader />
 
       <View style={{ borderBottom: "1px solid #000", marginBottom: 8 }} />
 
@@ -996,6 +999,139 @@ function OfferLetterV2({ isForm16 = false }) {
   };
 
   const financialYearOptions = buildFinancialYearOptions();
+  const getForm16MonthColumns = (fyStart) => [
+    { key: `${fyStart}-04`, label: `Apr-${String(fyStart).slice(-2)}` },
+    { key: `${fyStart}-05`, label: `May-${String(fyStart).slice(-2)}` },
+    { key: `${fyStart}-06`, label: `Jun-${String(fyStart).slice(-2)}` },
+    { key: `${fyStart}-07`, label: `Jul-${String(fyStart).slice(-2)}` },
+    { key: `${fyStart}-08`, label: `Aug-${String(fyStart).slice(-2)}` },
+    { key: `${fyStart}-09`, label: `Sep-${String(fyStart).slice(-2)}` },
+    { key: `${fyStart}-10`, label: `Oct-${String(fyStart).slice(-2)}` },
+    { key: `${fyStart}-11`, label: `Nov-${String(fyStart).slice(-2)}` },
+    { key: `${fyStart}-12`, label: `Dec-${String(fyStart).slice(-2)}` },
+    { key: `${fyStart + 1}-01`, label: `Jan-${String(fyStart + 1).slice(-2)}` },
+    { key: `${fyStart + 1}-02`, label: `Feb-${String(fyStart + 1).slice(-2)}` },
+    { key: `${fyStart + 1}-03`, label: `Mar-${String(fyStart + 1).slice(-2)}` },
+  ];
+
+  const toCurrency2 = (n) => Number((Number(n || 0)).toFixed(2));
+
+  const formatDob = (value) => {
+    if (!value) return '';
+    const parsed = toDateSafe(value);
+    if (!parsed) return String(value);
+    const day = parsed.getDate();
+    const month = monthNameShort(parsed.getMonth());
+    const yearShort = String(parsed.getFullYear()).slice(-2);
+    return `${day}-${month}-${yearShort}`;
+  };
+
+  const pickSalaryAmount = (salaryRow) => {
+    const raw =
+      salaryRow?.netSalary ??
+      salaryRow?.inhandSalary ??
+      salaryRow?.totalSalary ??
+      salaryRow?.perMonth ??
+      (Number(salaryRow?.ctc || 0) / 12);
+    return toCurrency2(raw);
+  };
+
+  const generateForm16Excel = async () => {
+    if (!selectedEmployees.length) {
+      toast.error('At least one employee is required');
+      return;
+    }
+
+    try {
+      toast.loading('Generating Form 16 Excel...', { id: 'form16-excel' });
+      const monthColumns = getForm16MonthColumns(financialYearStart);
+      const rows = [];
+      const monthTotals = new Array(monthColumns.length).fill(0);
+      let grandTotal = 0;
+
+      for (let i = 0; i < selectedEmployees.length; i += 1) {
+        const emp = selectedEmployees[i];
+        const employeeId = emp?.id;
+        if (!employeeId) continue;
+
+        const salarySnap = await getDocs(
+          query(collection(db, 'salaries'), where('employeeId', '==', employeeId))
+        );
+        const salaryMap = new Map();
+        salarySnap.docs.forEach((d) => {
+          const s = d.data();
+          const year = Number(s?.year);
+          const month = Number(s?.month);
+          if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) return;
+          const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+          salaryMap.set(monthKey, pickSalaryAmount(s));
+        });
+
+        const rowEmployment = employments[employeeId] || null;
+        const monthValues = monthColumns.map((col) => toCurrency2(salaryMap.get(col.key) || 0));
+        const total = toCurrency2(monthValues.reduce((sum, val) => sum + val, 0));
+        monthValues.forEach((v, idx) => {
+          monthTotals[idx] += v;
+        });
+        grandTotal += total;
+
+        rows.push([
+          i + 1,
+          String(emp?.name || ''),
+          String(emp?.panCard || emp?.panNumber || emp?.pan || ''),
+          formatDob(emp?.dob || emp?.dateOfBirth),
+          String(rowEmployment?.jobTitle || rowEmployment?.designation || ''),
+          ...monthValues,
+          total,
+        ]);
+      }
+
+      const headers = [
+        'Sr No',
+        'Name of Employee',
+        'Pan Number',
+        'DOB',
+        'Designation',
+        ...monthColumns.map((m) => m.label),
+        'Total',
+      ];
+      const totalRow = [
+        '',
+        '',
+        '',
+        '',
+        'Total',
+        ...monthTotals.map((n) => toCurrency2(n)),
+        toCurrency2(grandTotal),
+      ];
+      const aoa = [['Form 16'], [], headers, ...rows, [], totalRow];
+
+      const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+      worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } }];
+      worksheet['!cols'] = [
+        { wch: 8 },
+        { wch: 28 },
+        { wch: 16 },
+        { wch: 12 },
+        { wch: 22 },
+        ...new Array(12).fill({ wch: 11 }),
+        { wch: 14 },
+      ];
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Form 16');
+
+      const wbArray = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbArray], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      saveAs(blob, `Form16_FY${financialYearStart}-${String(financialYearStart + 1).slice(-2)}.xlsx`);
+      toast.success('Form 16 Excel generated.', { id: 'form16-excel' });
+    } catch (error) {
+      console.error('Failed to generate Form 16 Excel:', error);
+      toast.error('Failed to generate Form 16 Excel.', { id: 'form16-excel' });
+    }
+  };
 
   useEffect(() => {
     if (!isForm16) return;
@@ -1019,6 +1155,7 @@ function OfferLetterV2({ isForm16 = false }) {
           const employmentsSnap = await getDocs(
             query(collection(db, 'employments'), where('employeeId', '==', employeeId))
           );
+          const firstEmploymentDocId = employmentsSnap.docs[0]?.id || '';
           const salarySnap = await getDocs(
             query(collection(db, 'salaries'), where('employeeId', '==', employeeId))
           );
@@ -1070,6 +1207,7 @@ function OfferLetterV2({ isForm16 = false }) {
               .sort((a, b) => new Date(`01 ${a}`).getTime() - new Date(`01 ${b}`).getTime());
             nextMissing.push({
               employeeId,
+              employmentId: firstEmploymentDocId,
               employeeName: empName,
               months: monthLabels,
             });
@@ -1119,7 +1257,8 @@ function OfferLetterV2({ isForm16 = false }) {
               disabled: !canGenerate,
               onClick: () => {
                 if (isForm16) {
-                  if (!selectedEmployees.length) return toast.error('At least one employee is required');
+                  generateForm16Excel();
+                  return;
                 } else {
                   if (!employee) return toast.error('Employee is required');
                 }
@@ -1421,7 +1560,8 @@ function OfferLetterV2({ isForm16 = false }) {
               disabled={!canGenerate}
               onClick={() => {
                 if (isForm16) {
-                  if (!selectedEmployees.length) return toast.error('At least one employee is required');
+                  generateForm16Excel();
+                  return;
                 } else {
                   if (!employee) return toast.error('Employee is required');
                 }
@@ -1450,18 +1590,30 @@ function OfferLetterV2({ isForm16 = false }) {
           id: String(row.employeeId),
           label: String(row.employeeName || 'Unknown'),
           value: Array.isArray(row.months) ? row.months.join(', ') : '',
+          employmentHref: row.employmentId
+            ? `/employments/${String(row.employmentId)}`
+            : `/employments/add?employeeId=${String(row.employeeId)}`,
+          salaryHref: `/salaries?employeeId=${String(row.employeeId)}`,
         }))}
         cancelText="Cancel"
         primaryAction={{
-          label: 'Generate',
+          label: 'Generate Missing Salary',
           onClick: () => {
-            if (employee?.id) {
-              window.location.href = `/salaries?employeeId=${employee.id}`;
+            const employeeIds = (Array.isArray(missingSalaryDetails) ? missingSalaryDetails : [])
+              .map((row) => String(row?.employeeId || '').trim())
+              .filter(Boolean);
+            if (!employeeIds.length) {
+              window.location.href = '/salaries';
               return;
             }
-            window.location.href = '/salaries';
+            const params = new URLSearchParams();
+            params.set('autoGenerateMissing', '1');
+            params.set('employeeIds', employeeIds.join(','));
+            params.set('fyStart', String(financialYearStart));
+            params.set('aiMode', '1');
+            window.location.href = `/salaries?${params.toString()}`;
           },
-          className: 'px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700',
+          className: 'px-4 py-2 rounded-md border border-blue-600 text-blue-700 hover:bg-blue-50',
         }}
       />
 

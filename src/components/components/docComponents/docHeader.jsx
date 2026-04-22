@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, Image } from "@react-pdf/renderer";
 import hrSign from "/public/assets/hr-sign.png";
 import logo from "/public/assets/adysunventures_logo.png";
+import { HEADER_FOOTER_FONT_FAMILY } from "@/components/pdf/documentFont";
 
 const GlobalPDFHeader = () => {
   const COMPANY = {
@@ -17,18 +18,18 @@ const GlobalPDFHeader = () => {
       
       {/* LEFT TEXT BLOCK */}
       <View style={{ flex: 1, paddingRight: 10 }}>
-        <Text style={{ fontSize: 18, fontWeight: "bold", color: "#D85604" }}>
+        <Text style={{ fontSize: 18, fontWeight: "bold", color: "#D85604", fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
           {COMPANY.name}
         </Text>
 
-        <Text  wrap={false} style={{ fontSize: 10, marginTop: 4 }}>
+        <Text  wrap={false} style={{ fontSize: 10, marginTop: 4, fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
           {COMPANY.contact}
         </Text>
 
-        <Text style={{ fontSize: 10, marginTop: 4 }}>
+        <Text style={{ fontSize: 10, marginTop: 4, fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
           {COMPANY.addressLine1}
         </Text>
-        <Text style={{ fontSize: 10 }}>
+        <Text style={{ fontSize: 10, fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
           {COMPANY.addressLine2}
         </Text>
       </View>

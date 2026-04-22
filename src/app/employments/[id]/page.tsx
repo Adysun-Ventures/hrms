@@ -15,13 +15,11 @@ import { useEmployee, useEmployeeSelf } from '@/hooks/useEmployees';
 import { useEmployeeSelfSalariesByEmployee, useSalariesByEmployee } from '@/hooks/useSalaries';
 import { formatDateToDayMonYear, formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import { useAuth } from '@/context/AuthContext';
-import EmploymentDetailsPDF from '@/components/pdf/EmploymentDetailsPDF';
-import { pdf } from '@react-pdf/renderer';
-import { saveAs } from 'file-saver';
 import { getAdminNameById, getEmployeeNameById } from '@/utils/firebaseUtils';
 import IdCardFront, { type EmployeeIdCardData } from '@/components/id-card/IdCardFront';
 import IdCardBack from '@/components/id-card/IdCardBack';
 import { toCanvas } from 'html-to-image';
+import { downloadElementAsMultiPagePdf } from '@/utils/employmentViewPdfDownload';
 
 function professionalReferenceCell(
   refs: ProfessionalReference[] | undefined,
@@ -741,10 +739,11 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   setEmploymentFullPagePdfLoading(true);
                   try {
                     const safe = (employee?.name || 'employment').replace(/\s+/g, '_');
-                    const blob = await pdf(
-                      <EmploymentDetailsPDF employment={employment} employee={employee} />
-                    ).toBlob();
-                    saveAs(blob, `Employment_Details_${safe}.pdf`);
+                    const captureRoot = document.querySelector('.employment-view-pdf-capture') as HTMLElement | null;
+                    if (!captureRoot) {
+                      throw new Error('Could not find employment view to export.');
+                    }
+                    await downloadElementAsMultiPagePdf(captureRoot, `Employment_Details_${safe}.pdf`);
                     toast.success('PDF downloaded');
                   } catch (e) {
                     console.error(e);
@@ -941,7 +940,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             </div>
 
             {/* ID card space (front/back) */}
-            <div className="lg:col-span-3">
+            <div className="lg:col-span-3" data-html2canvas-ignore>
               <div className="rounded-sm border border-gray-800 bg-white p-3 h-full min-h-[340px]">
                 <div className="grid grid-cols-2 gap-3 h-full">
                   <div className="flex flex-col items-center">
@@ -1558,6 +1557,22 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               return (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
+                    <p className="text-lg font-medium text-gray-900">
+                      {employment.joiningDate
+                        ? formatDateToDayMonYear(employment.joiningDate)
+                        : employment.startDate
+                          ? formatDateToDayMonYear(employment.startDate)
+                          : '-'}
+                    </p>
+                    <p className="text-sm text-gray-500">Joining Date</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900">
+                      {employment.jobTitle || employment.designation || '-'}
+                    </p>
+                    <p className="text-sm text-gray-500">Joining Designation</p>
+                  </div>
+                  <div>
                     <p className="text-lg font-medium text-gray-900">{displayCurrency(joiningCtc)}</p>
                     <p className="text-sm text-gray-500">Joining CTC (₹)</p>
                   </div>
@@ -1806,6 +1821,12 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                 const displayCurrency = (v: number) => (Number.isFinite(v) ? formatCurrency(v) : '-');
                 return (
                   <>
+              <div>
+                <p className="text-lg font-medium text-gray-900">
+                  {employment.jobTitle || employment.designation || '-'}
+                </p>
+                <p className="text-sm text-gray-500">Designation</p>
+              </div>
 
               <div>
                 <p className="text-lg font-medium text-gray-900">{displayCurrency(currentCtc)}</p>

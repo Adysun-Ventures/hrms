@@ -9,6 +9,9 @@ import { FiArrowLeft, FiDownload } from 'react-icons/fi';
 import { CompanyHeader, FormattedDate, Paragraph, Signature, Footer, Watermark } from '@/components/pdf/PDFComponents';
 import { commonStyles } from '@/components/pdf/PDFStyles';
 import { formatIndianCurrency, numberToWords } from '@/components/pdf/SalaryUtils';
+import { BODY_FONT_FAMILY, ensureDocumentFonts } from '@/components/pdf/documentFont';
+
+ensureDocumentFonts();
 
 // Create watermark styles
 const watermarkStyles = StyleSheet.create({
@@ -50,7 +53,7 @@ const appointmentStyles = StyleSheet.create({
   tableCellHeader: {
     width: '40%',
     padding: 6,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontWeight: 'bold',
     fontSize: 12,
     borderRightWidth: 1,
@@ -60,7 +63,7 @@ const appointmentStyles = StyleSheet.create({
   tableCell: {
     width: '60%',
     padding: 6,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontSize: 12,
   },
   sectionHeading: {
@@ -68,42 +71,42 @@ const appointmentStyles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 12,
     marginBottom: 6,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   listItem: {
     fontSize: 12,
     marginBottom: 6,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     textAlign: 'justify',
     lineHeight: 1.5,
   },
   to: {
     fontSize: 12,
     marginBottom: 3,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   addresseeName: {
     fontSize: 12,
     marginBottom: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   subject: {
     fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   appointmentHeading: {
     fontSize: 12,
     fontWeight: 'bold',
     marginTop: 0,
     marginBottom: 4,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   paragraph: {
     fontSize: 12,
     marginBottom: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   signatureContainer: {
     marginTop: 16,
@@ -118,27 +121,27 @@ const appointmentStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 5,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   signatureSpace: {
     height: 25,
   },
   signatureName: {
     fontSize: 13,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   signatureDate: {
     fontSize: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   signatureRole: {
     fontSize: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   page: {
     padding: 40,
     paddingBottom: 60, // Add more padding at bottom for footer
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontSize: 12,
     backgroundColor: '#ffffff',
   },
@@ -161,7 +164,7 @@ const tableStyles = StyleSheet.create({
   tableHeader: {
     fontWeight: 'bold',
     fontSize: 11,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   tableRow: {
     flexDirection: 'row',
@@ -173,13 +176,13 @@ const tableStyles = StyleSheet.create({
   tableCell: {
     flex: 3,
     fontSize: 11,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     padding: 2,
   },
   tableCellValue: {
     flex: 2,
     fontSize: 11,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     textAlign: 'right',
     padding: 2,
   },

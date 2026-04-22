@@ -17,6 +17,7 @@ import {
   View,
   StyleSheet,
 } from "@react-pdf/renderer";
+import { BODY_FONT_FAMILY, ensureDocumentFonts } from "@/components/pdf/documentFont";
 import { createAdysunDocx } from "@/utils/docxAdysun";
 import { getEmployeeSalaries } from "@/utils/firebaseUtils";
 
@@ -55,9 +56,10 @@ const asNumber = (value) => {
 };
 
 const formatCurrency = (value) => asNumber(value).toFixed(2);
+ensureDocumentFonts();
 
 const styles = StyleSheet.create({
-  page: { padding: 34, fontSize: 11, lineHeight: 1.5, fontFamily: "Helvetica" },
+  page: { padding: 34, fontSize: 11, lineHeight: 1.5, fontFamily: BODY_FONT_FAMILY },
   heading: { fontSize: 16, textAlign: "center", fontWeight: "bold", marginBottom: 10 },
   divider: { borderBottomWidth: 0.5, borderBottomColor: "#D9D9D9", marginVertical: 8 },
   row: { marginBottom: 3 },

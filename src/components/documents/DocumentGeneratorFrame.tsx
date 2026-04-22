@@ -8,6 +8,7 @@ import dynamic from 'next/dynamic';
 
 // Dynamically import v2 document components with no SSR for all documents
 const OfferLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/OfferLetter'), { ssr: false });
+const Form16V2 = dynamic(() => import('@/app/doc_pages/pages/v2/Form16'), { ssr: false });
 const RelievingLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/RelievingLetter'), { ssr: false });
 const AppraisalLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/AppraisalLetter'), { ssr: false });
 const SalarySlipGeneratorV2 = dynamic(() => import('@/app/doc_pages/pages/v2/SalarySlipGenerator'), { ssr: false });
@@ -46,7 +47,7 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
         case 'v2/offer-letter':
           return <OfferLetterV2 />;
         case 'v2/form-16':
-          return <OfferLetterV2 isForm16 />;
+          return <Form16V2 />;
         case 'v2/relieving-letter':
           return <RelievingLetterV2 />;
         case 'v2/appraisal-letter':

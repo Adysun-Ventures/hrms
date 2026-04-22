@@ -320,7 +320,7 @@ export default function SalaryModulePage() {
             Clear
           </button>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="space-y-4">
             <h3 className="text-base font-semibold text-gray-700">Monthly</h3>
             <div>
@@ -436,6 +436,8 @@ export default function SalaryModulePage() {
               <p className="text-xl font-bold text-green-700 mt-1">₹{formatINR(annualNetSalary)}</p>
             </div>
           </div>
+
+          <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-px bg-gray-200" aria-hidden />
         </div>
       </div>
     </DashboardLayout>

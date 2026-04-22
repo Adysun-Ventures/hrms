@@ -1,27 +1,8 @@
 import { StyleSheet, Font } from '@react-pdf/renderer';
 import { View, Image } from '@react-pdf/renderer';
+import { BODY_FONT_FAMILY, ensureDocumentFonts } from './documentFont';
 
-// Register fonts - using standard fonts for simplicity
-// Default font (Calibri for PDF)
-Font.register({
-  family: 'Calibri',
-  fonts: [
-    {
-      src: 'https://db.onlinewebfonts.com/t/267bd6adfcf4ef37a3fb97092614dda1.ttf',
-    },
-    {
-      src: 'https://db.onlinewebfonts.com/t/267bd6adfcf4ef37a3fb97092614dda1.ttf',
-      fontWeight: 'bold',
-    },
-    {
-      src: 'https://db.onlinewebfonts.com/t/267bd6adfcf4ef37a3fb97092614dda1.ttf',
-      fontStyle: 'italic',
-    },
-  ],
-});
-
-// Lato font removed - using Calibri instead (already registered and working)
-// Calibri provides similar professional appearance and is reliable
+ensureDocumentFonts();
 
 // Monospace font for fixed-width formatting
 Font.register({
@@ -40,7 +21,7 @@ Font.register({
 export const commonStyles = StyleSheet.create({
   page: {
     padding: 40,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontSize: 12,
     lineHeight: 1.5,
     color: '#000000',
@@ -105,7 +86,7 @@ export const offerLetterStyles = StyleSheet.create({
     paddingLeft: 72,
     paddingRight: 54,
     paddingBottom: 72,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontSize: 12,
     lineHeight: 1.0,
     color: '#000000',
@@ -124,17 +105,17 @@ export const offerLetterStyles = StyleSheet.create({
     color: '#FF0000',
     marginBottom: 4,
     textTransform: 'uppercase',
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   companyContact: {
     fontSize: 11,
     marginBottom: 2,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   companyAddress: {
     fontSize: 11,
     marginBottom: 4,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   companyLogo: {
     width: 60,
@@ -148,7 +129,7 @@ export const offerLetterStyles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 4,
     lineHeight: 1.0,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     color: '#000000',
   },
   // List item styles
@@ -159,7 +140,7 @@ export const offerLetterStyles = StyleSheet.create({
     paddingBottom: 0,
     lineHeight: 1.0,
     fontSize: 11,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   listItemNested: {
     marginLeft: 36,
@@ -168,12 +149,12 @@ export const offerLetterStyles = StyleSheet.create({
     paddingBottom: 0,
     lineHeight: 1.0,
     fontSize: 11,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   // Text styles
   bodyText: {
     fontSize: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     lineHeight: 1.0,
     paddingTop: 12,
     paddingBottom: 12,
@@ -181,13 +162,13 @@ export const offerLetterStyles = StyleSheet.create({
   },
   bodyTextBold: {
     fontSize: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontWeight: 'bold',
     lineHeight: 1.0,
   },
   bodyTextItalic: {
     fontSize: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontStyle: 'italic',
     color: '#666666',
     lineHeight: 1.0,
@@ -200,13 +181,13 @@ export const offerLetterStyles = StyleSheet.create({
     textAlign: 'center',
     paddingTop: 14,
     paddingBottom: 4,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   // Date styles
   dateText: {
     fontSize: 12,
     fontWeight: 'bold',
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     paddingTop: 12,
     paddingBottom: 12,
   },
@@ -237,12 +218,12 @@ export const offerLetterStyles = StyleSheet.create({
     borderRightColor: '#000000',
     borderRightStyle: 'solid',
     fontSize: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   tableCellLast: {
     padding: 5,
     fontSize: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   tableCellBold: {
     padding: 5,
@@ -250,13 +231,13 @@ export const offerLetterStyles = StyleSheet.create({
     borderRightColor: '#000000',
     borderRightStyle: 'solid',
     fontSize: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontWeight: 'bold',
   },
   tableCellBoldLast: {
     padding: 5,
     fontSize: 12,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontWeight: 'bold',
   },
   // Watermark styles
@@ -282,7 +263,7 @@ export const offerLetterStyles = StyleSheet.create({
 export const appointmentLetterStyles = StyleSheet.create({
   page: {
     ...commonStyles.page,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontSize: 12,
     lineHeight: 1.6,
   },
@@ -333,7 +314,7 @@ export const appointmentLetterStyles = StyleSheet.create({
 export const appraisalLetterStyles = StyleSheet.create({
   page: {
     ...commonStyles.page,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontSize: 12,
     lineHeight: 1.6,
   },
@@ -350,7 +331,7 @@ export const appraisalLetterStyles = StyleSheet.create({
 export const relievingLetterStyles = StyleSheet.create({
   page: {
     ...commonStyles.page,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontSize: 12,
     lineHeight: 1.6,
   },
@@ -363,7 +344,7 @@ export const relievingLetterStyles = StyleSheet.create({
 export const incrementLetterStyles = StyleSheet.create({
   page: {
     ...commonStyles.page,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontSize: 12,
     lineHeight: 1.6,
   },
@@ -377,7 +358,7 @@ export const incrementLetterStyles = StyleSheet.create({
 export const salarySlipStyles = StyleSheet.create({
   page: {
     padding: 30,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
     fontSize: 12,
   },
   title: {
@@ -385,13 +366,13 @@ export const salarySlipStyles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 10,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   subtitle: {
     fontSize: 14,
     fontWeight: 'bold',
     marginVertical: 5,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   section: {
     marginVertical: 5,
@@ -428,11 +409,11 @@ export const salarySlipStyles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     fontWeight: 'bold',
     padding: 5,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   tableCell: {
     padding: 5,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
   summaryBox: {
     marginTop: 20,
@@ -447,7 +428,7 @@ export const salarySlipStyles = StyleSheet.create({
     right: 30,
     textAlign: 'center',
     fontSize: 10,
-    fontFamily: 'Calibri',
+    fontFamily: BODY_FONT_FAMILY,
   },
 });
 

@@ -7,19 +7,23 @@ let registered = false;
 
 export function ensureDocumentFonts(): void {
   if (registered) return;
-
   Font.register({
     family: BODY_FONT_FAMILY,
     fonts: [
       {
-        src: 'https://fonts.gstatic.com/s/lato/v24/S6uyw4BMUTPHjx4wXg.woff',
+        src: '/fonts/lato/Lato-Regular.ttf',
       },
       {
-        src: 'https://fonts.gstatic.com/s/lato/v24/S6u9w4BMUTPHh6UVSwiPGQ.woff',
+        src: '/fonts/lato/Lato-Bold.ttf',
         fontWeight: 'bold',
       },
       {
-        src: 'https://fonts.gstatic.com/s/lato/v24/S6u8w4BMUTPHjxsAXC-v.woff',
+        src: '/fonts/lato/Lato-Italic.ttf',
+        fontStyle: 'italic',
+      },
+      {
+        src: '/fonts/lato/Lato-BoldItalic.ttf',
+        fontWeight: 'bold',
         fontStyle: 'italic',
       },
     ],

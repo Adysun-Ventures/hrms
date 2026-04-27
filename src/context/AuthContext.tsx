@@ -62,6 +62,7 @@ type AuthContextType = {
   currentAdmin: AdminUser | null;
   currentEmployee: EmployeeUser | null;
   currentUserData: CurrentUser;
+  isEmployeeExited: boolean;
   loading: boolean;
   signInWithPhone: (phoneNumber: string) => Promise<any>;
   signInWithCredentials: (phoneNumber: string, password: string) => Promise<any>;
@@ -84,8 +85,68 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [currentAdmin, setCurrentAdmin] = useState<AdminUser | null>(null);
   const [currentEmployee, setCurrentEmployee] = useState<EmployeeUser | null>(null);
   const [currentUserData, setCurrentUserData] = useState<CurrentUser>(null);
+  const [isEmployeeExited, setIsEmployeeExited] = useState(false);
   const [loading, setLoading] = useState(true);
   const isLoggingOutRef = useRef(false);
+
+  const toDateMs = (value: any): number => {
+    if (!value) return 0;
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? 0 : value.getTime();
+    if (typeof value?.toDate === 'function') {
+      const d = value.toDate();
+      return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+    }
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+  };
+
+  const isEmployeeTerminated = async (employeeId: string): Promise<boolean> => {
+    try {
+      if (!employeeId) return false;
+      const employmentSnap = await getDocs(
+        query(collection(db, 'employments'), where('employeeId', '==', employeeId))
+      );
+      if (employmentSnap.empty) return false;
+
+      const rows = employmentSnap.docs.map((d) => d.data() as any);
+      rows.sort((a, b) => {
+        const aMs = toDateMs(a?.updatedAt) || toDateMs(a?.startDate || a?.joiningDate);
+        const bMs = toDateMs(b?.updatedAt) || toDateMs(b?.startDate || b?.joiningDate);
+        return bMs - aMs;
+      });
+
+      const latest = rows[0] || {};
+      const status = String(latest?.employeeStatus || '').trim().toLowerCase();
+      return status === 'terminated';
+    } catch (error) {
+      console.error('Failed to evaluate employee termination status:', error);
+      return false;
+    }
+  };
+
+  const isEmployeeExitedStatus = async (employeeId: string): Promise<boolean> => {
+    try {
+      if (!employeeId) return false;
+      const employmentSnap = await getDocs(
+        query(collection(db, 'employments'), where('employeeId', '==', employeeId))
+      );
+      if (employmentSnap.empty) return false;
+
+      const rows = employmentSnap.docs.map((d) => d.data() as any);
+      rows.sort((a, b) => {
+        const aMs = toDateMs(a?.updatedAt) || toDateMs(a?.startDate || a?.joiningDate);
+        const bMs = toDateMs(b?.updatedAt) || toDateMs(b?.startDate || b?.joiningDate);
+        return bMs - aMs;
+      });
+
+      const latest = rows[0] || {};
+      const status = String(latest?.employeeStatus || '').trim().toLowerCase();
+      return status === 'exited';
+    } catch (error) {
+      console.error('Failed to evaluate employee exited status:', error);
+      return false;
+    }
+  };
 
   const closeActiveLoginLogs = (
     reason: 'logout' | 'browser_tab_close' | 'session_expired' | 'network_lost' | 'unknown'
@@ -162,6 +223,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setCurrentAdmin(adminUser);
           setCurrentEmployee(null);
           setCurrentUserData(adminUser);
+          setIsEmployeeExited(false);
          
         }
         
@@ -185,10 +247,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               localStorage.removeItem('employeeData');
               document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
             } else {
+              const terminated = await isEmployeeTerminated(latest.id);
+              if (terminated) {
+                localStorage.removeItem('employeeSessionId');
+                localStorage.removeItem('employeeData');
+                document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+                return;
+              }
+              const exited = await isEmployeeExitedStatus(latest.id);
               // Allow employee session restore regardless of resignation status.
               setCurrentEmployee(latest);
               setCurrentAdmin(null);
               setCurrentUserData(latest);
+              setIsEmployeeExited(exited);
             }
           } catch (e) {
             // If validation fails, clear session for safety
@@ -309,6 +380,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setCurrentAdmin(userData);
           setCurrentEmployee(null);
           setCurrentUserData(userData);
+          setIsEmployeeExited(false);
           return { admin: userData, userType: 'admin' };
         } else {
           console.log('❌ Admin password mismatch or inactive!');
@@ -317,6 +389,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else if (userData.userType === 'employee') {
         // Employee authentication
         if (userData.password === password) {
+          const terminated = await isEmployeeTerminated(userData.id);
+          if (terminated) {
+            throw new Error('Your account is locked because your employment status is Terminated.');
+          }
           console.log('✅ Employee password match successful!');
           
           // Store employee data in localStorage for persistence
@@ -344,6 +420,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setCurrentEmployee(userData);
           setCurrentAdmin(null);
           setCurrentUserData(userData);
+          const exited = await isEmployeeExitedStatus(userData.id);
+          setIsEmployeeExited(exited);
           return { employee: userData, userType: 'employee' };
         } else {
           console.log('❌ Employee password mismatch!');
@@ -414,11 +492,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setCurrentAdmin(userData);
             setCurrentEmployee(null);
             setCurrentUserData(userData);
+            setIsEmployeeExited(false);
             return { user: null, admin: userData, userType: 'admin' };
           } else if (userData.userType === 'employee') {
             setCurrentEmployee(userData);
             setCurrentAdmin(null);
             setCurrentUserData(userData);
+            const exited = await isEmployeeExitedStatus(userData.id);
+            setIsEmployeeExited(exited);
             return { user: null, employee: userData, userType: 'employee' };
           }
         } else {
@@ -440,11 +521,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setCurrentAdmin(userData);
           setCurrentEmployee(null);
           setCurrentUserData(userData);
+          setIsEmployeeExited(false);
           return { user: result.user, admin: userData, userType: 'admin' };
         } else if (userData.userType === 'employee') {
           setCurrentEmployee(userData);
           setCurrentAdmin(null);
           setCurrentUserData(userData);
+          const exited = await isEmployeeExitedStatus(userData.id);
+          setIsEmployeeExited(exited);
           return { user: result.user, employee: userData, userType: 'employee' };
         }
       } else {
@@ -467,6 +551,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setCurrentAdmin(null);
     setCurrentEmployee(null);
     setCurrentUserData(null);
+    setIsEmployeeExited(false);
     
     // Clear localStorage
     localStorage.removeItem('adminSessionId');
@@ -488,6 +573,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     currentAdmin,
     currentEmployee,
     currentUserData,
+    isEmployeeExited,
     loading,
     signInWithPhone,
     signInWithCredentials,

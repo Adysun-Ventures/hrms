@@ -2,21 +2,28 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { FiLogOut, FiUser, FiChevronDown, FiFileText, FiBriefcase } from 'react-icons/fi';
+import { FaTimes } from 'react-icons/fa';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { toTitleCase } from '@/utils/stringUtils';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/firebase/config';
+import { formatDateToDayMonYear } from '@/utils/documentUtils';
 
 interface HeaderProps {
   variant?: 'public' | 'protected';
 }
 
 const Header = ({ variant = 'protected' }: HeaderProps) => {
-  const { logout, currentAdmin, currentEmployee } = useAuth();
+  const { logout, currentAdmin, currentEmployee, isEmployeeExited } = useAuth();
+  const isWorkingEmployee = Boolean(currentEmployee) && !isEmployeeExited;
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [localEmployeeData, setLocalEmployeeData] = useState<any>(null);
+  const [employeeEmploymentPhoto, setEmployeeEmploymentPhoto] = useState<string | null>(null);
+  const [employeeLastWorkingDate, setEmployeeLastWorkingDate] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown when clicking outside
@@ -85,6 +92,63 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
       clearInterval(interval);
     };
   }, [currentEmployee]);
+
+  // Always prefer profile photo uploaded in Employment for employee users.
+  useEffect(() => {
+    let isCancelled = false;
+
+    const toDateMs = (value: any): number => {
+      if (!value) return 0;
+      if (value instanceof Date) return Number.isNaN(value.getTime()) ? 0 : value.getTime();
+      if (typeof value?.toDate === 'function') {
+        const d = value.toDate();
+        return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+      }
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+    };
+
+    const fetchEmploymentPhoto = async () => {
+      if (!currentEmployee?.id) {
+        setEmployeeEmploymentPhoto(null);
+        setEmployeeLastWorkingDate(null);
+        return;
+      }
+      // Prevent showing previous employee photo while next employee data loads.
+      setEmployeeEmploymentPhoto(null);
+      setEmployeeLastWorkingDate(null);
+      try {
+        const snap = await getDocs(
+          query(collection(db, 'employments'), where('employeeId', '==', currentEmployee.id))
+        );
+        const rows = snap.docs.map((d) => d.data() as any);
+        rows.sort((a, b) => {
+          const aMs = toDateMs(a?.updatedAt) || toDateMs(a?.startDate || a?.joiningDate);
+          const bMs = toDateMs(b?.updatedAt) || toDateMs(b?.startDate || b?.joiningDate);
+          return bMs - aMs;
+        });
+        const latest = rows[0] || null;
+        const firstWithPhoto = rows.find((r) => String(r?.profilePhoto || '').trim());
+        const nextPhoto = firstWithPhoto ? String(firstWithPhoto.profilePhoto).trim() : null;
+        if (!isCancelled) setEmployeeEmploymentPhoto(nextPhoto);
+        if (!isCancelled) {
+          const lwdRaw = latest?.lastWorkingDate || latest?.endDate || null;
+          setEmployeeLastWorkingDate(lwdRaw ? String(lwdRaw) : null);
+        }
+      } catch (error) {
+        console.error('Error loading employment profile photo:', error);
+        if (!isCancelled) {
+          setEmployeeEmploymentPhoto(null);
+          setEmployeeLastWorkingDate(null);
+        }
+      }
+    };
+
+    fetchEmploymentPhoto();
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentEmployee?.id]);
 
   const handleLogout = async () => {
     try {
@@ -199,7 +263,10 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
 
   // Only employee (not admin)
   if (currentEmployee) {
-    return 'bg-orange-100 border-b border-orange-200 shadow-sm';
+    if (isEmployeeExited) {
+      return 'bg-[#ff6347] border-b border-[#e5533d] shadow-sm';
+    }
+    return 'bg-green-600 border-b border-green-700 shadow-sm';
   }
 
   // Default fallback
@@ -233,14 +300,31 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
     
     
     <header className={`h-16 fixed top-0 right-0 left-0 lg:left-64 z-10 transition-all duration-300 ${getDynamicHeaderBg()}`}>
-      <div className="flex items-center justify-between h-full px-4">
+      <div className="relative flex items-center justify-between h-full px-4">
         {/* Mobile title - centered on mobile, hidden on desktop */}
-        <h1 className={`text-xl font-semibold lg:hidden flex-1 text-center transition-colors duration-300 ${getTextStyles()}`}>
-          {currentAdmin ? 'Admin ' : 'Employee'}  
+        <h1 className={`text-xl font-semibold lg:hidden flex-1 text-center transition-colors duration-300 ${isEmployeeExited ? 'text-white' : getTextStyles()} opacity-0`}>
+          {isEmployeeExited ? 'Exited' : (currentAdmin ? 'Admin ' : 'Employee')}
         </h1>
+        {isEmployeeExited && (
+          <div className="hidden lg:flex flex-1 flex-col justify-center z-10">
+            <span className="text-white font-bold text-xl leading-tight inline-flex items-center gap-2">
+              <FaTimes className="w-4 h-4" />
+              Exited
+            </span>
+            <span className="text-white/90 text-xs leading-tight mt-1">
+              LWD:{' '}
+              {employeeLastWorkingDate ? formatDateToDayMonYear(employeeLastWorkingDate) : '-'}
+            </span>
+          </div>
+        )}
+        {isWorkingEmployee && (
+          <div className="hidden lg:flex flex-1 flex-col justify-center z-10">
+            <span className="text-white font-bold text-xl leading-tight">Working</span>
+          </div>
+        )}
         
-        {/* Center logo and company name - hidden on mobile, visible on desktop */}
-        <div className="hidden lg:flex items-center justify-center flex-1">
+        {/* Always-centered logo and company name */}
+        <div className="absolute left-1/2 -translate-x-1/2 z-0">
           <a 
             href="https://adysunventures.com/" 
             target="_blank" 
@@ -250,16 +334,16 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
             <Image
               src="/adysun-logo.png"
               alt="Adysun Ventures Logo"
-              width={44}
-              height={44}
-              className="object-contain mr-3"
+              width={36}
+              height={36}
+              className="object-contain mr-2 sm:mr-3"
               priority
             />
             <div className="flex flex-col items-start leading-tight">
-              <span className={`text-xl font-bold transition-colors duration-300 ${getTextStyles()}`}>
+              <span className={`text-sm sm:text-xl font-bold transition-colors duration-300 ${(isEmployeeExited || isWorkingEmployee) ? 'text-white' : getTextStyles()}`}>
                 ADYSUN VENTURES
               </span>
-              <span className="text-xs text-gray-600">
+              <span className={`hidden sm:block text-xs ${(isEmployeeExited || isWorkingEmployee) ? 'text-white/90' : 'text-gray-600'}`}>
                 Inspire. Imagine. Implement.
               </span>
             </div>
@@ -267,14 +351,38 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
         </div>
         
         {/* User dropdown on the right side */}
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative z-10 ml-auto" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors cursor-pointer ${getHoverStyles()}`}
           >
-            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-              {userInfo.name.charAt(0).toUpperCase()}
-            </div>
+            {(() => {
+              const employee = localEmployeeData || currentEmployee;
+              let profilePhoto = null;
+
+              // Admin avatar should never read employee localStorage data.
+              if (currentAdmin && !currentEmployee) {
+                profilePhoto =
+                  (currentAdmin as any)?.profilePhoto ||
+                  (currentAdmin as any)?.imageUrl ||
+                  null;
+              } else if (currentEmployee) {
+                // Employee avatar: prefer profile photo from Employment (Firestore).
+                profilePhoto = employeeEmploymentPhoto;
+              }
+              
+              return profilePhoto ? (
+                <img
+                  src={profilePhoto}
+                  alt={`${userInfo.name} profile`}
+                  className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                />
+              ) : (
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
+                  {userInfo.name.charAt(0).toUpperCase()}
+                </div>
+              );
+            })()}
             <div className="hidden sm:block text-left">
               <div className={`text-sm font-medium transition-colors duration-300 ${
                 variant === 'public' ? (isScrolled ? 'text-white' : 'text-gray-900') : 'text-gray-900'

@@ -348,7 +348,7 @@ const RelievingLetterPDF = ({
           I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this Relieving Letter. I acknowledge the relieving of my employment with Adysun Ventures Private Limited.
         </Text>
         <Text style={{ marginBottom: 6 }}>
-          Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCaseRelief(employeeName)}</Text>
+          Name: <Text style={{ fontWeight: "bold" }}>{toTitleCaseRelief(employeeName)}</Text>
         </Text>
         <Text style={{ marginBottom: 10 }}>Signature: ________________________________</Text>
 
@@ -599,24 +599,26 @@ function RelievingLetterV2() {
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown
-                    value={employeeSignDate}
-                    onChange={setEmployeeSignDate}
+                    value={employeeRelievingDate}
+                    onChange={setEmployeeRelievingDate}
                   />
                   <button
                     type="button"
                     onClick={() => {
-                      const joiningDateForDoc = normalizeDateForInput(
-                        employment?.joiningDate || employment?.startDate || ""
+                      const lastWorkingDate = normalizeDateForInput(
+                        employment?.lastWorkingDate ||
+                        employment?.endDate ||
+                        ""
                       );
-                      if (!joiningDateForDoc) {
-                        toast.error("Joining date is not available for selected employee");
+                      if (!lastWorkingDate) {
+                        toast.error("Last working day is not available for selected employee");
                         return;
                       }
-                      setEmployeeSignDate(joiningDateForDoc);
+                      setEmployeeRelievingDate(lastWorkingDate);
                     }}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Joining Date
+                    Last Working Date
                   </button>
                 </div>
 
@@ -645,7 +647,7 @@ function RelievingLetterV2() {
                     }}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    Last Working Day
+                    Last Working Date
                   </button>
                 </div>
 

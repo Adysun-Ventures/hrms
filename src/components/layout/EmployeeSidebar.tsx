@@ -105,7 +105,6 @@ const EmployeeSidebar = () => {
       path: '/employee/documents',
       name: 'My Document',
       icon: <FiFileText className="w-5 h-5" />,
-      disabled: true,
     },
     {
       path: '/employee/company-information',

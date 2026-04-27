@@ -25,12 +25,6 @@ const documents = [
     path: '/employee/documents/salary-slips', 
     icon: <FiDownload size={24} /> 
   },
-  {
-    title: 'Form 16',
-    description: 'View and download your Form 16',
-    path: '/employee/documents/form-16',
-    icon: <FiFileText size={24} />
-  },
   { 
     title: 'Experience Letter', 
     description: 'View and download your experience letter',

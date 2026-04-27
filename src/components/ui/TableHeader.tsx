@@ -3,6 +3,7 @@ import { FiRefreshCw, FiChevronLeft, FiFilter, FiLogIn, FiLogOut, FiCpu, FiUsers
 import Link from 'next/link';
 import SearchBar from './SearchBar';
 import Tooltip from './Tooltip';
+import { useAuth } from '@/context/AuthContext';
 
 interface ActionButton {
   label?: string;
@@ -186,6 +187,16 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   stackExtraStat = false,
   extraStatValuePrefix = null,
 }) => {
+  const { currentUserData, isEmployeeExited } = useAuth();
+  const isExitedEmployeeUser = currentUserData?.userType === 'employee' && isEmployeeExited;
+  const writeActionPattern = /\b(add|create|edit|update|delete|remove)\b/i;
+  const visibleActionButtons = isExitedEmployeeUser
+    ? actionButtons.filter((button) => {
+        const text = `${button.label || ''} ${button.href || ''}`.toLowerCase();
+        return !writeActionPattern.test(text);
+      })
+    : actionButtons;
+
   const getButtonClasses = (variant: string = 'primary', hollow: boolean = false, pill: boolean = false) => {
     const shapeClass = pill ? 'rounded-full' : 'rounded-md';
     const baseClasses = `px-2 sm:px-4 py-2 ${shapeClass} flex items-center justify-center gap-1 sm:gap-2 transition-colors duration-200 text-sm sm:text-base w-full sm:w-auto`;
@@ -242,7 +253,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   return (
     <div>
       {/* Page Title and Action Buttons */}
-      {(title || actionButtons.length > 0 || backButton) && (
+      {(title || visibleActionButtons.length > 0 || backButton) && (
         <div className={`flex justify-between items-center ${headerClassName}`}>
           {/* Left Side - Back Button */}
           <div className="flex items-center">
@@ -279,10 +290,10 @@ const TableHeader: React.FC<TableHeaderProps> = ({
           )}
 
           {/* Right Side - Action Buttons */}
-          <div className={`${actionButtons.length === 1 ? 'flex justify-end' : 'grid grid-cols-2 gap-2'} sm:flex sm:items-center sm:gap-3 sm:flex-wrap sm:justify-end`}>
+          <div className={`${visibleActionButtons.length === 1 ? 'flex justify-end' : 'grid grid-cols-2 gap-2'} sm:flex sm:items-center sm:gap-3 sm:flex-wrap sm:justify-end`}>
             {rightSlot}
             {/* Regular Action Buttons - Render before attendance if prop is set */}
-            {actionButtonsBeforeAttendance && actionButtons.map((button, index) => {
+            {actionButtonsBeforeAttendance && visibleActionButtons.map((button, index) => {
               const buttonContent = (
                 <>
                   {button.icon}
@@ -362,7 +373,7 @@ const TableHeader: React.FC<TableHeaderProps> = ({
             )}
             
             {/* Regular Action Buttons - Render after attendance if prop is not set */}
-            {!actionButtonsBeforeAttendance && actionButtons.map((button, index) => {
+            {!actionButtonsBeforeAttendance && visibleActionButtons.map((button, index) => {
               const buttonContent = (
                 <>
                   {button.icon}

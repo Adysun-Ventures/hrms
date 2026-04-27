@@ -27,7 +27,7 @@ import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { useEmployeeSelfSalariesByEmployee } from '@/hooks/useSalaries';
 
 export default function EmployeeDashboardPage() {
-  const { currentEmployee, currentUserData, logout } = useAuth();
+  const { currentEmployee, currentUserData, logout, isEmployeeExited } = useAuth();
   const router = useRouter();
   const [fullEmployeeData, setFullEmployeeData] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
@@ -163,17 +163,19 @@ export default function EmployeeDashboardPage() {
                 <FiEye className="w-4 h-4" />
                 <span className="hidden sm:inline">View Profile</span>
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  router.push("/employee/profile/edit");
-                }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition"
-                aria-label="Edit Profile"
-              >
-                <FiEdit2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Edit Profile</span>
-              </button>
+              {!isEmployeeExited && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    router.push("/employee/profile/edit");
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition"
+                  aria-label="Edit Profile"
+                >
+                  <FiEdit2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Edit Profile</span>
+                </button>
+              )}
             </div>
           </div>
           {loading ? (
@@ -259,20 +261,22 @@ export default function EmployeeDashboardPage() {
                     <FiEye className="w-4 h-4" />
                     <span className="hidden sm:inline">View Employment</span>
                   </button>
-                  <button
-                    type="button"
-                    disabled={!(currentEmployment as any)?.id}
-                    onClick={() => {
-                      const employmentId = (currentEmployment as any)?.id;
-                      if (!employmentId) return;
-                      router.push(`/employments/${employmentId}/edit`);
-                    }}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
-                    aria-label="Edit Employment"
-                  >
-                    <FiEdit2 className="w-4 h-4" />
-                    <span className="hidden sm:inline">Edit Employment</span>
-                  </button>
+                  {!isEmployeeExited && (
+                    <button
+                      type="button"
+                      disabled={!(currentEmployment as any)?.id}
+                      onClick={() => {
+                        const employmentId = (currentEmployment as any)?.id;
+                        if (!employmentId) return;
+                        router.push(`/employments/${employmentId}/edit`);
+                      }}
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                      aria-label="Edit Employment"
+                    >
+                      <FiEdit2 className="w-4 h-4" />
+                      <span className="hidden sm:inline">Edit Employment</span>
+                    </button>
+                  )}
                 </>
               )}
             </div>

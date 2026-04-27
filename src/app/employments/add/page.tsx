@@ -1159,6 +1159,30 @@ export default function AddEmploymentPage() {
       delete (formattedData as any).lastDrawnSalary;
 
       const created = await addEmployment(formattedData);
+      
+      // Update localStorage with employment data including profile photo for Header component
+      if (isEmployeeUser && formattedData.profilePhoto) {
+        try {
+          // Store employment data with profile photo for Header access
+          localStorage.setItem('employeeEmploymentData', JSON.stringify(formattedData));
+          
+          // Also store in fullEmployeeData for Header component access
+          const fullEmployeeData = localStorage.getItem('fullEmployeeData');
+          if (fullEmployeeData) {
+            const parsedData = JSON.parse(fullEmployeeData);
+            parsedData.profilePhoto = formattedData.profilePhoto;
+            localStorage.setItem('fullEmployeeData', JSON.stringify(parsedData));
+          }
+          
+          // Dispatch custom event to notify Header component of profile photo update
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('profileUpdated'));
+          }
+        } catch (error) {
+          console.error('Error updating localStorage with employment data:', error);
+        }
+      }
+      
       toast.success('Employment record created successfully!', { id: 'add-employment' });
 
       if (isEmployeeUser && created?.id) {

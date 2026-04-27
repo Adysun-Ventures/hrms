@@ -937,6 +937,34 @@ export const getEmploymentsByEmployeeSelf = async (employeeId: string) => {
   }
 };
 
+const toDateMsSafe = (value: any): number => {
+  if (!value) return 0;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? 0 : value.getTime();
+  if (typeof value?.toDate === 'function') {
+    const d = value.toDate();
+    return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+  }
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+};
+
+const ensureEmployeeNotExitedForWrite = async (employeeId: string) => {
+  if (!employeeId) return;
+  const snap = await getDocs(query(collection(db, 'employments'), where('employeeId', '==', employeeId)));
+  if (snap.empty) return;
+  const rows = snap.docs.map((d) => d.data() as any);
+  rows.sort((a, b) => {
+    const aMs = toDateMsSafe(a?.updatedAt) || toDateMsSafe(a?.startDate || a?.joiningDate);
+    const bMs = toDateMsSafe(b?.updatedAt) || toDateMsSafe(b?.startDate || b?.joiningDate);
+    return bMs - aMs;
+  });
+  const latest = rows[0] || {};
+  const status = String(latest?.employeeStatus || '').trim().toLowerCase();
+  if (status === 'exited') {
+    throw new Error('Your account is in Exited status. Add/Update/Delete actions are disabled.');
+  }
+};
+
 /**
  * Get admin data from localStorage for audit purposes
  * @returns Admin data object or throws error if not found
@@ -1094,6 +1122,7 @@ export const addSalaryEmployeeSelf = async (salaryData: Omit<Salary, 'id'>) => {
     if (salaryData.employeeId !== employeeAudit.employeeId) {
       throw new Error('Access denied. You can only create salary for yourself.');
     }
+    await ensureEmployeeNotExitedForWrite(employeeAudit.employeeId);
 
     const employeeDoc = await getDoc(doc(db, 'employees', salaryData.employeeId));
     if (!employeeDoc.exists()) {
@@ -1177,6 +1206,7 @@ export const getSalaryEmployeeSelf = async (id: string) => {
 export const updateSalaryEmployeeSelf = async (id: string, salaryData: Partial<Salary>) => {
   try {
     const employeeAudit = getEmployeeDataForAudit();
+    await ensureEmployeeNotExitedForWrite(employeeAudit.employeeId);
     const salaryRef = doc(db, 'salaries', id);
     const salaryDoc = await getDoc(salaryRef);
 
@@ -1625,6 +1655,7 @@ export const updateEmployeeSelf = async (employeeId: string, employeeData: Parti
       console.log('❌ SECURITY: Employee trying to update other employee data!');
       throw new Error('Access denied. You can only update your own data.');
     }
+    await ensureEmployeeNotExitedForWrite(employeeId);
     
     console.log('✅ Employee session validated');
     
@@ -1736,6 +1767,7 @@ export const updateEmployeeSelfEmployment = async (
     if (currentEmployee.id !== employeeId) {
       throw new Error('Access denied. You can only update your own data.');
     }
+    await ensureEmployeeNotExitedForWrite(employeeId);
 
     if (!employmentId) {
       throw new Error('Employment id is required.');
@@ -2034,6 +2066,7 @@ export const updateEmployeeLeaveEndDate = async (
     if (currentEmployee.id !== employeeId) {
       throw new Error('Access denied. You can only edit your own leave.');
     }
+    await ensureEmployeeNotExitedForWrite(employeeId);
 
     // Load employment doc
     const employmentRef = doc(db, 'employments', employmentId);
@@ -2177,6 +2210,7 @@ export const updateEmployeeLeaveRequest = async ({
     if (currentEmployee.id !== employeeId) {
       throw new Error('Access denied. You can only update your own leave data.');
     }
+    await ensureEmployeeNotExitedForWrite(employeeId);
 
     console.log('✅ Employee session validated for leave update');
 
@@ -2767,6 +2801,7 @@ export const createEmployeeLeaveRequest = async (leaveData: {
       if (currentEmployee.id !== leaveData.employeeId) {
         throw new Error('Access denied. You can only create leave requests for yourself.');
       }
+      await ensureEmployeeNotExitedForWrite(leaveData.employeeId);
       
       console.log('✅ Employee session validated for leave request');
     } 
@@ -2904,6 +2939,7 @@ export const cancelEmployeeLeaveRequest = async (employeeId: string, leaveId: st
     if (currentEmployee.id !== employeeId) {
       throw new Error('Access denied. You can only cancel your own leave requests.');
     }
+    await ensureEmployeeNotExitedForWrite(employeeId);
     
     console.log('✅ Employee session validated for leave cancellation');
     

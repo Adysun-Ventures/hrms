@@ -95,7 +95,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     description: 'Generate and manage Form 16 documents',
     adminHref: '/dashboard/documents/v2/form-16',
     employeeHref: '/employee/documents/form-16',
-    roles: ['admin', 'employee'],
+    roles: ['admin'],
     icon: <FiFileText size={24} />,
   },
 ];

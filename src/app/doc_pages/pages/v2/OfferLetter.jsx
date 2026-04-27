@@ -461,7 +461,7 @@ const OfferLetterPDF = ({
           textAlign: "center"
         }}
       >
-        LETTER OF APPOINTMENT
+        Offer Letter 
       </Text>
 
       <Text style={{ marginBottom: 12 }}>
@@ -885,6 +885,22 @@ function OfferLetterV2({ isForm16 = false }) {
 
   useEffect(() => { fetchEmployees(); }, [selfEmployeeId]);
 
+  const getAutoDesignation = (employmentRow) => {
+    if (!employmentRow) return '';
+    // Offer Letter needs joining designation; Form 16 can use current designation.
+    if (!isForm16) {
+      return (
+        String(
+          employmentRow?.joiningDesignation ||
+            employmentRow?.jobTitle ||
+            employmentRow?.designation ||
+            ''
+        ).trim()
+      );
+    }
+    return String(employmentRow?.jobTitle || employmentRow?.designation || '').trim();
+  };
+
   const fetchEmployees = async () => {
     const qs = await getDocs(collection(db, 'employees'));
     // Ensure Firestore doc.id always wins over any stored `id` field.
@@ -893,10 +909,31 @@ function OfferLetterV2({ isForm16 = false }) {
     const visibleList = restrictToSelf ? list.filter((e) => e.id === selfEmployeeId) : list;
     setCandidates(visibleList);
 
+    const toDateMs = (value) => {
+      if (!value) return 0;
+      if (value instanceof Date) return Number.isNaN(value.getTime()) ? 0 : value.getTime();
+      if (typeof value?.toDate === 'function') {
+        const d = value.toDate();
+        return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+      }
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+    };
+
     const map = {};
     for (const emp of visibleList) {
       const qSnap = await getDocs(query(collection(db, 'employments'), where('employeeId', '==', emp.id)));
-      if (!qSnap.empty) map[emp.id] = qSnap.docs[0].data();
+      if (!qSnap.empty) {
+        // Pick the latest/current employment (not necessarily the first doc).
+        const rows = qSnap.docs.map((d) => ({ ...d.data(), id: d.id }));
+        rows.sort((a, b) => {
+          const aMs = toDateMs(a?.startDate || a?.joiningDate);
+          const bMs = toDateMs(b?.startDate || b?.joiningDate);
+          // Offer Letter wants joining designation (earliest). Form 16 can use latest/current.
+          return isForm16 ? (bMs - aMs) : (aMs - bMs);
+        });
+        map[emp.id] = rows[0];
+      }
     }
     setEmployments(map);
 
@@ -906,7 +943,7 @@ function OfferLetterV2({ isForm16 = false }) {
       setEmployee(selfEmp);
       setSelectedEmployees([selfEmp]);
       setEmployment(nextEmployment);
-      setDesignationOverride(nextEmployment?.jobTitle || nextEmployment?.designation || '');
+      setDesignationOverride(getAutoDesignation(nextEmployment));
       setEmployeeSignPlace(nextEmployment?.location || '');
       const joiningDateForDoc = normalizeDateForInput(
         nextEmployment?.joiningDate || nextEmployment?.startDate || ''
@@ -947,7 +984,7 @@ function OfferLetterV2({ isForm16 = false }) {
     setEmployee(candidates.find(x => x.id === id) || null);
     const nextEmployment = employments[id] || null;
     setEmployment(nextEmployment);
-    setDesignationOverride(nextEmployment?.jobTitle || nextEmployment?.designation || "");
+    setDesignationOverride(getAutoDesignation(nextEmployment));
     setEmployeeSignPlace(nextEmployment?.location || "");
     const joiningForEffective = normalizeDateForInput(
       nextEmployment?.joiningDate || nextEmployment?.startDate || ''
@@ -1022,8 +1059,8 @@ function OfferLetterV2({ isForm16 = false }) {
     if (!parsed) return String(value);
     const day = parsed.getDate();
     const month = monthNameShort(parsed.getMonth());
-    const yearShort = String(parsed.getFullYear()).slice(-2);
-    return `${day}-${month}-${yearShort}`;
+    const yearFull = parsed.getFullYear();
+    return `${day}-${month}-${yearFull}`;
   };
 
   const pickSalaryAmount = (salaryRow) => {
@@ -1300,7 +1337,7 @@ function OfferLetterV2({ isForm16 = false }) {
       setEmployee(active);
       setEmployment(activeEmployment);
       setSearchTerm('');
-      setDesignationOverride(activeEmployment?.jobTitle || activeEmployment?.designation || '');
+      setDesignationOverride(getAutoDesignation(activeEmployment));
       setEmployeeSignPlace(activeEmployment?.location || '');
       const joiningDateForDoc = normalizeDateForInput(
         activeEmployment?.joiningDate || activeEmployment?.startDate || ''
@@ -1319,7 +1356,7 @@ function OfferLetterV2({ isForm16 = false }) {
     const activeEmployment = employments[emp?.id] || null;
     setEmployment(activeEmployment);
     setSearchTerm('');
-    setDesignationOverride(activeEmployment?.jobTitle || activeEmployment?.designation || '');
+    setDesignationOverride(getAutoDesignation(activeEmployment));
     setEmployeeSignPlace(activeEmployment?.location || '');
     const joiningDateForDoc = normalizeDateForInput(
       activeEmployment?.joiningDate || activeEmployment?.startDate || ''

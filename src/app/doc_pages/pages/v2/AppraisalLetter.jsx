@@ -45,11 +45,7 @@ const COMPANY_DATA = {
   signature: "/assets/hr-sign.png"
 };
 
-const Watermark = ({ logoSrc }) => (
-  <View style={offerLetterStyles.watermark}>
-    <Image src={logoSrc} style={offerLetterStyles.watermarkImage} />
-  </View>
-);
+const Watermark = ({ logoSrc }) => null;
 
 const formatDate = (d) => formatDateToDayMonYear(d) || "";
 const toTitleCase = (str) => {
@@ -273,7 +269,7 @@ const AppraisalLetterPDF = ({
     <Document>
       <Page
         size="A4"
-        style={{ padding: 35, fontSize: 12, lineHeight: 1.45, position: "relative" }}
+        style={{ padding: 35, fontSize: 10, lineHeight: 1.45, position: "relative" }}
       >
         <Watermark logoSrc={COMPANY_DATA.logo} />
 
@@ -310,7 +306,7 @@ const AppraisalLetterPDF = ({
 
         <Text
           style={{
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: "bold",
             textDecoration: "underline",
             textAlign: "center",

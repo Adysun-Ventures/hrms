@@ -2924,22 +2924,14 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span> Designation
                   </label>
-                  <select
+                  <input
+                    type="text"
+                    placeholder="Enter designation"
                     {...register('jobTitle', {
                       required: 'Designation is required',
                     })}
-                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black disabled:bg-gray-100 disabled:cursor-not-allowed"
-                    disabled={!selectedDepartment}
-                  >
-                    <option value="">
-                      {selectedDepartment ? 'Select Designation' : 'Select Department first'}
-                    </option>
-                    {(selectedDepartment ? designationOptionsByDepartment[selectedDepartment] : [])?.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
                   {errors.jobTitle && (
                     <p className="mt-1 text-sm text-red-600">{errors.jobTitle.message}</p>
                   )}

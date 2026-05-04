@@ -55,7 +55,7 @@ const appointmentStyles = StyleSheet.create({
     padding: 6,
     fontFamily: BODY_FONT_FAMILY,
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 10,
     borderRightWidth: 1,
     borderRightColor: '#000',
     borderRightStyle: 'solid',
@@ -64,7 +64,7 @@ const appointmentStyles = StyleSheet.create({
     width: '60%',
     padding: 6,
     fontFamily: BODY_FONT_FAMILY,
-    fontSize: 12,
+    fontSize: 10,
   },
   sectionHeading: {
     fontSize: 12,
@@ -74,24 +74,24 @@ const appointmentStyles = StyleSheet.create({
     fontFamily: BODY_FONT_FAMILY,
   },
   listItem: {
-    fontSize: 12,
+    fontSize: 10,
     marginBottom: 6,
     fontFamily: BODY_FONT_FAMILY,
     textAlign: 'justify',
     lineHeight: 1.5,
   },
   to: {
-    fontSize: 12,
+    fontSize: 10,
     marginBottom: 3,
     fontFamily: BODY_FONT_FAMILY,
   },
   addresseeName: {
-    fontSize: 12,
+    fontSize: 10,
     marginBottom: 12,
     fontFamily: BODY_FONT_FAMILY,
   },
   subject: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
     marginBottom: 12,
     fontFamily: BODY_FONT_FAMILY,
@@ -104,7 +104,7 @@ const appointmentStyles = StyleSheet.create({
     fontFamily: BODY_FONT_FAMILY,
   },
   paragraph: {
-    fontSize: 12,
+    fontSize: 10,
     marginBottom: 12,
     fontFamily: BODY_FONT_FAMILY,
   },
@@ -118,7 +118,7 @@ const appointmentStyles = StyleSheet.create({
     alignItems: 'center',
   },
   signatureTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 5,
     fontFamily: BODY_FONT_FAMILY,
@@ -127,22 +127,22 @@ const appointmentStyles = StyleSheet.create({
     height: 25,
   },
   signatureName: {
-    fontSize: 13,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
   },
   signatureDate: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
   },
   signatureRole: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
   },
   page: {
     padding: 40,
     paddingBottom: 60, // Add more padding at bottom for footer
     fontFamily: BODY_FONT_FAMILY,
-    fontSize: 12,
+    fontSize: 10,
     backgroundColor: '#ffffff',
   },
 });
@@ -163,7 +163,7 @@ const tableStyles = StyleSheet.create({
   },
   tableHeader: {
     fontWeight: 'bold',
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
   },
   tableRow: {
@@ -175,13 +175,13 @@ const tableStyles = StyleSheet.create({
   },
   tableCell: {
     flex: 3,
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
     padding: 2,
   },
   tableCellValue: {
     flex: 2,
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
     textAlign: 'right',
     padding: 2,
@@ -976,15 +976,15 @@ function AppointmentLetterV2() {
         let employeeLocation;
         
         if (employmentDetails) {
-          // If we have employment details, use those for salary, joining date, etc.
-          employeeSalary = employmentDetails.salary || employmentDetails.ctc;
+          // Use Joining CTC for Annual CTC autofill.
+          employeeSalary = employmentDetails.joiningCtc;
           joiningDate = employmentDetails.joiningDate || employmentDetails.startDate;
           employeeDesignation = employmentDetails.jobTitle || employmentDetails.designation;
           employeeDepartment = employmentDetails.department;
           employeeLocation = employmentDetails.location;
         } else {
           // Fallback to employee record if no employment details
-          employeeSalary = selectedEmployee.salary;
+          employeeSalary = selectedEmployee.joiningCtc;
           joiningDate = selectedEmployee.joinDate;
           employeeDesignation = selectedEmployee.position || selectedEmployee.jobTitle;
           employeeDepartment = selectedEmployee.department;
@@ -1119,7 +1119,7 @@ function AppointmentLetterV2() {
           
           <PDFDownloadLink 
             document={memoizedPdfDocument}
-            fileName="appointment-letter.pdf"
+            fileName="Appointment_Employee_Name.pdf"
             className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             {({ loading }) => (

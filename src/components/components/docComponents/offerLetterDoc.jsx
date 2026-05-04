@@ -19,12 +19,7 @@ const COMPANY_DATA = {
 
 /* ---------- HELPERS ---------- */
 const Watermark = ({ logoSrc }) => {
-  if (!logoSrc) return null;
-  return (
-    <View style={offerLetterStyles.watermark}>
-      <Image src={logoSrc} style={offerLetterStyles.watermarkImage} />
-    </View>
-  );
+  return null;
 };
 
 const formatDate = (date) => {

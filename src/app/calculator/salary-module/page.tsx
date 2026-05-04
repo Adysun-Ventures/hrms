@@ -123,7 +123,7 @@ export default function SalaryModulePage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">CTC</label>
               <input
                 type="number"
-                value={ctc}
+                value={ctc === 0 ? '' : ctc}
                 onChange={(e) => setCtc(Number(e.target.value || 0))}
                 placeholder="Enter CTC"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
@@ -133,9 +133,9 @@ export default function SalaryModulePage() {
               <label className="block text-sm font-medium text-gray-700 mb-2">Variable Pay</label>
               <input
                 type="number"
-                value={variablePay}
+                value={variablePay === 0 ? '' : variablePay}
                 onChange={(e) => setVariablePay(Number(e.target.value || 0))}
-                placeholder="Enter Variable Pay"
+                placeholder="Enter Variable"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               />
             </div>

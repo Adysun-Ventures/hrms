@@ -222,15 +222,15 @@ function AppointmentLetter() {
         let employeeLocation;
         
         if (employmentDetails) {
-          // If we have employment details, use those for salary, joining date, etc.
-          employeeSalary = employmentDetails.salary || employmentDetails.ctc;
+          // Use Joining CTC for Annual CTC autofill.
+          employeeSalary = employmentDetails.joiningCtc;
           joiningDate = employmentDetails.joiningDate || employmentDetails.startDate;
           employeeDesignation = employmentDetails.jobTitle || employmentDetails.designation;
           employeeDepartment = employmentDetails.department;
           employeeLocation = employmentDetails.location;
         } else {
           // Fallback to employee record if no employment details
-          employeeSalary = selectedEmployee.salary;
+          employeeSalary = selectedEmployee.joiningCtc;
           joiningDate = selectedEmployee.joinDate;
           employeeDesignation = selectedEmployee.position || selectedEmployee.jobTitle;
           employeeDepartment = selectedEmployee.department;

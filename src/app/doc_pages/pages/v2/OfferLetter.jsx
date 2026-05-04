@@ -54,12 +54,7 @@ ensureDocumentFonts();
 
 /* ---------------- WATERMARK COMPONENT ---------------- */
 const Watermark = ({ logoSrc }) => {
-  if (!logoSrc) return null;
-  return (
-    <View style={offerLetterStyles.watermark}>
-      <Image src={logoSrc} style={offerLetterStyles.watermarkImage} />
-    </View>
-  );
+  return null;
 };
 
 const balancedStyles = {
@@ -432,7 +427,7 @@ const OfferLetterPDF = ({
         paddingBottom: 35,
         paddingLeft: 35,
         fontFamily: BODY_FONT_FAMILY,
-        fontSize: 12,
+        fontSize: 10,
         lineHeight: 1.45
       }}
     >
@@ -454,7 +449,7 @@ const OfferLetterPDF = ({
 
       <Text
         style={{
-          fontSize: 15,
+          fontSize: 12,
           fontWeight: "bold",
           marginBottom: 16,
           textDecoration: "underline",
@@ -508,7 +503,7 @@ const OfferLetterPDF = ({
         paddingRight: 35,
         paddingLeft: 35,
         fontFamily: BODY_FONT_FAMILY,
-        fontSize: 12,
+        fontSize: 10,
         // lineHeight: 1.45
       }}
       wrap={false}
@@ -562,7 +557,7 @@ const OfferLetterPDF = ({
         paddingRight: 35,
         paddingLeft: 35,
         fontFamily: BODY_FONT_FAMILY,
-        fontSize: 12
+        fontSize: 10
       }}
     >
       <Watermark logoSrc={COMPANY_DATA.logo} />
@@ -602,7 +597,7 @@ const OfferLetterPDF = ({
         paddingRight: 35,
         paddingLeft: 35,
         fontFamily: BODY_FONT_FAMILY,
-        fontSize: 11
+        fontSize: 10
       }}
       wrap={false}
     >
@@ -611,7 +606,7 @@ const OfferLetterPDF = ({
 
       <View style={{ borderBottom: "1px solid #000", marginBottom: 8 }} />
 
-      <Text style={[balancedStyles.sectionTitle, { fontSize: 14, fontWeight: "bold" }]}>
+      <Text style={[balancedStyles.sectionTitle, { fontSize: 12, fontWeight: "bold" }]}>
         CTC Breakdown – Annual and Monthly
       </Text>
 
@@ -644,7 +639,7 @@ const OfferLetterPDF = ({
         <RowVariableAnnual label="Ann. Perfr. Incentive (Variable)" annual={ctc.variableAnnual} />
         <RowBoldGray label="Total CTC" m={ctc.totalCtcM} a={ctc.totalCtcA} />
 
-        <Text style={{ marginTop: 8, fontSize: 11 }}>
+        <Text style={{ marginTop: 8, fontSize: 10 }}>
           {enablePF ? (
             'Note: Provident Fund (PF) is included in deductions as shown above.'
           ) : (
@@ -658,26 +653,26 @@ const OfferLetterPDF = ({
 
         <View style={{ borderBottom: "1px solid #000", marginVertical: 8 }} />
 
-        <Text style={{ fontSize: 13, fontWeight: "bold", marginBottom: 6, textDecoration: "underline" }}>
+        <Text style={{ fontSize: 12, fontWeight: "bold", marginBottom: 6, textDecoration: "underline" }}>
           Acknowledgement and Acceptance
         </Text>
 
-        <Text style={{ fontSize: 11, lineHeight: 1.4, marginBottom: 10 }}>
+        <Text style={{ fontSize: 10, lineHeight: 1.4, marginBottom: 10 }}>
           I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter.
           I accept the offer of employment with Adysun Ventures Private Limited.
         </Text>
 
         <View style={{ marginTop: 4 }}>
-          <Text style={{ fontSize: 11, marginBottom: 4 }}>
+          <Text style={{ fontSize: 10, marginBottom: 4 }}>
             Candidate Name: <Text style={{ fontWeight: "bold" }}>{toTitleCase(name)}</Text>
           </Text>
-          <Text style={{ fontSize: 11, marginBottom: 12 }}>
+          <Text style={{ fontSize: 10, marginBottom: 12 }}>
             Signature: ________________________________
           </Text>
-          <Text style={{ fontSize: 11, marginBottom: 12 }}>
+          <Text style={{ fontSize: 10, marginBottom: 12 }}>
             Date: {letterDate}
           </Text>
-          <Text style={{ fontSize: 11, marginBottom: 12 }}>
+          <Text style={{ fontSize: 10, marginBottom: 12 }}>
             Place: {signPlace || '-'}
           </Text>
         </View>
@@ -686,7 +681,7 @@ const OfferLetterPDF = ({
           {COMPANY_DATA.signature && (
             <Image src={COMPANY_DATA.signature} style={{ width: 120, height: 60, marginBottom: 2 }} />
           )}
-          <Text style={{ fontSize: 11, fontWeight: "bold" }}>{COMPANY_DATA.hrName}</Text>
+          <Text style={{ fontSize: 10, fontWeight: "bold" }}>{COMPANY_DATA.hrName}</Text>
           <Text style={{ fontSize: 10 }}>{COMPANY_DATA.hrDesignation}</Text>
           <Text style={{ fontSize: 10 }}>{COMPANY_DATA.hrEmail}</Text>
         </View>

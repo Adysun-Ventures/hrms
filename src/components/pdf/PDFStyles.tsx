@@ -22,7 +22,7 @@ export const commonStyles = StyleSheet.create({
   page: {
     padding: 40,
     fontFamily: BODY_FONT_FAMILY,
-    fontSize: 12,
+    fontSize: 10,
     lineHeight: 1.5,
     color: '#000000',
   },
@@ -30,17 +30,17 @@ export const commonStyles = StyleSheet.create({
     marginBottom: 10,
   },
   text: {
-    fontSize: 12,
+    fontSize: 10,
     marginBottom: 5,
   },
   title: {
-    fontSize: 16, 
+    fontSize: 12, 
     fontWeight: 'bold',
     textAlign: 'center',
     marginVertical: 10,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     marginBottom: 10,
   },
@@ -87,7 +87,7 @@ export const offerLetterStyles = StyleSheet.create({
     paddingRight: 54,
     paddingBottom: 72,
     fontFamily: BODY_FONT_FAMILY,
-    fontSize: 12,
+    fontSize: 10,
     lineHeight: 1.0,
     color: '#000000',
   },
@@ -123,7 +123,7 @@ export const offerLetterStyles = StyleSheet.create({
   },
   // Section heading styles
   sectionHeading: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: 'bold',
     textDecoration: 'underline',
     paddingTop: 14,
@@ -139,7 +139,7 @@ export const offerLetterStyles = StyleSheet.create({
     paddingLeft: 0,
     paddingBottom: 0,
     lineHeight: 1.0,
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
   },
   listItemNested: {
@@ -148,12 +148,12 @@ export const offerLetterStyles = StyleSheet.create({
     paddingLeft: 0,
     paddingBottom: 0,
     lineHeight: 1.0,
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
   },
   // Text styles
   bodyText: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
     lineHeight: 1.0,
     paddingTop: 12,
@@ -161,13 +161,13 @@ export const offerLetterStyles = StyleSheet.create({
     textAlign: 'left',
   },
   bodyTextBold: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
     fontWeight: 'bold',
     lineHeight: 1.0,
   },
   bodyTextItalic: {
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
     fontStyle: 'italic',
     color: '#666666',
@@ -185,7 +185,7 @@ export const offerLetterStyles = StyleSheet.create({
   },
   // Date styles
   dateText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
     fontFamily: BODY_FONT_FAMILY,
     paddingTop: 12,
@@ -217,12 +217,12 @@ export const offerLetterStyles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#000000',
     borderRightStyle: 'solid',
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
   },
   tableCellLast: {
     padding: 5,
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
   },
   tableCellBold: {
@@ -230,13 +230,13 @@ export const offerLetterStyles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: '#000000',
     borderRightStyle: 'solid',
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
     fontWeight: 'bold',
   },
   tableCellBoldLast: {
     padding: 5,
-    fontSize: 12,
+    fontSize: 10,
     fontFamily: BODY_FONT_FAMILY,
     fontWeight: 'bold',
   },
@@ -264,7 +264,7 @@ export const appointmentLetterStyles = StyleSheet.create({
   page: {
     ...commonStyles.page,
     fontFamily: BODY_FONT_FAMILY,
-    fontSize: 12,
+    fontSize: 10,
     lineHeight: 1.6,
   },
   subjectLine: {
@@ -315,7 +315,7 @@ export const appraisalLetterStyles = StyleSheet.create({
   page: {
     ...commonStyles.page,
     fontFamily: BODY_FONT_FAMILY,
-    fontSize: 12,
+    fontSize: 10,
     lineHeight: 1.6,
   },
   subjectLine: {
@@ -332,7 +332,7 @@ export const relievingLetterStyles = StyleSheet.create({
   page: {
     ...commonStyles.page,
     fontFamily: BODY_FONT_FAMILY,
-    fontSize: 12,
+    fontSize: 10,
     lineHeight: 1.6,
   },
   subjectLine: {
@@ -438,31 +438,5 @@ interface WatermarkProps {
 }
 
 export const Watermark: React.FC<WatermarkProps> = ({ logoSrc }) => {
-  // Only render if logo exists
-  if (!logoSrc) return null;
-  
-  const watermarkStyles = StyleSheet.create({
-    watermarkContainer: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: -1,
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    watermarkImage: {
-      width: '70%',
-      height: 'auto',
-      opacity: 0.12, // Lighter opacity (0.12 = 12% opacity, 88% transparent)
-    }
-  });
-  
-  return (
-    <View style={watermarkStyles.watermarkContainer}>
-      <Image src={logoSrc} style={watermarkStyles.watermarkImage} />
-    </View>
-  );
+  return null;
 }; 

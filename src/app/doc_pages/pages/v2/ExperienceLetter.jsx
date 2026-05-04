@@ -48,20 +48,7 @@ const COMPANY_DATA = {
 
 /* ---------------- WATERMARK COMPONENT ---------------- */
 const Watermark = ({ logoSrc }) => {
-  if (!logoSrc) return null;
-  return (
-    <View
-      style={{
-        position: 'absolute',
-        top: '35%',
-        left: '20%',
-        opacity: 0.08,
-        transform: 'rotate(-15deg)'
-      }}
-    >
-      <Image src={logoSrc} style={{ width: 350, height: 350 }} />
-    </View>
-  );
+  return null;
 };
 const toTitleCase = (str) => {
   return str
@@ -254,7 +241,7 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
   
   return (
     <Document>
-      <Page size="A4" style={{ padding: 35, fontSize: 12, lineHeight: 1.45, position: 'relative' }}>
+      <Page size="A4" style={{ padding: 35, fontSize: 10, lineHeight: 1.45, position: 'relative' }}>
 
         {/* WATERMARK */}
         <Watermark logoSrc={COMPANY_DATA.logo} />
@@ -274,7 +261,7 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
         </Text> */}
 
         {/* TITLE */}
-        <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: 16, textAlign: "center", textDecoration: "underline" }}>
+        <Text style={{ fontSize: 12, fontWeight: 'bold', marginBottom: 16, textAlign: "center", textDecoration: "underline" }}>
           EXPERIENCE LETTER
         </Text>
 

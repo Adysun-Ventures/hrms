@@ -46,12 +46,7 @@ const COMPANY_DATA = {
 };
 
 const Watermark = ({ logoSrc }) => {
-  if (!logoSrc) return null;
-  return (
-    <View style={offerLetterStyles.watermark}>
-      <Image src={logoSrc} style={offerLetterStyles.watermarkImage} />
-    </View>
-  );
+  return null;
 };
 
 const formatDate = (d) => {
@@ -259,7 +254,7 @@ const RelievingLetterPDF = ({
     <Document>
       <Page
         size="A4"
-        style={{ padding: 35, fontSize: 12, lineHeight: 1.45, position: "relative" }}
+        style={{ padding: 35, fontSize: 10, lineHeight: 1.45, position: "relative" }}
       >
         <Watermark logoSrc={COMPANY_DATA.logo} />
 
@@ -289,7 +284,7 @@ const RelievingLetterPDF = ({
 
         {/* DATE + ADDRESS */}
         <Text style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: "bold" }}>Date:</Text> {signDate}
+          <Text style={{ fontWeight: "bold" }}>Date:</Text> {relievingDate}
         </Text>
 
         <View style={{ marginBottom: 14 }}>
@@ -303,7 +298,7 @@ const RelievingLetterPDF = ({
         {/* TITLE */}
         <Text
           style={{
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: "bold",
             marginBottom: 14,
             textDecoration: "underline",
@@ -357,7 +352,7 @@ const RelievingLetterPDF = ({
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 30 }}>
           <View>
             <Text><Text style={{ fontWeight: "bold" }}>Place:</Text> {employeeSignPlace}</Text>
-            <Text style={{ marginTop: 4 }}><Text style={{ fontWeight: "bold" }}>Date:</Text> {signDate}</Text>
+            <Text style={{ marginTop: 4 }}><Text style={{ fontWeight: "bold" }}>Date:</Text> {relievingDate}</Text>
           </View>
 
           <View style={{ width: "45%", alignItems: "flex-end" }}>

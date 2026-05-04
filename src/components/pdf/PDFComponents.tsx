@@ -187,31 +187,5 @@ interface WatermarkProps {
 }
 
 export const Watermark: React.FC<WatermarkProps> = ({ logoSrc }) => {
-  // Only render if logo exists
-  if (!logoSrc) return null;
-  
-  const watermarkStyles = StyleSheet.create({
-    watermarkContainer: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: -1,
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    watermarkImage: {
-      width: '70%',
-      height: 'auto',
-      opacity: 0.12, // Lighter opacity (0.12 = 12% opacity, 88% transparent)
-    }
-  });
-  
-  return (
-    <View style={watermarkStyles.watermarkContainer}>
-      <Image src={logoSrc} style={watermarkStyles.watermarkImage} />
-    </View>
-  );
+  return null;
 }; 

@@ -18,7 +18,7 @@ const GlobalPDFHeader = () => {
       
       {/* LEFT TEXT BLOCK */}
       <View style={{ flex: 1, paddingRight: 10 }}>
-        <Text style={{ fontSize: 18, fontWeight: "bold", color: "#D85604", fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
+        <Text style={{ fontSize: 16, fontWeight: "bold", color: "#D85604", fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
           {COMPANY.name}
         </Text>
 

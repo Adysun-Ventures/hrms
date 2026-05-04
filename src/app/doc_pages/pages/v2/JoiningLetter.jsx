@@ -124,11 +124,7 @@ const REPORTING_MANAGER_DROPDOWN_OPTIONS = [
   "Deepak Kadam",
 ];
 
-const Watermark = ({ logoSrc }) => (
-  <View style={offerLetterStyles.watermark}>
-    <Image src={logoSrc} style={offerLetterStyles.watermarkImage} />
-  </View>
-);
+const Watermark = ({ logoSrc }) => null;
 
 const MONTH_OPTIONS = [
   { value: "01", label: "Jan" },
@@ -313,7 +309,7 @@ const JoiningLetterPDF = ({
     <Document>
       <Page
         size="A4"
-        style={{ padding: 35, fontSize: 12, lineHeight: 1.45, position: "relative" }}
+        style={{ padding: 35, fontSize: 10, lineHeight: 1.45, position: "relative" }}
       >
         <Watermark logoSrc={COMPANY_DATA.logo} />
 
@@ -340,7 +336,7 @@ const JoiningLetterPDF = ({
         {/* TITLE */}
         <Text
           style={{
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: "bold",
             textDecoration: "underline",
             textAlign: "center",
@@ -513,12 +509,7 @@ export default function JoiningLetterV2() {
       empEmployment?.designation ||
       empEmployment?.jobTitle ||
       "";
-    const annualCtcFromEmployment =
-      empEmployment?.incrementedCtc ||
-      empEmployment?.newSalary ||
-      empEmployment?.joiningCtc ||
-      empEmployment?.salary ||
-      "";
+    const annualCtcFromEmployment = empEmployment?.joiningCtc || "";
 
     if (joiningDateFromEmployment) {
       setJoiningDate(joiningDateFromEmployment);

@@ -1210,6 +1210,26 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
       toast.loading('Updating employment...', { id: 'updateEmployment' });
 
+      if ((data as any).isResignation) {
+        const resignationDate = String((data as any).resignationDate || '').trim();
+        const employeeStatus = String((data as any).employeeStatus || '').trim();
+        const lastWorkingDate = String((data as any).lastWorkingDate || '').trim();
+        const lastSalaryAmount = Number((data as any).lastSalaryAmount);
+        const reasonForLeaving = String((data as any).reasonForLeaving || '').trim();
+
+        if (
+          !resignationDate ||
+          !employeeStatus ||
+          !lastWorkingDate ||
+          !(lastSalaryAmount > 0) ||
+          !reasonForLeaving
+        ) {
+          throw new Error(
+            'When candidate is resigned, all Resignation Details fields are mandatory.'
+          );
+        }
+      }
+
       // Check if employment ID is unique (admin only)
       if (!isEmployeeUser) {
         const normalizedEmploymentId = data.employmentId?.trim().toUpperCase();
@@ -2159,7 +2179,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                   <>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Resignation Date
+                       <span className="text-red-500 mr-1">*</span> Resignation Date
                       </label>
                       <Controller
                         name="resignationDate"
@@ -2178,7 +2198,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Employee Status
+                      <span className="text-red-500 mr-1">*</span> Employee Status
                       </label>
                       <select
                         {...register('employeeStatus')}
@@ -2192,7 +2212,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Working Date
+                      <span className="text-red-500 mr-1">*</span> Last Working Date
                       </label>
                       <Controller
                         name="lastWorkingDate"
@@ -2211,7 +2231,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Drawn CTC
+                      <span className="text-red-500 mr-1">*</span> Last Drawn CTC
                       </label>
                       <input
                         type="number"
@@ -2234,7 +2254,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Reason for Exit
+                      <span className="text-red-500 mr-1">*</span> Reason for Exit
                       </label>
                       <input
                         type="text"

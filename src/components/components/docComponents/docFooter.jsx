@@ -18,56 +18,22 @@ const GlobalPDFFooter = () => {
         fontFamily: HEADER_FOOTER_FONT_FAMILY,
       }}
     >
-      <Text style={{ color: "#D85604", fontWeight: "bold", fontFamily: HEADER_FOOTER_FONT_FAMILY, fontSize: 12 }}>
+      <Text style={{ color: "#D85604", fontWeight: "bold", fontFamily: HEADER_FOOTER_FONT_FAMILY, fontSize: 10 }}>
         Adysun Ventures Pvt. Ltd.
       </Text>
-      <View style={{ flexDirection: "row", alignItems: "flex-start", marginTop: 2 }}>
-        <View style={{ width: 10, alignItems: "center", marginRight: 4, marginTop: 1 }}>
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: "#D85604",
-            }}
-          />
-          <View
-            style={{
-              width: 2,
-              height: 5,
-              backgroundColor: "#D85604",
-              marginTop: 1,
-            }}
-          />
-        </View>
-        <Text style={{ fontSize: 10, flex: 1 }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", marginTop: 2, justifyContent: "flex-start" }}>
+        <Text style={{ fontSize: 8, marginRight: 6, color: "#666" }}>•</Text>
+        <Text style={{ fontSize: 8, flex: 1, color: "#666" }}>
           Pune Office, S no 47, WorkPlex, Pune-Satara Road, Pune 411009
         </Text>
       </View>
-      <View style={{ flexDirection: "row", alignItems: "flex-start", marginTop: 1 }}>
-        <View style={{ width: 10, alignItems: "center", marginRight: 4, marginTop: 1 }}>
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: "#D85604",
-            }}
-          />
-          <View
-            style={{
-              width: 2,
-              height: 5,
-              backgroundColor: "#D85604",
-              marginTop: 1,
-            }}
-          />
-        </View>
-        <Text style={{ fontSize: 10, flex: 1 }}>
+      <View style={{ flexDirection: "row", alignItems: "flex-start", marginTop: 1, justifyContent: "flex-start" }}>
+        <Text style={{ fontSize: 8, marginRight: 6, color: "#666" }}>•</Text>
+        <Text style={{ fontSize: 8, flex: 1, color: "#666" }}>
           Thane Office, A2, 704, Kanchanpushp Society, kavesar, Thane West, Thane, Maharashtra - 400607
         </Text>
       </View>
-      <Text>www.adysunventures.com | hr@adysunventures.com | 9579537523</Text>
+      <Text style={{textAlign: "justify", fontSize: 8, color: "#666" }}>www.adysunventures.com | hr@adysunventures.com | 9579537523 | CIN : U72900PN2020PTC196380</Text>
       
     </View>
   );

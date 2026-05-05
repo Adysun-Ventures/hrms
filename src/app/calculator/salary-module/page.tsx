@@ -130,7 +130,32 @@ export default function SalaryModulePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Variable Pay</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-medium text-gray-700">Variable Pay</label>
+                <div className="flex items-center gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setVariablePay(60000)}
+                    className="text-blue-600 hover:text-blue-700 underline"
+                  >
+                    60 K
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVariablePay(80000)}
+                    className="text-blue-600 hover:text-blue-700 underline"
+                  >
+                    80 K
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVariablePay(100000)}
+                    className="text-blue-600 hover:text-blue-700 underline"
+                  >
+                    1 L
+                  </button>
+                </div>
+              </div>
               <input
                 type="number"
                 value={variablePay === 0 ? '' : variablePay}
@@ -158,7 +183,12 @@ export default function SalaryModulePage() {
         <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div>
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h2 className="text-lg font-semibold text-gray-800">Monthly</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-gray-800">Monthly</h2>
+                <span className="text-sm text-gray-600">
+                  Monthly Fixed: ₹{formatINR(monthlyFixed)}
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={clearMonthly}
@@ -169,17 +199,6 @@ export default function SalaryModulePage() {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Fixed</label>
-                <input
-                  type="text"
-                  value={monthlyFixed.toFixed(2)}
-                  readOnly
-                  disabled
-                  placeholder="Auto: Fixed / 12"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
-                />
-              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Basic</label>
                 <input
@@ -237,7 +256,12 @@ export default function SalaryModulePage() {
 
           <div>
             <div className="flex items-center justify-between gap-3 mb-3">
-              <h2 className="text-lg font-semibold text-gray-800">Annually</h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-lg font-semibold text-gray-800">Annually</h2>
+                <span className="text-sm text-gray-600">
+                  Fixed (Annual): ₹{formatINR(fixedPay)}
+                </span>
+              </div>
               <button
                 type="button"
                 onClick={clearAnnually}
@@ -248,16 +272,6 @@ export default function SalaryModulePage() {
               </button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Fixed (Annual)</label>
-                <input
-                  type="text"
-                  value={fixedPay.toFixed(2)}
-                  readOnly
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
-                />
-              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Basic (Annual)</label>
                 <input
@@ -345,7 +359,7 @@ export default function SalaryModulePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">PT (DEDUCT)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">PT (DEDUCT) <span className="text-sm text-red-500">(IN FEB: 300)</span></label>
               <input
                 type="number"
                 value={ptDeduct}

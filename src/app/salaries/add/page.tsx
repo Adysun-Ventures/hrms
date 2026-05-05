@@ -239,7 +239,11 @@ export default function AddSalaryPage() {
   // Use calculated values directly for display
   const leavesDeductAmt = calculations.leavesDeductAmt;
   const pfDeduct = isPfEnabled ? (calculations.pfDeduct || 0) : 0;
-  const grossSalary = payableComponents.grossSalary;
+  const grossSalary =
+    Number(payableComponents.basic || 0) +
+    Number(payableComponents.hra || 0) +
+    Number(payableComponents.conveyanceAllowance || 0) +
+    Number(otherAllowance || 0);
   const totalDeduction = pfDeduct + (ptDeduct || 200) + leavesDeductAmt + otherDeduction;
   const netSalary = grossSalary - totalDeduction;
 
@@ -277,12 +281,14 @@ export default function AddSalaryPage() {
     setValue('basic', round2(payableComponents.basic), { shouldValidate: false, shouldDirty: false });
     setValue('hra', round2(payableComponents.hra), { shouldValidate: false, shouldDirty: false });
     setValue('conveyanceAllowance', round2(payableComponents.conveyanceAllowance), { shouldValidate: false, shouldDirty: false });
-    setValue('otherAllowance', round2(payableComponents.otherAllowance), { shouldValidate: false, shouldDirty: false });
+    if (salaryCalcMode !== 'other') {
+      setValue('otherAllowance', round2(payableComponents.otherAllowance), { shouldValidate: false, shouldDirty: false });
+    }
     setValue('leavesDeductAmt', round2(calculations.leavesDeductAmt), { shouldValidate: false, shouldDirty: false });
     
     // Keep PT deduction aligned with selected month rule.
     setValue('ptDeduct', round2(calculations.ptDeduct), { shouldValidate: false, shouldDirty: false });
-  }, [calculations, adjustedWorkDays, payableComponents, setValue, ptDeduct]);
+  }, [calculations, adjustedWorkDays, payableComponents, setValue, ptDeduct, salaryCalcMode]);
 
 
   // Fetch employee name and employment ID when employeeId is available
@@ -789,7 +795,9 @@ export default function AddSalaryPage() {
                     onChange: () => setSalaryCalcMode('fixed'),
                   })}
                   onBlur={roundSalaryFieldOnBlur('fixedPay')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  readOnly
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
                   placeholder="0.00"
                 />
                 {errors.fixedPay && (

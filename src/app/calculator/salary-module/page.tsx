@@ -17,7 +17,7 @@ export default function SalaryModulePage() {
   const [otherAllowance, setOtherAllowance] = useState<number>(0);
   const [otherAllowanceEdited, setOtherAllowanceEdited] = useState<boolean>(false);
   const [otherDeduction, setOtherDeduction] = useState<number>(0);
-  const [ptDeduct, setPtDeduct] = useState<number>(208.33);
+  const [ptDeduct, setPtDeduct] = useState<number>(200);
 
   const fixedPay = useMemo(() => Math.max(0, Number(ctc || 0) - Number(variablePay || 0)), [ctc, variablePay]);
   const monthlyFixed = useMemo(() => fixedPay / 12, [fixedPay]);
@@ -54,7 +54,7 @@ export default function SalaryModulePage() {
   const clearDeduction = () => {
     setIsPfEnabled(false);
     setOtherDeduction(0);
-    setPtDeduct(208.33);
+    setPtDeduct(200);
   };
 
   const calculations: MonthlySalaryResult = useMemo(() => {
@@ -349,9 +349,9 @@ export default function SalaryModulePage() {
               <input
                 type="number"
                 value={ptDeduct}
-                onChange={(e) => setPtDeduct(Number(e.target.value || 0))}
-                placeholder="Enter PT Deduction"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                readOnly
+                disabled
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100"
               />
             </div>
             {/* <div>

@@ -18,18 +18,18 @@ const GlobalPDFHeader = () => {
       
       {/* LEFT TEXT BLOCK */}
       <View style={{ flex: 1, paddingRight: 10 }}>
-        <Text style={{ fontSize: 16, fontWeight: "bold", color: "#D85604", fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
+        <Text style={{ fontSize: 16, marginBottom: 8, fontWeight: "bold", color: "#D85604", fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
           {COMPANY.name}
         </Text>
 
-        <Text  wrap={false} style={{ fontSize: 10, marginTop: 4, fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
+        <Text  wrap={false} style={{ fontSize: 10, marginTop: 4, marginBottom: 4, fontFamily: HEADER_FOOTER_FONT_FAMILY, color: "#666" }}>
           {COMPANY.contact}
         </Text>
 
-        <Text style={{ fontSize: 10, marginTop: 4, fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
+        <Text style={{ fontSize: 10, marginTop: 4, marginBottom: 4, fontFamily: HEADER_FOOTER_FONT_FAMILY, color: "#666" }}>
           {COMPANY.addressLine1}
         </Text>
-        <Text style={{ fontSize: 10, fontFamily: HEADER_FOOTER_FONT_FAMILY }}>
+        <Text style={{ fontSize: 10, marginTop: 4, marginBottom: 4, fontFamily: HEADER_FOOTER_FONT_FAMILY, color: "#666"  }}>
           {COMPANY.addressLine2}
         </Text>
       </View>

@@ -19,6 +19,8 @@ export async function generateStaticParams() {
     { type: 'v2/salary-slip' },
     { type: 'v2/payslip' }, // Backward compatibility
     { type: 'v2/fnf-certificate' },
+    { type: 'v2/re-resignation' },
+    { type: 'v2/resignation-mail' },
     { type: 'v2/bank-statement' },
     { type: 'v2/manage-bank' }
   ];

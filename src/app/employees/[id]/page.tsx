@@ -14,6 +14,8 @@ import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { useQueryClient } from '@tanstack/react-query';
 import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
+import { db } from '@/firebase/config';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 
 type PageParams = {
@@ -29,6 +31,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { id } = use(params);
+  const [officialEmail, setOfficialEmail] = useState<string>('');
   
   // Add safety check for id
   if (!id) {
@@ -54,6 +57,54 @@ export default function EmployeeViewPage({ params }: PageParams) {
     isError,
     error
   } = useEmployee(id);
+
+  useEffect(() => {
+    let cancelled = false;
+    const buildCandidate = (name: string, suffix: number) => {
+      const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+      const first = (parts[0] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const last = (parts[parts.length - 1] || parts[0] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const lastInitial = (last[0] || first[0] || 'x').toLowerCase();
+      const core = `${first}.${lastInitial}${suffix > 0 ? String(suffix) : ''}`;
+      return `${core}@adysunventures.com`;
+    };
+
+    const resolveUniqueOfficialEmail = async () => {
+      if (!employee) return;
+      const existing = String((employee as any).officialEmail || '').trim();
+      if (existing) {
+        if (!cancelled) setOfficialEmail(existing);
+        return;
+      }
+      const name = String(employee.name || '').trim();
+      if (!name) {
+        if (!cancelled) setOfficialEmail('');
+        return;
+      }
+
+      for (let suffix = 0; suffix <= 20; suffix += 1) {
+        const candidate = buildCandidate(name, suffix);
+        const qs = await getDocs(query(collection(db, 'employees'), where('officialEmail', '==', candidate)));
+        const isTakenByOther =
+          !qs.empty && qs.docs.some((d) => d.id !== id);
+        if (!isTakenByOther) {
+          if (!cancelled) setOfficialEmail(candidate);
+          return;
+        }
+      }
+
+      // Fallback (shouldn't happen)
+      if (!cancelled) setOfficialEmail(buildCandidate(name, Date.now() % 1000));
+    };
+
+    resolveUniqueOfficialEmail().catch((e) => {
+      console.error('Failed to generate official email', e);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [employee, id]);
 
   // Use Tanstack Query for employments data
   const {
@@ -417,7 +468,12 @@ export default function EmployeeViewPage({ params }: PageParams) {
 
               <div>
                 <p className="text-lg font-medium text-gray-900">{employee.email || '-'}</p>
-                <p className="text-sm text-gray-500">Email</p>
+                <p className="text-sm text-gray-500">Personal Email Id</p>
+              </div>
+
+              <div>
+                <p className="text-lg font-medium text-gray-900">{officialEmail || '-'}</p>
+                <p className="text-sm text-gray-500">Official Email</p>
               </div>
 
               <div>

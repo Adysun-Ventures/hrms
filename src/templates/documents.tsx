@@ -6,6 +6,7 @@ export type DocumentRole = 'admin' | 'employee';
 export type DocumentTemplateKey =
   | 'offer-letter'
   | 'appointment-letter'
+  | 'resignation-mail'
   | 'salary-slip'
   | 'relieving-letter'
   | 'increment-letter'
@@ -42,6 +43,15 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     adminHref: '/dashboard/documents/v2/appointment-letter',
     employeeHref: '/employee/documents/appointment-letter',
     roles: ['admin', 'employee'],
+    icon: <FiFileText size={24} />,
+  },
+  {
+    key: 'resignation-mail',
+    title: 'Resignation Mail',
+    description: 'Generate resignation mail document',
+    adminHref: '/dashboard/documents/v2/resignation-mail',
+    employeeHref: '/dashboard/documents/v2/resignation-mail',
+    roles: ['admin'],
     icon: <FiFileText size={24} />,
   },
   {

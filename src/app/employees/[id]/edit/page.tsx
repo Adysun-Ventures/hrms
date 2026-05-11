@@ -571,7 +571,7 @@ export default function EditEmployeePage({ params }: PageParams) {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="md:col-span-1">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email ID
+                    Personal Email Id
                   </label>
                   <input type="email" placeholder="Enter email address" {...register('email', { pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Invalid email address' } })} className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black" />
                   {errors.email && (<p className="mt-1 text-sm text-red-600">{errors.email.message}</p>)}

@@ -14,6 +14,7 @@ const AppraisalLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/Apprais
 const SalarySlipGeneratorV2 = dynamic(() => import('@/app/doc_pages/pages/v2/SalarySlipGenerator'), { ssr: false });
 const ExperienceLetterV2Page = dynamic(() => import('@/app/doc_pages/pages/v2/ExperienceLetter'), { ssr: false });
 const JoiningLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/JoiningLetter'), { ssr: false });
+const ReResignationV2 = dynamic(() => import('@/app/doc_pages/pages/v2/ReResignation'), { ssr: false });
 const FnfCertificateV2 = dynamic(() => import('@/app/doc_pages/pages/v2/FnfCertificate'), { ssr: false });
 
 // Legacy v1 components when needed
@@ -60,6 +61,9 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
           return <ExperienceLetterV2Page/>;
         case 'v2/appointment-letter':
           return <JoiningLetterV2/>;
+        case 'v2/resignation-mail':
+        case 'v2/re-resignation': // backward compatibility
+          return <ReResignationV2 />;
         case 'v2/fnf-certificate':
           return <FnfCertificateV2 />;
         default:

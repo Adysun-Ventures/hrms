@@ -38,6 +38,12 @@ const documents = [
     icon: <FiFileText size={24} /> 
   },
   {
+    title: 'Resignation Mail',
+    description: 'Generate resignation mail document',
+    path: '/dashboard/documents/v2/resignation-mail',
+    icon: <FiFileText size={24} />
+  },
+  {
     title: 'FNF Certificate (v2)',
     description: 'Generate full and final settlement certificates',
     path: '/dashboard/documents/v2/fnf-certificate',

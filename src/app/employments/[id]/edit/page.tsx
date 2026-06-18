@@ -31,6 +31,10 @@ import { queryKeys } from '@/lib/queryKeys';
 import { FaHandSparkles } from 'react-icons/fa6';
 import { FaBroom } from 'react-icons/fa6';
 
+const EMPLOYMENT_PT_DEDUCT = 200;
+
+const calcEmploymentTotalDeduction = (pfAmount: number, otherDeduction: number) =>
+  (Number(pfAmount) || 0) + EMPLOYMENT_PT_DEDUCT + (Number(otherDeduction) || 0);
 
 interface EmploymentFormData extends Omit<Employment, 'id' | 'benefits' | 'relievingCtc'> {
   benefits: string | string[];
@@ -205,6 +209,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         setValue('joiningCtc', 0 as any, { shouldDirty: true });
         setValue('joiningVariablePay', 0 as any, { shouldDirty: true });
         setValue('joiningOtherAllowance', 0 as any, { shouldDirty: true });
+        setValue('joiningOtherDeduction', 0 as any, { shouldDirty: true });
         setValue('joiningPfIncluded', false as any, { shouldDirty: true });
         break;
       case 'increments':
@@ -217,6 +222,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         setValue('lastSalaryAmount', 0 as any, { shouldDirty: true });
         setValue('currentVariablePay', 0 as any, { shouldDirty: true });
         setValue('currentOtherAllowance', 0 as any, { shouldDirty: true });
+        setValue('currentOtherDeduction', 0 as any, { shouldDirty: true });
         setValue('currentPfIncluded', false as any, { shouldDirty: true });
         break;
       case 'bankDetails':
@@ -406,6 +412,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         incrementVariablePay: Number(joiningVariablePayValue ?? 0) || 0,
         incrementFixedPay: Number(joiningFixedPayValue ?? 0) || 0,
         incrementOtherAllowance: undefined,
+        incrementOtherDeduction: 0,
         incrementPfIncluded: false,
         previousDesignation: String(watch('joiningDesignation') || watch('jobTitle') || '').trim(),
         newDesignation: '',
@@ -461,6 +468,12 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
     joiningBasic + joiningHra + joiningConveyance + (Number(joiningOtherAllowanceValue) || 0);
   const currentGrossSalary =
     currentBasic + currentHra + currentConveyance + (Number(currentOtherAllowanceValue) || 0);
+  const joiningOtherDeductionValue = Number(watch('joiningOtherDeduction') ?? 0) || 0;
+  const currentOtherDeductionValue = Number(watch('currentOtherDeduction') ?? 0) || 0;
+  const joiningTotalDeduction = calcEmploymentTotalDeduction(joiningPf, joiningOtherDeductionValue);
+  const currentTotalDeduction = calcEmploymentTotalDeduction(currentPf, currentOtherDeductionValue);
+  const joiningNetSalary = joiningGrossSalary - joiningTotalDeduction;
+  const currentNetSalary = currentGrossSalary - currentTotalDeduction;
 
   useEffect(() => {
     if ((dirtyFields as any)?.joiningOtherAllowance) return;
@@ -505,6 +518,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       incrementBasic + incrementHra + incrementConveyance + (Number(incrementOtherAllowance) || 0);
     const incrementPfIncluded = Boolean(increment?.incrementPfIncluded);
     const incrementPf = incrementPfIncluded ? Math.min(incrementBasic, 15000) * 0.12 : 0;
+    const incrementOtherDeduction = Number(increment?.incrementOtherDeduction ?? 0) || 0;
+    const incrementTotalDeduction = calcEmploymentTotalDeduction(incrementPf, incrementOtherDeduction);
+    const incrementNetSalary = incrementGross - incrementTotalDeduction;
     const incrementHikePercent = joining > 0 ? ((incrementCtc - joining) / joining) * 100 : 0;
 
     return {
@@ -517,6 +533,9 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
       incrementGross,
       incrementPfIncluded,
       incrementPf,
+      incrementOtherDeduction,
+      incrementTotalDeduction,
+      incrementNetSalary,
       incrementHikePercent,
     };
   };
@@ -736,6 +755,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         incrementVariablePay: incrementVariable,
         incrementFixedPay: incrementFixed,
         incrementOtherAllowance: undefined,
+        incrementOtherDeduction: 0,
         incrementPfIncluded:
           previousIncrement?.incrementPfIncluded != null
             ? Boolean(previousIncrement.incrementPfIncluded)
@@ -1310,6 +1330,8 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
         currentVariablePay: Number((data as any).currentVariablePay ?? 0) || 0,
         joiningOtherAllowance: Number((data as any).joiningOtherAllowance ?? 0) || 0,
         currentOtherAllowance: Number((data as any).currentOtherAllowance ?? 0) || 0,
+        joiningOtherDeduction: Number((data as any).joiningOtherDeduction ?? 0) || 0,
+        currentOtherDeduction: Number((data as any).currentOtherDeduction ?? 0) || 0,
         benefits: benefitsArray,
 
       };
@@ -1398,6 +1420,7 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
             (inc as any).incrementOtherAllowance != null
               ? Number((inc as any).incrementOtherAllowance)
               : Number(getIncrementSalaryBreakdown(inc).incrementOtherAllowance) || 0,
+          incrementOtherDeduction: Number((inc as any).incrementOtherDeduction ?? 0) || 0,
           incrementPfIncluded: Boolean((inc as any).incrementPfIncluded),
           newSalary: inc.newSalary != null ? Number(inc.newSalary) : undefined,
           incrementedInHandCtc:
@@ -2492,6 +2515,58 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     />
                   </div>
                 )}
+
+                <div className="md:col-span-4 mt-2 pt-3 border-t border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Deductions</h4>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">PT (₹)</label>
+                  <input
+                    type="number"
+                    value={EMPLOYMENT_PT_DEDUCT.toFixed(2)}
+                    readOnly
+                    disabled
+                    className="w-full p-2 border rounded-md text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Other Deduction (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    {...register('joiningOtherDeduction', {
+                      min: { value: 0, message: 'Other deduction cannot be negative' },
+                      valueAsNumber: true,
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                  {errors.joiningOtherDeduction && (
+                    <p className="mt-1 text-sm text-red-600">{errors.joiningOtherDeduction.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Deduction (₹)</label>
+                  <input
+                    type="number"
+                    value={Number.isFinite(joiningTotalDeduction) ? joiningTotalDeduction.toFixed(2) : ''}
+                    readOnly
+                    className="w-full p-2 border rounded-md text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Net Salary (₹)</label>
+                  <input
+                    type="number"
+                    value={Number.isFinite(joiningNetSalary) ? joiningNetSalary.toFixed(2) : ''}
+                    readOnly
+                    className="w-full p-2 border rounded-md text-black bg-gray-50"
+                  />
+                </div>
               </div>
             </div>
 
@@ -2829,6 +2904,63 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                         </div>
                       )}
 
+                      <div className="md:col-span-4 mt-2 pt-3 border-t border-gray-200">
+                        <h4 className="text-sm font-semibold text-gray-800 mb-3">Deductions</h4>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">PT (₹)</label>
+                        <input
+                          type="number"
+                          value={EMPLOYMENT_PT_DEDUCT.toFixed(2)}
+                          readOnly
+                          disabled
+                          className="w-full p-2 border rounded-md bg-gray-50"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Other Deduction (₹)</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="0.00"
+                          {...register(`increments.${index}.incrementOtherDeduction` as any, {
+                            min: { value: 0, message: 'Other deduction cannot be negative' },
+                            valueAsNumber: true,
+                          })}
+                          className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Total Deduction (₹)</label>
+                        <input
+                          type="number"
+                          value={
+                            Number.isFinite(incrementBreakdown.incrementTotalDeduction)
+                              ? incrementBreakdown.incrementTotalDeduction.toFixed(2)
+                              : ''
+                          }
+                          readOnly
+                          className="w-full p-2 border rounded-md bg-gray-50"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Net Salary (₹)</label>
+                        <input
+                          type="number"
+                          value={
+                            Number.isFinite(incrementBreakdown.incrementNetSalary)
+                              ? incrementBreakdown.incrementNetSalary.toFixed(2)
+                              : ''
+                          }
+                          readOnly
+                          className="w-full p-2 border rounded-md bg-gray-50"
+                        />
+                      </div>
+
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           <span className="text-red-500 mr-1">*</span> Old Designation
@@ -3106,6 +3238,58 @@ export default function EditEmploymentPage({ params }: { params: Promise<{ id: s
                     />
                   </div>
                 )}
+
+                <div className="md:col-span-4 mt-2 pt-3 border-t border-gray-200">
+                  <h4 className="text-sm font-semibold text-gray-800 mb-3">Deductions</h4>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">PT (₹)</label>
+                  <input
+                    type="number"
+                    value={EMPLOYMENT_PT_DEDUCT.toFixed(2)}
+                    readOnly
+                    disabled
+                    className="w-full p-2 border rounded-md text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Other Deduction (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    {...register('currentOtherDeduction', {
+                      min: { value: 0, message: 'Other deduction cannot be negative' },
+                      valueAsNumber: true,
+                    })}
+                    className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                  />
+                  {errors.currentOtherDeduction && (
+                    <p className="mt-1 text-sm text-red-600">{errors.currentOtherDeduction.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Total Deduction (₹)</label>
+                  <input
+                    type="number"
+                    value={Number.isFinite(currentTotalDeduction) ? currentTotalDeduction.toFixed(2) : ''}
+                    readOnly
+                    className="w-full p-2 border rounded-md text-black bg-gray-50"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Net Salary (₹)</label>
+                  <input
+                    type="number"
+                    value={Number.isFinite(currentNetSalary) ? currentNetSalary.toFixed(2) : ''}
+                    readOnly
+                    className="w-full p-2 border rounded-md text-black bg-gray-50"
+                  />
+                </div>
               </div>
             </div>
 

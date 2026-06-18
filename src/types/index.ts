@@ -152,6 +152,7 @@ export interface EmploymentIncrement {
   newSalary?: number;
   incrementedCtc?: number;
   incrementedInHandCtc?: number;
+  incrementOtherDeduction?: number;
   previousDesignation?: string;
   newDesignation?: string;
 }
@@ -185,6 +186,8 @@ export interface Employment {
   currentVariablePay?: number;
   joiningOtherAllowance?: number;
   currentOtherAllowance?: number;
+  joiningOtherDeduction?: number;
+  currentOtherDeduction?: number;
   
   // Salary Information
   salary: number;

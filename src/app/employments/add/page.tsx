@@ -33,6 +33,11 @@ import {
 import { FaHandSparkles } from 'react-icons/fa6';
 import { FaBroom } from 'react-icons/fa6';
 
+const EMPLOYMENT_PT_DEDUCT = 200;
+
+const calcEmploymentTotalDeduction = (pfAmount: number, otherDeduction: number) =>
+  (Number(pfAmount) || 0) + EMPLOYMENT_PT_DEDUCT + (Number(otherDeduction) || 0);
+
 interface EmploymentFormData extends Omit<Employment, 'id' | 'relievingCtc'> {
   // Add all the fields we need
   teamLead?: {
@@ -179,6 +184,8 @@ export default function AddEmploymentPage() {
       location: 'Pune',
       joiningPfIncluded: false,
       currentPfIncluded: false,
+      joiningOtherDeduction: 0,
+      currentOtherDeduction: 0,
       teamLead: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
       colleague1: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
       colleague3: { name: '', employeeId: '', mobileNo: '', email: '', designation: '', location: '' },
@@ -250,6 +257,7 @@ export default function AddEmploymentPage() {
         setValue('joiningCtc', 0 as any, { shouldDirty: true });
         setValue('joiningVariablePay', 0 as any, { shouldDirty: true });
         setValue('joiningOtherAllowance', 0 as any, { shouldDirty: true });
+        setValue('joiningOtherDeduction', 0 as any, { shouldDirty: true });
         setValue('joiningPfIncluded', false as any, { shouldDirty: true });
         break;
       case 'increments':
@@ -261,6 +269,7 @@ export default function AddEmploymentPage() {
         setValue('salary', 0 as any, { shouldDirty: true });
         setValue('currentVariablePay', 0 as any, { shouldDirty: true });
         setValue('currentOtherAllowance', 0 as any, { shouldDirty: true });
+        setValue('currentOtherDeduction', 0 as any, { shouldDirty: true });
         setValue('currentPfIncluded', false as any, { shouldDirty: true });
         break;
       case 'bankDetails':
@@ -476,6 +485,12 @@ export default function AddEmploymentPage() {
     joiningBasic + joiningHra + joiningConveyance + (Number(joiningOtherAllowanceValue) || 0);
   const currentGrossSalary =
     currentBasic + currentHra + currentConveyance + (Number(currentOtherAllowanceValue) || 0);
+  const joiningOtherDeductionValue = Number(watch('joiningOtherDeduction') ?? 0) || 0;
+  const currentOtherDeductionValue = Number(watch('currentOtherDeduction') ?? 0) || 0;
+  const joiningTotalDeduction = calcEmploymentTotalDeduction(joiningPf, joiningOtherDeductionValue);
+  const currentTotalDeduction = calcEmploymentTotalDeduction(currentPf, currentOtherDeductionValue);
+  const joiningNetSalary = joiningGrossSalary - joiningTotalDeduction;
+  const currentNetSalary = currentGrossSalary - currentTotalDeduction;
   const incrementCtcValue = watch('incrementedCtc');
   const incrementVariablePayValue = watch('incrementVariablePay');
   const incrementFixedPayValue = watch('incrementFixedPay');
@@ -550,6 +565,7 @@ export default function AddEmploymentPage() {
           incrementVariablePay: Number(joiningVariablePayValue ?? 0) || 0,
           incrementFixedPay: Number(computedJoiningFixedPay ?? 0) || 0,
           incrementOtherAllowance: undefined,
+          incrementOtherDeduction: 0,
           incrementPfIncluded: false,
           previousDesignation: String(watch('joiningDesignation') || '').trim(),
           newDesignation: '',
@@ -646,6 +662,9 @@ export default function AddEmploymentPage() {
       incrementBasic + incrementHra + incrementConveyance + (Number(incrementOtherAllowance) || 0);
     const incrementPfIncluded = Boolean(increment?.incrementPfIncluded);
     const incrementPf = incrementPfIncluded ? Math.min(incrementBasic, 15000) * 0.12 : 0;
+    const incrementOtherDeduction = Number(increment?.incrementOtherDeduction ?? 0) || 0;
+    const incrementTotalDeduction = calcEmploymentTotalDeduction(incrementPf, incrementOtherDeduction);
+    const incrementNetSalary = incrementGross - incrementTotalDeduction;
 
     return {
       incrementCtc,
@@ -659,6 +678,9 @@ export default function AddEmploymentPage() {
       incrementGross,
       incrementPfIncluded,
       incrementPf,
+      incrementOtherDeduction,
+      incrementTotalDeduction,
+      incrementNetSalary,
     };
   };
 
@@ -689,6 +711,7 @@ export default function AddEmploymentPage() {
       incrementFixedPay:
         Number(previousIncrement?.incrementFixedPay ?? joiningFixedPayValue ?? 0) || 0,
       incrementOtherAllowance: undefined,
+      incrementOtherDeduction: 0,
       incrementPfIncluded:
         previousIncrement?.incrementPfIncluded != null
           ? Boolean(previousIncrement.incrementPfIncluded)
@@ -1110,6 +1133,7 @@ export default function AddEmploymentPage() {
                     ? Number(inc.incrementFixedPay)
                     : undefined,
                 incrementOtherAllowance: Number(getIncrementSalaryBreakdown(inc).incrementOtherAllowance) || 0,
+                incrementOtherDeduction: Number(inc?.incrementOtherDeduction ?? 0) || 0,
                 incrementPfIncluded: Boolean(inc?.incrementPfIncluded),
                 previousDesignation: String(inc?.previousDesignation || ''),
                 newDesignation: String(inc?.newDesignation || ''),
@@ -1123,6 +1147,8 @@ export default function AddEmploymentPage() {
         currentVariablePay: Number((data as any).currentVariablePay ?? 0) || 0,
         joiningOtherAllowance: Number((data as any).joiningOtherAllowance ?? 0) || 0,
         currentOtherAllowance: Number((data as any).currentOtherAllowance ?? 0) || 0,
+        joiningOtherDeduction: Number((data as any).joiningOtherDeduction ?? 0) || 0,
+        currentOtherDeduction: Number((data as any).currentOtherDeduction ?? 0) || 0,
         totalLeaves: data.totalLeaves !== undefined && data.totalLeaves !== null && data.totalLeaves !== ('' as any)
           ? Number(data.totalLeaves)
           : undefined,
@@ -1999,6 +2025,58 @@ export default function AddEmploymentPage() {
                       />
                     </div>
                   )}
+
+                  <div className="md:col-span-4 mt-2 pt-3 border-t border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3">Deductions</h4>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">PT (₹)</label>
+                    <input
+                      type="number"
+                      value={EMPLOYMENT_PT_DEDUCT.toFixed(2)}
+                      readOnly
+                      disabled
+                      className="w-full p-2 border rounded-md text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Other Deduction (₹)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      {...register('joiningOtherDeduction', {
+                        min: { value: 0, message: 'Other deduction cannot be negative' },
+                        valueAsNumber: true,
+                      })}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    />
+                    {errors.joiningOtherDeduction && (
+                      <p className="mt-1 text-sm text-red-600">{errors.joiningOtherDeduction.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Deduction (₹)</label>
+                    <input
+                      type="number"
+                      value={Number.isFinite(joiningTotalDeduction) ? joiningTotalDeduction.toFixed(2) : ''}
+                      readOnly
+                      className="w-full p-2 border rounded-md text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Net Salary (₹)</label>
+                    <input
+                      type="number"
+                      value={Number.isFinite(joiningNetSalary) ? joiningNetSalary.toFixed(2) : ''}
+                      readOnly
+                      className="w-full p-2 border rounded-md text-black bg-gray-50"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -2336,6 +2414,63 @@ export default function AddEmploymentPage() {
                             </div>
                           )}
 
+                          <div className="md:col-span-4 mt-2 pt-3 border-t border-gray-200">
+                            <h4 className="text-sm font-semibold text-gray-800 mb-3">Deductions</h4>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">PT (₹)</label>
+                            <input
+                              type="number"
+                              value={EMPLOYMENT_PT_DEDUCT.toFixed(2)}
+                              readOnly
+                              disabled
+                              className="w-full p-2 border rounded-md bg-gray-50"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Other Deduction (₹)</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              {...register(`increments.${index}.incrementOtherDeduction` as any, {
+                                min: { value: 0, message: 'Other deduction cannot be negative' },
+                                valueAsNumber: true,
+                              })}
+                              className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Total Deduction (₹)</label>
+                            <input
+                              type="number"
+                              value={
+                                Number.isFinite(incrementBreakdown.incrementTotalDeduction)
+                                  ? incrementBreakdown.incrementTotalDeduction.toFixed(2)
+                                  : ''
+                              }
+                              readOnly
+                              className="w-full p-2 border rounded-md bg-gray-50"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Net Salary (₹)</label>
+                            <input
+                              type="number"
+                              value={
+                                Number.isFinite(incrementBreakdown.incrementNetSalary)
+                                  ? incrementBreakdown.incrementNetSalary.toFixed(2)
+                                  : ''
+                              }
+                              readOnly
+                              className="w-full p-2 border rounded-md bg-gray-50"
+                            />
+                          </div>
+
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                               <span className="text-red-500 mr-1">*</span> Old Designation
@@ -2620,6 +2755,58 @@ export default function AddEmploymentPage() {
                       />
                     </div>
                   )}
+
+                  <div className="md:col-span-4 mt-2 pt-3 border-t border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-800 mb-3">Deductions</h4>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">PT (₹)</label>
+                    <input
+                      type="number"
+                      value={EMPLOYMENT_PT_DEDUCT.toFixed(2)}
+                      readOnly
+                      disabled
+                      className="w-full p-2 border rounded-md text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Other Deduction (₹)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      {...register('currentOtherDeduction', {
+                        min: { value: 0, message: 'Other deduction cannot be negative' },
+                        valueAsNumber: true,
+                      })}
+                      className="w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                    />
+                    {errors.currentOtherDeduction && (
+                      <p className="mt-1 text-sm text-red-600">{errors.currentOtherDeduction.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Total Deduction (₹)</label>
+                    <input
+                      type="number"
+                      value={Number.isFinite(currentTotalDeduction) ? currentTotalDeduction.toFixed(2) : ''}
+                      readOnly
+                      className="w-full p-2 border rounded-md text-black bg-gray-50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Net Salary (₹)</label>
+                    <input
+                      type="number"
+                      value={Number.isFinite(currentNetSalary) ? currentNetSalary.toFixed(2) : ''}
+                      readOnly
+                      className="w-full p-2 border rounded-md text-black bg-gray-50"
+                    />
+                  </div>
                 </div>
               </div>
 

@@ -22,6 +22,19 @@ import IdCardBack from '@/components/id-card/IdCardBack';
 import { toCanvas } from 'html-to-image';
 import { downloadElementAsMultiPagePdf } from '@/utils/employmentViewPdfDownload';
 
+const EMPLOYMENT_PT_DEDUCT = 200;
+
+function calcEmploymentNetSalary(
+  grossSalary: number,
+  pfAmount: number,
+  otherDeduction: number
+): number {
+  const gross = Number(grossSalary) || 0;
+  const pf = Number(pfAmount) || 0;
+  const other = Number(otherDeduction) || 0;
+  return gross - (pf + EMPLOYMENT_PT_DEDUCT + other);
+}
+
 function professionalReferenceCell(
   refs: ProfessionalReference[] | undefined,
   index: number,
@@ -1040,8 +1053,14 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               const joiningHra = joiningBasic * 0.4;
               const joiningConveyance = 2000;
               const joiningOtherAllowance = Number((employment as any).joiningOtherAllowance ?? 0) || 0;
+              const joiningOtherDeduction = Number((employment as any).joiningOtherDeduction ?? 0) || 0;
               const joiningGrossSalary =
                 joiningBasic + joiningHra + joiningConveyance + joiningOtherAllowance;
+              const joiningNetSalary = calcEmploymentNetSalary(
+                joiningGrossSalary,
+                joiningPfAmount,
+                joiningOtherDeduction
+              );
 
               const currentCtc = Number(employment.salary ?? 0) || 0;
               const currentVariablePay = Number(employment.currentVariablePay ?? 0) || 0;
@@ -1051,8 +1070,14 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               const currentHra = currentBasic * 0.4;
               const currentConveyance = 2000;
               const currentOtherAllowance = Number((employment as any).currentOtherAllowance ?? 0) || 0;
+              const currentOtherDeduction = Number((employment as any).currentOtherDeduction ?? 0) || 0;
               const currentGrossSalary =
                 currentBasic + currentHra + currentConveyance + currentOtherAllowance;
+              const currentNetSalary = calcEmploymentNetSalary(
+                currentGrossSalary,
+                currentPfAmount,
+                currentOtherDeduction
+              );
               const joiningDesignation =
                 String(
                   (employment as any).joiningDesignation ||
@@ -1068,28 +1093,31 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
               return (
                 <div className="space-y-4">
                   <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-                    <table className="w-full min-w-[980px] table-fixed border-collapse text-sm text-gray-900">
+                    <table className="w-full min-w-[1120px] table-fixed border-collapse text-sm text-gray-900">
                       <thead>
                         <tr className="bg-gray-100">
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Joining Date
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Designation
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Joining CTC
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Joining Variable
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Fixed
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Gross Salary
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
+                            Net Salary
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Is PF
                           </th>
                         </tr>
@@ -1119,6 +1147,9 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                             {currencyOrDash(joiningGrossSalary)}
                           </td>
                           <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
+                            {currencyOrDash(joiningNetSalary)}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {joiningIsPf}
                           </td>
                         </tr>
@@ -1128,28 +1159,31 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
                   {hasIncrementDetails && (
                     <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-                      <table className="w-full min-w-[1120px] table-fixed border-collapse text-sm text-gray-900">
+                      <table className="w-full min-w-[1280px] table-fixed border-collapse text-sm text-gray-900">
                         <thead>
                           <tr className="bg-gray-100">
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                               Increment Date
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                               Designation
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                               Increment CTC
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                               Increment Variable
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                               Increment Fixed
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                               Gross Salary
                             </th>
-                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
+                              Net Salary
+                            </th>
+                            <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                               Is PF
                             </th>
                           </tr>
@@ -1196,6 +1230,27 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                                 })()}
                               </td>
                               <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
+                                {(() => {
+                                  const ctc = Number(inc.incrementedCtc ?? 0) || 0;
+                                  const variable = Number(inc.incrementVariablePay ?? 0) || 0;
+                                  const fixed = Number(inc.incrementFixedPay ?? (ctc - variable)) || 0;
+                                  const monthlyFixed = fixed / 12;
+                                  const basic = monthlyFixed * 0.5;
+                                  const hra = basic * 0.4;
+                                  const other =
+                                    inc.incrementOtherAllowance != null
+                                      ? Number(inc.incrementOtherAllowance)
+                                      : monthlyFixed - (basic + hra + 2000);
+                                  const gross = basic + hra + 2000 + other;
+                                  const pf = Boolean(inc.incrementPfIncluded)
+                                    ? Math.min(basic, 15000) * 0.12
+                                    : 0;
+                                  const otherDeduction = Number(inc.incrementOtherDeduction ?? 0) || 0;
+                                  const net = calcEmploymentNetSalary(gross, pf, otherDeduction);
+                                  return net > 0 ? formatCurrency(net) : '-';
+                                })()}
+                              </td>
+                              <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                                 {Boolean(inc.incrementPfIncluded) ? 'Yes' : 'No'}
                               </td>
                             </tr>
@@ -1206,28 +1261,31 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                   )}
 
                   <div className="overflow-x-auto rounded-sm border border-gray-800 bg-white">
-                    <table className="w-full min-w-[980px] table-fixed border-collapse text-sm text-gray-900">
+                    <table className="w-full min-w-[1120px] table-fixed border-collapse text-sm text-gray-900">
                       <thead>
                         <tr className="bg-gray-100">
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Date
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Designation
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Current CTC
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Variable
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Fixed
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Gross Salary
                           </th>
-                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[14.2%]">
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
+                            Net Salary
+                          </th>
+                          <th scope="col" className="border border-gray-800 px-3 py-2.5 text-left font-semibold align-middle w-[12.5%]">
                             Is PF
                           </th>
                         </tr>
@@ -1253,6 +1311,9 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
                           </td>
                           <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currencyOrDash(currentGrossSalary)}
+                          </td>
+                          <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
+                            {currencyOrDash(currentNetSalary)}
                           </td>
                           <td className="border border-gray-800 px-3 py-3 align-top whitespace-nowrap">
                             {currentIsPf}

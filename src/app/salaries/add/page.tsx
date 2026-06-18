@@ -148,6 +148,16 @@ export default function AddSalaryPage() {
     setValue(field, round2(watch(field) as number) as any, { shouldValidate: true, shouldDirty: true });
   };
 
+  const applyCtcPreset = (lakhs: number) => {
+    setValue('ctc', lakhs * 100000, { shouldValidate: true, shouldDirty: true });
+    setSalaryCalcMode('ctc');
+  };
+
+  const applyVariablePayPreset = (amount: number) => {
+    setValue('variablePay', amount, { shouldValidate: true, shouldDirty: true });
+    setSalaryCalcMode('variable');
+  };
+
 
   // Real-time calculation using useMemo - calculates on every render when inputs change
   const calculations: MonthlySalaryResult = useMemo(() => {
@@ -753,6 +763,18 @@ export default function AddSalaryPage() {
                 {errors.ctc && (
                   <p className="mt-1 text-sm text-red-600">{errors.ctc.message}</p>
                 )}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                  {[6, 7, 8, 9, 10].map((lakhs) => (
+                    <button
+                      key={lakhs}
+                      type="button"
+                      onClick={() => applyCtcPreset(lakhs)}
+                      className="text-xs text-blue-700 hover:underline"
+                    >
+                      {lakhs} L
+                    </button>
+                  ))}
+                </div>
               </div>
               {/* variable Pay */}
 
@@ -777,6 +799,25 @@ export default function AddSalaryPage() {
                 {errors.variablePay && (
                   <p className="mt-1 text-sm text-red-600">{errors.variablePay.message}</p>
                 )}
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+                  {[
+                    { label: '50K', value: 50000 },
+                    { label: '60K', value: 60000 },
+                    { label: '70K', value: 70000 },
+                    { label: '80K', value: 80000 },
+                    { label: '90K', value: 90000 },
+                    { label: '1L', value: 100000 },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => applyVariablePayPreset(preset.value)}
+                      className="text-xs text-blue-700 hover:underline"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               
               {/* Fixed Pay */}

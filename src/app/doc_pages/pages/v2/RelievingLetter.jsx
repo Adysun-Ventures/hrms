@@ -223,6 +223,7 @@ const RelievingLetterPDF = ({
   employeeSignPlace,
   employeeRelievingDate,
   employeeResignDate,
+  documentGenerateDate,
   designationOverride
 }) => {
 
@@ -235,6 +236,7 @@ const RelievingLetterPDF = ({
   const resignDate = formatDate(employeeResignDate);
   const relievingDate = formatDate(employeeRelievingDate);
   const signDate = formatDate(employeeSignDate);
+  const generatedDate = formatDate(documentGenerateDate || employeeRelievingDate);
   const joinDate = formatDate(joiningDate);
 
   const rawAddress = employee?.currentAddress || employee?.permanentAddress || "";
@@ -284,7 +286,7 @@ const RelievingLetterPDF = ({
 
         {/* DATE + ADDRESS */}
         <Text style={{ marginBottom: 12 }}>
-          <Text style={{ fontWeight: "bold" }}>Date:</Text> {relievingDate}
+          <Text style={{ fontWeight: "bold" }}>Date:</Text> {generatedDate}
         </Text>
 
         <View style={{ marginBottom: 14 }}>
@@ -352,7 +354,7 @@ const RelievingLetterPDF = ({
         <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 30 }}>
           <View>
             <Text><Text style={{ fontWeight: "bold" }}>Place:</Text> {employeeSignPlace}</Text>
-            <Text style={{ marginTop: 4 }}><Text style={{ fontWeight: "bold" }}>Date:</Text> {relievingDate}</Text>
+            <Text style={{ marginTop: 4 }}><Text style={{ fontWeight: "bold" }}>Date:</Text> {generatedDate}</Text>
           </View>
 
           <View style={{ width: "45%", alignItems: "flex-end" }}>
@@ -394,6 +396,7 @@ function RelievingLetterV2() {
 
   const [employeeSignDate, setEmployeeSignDate] = useState("");
   const [employeeSignPlace, setEmployeeSignPlace] = useState("");
+  const [documentGenerateDate, setDocumentGenerateDate] = useState("");
   const [employeeRelievingDate, setEmployeeRelievingDate] = useState("");
   const [employeeResignDate, setEmployeeResignDate] = useState("");
   const [designationOverride, setDesignationOverride] = useState("");
@@ -438,7 +441,7 @@ function RelievingLetterV2() {
 
   const canGenerate = Boolean(
     employee &&
-    employeeSignDate &&
+    documentGenerateDate &&
     employeeRelievingDate &&
     employeeResignDate &&
     employeeSignPlace
@@ -470,7 +473,7 @@ function RelievingLetterV2() {
               disabled: !canGenerate,
               onClick: () => {
                 if (!employee) return toast.error("Select employee");
-                if (!employeeSignDate) return toast.error("Select sign date");
+                if (!documentGenerateDate) return toast.error("Select document generate date");
                 if (!employeeRelievingDate) return toast.error("Select relieving date");
                 if (!employeeResignDate) return toast.error("Select resign date");
                 if (!employeeSignPlace) return toast.error("Enter sign place");
@@ -524,6 +527,7 @@ function RelievingLetterV2() {
                     setEmployeeSignDate(joiningDateForDoc || "");
                     setEmployeeResignDate(resignDate || "");
                     setEmployeeRelievingDate(relievingDate || "");
+                    setDocumentGenerateDate(relievingDate || "");
                     setDesignationOverride(
                       selectedEmployment?.jobTitle || selectedEmployment?.designation || ""
                     );
@@ -548,6 +552,7 @@ function RelievingLetterV2() {
                           setShowPDF(false);
                           setEmployeeSignDate("");
                           setEmployeeSignPlace("");
+                          setDocumentGenerateDate("");
                           setEmployeeRelievingDate("");
                           setEmployeeResignDate("");
                           setDesignationOverride("");
@@ -588,14 +593,14 @@ function RelievingLetterV2() {
                 )}
                 
 
-                {/* Sign Date */}
+                {/* Document Generate Date */}
                 <div>
                   <label className="block text-sm font-medium text-slate-800 mb-1">
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown
-                    value={employeeRelievingDate}
-                    onChange={setEmployeeRelievingDate}
+                    value={documentGenerateDate}
+                    onChange={setDocumentGenerateDate}
                   />
                   <button
                     type="button"
@@ -609,7 +614,7 @@ function RelievingLetterV2() {
                         toast.error("Last working day is not available for selected employee");
                         return;
                       }
-                      setEmployeeRelievingDate(lastWorkingDate);
+                      setDocumentGenerateDate(lastWorkingDate);
                     }}
                     className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
                   >
@@ -723,7 +728,7 @@ function RelievingLetterV2() {
               disabled={!canGenerate}
               onClick={() => {
                 if (!employee) return toast.error("Select employee");
-                if (!employeeSignDate) return toast.error("Select sign date");
+                if (!documentGenerateDate) return toast.error("Select document generate date");
                 if (!employeeRelievingDate) return toast.error("Select relieving date");
                 if (!employeeResignDate) return toast.error("Select resign date");
                 if (!employeeSignPlace) return toast.error("Enter sign place");
@@ -758,6 +763,7 @@ function RelievingLetterV2() {
                     employeeSignPlace={employeeSignPlace}
                     employeeRelievingDate={employeeRelievingDate}
                     employeeResignDate={employeeResignDate}
+                    documentGenerateDate={documentGenerateDate}
                     designationOverride={designationOverride}
                   />
                 }
@@ -780,6 +786,7 @@ function RelievingLetterV2() {
                 employeeSignPlace={employeeSignPlace}
                 employeeRelievingDate={employeeRelievingDate}
                 employeeResignDate={employeeResignDate}
+                documentGenerateDate={documentGenerateDate}
                 designationOverride={designationOverride}
               />
             </PDFViewer>

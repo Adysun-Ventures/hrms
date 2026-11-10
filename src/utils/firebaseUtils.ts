@@ -1430,44 +1430,6 @@ export const updateEmployeePassword = async (employeeId: string, newPassword: st
   }
 };
 
-// Function to add password field to existing employees (for migration)
-export const addPasswordToEmployees = async () => {
-  try {
-    console.log('🔄 Starting password migration for employees...');
-    
-    const querySnapshot = await getDocs(collection(db, 'employees'));
-    const updatePromises: Promise<any>[] = [];
-    
-    querySnapshot.forEach((doc) => {
-      const employeeData = doc.data();
-      
-      // If employee doesn't have a password field, add a default one
-      if (!employeeData.password) {
-        // New pattern: last 5 digits of mobile + @#$$
-        const defaultPassword = `${employeeData.phone.slice(-5)}@#$$`;
-        updatePromises.push(
-          updateDoc(doc.ref, {
-            password: defaultPassword,
-            updatedAt: new Date().toISOString()
-          })
-        );
-        console.log(`📝 Adding default password to employee: ${employeeData.name} (${defaultPassword})`);
-      }
-    });
-    
-    if (updatePromises.length > 0) {
-      await Promise.all(updatePromises);
-      console.log(`✅ Successfully updated ${updatePromises.length} employees with default passwords`);
-    } else {
-      console.log('ℹ️ All employees already have passwords');
-    }
-    
-    return updatePromises.length;
-  } catch (error) {
-    console.error('Error adding passwords to employees:', error);
-    throw error;
-  }
-};
 
 // Function to add resignation fields to existing employees (for migration)
 // IMPORTANT: This function is idempotent - safe to run multiple times.

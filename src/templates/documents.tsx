@@ -7,6 +7,7 @@ export type DocumentTemplateKey =
   | 'offer-letter'
   | 'appointment-letter'
   | 'resignation-mail'
+  | 'lwd-confirmation-mail'
   | 'salary-slip'
   | 'relieving-letter'
   | 'increment-letter'
@@ -51,6 +52,15 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     description: 'Generate resignation mail document',
     adminHref: '/dashboard/documents/v2/resignation-mail',
     employeeHref: '/employee/documents/resignation-mail',
+    roles: ['admin', 'employee'],
+    icon: <FiFileText size={24} />,
+  },
+  {
+    key: 'lwd-confirmation-mail',
+    title: 'LWD Confirmation Mail',
+    description: 'Generate last working day confirmation mail',
+    adminHref: '/dashboard/documents/v2/lwd-confirmation-mail',
+    employeeHref: '/employee/documents/lwd-confirmation-mail',
     roles: ['admin', 'employee'],
     icon: <FiFileText size={24} />,
   },

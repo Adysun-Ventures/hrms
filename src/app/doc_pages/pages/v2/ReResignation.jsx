@@ -110,7 +110,62 @@ const formatLongDateWithOrdinal = (dateValue) => {
   return `${day}${suffix} ${month} ${dt.getFullYear()}`;
 };
 
-const ReResignationPDF = ({ data }) => {
+const B = ({ children }) => <Text style={{ fontWeight: "bold" }}>{children}</Text>;
+
+const MAIL_VARIANTS = {
+  resignation: {
+    title: "Resignation Mail",
+    subject: "Re: Resignation",
+    filePrefix: "Resignation_Mail",
+    hrBody: (lwd) => (
+      <>
+        <Text>We acknowledge receipt of your resignation and will initiate the formal exit process.</Text>
+        <Text>
+          Your last working day is <B>{lwd}</B>.
+        </Text>
+        <Text>Further details of exit process will be shared with you shortly.</Text>
+      </>
+    ),
+    employeeBody: (designation) => (
+      <>
+        <Text>
+          Please accept this email as my formal resignation from my position as{" "}
+          <B>{designation}</B> at Adysun Ventures.
+        </Text>
+        <Text>Let me know my last working day as per our discussion.</Text>
+      </>
+    ),
+  },
+  lwd: {
+    title: "LWD Confirmation Mail",
+    subject: "Re: Last Working Day Confirmation",
+    filePrefix: "LWD_Confirmation_Mail",
+    hrBody: (lwd) => (
+      <>
+        <Text>
+          This is to confirm that your last working day with Adysun Ventures is <B>{lwd}</B>.
+        </Text>
+        <Text>
+          Please ensure that all handover activities are completed and company assets are returned on or before your
+          last working day.
+        </Text>
+        <Text>Details of your full and final settlement will be shared with you shortly.</Text>
+      </>
+    ),
+    employeeBody: (designation) => (
+      <>
+        <Text>
+          With reference to my resignation from my position as <B>{designation}</B> at Adysun Ventures, I request you
+          to kindly confirm my last working day.
+        </Text>
+        <Text>Please let me know if any formalities are pending from my side.</Text>
+      </>
+    ),
+  },
+};
+
+const ReResignationPDF = ({ data, variant = "resignation" }) => {
+  const mail = MAIL_VARIANTS[variant];
   const {
     employeeName,
     officialMail,
@@ -157,11 +212,11 @@ const ReResignationPDF = ({ data }) => {
             marginBottom: 8,
           }}
         >
-          Re: Resignation
+          {mail.subject}
         </Text>
 
         <View style={{ gap: 4, marginBottom: 12 }}>
-          <Text><Text style={{ fontWeight: "bold" }}>Subject:</Text> Re: Resignation</Text>
+          <Text><Text style={{ fontWeight: "bold" }}>Subject:</Text> {mail.subject}</Text>
           <Text><Text style={{ fontWeight: "bold" }}>From:</Text> HR Adysun Ventures {"<hr@adysunventures.com>"}</Text>
           <Text><Text style={{ fontWeight: "bold" }}>Date:</Text> {hrReplyDateTime}</Text>
           <Text><Text style={{ fontWeight: "bold" }}>To:</Text> {toLine}</Text>
@@ -169,11 +224,7 @@ const ReResignationPDF = ({ data }) => {
 
         <View style={{ gap: 6 }}>
           <Text>Dear {firstNameOnly || "Employee"},</Text>
-          <Text>We acknowledge receipt of your resignation and will initiate the formal exit process.</Text>
-          <Text>
-            Your last working day is <Text style={{ fontWeight: "bold" }}>{formatLongDateWithOrdinal(lastWorkingDay)}</Text>.
-          </Text>
-          <Text>Further details of exit process will be shared with you shortly.</Text>
+          {mail.hrBody(formatLongDateWithOrdinal(lastWorkingDay))}
           <View style={{ flexDirection: "row", marginTop: 10 }}>
             <View style={{ width: 1, backgroundColor: "#87CEEB", marginRight: 8, borderRadius: 2 }} />
             <View style={{ flex: 1, gap: 4 }}>
@@ -182,11 +233,7 @@ const ReResignationPDF = ({ data }) => {
               </Text>
               <Text>{"\n"}</Text>
               <Text>Dear HR,</Text>
-              <Text>
-                Please accept this email as my formal resignation from my position as{" "}
-                <Text style={{ fontWeight: "bold" }}>{designation || "-"}</Text> at Adysun Ventures.
-              </Text>
-              <Text>Let me know my last working day as per our discussion.</Text>
+              {mail.employeeBody(designation || "-")}
               <Text>{"\n"}</Text>
               <Text>Regards,</Text>
               <Text>{employeeName || "-"}</Text>
@@ -255,7 +302,8 @@ const ReResignationPDF = ({ data }) => {
   );
 };
 
-export default function ReResignationV2() {
+export default function ReResignationV2({ variant = "resignation" }) {
+  const mail = MAIL_VARIANTS[variant];
   const { currentUserData } = useAuth();
   const selfEmployeeId = currentUserData?.userType === "employee" ? currentUserData?.id : null;
   const [employees, setEmployees] = useState([]);
@@ -447,7 +495,7 @@ export default function ReResignationV2() {
     ]
   );
 
-  const pdfDocument = useMemo(() => <ReResignationPDF data={formData} />, [formData]);
+  const pdfDocument = useMemo(() => <ReResignationPDF data={formData} variant={variant} />, [formData, variant]);
   const canGenerate = Boolean(
     employee?.id &&
       officialMail &&
@@ -485,7 +533,7 @@ export default function ReResignationV2() {
       <Toaster position="top-center" />
       <div className="bg-white shadow-lg rounded-xl border border-gray-200 mb-6">
         <TableHeader
-          title="Resignation Mail"
+          title={mail.title}
           backButton={{
             href: selfEmployeeId ? "/employee/documents" : "/dashboard/documents",
             label: "Back",
@@ -512,11 +560,11 @@ export default function ReResignationV2() {
           <div className="bg-white p-2 rounded-lg">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                 <Combobox value={employee} onChange={handleEmployeeChange}>
                   <div className="relative">
                     <Combobox.Input
-                      className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                       placeholder="Select or Search employee..."
                       displayValue={(emp) => emp?.name ?? ""}
                       onChange={(event) => setSearchTerm(event.target.value)}
@@ -566,7 +614,7 @@ export default function ReResignationV2() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Official Mail</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Official Mail</label>
                 <input
                   type="text"
                   value={officialMail}
@@ -577,7 +625,7 @@ export default function ReResignationV2() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Sent Mail Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sent Mail Date</label>
                 <input
                   type="date"
                   value={sentMailDate}
@@ -607,7 +655,7 @@ export default function ReResignationV2() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Sent Mail Time</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sent Mail Time</label>
                 <div className="grid grid-cols-3 gap-2">
                   <select
                     value={sentMailHour}
@@ -657,7 +705,7 @@ export default function ReResignationV2() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Designation</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
                 <input
                   type="text"
                   value={designation}
@@ -668,7 +716,7 @@ export default function ReResignationV2() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">HR Replies Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">HR Replies Date</label>
                 <input
                   type="date"
                   value={hrRepliesDate}
@@ -698,7 +746,7 @@ export default function ReResignationV2() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">HR Replies Time</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">HR Replies Time</label>
                 <div className="grid grid-cols-3 gap-2">
                   <select
                     value={hrRepliesHour}
@@ -748,7 +796,7 @@ export default function ReResignationV2() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">Last Working date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Last Working date</label>
                 <input
                   type="date"
                   value={lastWorkingDay}
@@ -788,7 +836,7 @@ export default function ReResignationV2() {
             <h3 className="text-xl font-bold text-gray-800">PDF Preview</h3>
             <PDFDownloadLink
               document={pdfDocument}
-              fileName={`Resignation_Mail_${(employeeName || "Employee").replace(/\s+/g, "_")}.pdf`}
+              fileName={`${mail.filePrefix}_${(employeeName || "Employee").replace(/\s+/g, "_")}.pdf`}
               className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
               {({ loading }) => (

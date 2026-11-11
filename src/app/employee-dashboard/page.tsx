@@ -12,6 +12,8 @@ import { getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { useEmployeeSelfSalariesByEmployee } from '@/hooks/useSalaries';
+import Link from '@/lib/link';
+import { getDocumentTemplatesForRole } from '@/utils/document';
 
 export default function EmployeeDashboardPage() {
   const { currentUserData, isEmployeeExited } = useAuth();
@@ -349,8 +351,25 @@ export default function EmployeeDashboardPage() {
           </div>
         </div>
 
-        
-        
+      </div>
+
+      <div className="mt-12">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {getDocumentTemplatesForRole('employee').map((doc) => (
+            <Link
+              key={doc.key}
+              href={doc.employeeHref}
+              className="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 flex items-start gap-3"
+            >
+              <div className="p-2 bg-blue-50 rounded-lg shrink-0 text-blue-600">{doc.icon}</div>
+              <div>
+                <h3 className="font-medium text-gray-800">{doc.title}</h3>
+                <p className="text-sm text-gray-600 mt-1">{doc.description}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
 
     </EmployeeLayout>

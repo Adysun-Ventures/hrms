@@ -102,6 +102,18 @@ export default function DashboardPage() {
       icon: <FiFileText className="w-6 h-6 text-blue-600" />,
     },
     {
+      title: 'Resignation Mail',
+      description: 'Generate resignation mail',
+      href: '/dashboard/documents/v2/resignation-mail',
+      icon: <FiFileText className="w-6 h-6 text-blue-600" />,
+    },
+    {
+      title: 'LWD Confirmation Mail',
+      description: 'Generate last working day confirmation mail',
+      href: '/dashboard/documents/v2/lwd-confirmation-mail',
+      icon: <FiFileText className="w-6 h-6 text-blue-600" />,
+    },
+    {
       title: 'FnF Certificate',
       description: 'Generate full and final certificate',
       href: '/dashboard/documents/v2/fnf-certificate',

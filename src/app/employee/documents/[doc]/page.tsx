@@ -8,6 +8,7 @@ const DOCS: Record<string, { type: string; title: string }> = {
   'offer-letter': { type: 'v2/offer-letter', title: 'Offer Letter' },
   'appointment-letter': { type: 'v2/appointment-letter', title: 'Appointment Letter' },
   'resignation-mail': { type: 'v2/resignation-mail', title: 'Resignation Mail' },
+  'lwd-confirmation-mail': { type: 'v2/lwd-confirmation-mail', title: 'LWD Confirmation Mail' },
   'salary-slips': { type: 'v2/salary-slip', title: 'Salary Slip' },
   'relieving-letter': { type: 'v2/relieving-letter', title: 'Relieving Letter' },
   'increment-letter': { type: 'v2/increment-letter', title: 'Increment Letter' },

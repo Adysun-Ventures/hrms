@@ -436,7 +436,7 @@ function RelievingLetterV2() {
                 {/* Employee */}
                 {!selfEmployeeId && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Employee <span className="text-red-500">*</span>
                   </label>
                 
@@ -478,7 +478,7 @@ function RelievingLetterV2() {
                   <div className="relative">
                 
                     <Combobox.Input
-                      className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                       placeholder="Select or Search employee..."
                       displayValue={(emp) => emp?.name ?? ""}
                       onChange={(event) => setSearchTerm(event.target.value)}
@@ -536,7 +536,7 @@ function RelievingLetterV2() {
 
                 {/* Document Generate Date */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown
@@ -565,7 +565,7 @@ function RelievingLetterV2() {
 
                 {/* Effective Relieving Date */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Effective Relieving Date
                   </label>
                   <DateDropdown
@@ -594,7 +594,7 @@ function RelievingLetterV2() {
 
                 {/* Resignation Date */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Employee Resign Date
                   </label>
                   <DateDropdown
@@ -623,12 +623,12 @@ function RelievingLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Designation
                   </label>
                   <input
                     type="text"
-                    className="w-full p-3 border rounded-md"
+                    className="w-full p-2 border rounded-md"
                     value={designationOverride}
                     onChange={(e) => setDesignationOverride(e.target.value)}
                     placeholder="Enter designation"
@@ -637,11 +637,11 @@ function RelievingLetterV2() {
 
                 {/* Place */}
                <div>
-  <label className="block text-sm font-medium text-slate-800 mb-1">
+  <label className="block text-sm font-medium text-gray-700 mb-1">
     <span className="text-red-500">*</span> Place
   </label>
   <select
-    className="w-full p-3 border rounded-md"
+    className="w-full p-2 border rounded-md"
     value={employeeSignPlace}
     onChange={(e) => setEmployeeSignPlace(e.target.value)}
   >
@@ -675,7 +675,7 @@ function RelievingLetterV2() {
                 if (!employeeSignPlace) return toast.error("Enter sign place");
                 setShowPDF(true);
               }}
-              className={`flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 ${
+              className={`flex items-center px-6 py-2 rounded-lg shadow-sm ${
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"

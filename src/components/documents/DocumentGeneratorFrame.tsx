@@ -13,6 +13,7 @@ const SalarySlipGeneratorV2 = dynamic(() => import('@/app/doc_pages/pages/v2/Sal
 const ExperienceLetterV2Page = dynamic(() => import('@/app/doc_pages/pages/v2/ExperienceLetter'), { ssr: false });
 const JoiningLetterV2 = dynamic(() => import('@/app/doc_pages/pages/v2/JoiningLetter'), { ssr: false });
 const ReResignationV2 = dynamic(() => import('@/app/doc_pages/pages/v2/ReResignation'), { ssr: false });
+const LwdConfirmationMailV2 = dynamic(() => import('@/app/doc_pages/pages/v2/LwdConfirmationMail'), { ssr: false });
 const FnfCertificateV2 = dynamic(() => import('@/app/doc_pages/pages/v2/FnfCertificate'), { ssr: false });
 
 interface DocumentGeneratorFrameProps {
@@ -49,6 +50,8 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
         return <JoiningLetterV2 />;
       case 'v2/resignation-mail':
         return <ReResignationV2 />;
+      case 'v2/lwd-confirmation-mail':
+        return <LwdConfirmationMailV2 />;
       case 'v2/fnf-certificate':
         return <FnfCertificateV2 />;
       default:
@@ -57,7 +60,7 @@ const DocumentGeneratorFrame: React.FC<DocumentGeneratorFrameProps> = ({
   };
 
   const content = (
-    <div className="document-container w-full">
+    <div className="w-full">
       {renderDocumentComponent()}
     </div>
   );

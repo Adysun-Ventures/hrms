@@ -1028,7 +1028,7 @@ return (
           type="button"
           onClick={handleGenerate}
           disabled={formData.employeeName.length === 0}
-          className={`flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 ${
+          className={`flex items-center px-6 py-2 rounded-lg shadow-sm ${
             formData.employeeName.length === 0
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-green-600 text-white hover:bg-green-700'
@@ -1046,7 +1046,7 @@ return (
 {/* Employee Name */}
 {!selfEmployeeId && (
 <div>
-  <label className="block text-sm font-medium text-slate-800 mb-1">
+  <label className="block text-sm font-medium text-gray-700 mb-1">
     Employee <span className="text-red-500">*</span>
   </label>
 
@@ -1093,7 +1093,7 @@ return (
   >
     <div className="relative">
       <Combobox.Input
-        className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        className="w-full p-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
         placeholder="Select or Search employee..."
         displayValue={(emp) => emp?.name ?? ""}
         onChange={(event) => setSearchTerm(event.target.value)}
@@ -1163,14 +1163,14 @@ return (
 
         {/* Month */}
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Month <span className="text-red-500">*</span>
           </label>
           <select
             name="month"
             value={formData.month}
             onChange={handleInputChange}
-            className="w-full p-2.5 border border-gray-300 rounded-md"
+            className="w-full p-2 border border-gray-300 rounded-md"
           >
             {[
               "January","February","March","April","May","June",
@@ -1182,7 +1182,7 @@ return (
         </div>
 
         <div className="form-group">
-  <label className="block mb-2 text-sm font-medium text-gray-700">
+  <label className="block text-sm font-medium text-gray-700 mb-1">
     Year <span className="text-red-500">*</span>
   </label>
 
@@ -1190,7 +1190,7 @@ return (
     name="year"
     value={formData.year}
     onChange={handleInputChange}
-    className="w-full p-2.5 border border-gray-300 rounded-md"
+    className="w-full p-2 border border-gray-300 rounded-md"
   >
     {Array.from(
       { length: (new Date().getFullYear() + 2) - 2020 + 1 },
@@ -1207,7 +1207,7 @@ return (
 </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             CTC
           </label>
           <input
@@ -1215,12 +1215,12 @@ return (
             name="ctc"
             value={formData.ctc ?? 0}
             onChange={handleInputChange}
-            className="w-full p-2.5 border border-gray-300 rounded-md"
+            className="w-full p-2 border border-gray-300 rounded-md"
           />
         </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Variable
           </label>
           <input
@@ -1228,67 +1228,67 @@ return (
             name="variablePay"
             value={formData.variablePay ?? 0}
             onChange={handleInputChange}
-            className="w-full p-2.5 border border-gray-300 rounded-md"
+            className="w-full p-2 border border-gray-300 rounded-md"
           />
         </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Fixed
           </label>
           <input
             readOnly
             value={formData.fixedPay ?? 0}
-            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+            className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Monthly Fixed
           </label>
           <input
             readOnly
             value={monthlyFixedCalc.toFixed(2)}
-            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+            className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Basic
           </label>
           <input
             readOnly
             value={basicCalc.toFixed(2)}
-            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+            className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             HRA
           </label>
           <input
             readOnly
             value={hraCalc.toFixed(2)}
-            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+            className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Conveyance Allowance
           </label>
           <input
             readOnly
             value={conveyanceCalc}
-            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+            className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Other Allowance
           </label>
           <input
@@ -1302,35 +1302,35 @@ return (
               const vv = Number(v.toFixed(2));
               setFormData((prev) => ({ ...prev, otherAllowanceOverride: vv, otherAllowance: vv }));
             }}
-            className="w-full p-2.5 border border-gray-300 rounded-md"
+            className="w-full p-2 border border-gray-300 rounded-md"
           />
         </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Gross Salary
           </label>
           <input
             readOnly
             value={grossSalaryCalc.toFixed(2)}
-            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+            className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>
         
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             PT (Deduct)
           </label>
           <input
             readOnly
             value={ptCalc}
-            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+            className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Other Deductions
           </label>
           <input
@@ -1338,13 +1338,13 @@ return (
             name="otherDeductions"
             value={formData.otherDeductions ?? 0}
             onChange={handleInputChange}
-            className="w-full p-2.5 border border-gray-300 rounded-md"
+            className="w-full p-2 border border-gray-300 rounded-md"
           />
         </div>
 
         {/* Leaves */}
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Leaves
           </label>
           <input
@@ -1354,27 +1354,27 @@ return (
             onChange={handleInputChange}
             min="0"
             max={getDaysInMonth(Number(formData.month))}
-            className="w-full p-2.5 border border-gray-300 rounded-md"
+            className="w-full p-2 border border-gray-300 rounded-md"
           />
         </div>
 
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Payable Days
           </label>
           <input
             readOnly
             value={payableDaysCalc}
-            className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+            className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
           />
         </div>
 
         {/* PF Field */}
         <div className="form-group">
-          <label className="block mb-2 text-sm font-medium text-gray-700">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             PF
           </label>
-          <div className="w-full p-2.5 border border-gray-300 rounded-md bg-white flex items-center gap-2">
+          <div className="w-full p-2 border border-gray-300 rounded-md bg-white flex items-center gap-2">
             <input
               id="apply-pf"
               type="checkbox"
@@ -1391,13 +1391,13 @@ return (
 
         {formData.enablePF && (
           <div className="form-group">
-            <label className="block mb-2 text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               PF Amount
             </label>
             <input
               readOnly
               value={Number(pfCalc || 0).toFixed(2)}
-              className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-100"
+              className="w-full p-2 border border-gray-300 rounded-md bg-gray-100"
             />
           </div>
         )}
@@ -1417,7 +1417,7 @@ return (
         <button
           onClick={handleGenerate}
           disabled={formData.employeeName.length === 0}
-          className={`flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 ${
+          className={`flex items-center px-6 py-2 rounded-lg shadow-sm ${
             formData.employeeName.length === 0
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
               : 'bg-green-600 text-white hover:bg-green-700'

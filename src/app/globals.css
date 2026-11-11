@@ -129,13 +129,12 @@ html:has(.app-shell) { scroll-behavior: auto; }
 }
 
 /* Compact data tables so more columns/rows fit on screen. */
-.app-shell :is(th, td):not(.document-container *, .tw-default *) {
+.app-shell :is(th, td):not(.tw-default *) {
   padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
 }
 
-/* Areas captured to PDF/PNG (letters, ID card) keep the original sizing and font. */
-.app-shell .tw-default,
-.app-shell .document-container {
+/* Areas captured to PNG (ID card) keep the original sizing and font. */
+.app-shell .tw-default {
   font-family: var(--font-inter), Arial, sans-serif;
   --spacing: 0.25rem;
   --text-base: 1rem;

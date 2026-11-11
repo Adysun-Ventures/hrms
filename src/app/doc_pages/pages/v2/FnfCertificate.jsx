@@ -353,7 +353,7 @@ export default function FnfCertificate() {
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1">
             <div className="max-w-md">
-              <label className="block text-sm font-medium text-slate-800 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Employee <span className="text-red-500">*</span>
               </label>
               {!selfEmployeeId ? (
@@ -368,7 +368,7 @@ export default function FnfCertificate() {
                 >
                   <div className="relative">
                     <Combobox.Input
-                      className="w-full p-2.5 pr-10 border border-gray-300 rounded-md"
+                      className="w-full p-2 pr-10 border border-gray-300 rounded-md"
                       placeholder="Select or Search employee..."
                       displayValue={(emp) => emp?.name ?? ""}
                       onChange={(event) => setSearchTerm(event.target.value)}
@@ -409,7 +409,7 @@ export default function FnfCertificate() {
               ) : (
                 <input
                   type="text"
-                  className="w-full p-2.5 border border-gray-300 rounded-md bg-gray-50"
+                  className="w-full p-2 border border-gray-300 rounded-md bg-gray-50"
                   value={employee?.name || ""}
                   readOnly
                 />
@@ -462,46 +462,46 @@ export default function FnfCertificate() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 <span className="text-red-500">*</span> Document Date
               </label>
               <input
                 type="date"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={documentDate}
                 onChange={(e) => setDocumentDate(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 <span className="text-red-500">*</span> Joining Date
               </label>
               <input
                 type="date"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={joiningDateInput}
                 onChange={(e) => setJoiningDateInput(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 <span className="text-red-500">*</span> Last Working Date
               </label>
               <input
                 type="date"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={lastWorkingDateInput}
                 onChange={(e) => setLastWorkingDateInput(e.target.value)}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Designation</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
               <input
                 type="text"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={designationOverride}
                 onChange={(e) => setDesignationOverride(e.target.value)}
                 placeholder="Designation"
@@ -509,10 +509,10 @@ export default function FnfCertificate() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Department</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
               <input
                 type="text"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={departmentOverride}
                 onChange={(e) => setDepartmentOverride(e.target.value)}
                 placeholder="Department"
@@ -522,51 +522,51 @@ export default function FnfCertificate() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Salary up to last working day</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Salary up to last working day</label>
               <input
                 type="number"
                 step="0.01"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={salaryUpto}
                 onChange={(e) => setSalaryUpto(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Leave Encashment</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Leave Encashment</label>
               <input
                 type="number"
                 step="0.01"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={leaveEncashment}
                 onChange={(e) => setLeaveEncashment(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Bonus / Incentives</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Bonus / Incentives</label>
               <input
                 type="number"
                 step="0.01"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={bonusIncentives}
                 onChange={(e) => setBonusIncentives(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Other Payables</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Other Payables</label>
               <input
                 type="number"
                 step="0.01"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={otherPayables}
                 onChange={(e) => setOtherPayables(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Deductions (if any)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Deductions (if any)</label>
               <input
                 type="number"
                 step="0.01"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={deductions}
                 onChange={(e) => setDeductions(e.target.value)}
               />
@@ -575,27 +575,27 @@ export default function FnfCertificate() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">Mode of Payment</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mode of Payment</label>
               <input
                 type="text"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={paymentMode}
                 onChange={(e) => setPaymentMode(e.target.value)}
                 placeholder="Bank Transfer / UPI / Cheque"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-800 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 <span className="text-red-500">*</span> Payment Date
               </label>
               <input
                 type="date"
-                className="w-full p-2.5 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md"
                 value={paymentDate}
                 onChange={(e) => setPaymentDate(e.target.value)}
               />
             </div>
-            <div className="p-2.5 border border-gray-200 rounded-md bg-gray-50">
+            <div className="p-2 border border-gray-200 rounded-md bg-gray-50">
               <p className="text-sm text-gray-500">Net Amount Paid</p>
               <p className="text-lg font-semibold text-gray-900">
                 Rs.{" "}

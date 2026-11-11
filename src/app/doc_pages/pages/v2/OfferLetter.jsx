@@ -125,7 +125,7 @@ const DateDropdown = ({ value, onChange }) => {
   return (
     <div className="grid grid-cols-3 gap-2">
       <select
-        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
         value={day}
         disabled={!month || !year}
         onChange={(e) => {
@@ -142,7 +142,7 @@ const DateDropdown = ({ value, onChange }) => {
         ))}
       </select>
       <select
-        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
         value={month}
         onChange={(e) => {
           const nextMonth = e.target.value;
@@ -159,7 +159,7 @@ const DateDropdown = ({ value, onChange }) => {
         ))}
       </select>
       <select
-        className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+        className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
         value={year}
         onChange={(e) => {
           const nextYear = e.target.value;
@@ -1120,7 +1120,7 @@ function OfferLetterV2({ isForm16 = false }) {
 
 {!isEmployeeUser && (
 <div>
-  <label className="block text-sm font-medium text-slate-800 mb-1">
+  <label className="block text-sm font-medium text-gray-700 mb-1">
     {isForm16 ? 'Employees' : 'Employee'} <span className="text-red-500">*</span>
     {isForm16 && (
       <span className="ml-2 text-xs font-normal text-gray-500">(multi-select)</span>
@@ -1181,7 +1181,7 @@ function OfferLetterV2({ isForm16 = false }) {
         <div className="relative">
           <Combobox.Input
             ref={employeePickerInputRef}
-            className="w-full p-2.5 pr-20 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 pr-20 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
             placeholder={isForm16 ? "Select employees..." : "Select employee..."}
             value={open ? searchTerm : selectedNames}
             onChange={(event) => setSearchTerm(event.target.value)}
@@ -1262,13 +1262,13 @@ function OfferLetterV2({ isForm16 = false }) {
 
               {isForm16 && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Financial Year <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={financialYearStart}
                     onChange={(e) => setFinancialYearStart(Number(e.target.value))}
-                    className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                   >
                     {financialYearOptions.map((fy) => (
                       <option key={fy.value} value={fy.value}>
@@ -1280,12 +1280,12 @@ function OfferLetterV2({ isForm16 = false }) {
               )}
 
               {!isForm16 && <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Designation
                 </label>
                 <input
                   type="text"
-                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                   value={designationOverride}
                   onChange={(e) => setDesignationOverride(e.target.value)}
                   placeholder="Enter designation"
@@ -1293,7 +1293,7 @@ function OfferLetterV2({ isForm16 = false }) {
               </div>}
 
               {!isForm16 && <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Document Generate Date
                 </label>
                 <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
@@ -1316,7 +1316,7 @@ function OfferLetterV2({ isForm16 = false }) {
               </div>}
 
               {!isForm16 && <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Effective date
                 </label>
                 <DateDropdown value={effectiveDate} onChange={setEffectiveDate} />
@@ -1342,13 +1342,13 @@ function OfferLetterV2({ isForm16 = false }) {
               </div>}
 
               {!isForm16 && <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Place
                 </label>
                 <select
                   value={employeeSignPlace}
                   onChange={(e) => setEmployeeSignPlace(e.target.value)}
-                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select Place</option>
                   {placeOptions
@@ -1362,10 +1362,10 @@ function OfferLetterV2({ isForm16 = false }) {
               </div>}
 
               {!isForm16 && <div>
-                <label className="block text-sm font-medium text-slate-800 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   PF
                 </label>
-                <div className="w-full p-2.5 border border-gray-300 rounded-md bg-white flex items-center gap-2">
+                <div className="w-full p-2 border border-gray-300 rounded-md bg-white flex items-center gap-2">
                   <input
                     id="enable-pf"
                     type="checkbox"

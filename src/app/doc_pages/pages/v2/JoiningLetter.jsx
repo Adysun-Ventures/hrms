@@ -540,7 +540,7 @@ export default function JoiningLetterV2() {
 
                 {!selfEmployeeId && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Employee <span className="text-red-500">*</span>
                   </label>
                 
@@ -563,7 +563,7 @@ export default function JoiningLetterV2() {
                   <div className="relative">
                 
                     <Combobox.Input
-                      className="w-full p-2.5 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
+                      className="w-full p-2 pr-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500"
                       placeholder="Select or Search employee..."
                       displayValue={(emp) => emp?.name ?? ""}
                       onChange={(event) => setSearchTerm(event.target.value)}
@@ -614,7 +614,7 @@ export default function JoiningLetterV2() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Department
                   </label>
                   <input
@@ -627,7 +627,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Designation
                   </label>
                   <input
@@ -640,7 +640,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Reporting Manager
                   </label>
                   <select
@@ -658,7 +658,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Document Generate Date
                   </label>
                   <DateDropdown value={documentGenerateDate} onChange={setDocumentGenerateDate} />
@@ -672,7 +672,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Joining Date
                   </label>
                   <DateDropdown value={joiningDate} onChange={setJoiningDate} />
@@ -686,7 +686,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 {/* <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Work Location
                   </label>
                   <input
@@ -698,7 +698,7 @@ export default function JoiningLetterV2() {
                 </div> */}
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Annual CTC
                   </label>
                   <input
@@ -711,7 +711,7 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500">*</span> Probation Period
                   </label>
                   <select
@@ -726,11 +726,11 @@ export default function JoiningLetterV2() {
                 </div>
 
                 <div>
-  <label className="block text-sm font-medium text-slate-800 mb-1">
+  <label className="block text-sm font-medium text-gray-700 mb-1">
     <span className="text-red-500">*</span> Place
   </label>
   <select
-    className="w-full p-3 border rounded-md"
+    className="w-full p-2 border rounded-md"
     value={signPlace}
     onChange={(e) => setSignPlace(e.target.value)}
   >
@@ -759,7 +759,7 @@ export default function JoiningLetterV2() {
               type="button"
               disabled={!canGenerate}
               onClick={generate}
-              className={`flex items-center px-6 py-2 rounded-lg shadow-sm transition-all duration-200 ${
+              className={`flex items-center px-6 py-2 rounded-lg shadow-sm ${
                 canGenerate
                   ? "bg-green-600 text-white hover:bg-green-700"
                   : "bg-gray-300 text-gray-500 cursor-not-allowed"

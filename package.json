@@ -15,10 +15,10 @@
     "@react-pdf/renderer": "^4.3.0",
     "@tanstack/react-query": "^5.83.0",
     "file-saver": "^2.0.5",
-    "firebase": "^11.7.3",
+    "firebase": "^12.19.0",
     "firebase-admin": "^14.5.0",
     "html-to-image": "^1.11.13",
-    "jspdf": "^3.0.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.511.0",
     "openai": "^6.34.0",
     "qrcode.react": "^4.2.0",
@@ -28,7 +28,7 @@
     "react-hot-toast": "^2.5.2",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.18.5",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -46,6 +46,7 @@
   },
   "type": "module",
   "overrides": {
-    "jwks-rsa": "3.2.2"
+    "jwks-rsa": "3.2.2",
+    "@grpc/grpc-js": "^1.14.7"
   }
 }

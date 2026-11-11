@@ -19,5 +19,8 @@ export const auth = getAuth(app);
 export const db = getFirestore(app);
 
 // Analytics only records visits (nothing reads it), so it loads in the background instead of
-// adding to the first page load.
-void import('firebase/analytics').then(({ getAnalytics }) => getAnalytics(app));
+// adding to the first page load. isSupported() is false outside a browser (tests) and when
+// IndexedDB/cookies are blocked, where getAnalytics would throw.
+void import('firebase/analytics').then(async ({ getAnalytics, isSupported }) => {
+  if (await isSupported()) getAnalytics(app);
+}).catch(() => {}); // optional: a blocked/failed chunk must not surface as an unhandled rejection

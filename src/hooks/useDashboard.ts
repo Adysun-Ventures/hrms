@@ -5,9 +5,8 @@ import { queryKeys } from '@/lib/queryKeys';
 /** Admin dashboard stat: the employee count (shares the employees list cache). */
 export const useEmployeeCount = () => {
   const { data: employees = [], isLoading, isError, error, refetch } = useQuery({
-    queryKey: queryKeys.employees.lists(),
+    queryKey: queryKeys.employees.list(),
     queryFn: getEmployees,
-    refetchOnWindowFocus: false,
     refetchOnMount: false, // Don't refetch on mount if we have cached data
     notifyOnChangeProps: ['data', 'error'], // Silent background updates
   });

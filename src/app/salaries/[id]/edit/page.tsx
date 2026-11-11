@@ -1,25 +1,22 @@
-'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from '@/lib/navigation';
 import { Controller, useForm } from 'react-hook-form';
 import { FiArrowLeft, FiCheckCircle, FiX } from 'react-icons/fi';
 import { FaSyncAlt } from 'react-icons/fa';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import TableHeader from '@/components/ui/TableHeader';
-import { Salary } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import { useEmployeeSelfSalary, useEmployeeUpdateSalary, useSalary, useUpdateSalary } from '@/hooks/useSalaries';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import Link from '@/lib/link';
+import { useSearchParams } from '@/lib/navigation';
 import { getEmployeeNameById, getEmploymentsByEmployee, getEmploymentsByEmployeeSelf, checkExistingSalary, updateEmployment } from '@/utils/firebaseUtils';
 import {
   calculateMonthlySalary,
   getProfessionalTaxByMonth,
   type MonthlySalaryResult,
 } from '@/utils/monthlySalaryCalculationUtils';
-import { use } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import {
   computeReadOnlyDay,
@@ -50,27 +47,24 @@ type SalaryFormData = {
   variablePay: number;
 };
 
-type PageParams = {
-  params: Promise<{ id: string }>;
-};
 
-export default function EditSalaryPage({ params }: PageParams) {
+export default function EditSalaryPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPfEnabled, setIsPfEnabled] = useState(true);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [, ] = useState(true);
+  const [, ] = useState<string | null>(null);
   const [employeeId, setEmployeeId] = useState<string>('');
   const [employeeName, setEmployeeName] = useState<string>('');
   const [employmentId, setEmploymentId] = useState<string>('');
   const [joiningDateParts, setJoiningDateParts] = useState<IsoDateParts | null>(null);
-  const [hasPeriodChanges, setHasPeriodChanges] = useState(false);
+  const [, setHasPeriodChanges] = useState(false);
   const [salaryCalcMode, setSalaryCalcMode] = useState<'ctc' | 'variable' | 'fixed' | 'other'>('variable');
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const { currentUserData } = useAuth();
   const isEmployeeUser = currentUserData?.userType === 'employee';
-  const { id } = use(params);
+  const { id } = useParams() as { id: string };
   const from = searchParams?.get('from');
   const Layout: any = isEmployeeUser ? EmployeeLayout : DashboardLayout;
 
@@ -602,7 +596,7 @@ export default function EditSalaryPage({ params }: PageParams) {
 
         <form onSubmit={handleSubmit(onSubmit)} className="px-6 pb-6">
           {/* Period Information */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {/* Year */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -694,7 +688,7 @@ export default function EditSalaryPage({ params }: PageParams) {
             </div>
 
             {/* Leaves Count */}
-            <div className=' md:col-span-3'>
+            <div className=' md:col-span-1'>
   <label className="block text-sm font-medium text-gray-700 mb-2">
     <span className="text-red-500 mr-1">*</span>Leave Count
     
@@ -727,7 +721,7 @@ export default function EditSalaryPage({ params }: PageParams) {
 </div>
 
             {/* Payable Days - Auto-calculated */}
-            <div className=' md:col-span-3'>
+            <div className=' md:col-span-1'>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Payable Days <span className="text-xs text-gray-500">(Auto-calculated)</span>
               </label>
@@ -1007,9 +1001,9 @@ export default function EditSalaryPage({ params }: PageParams) {
                 <span className="ml-2 text-[11px]">{isPfEnabled ? 'ON' : 'OFF'}</span>
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* PF (DEDUCT) */}
-              <div className="md:col-span-3">
+              <div className="md:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   PF (DEDUCT) <span className="text-xs text-gray-500">(Auto-calculated)</span>
                 </label>
@@ -1025,7 +1019,7 @@ export default function EditSalaryPage({ params }: PageParams) {
               </div>
 
               {/* PT (DEDUCT) */}
-              <div className="md:col-span-3">
+              <div className="md:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <span className="text-red-500 mr-1">*</span>PT (DEDUCT) 
                 </label>
@@ -1048,7 +1042,7 @@ export default function EditSalaryPage({ params }: PageParams) {
 
 
               {/* Other Deduction */}
-              <div className="md:col-span-3">
+              <div className="md:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Other Deduction (₹)
                 </label>
@@ -1071,9 +1065,9 @@ export default function EditSalaryPage({ params }: PageParams) {
           </div>
 
           {/* Calculated Total Deduction */}e
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {/* Calculated Total Deduction */}
-            <div className="md:col-span-6 p-4 bg-red-50 rounded-md">
+            <div className="md:col-span-2 p-4 bg-red-50 rounded-md">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-gray-700">
                   Total Deduction (B)
@@ -1088,7 +1082,7 @@ export default function EditSalaryPage({ params }: PageParams) {
             </div>
 
             {/* Calculated Net Salary */}
-            <div className="md:col-span-6 p-4 bg-green-50 rounded-md">
+            <div className="md:col-span-2 p-4 bg-green-50 rounded-md">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-gray-700">
                   Net Salary (InHand) (C=A-B)

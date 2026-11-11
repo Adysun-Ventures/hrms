@@ -1,16 +1,12 @@
-'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { FiEdit, FiTrash2, FiSearch, FiEye, FiDollarSign } from 'react-icons/fi';
+import { useSearchParams } from '@/lib/navigation';
+import { FiEdit, FiTrash2, FiEye } from 'react-icons/fi';
 import { FaRegSquarePlus } from 'react-icons/fa6';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Employment, Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
-import SearchBar from '@/components/ui/SearchBar';
 import TableHeader from '@/components/ui/TableHeader';
 import Pagination from '@/components/ui/Pagination';
 import { useEmployments, useDeleteEmployment } from '@/hooks/useEmployments';
@@ -66,10 +62,12 @@ export default function EmploymentsPage() {
   };
 
   // Handle error state
-  if (isError && error) {
+  // Report a failed load once (calling toast during render re-renders in a loop).
+  useEffect(() => {
+    if (!isError || !error) return;
     console.error('Employment data error:', error);
     toast.error('Failed to load employment data');
-  }
+  }, [isError, error]);
 
   const handleDeleteClick = (id: string) => {
     setDeleteConfirm(id);

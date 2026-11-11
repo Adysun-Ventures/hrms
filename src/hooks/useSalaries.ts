@@ -13,7 +13,6 @@ import {
 } from '@/utils/firebaseUtils';
 import { queryKeys } from '@/lib/queryKeys';
 import { Salary } from '@/types';
-import { getQueryClient } from '@/lib/queryClient';
 
 const hasAdminSession = () =>
   typeof window !== 'undefined' &&
@@ -72,7 +71,6 @@ export const useCreateSalary = () => {
   return useMutation({
     mutationFn: addSalary,
     onSuccess: async (_, variables) => {
-      console.log('✅ Salary created successfully, invalidating cache...');
       
       // Invalidate all salary-related queries
       await queryClient.invalidateQueries({ queryKey: queryKeys.salaries.all });
@@ -83,7 +81,6 @@ export const useCreateSalary = () => {
         await queryClient.invalidateQueries({ 
           queryKey: queryKeys.salaries.byEmployee(variables.employeeId) 
         });
-        console.log('✅ Invalidated employee-specific salary cache for:', variables.employeeId);
       }
       
       // Invalidate employee cache to refresh employee data
@@ -94,7 +91,6 @@ export const useCreateSalary = () => {
         });
       }
       
-      console.log('✅ Cache invalidation completed');
     },
     onError: (error) => {
       console.error('❌ Error creating salary:', error);
@@ -203,58 +199,6 @@ export const useDeleteSalary = () => {
     },
     onError: (error) => {
       console.error('Error deleting salary:', error);
-    },
-  });
-};
-
-// Optimistic updates for better UX
-export const useOptimisticSalaryUpdate = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Salary> }) =>
-      updateSalary(id, data),
-    onMutate: async ({ id, data }) => {
-      // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: queryKeys.salaries.detail(id) });
-      await queryClient.cancelQueries({ queryKey: queryKeys.salaries.lists() });
-      
-      // Snapshot the previous value
-      const previousSalary = queryClient.getQueryData(queryKeys.salaries.detail(id));
-      const previousSalaries = queryClient.getQueryData(queryKeys.salaries.lists());
-      
-      // Optimistically update the cache
-      if (previousSalary) {
-        queryClient.setQueryData(queryKeys.salaries.detail(id), {
-          ...previousSalary,
-          ...data,
-        });
-      }
-      
-      if (previousSalaries) {
-        queryClient.setQueryData(queryKeys.salaries.lists(), (old: any) => {
-          if (!old) return old;
-          return old.map((salary: Salary) =>
-            salary.id === id ? { ...salary, ...data } : salary
-          );
-        });
-      }
-      
-      return { previousSalary, previousSalaries };
-    },
-    onError: (err, variables, context) => {
-      // Rollback on error
-      if (context?.previousSalary) {
-        queryClient.setQueryData(queryKeys.salaries.detail(variables.id), context.previousSalary);
-      }
-      if (context?.previousSalaries) {
-        queryClient.setQueryData(queryKeys.salaries.lists(), context.previousSalaries);
-      }
-    },
-    onSettled: (_, __, { id }) => {
-      // Always refetch after error or success
-      queryClient.invalidateQueries({ queryKey: queryKeys.salaries.detail(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.salaries.lists() });
     },
   });
 }; 

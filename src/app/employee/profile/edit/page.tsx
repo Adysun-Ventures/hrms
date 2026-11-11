@@ -1,17 +1,15 @@
-'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { useForm, Controller } from 'react-hook-form';
-import { FiUser, FiMapPin, FiCheckCircle, FiX, FiEye, FiEyeOff, FiPlus } from 'react-icons/fi';
+import { FiCheckCircle, FiX, FiPlus } from 'react-icons/fi';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth, withoutSecrets } from '@/context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
-import { updateUserProfile, validateProfileData } from '@/utils/profileUtils';
+import { updateUserProfile } from '@/utils/profileUtils';
 import { updateEmployeeSelf, getEmployeeSelf, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere, getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { Employee, Employment } from '@/types';
 import TableHeader from '@/components/ui/TableHeader';
-import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 import CustomDateInput from '@/components/ui/CustomDateInput';
 import { FaSyncAlt } from 'react-icons/fa';
@@ -28,8 +26,7 @@ export default function EditEmployeeProfilePage() {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
-    const [employeeData, setEmployeeData] = useState<Employee[]>([]);
+    const [, ] = useState<Employee[]>([]);
     const [employmentData, setEmploymentData] = useState<Employment[]>([]);
 
     const [educationEntries, setEducationEntries] = useState<Array<{
@@ -38,13 +35,10 @@ export default function EditEmployeeProfilePage() {
     }>>([
         { id: crypto.randomUUID(), type: '12th' }
     ]);
-    const employmentForm = useForm<EmploymentFormData>();
 
     const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<Omit<Employee, 'id'> & { confirmPassword?: string }>();
     const currentAddressValue = watch('currentAddress');
     const {
-  register: employmentRegister,
-  handleSubmit: employmentHandleSubmit,
   formState: { errors: employmentErrors },
   reset: employmentReset
 } = useForm<EmploymentFormData>();
@@ -62,7 +56,7 @@ export default function EditEmployeeProfilePage() {
         if (!currentUserData?.id) return;
     
         try {
-          const [employee, employment] = await Promise.all([
+          const [, employment] = await Promise.all([
             getEmployeeSelf(currentUserData.id),
             getEmployeeSelfEmployment(currentUserData.id)
           ]);
@@ -75,7 +69,6 @@ export default function EditEmployeeProfilePage() {
           console.error(err);
         }
       };
-      console.log(employmentData)
     
       fetchData();
     }, [currentUserData?.id]);
@@ -206,8 +199,6 @@ export default function EditEmployeeProfilePage() {
                         reset({
                             ...emp,
                             secondaryEducation: emp.secondaryEducation,
-                            password: emp.password || '', // Pre-fill with current password
-                            confirmPassword: emp.password || '', // Pre-fill confirm password with current password
                         });
                     } else {
                         // Default to one entry if none exists
@@ -218,8 +209,6 @@ export default function EditEmployeeProfilePage() {
                         const { id: _id, createdAt: _createdAt, createdBy: _createdBy, updatedAt: _updatedAt, updatedBy: _updatedBy, ...rest } = emp;
                         reset({
                             ...rest,
-                            password: emp.password || '', // Pre-fill with current password
-                            confirmPassword: emp.password || '', // Pre-fill confirm password with current password
                         });
                     }
             setSameAsCurrentAddress(addressesMatch);
@@ -327,12 +316,6 @@ export default function EditEmployeeProfilePage() {
                 tenthStandard: data.tenthStandard,
             };
 
-            // Always include password (it's required and pre-filled with current password)
-            // If user changed it, it will be the new password; otherwise it's the same
-            if (data.password && data.password.trim()) {
-                additionalData.password = data.password.trim();
-            }
-
             // Remove undefined values
             Object.keys(additionalData).forEach(key => {
                 if (additionalData[key] === undefined) {
@@ -359,11 +342,11 @@ export default function EditEmployeeProfilePage() {
                     email: basicProfileData.email,
                     phone: basicProfileData.phone
                 };
-                localStorage.setItem('employeeData', JSON.stringify(mergedData));
+                localStorage.setItem('employeeData', JSON.stringify(withoutSecrets(mergedData)));
             }
 
             // Update fullEmployeeData in localStorage if it exists
-            localStorage.setItem('fullEmployeeData', JSON.stringify(updatedEmployeeData));
+            localStorage.setItem('fullEmployeeData', JSON.stringify(withoutSecrets(updatedEmployeeData)));
 
             // Dispatch custom event to notify Header and other components of profile update
             if (typeof window !== 'undefined') {
@@ -618,8 +601,8 @@ export default function EditEmployeeProfilePage() {
                             </div>
 
                             {/* Row 2: Current & Permanent Address */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                <div>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                                <div className="md:col-span-2">
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         <span className="text-red-500 mr-1">*</span> Current Address
                                     </label>
@@ -630,7 +613,7 @@ export default function EditEmployeeProfilePage() {
                                         className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
                                     />
                                 </div>
-                                <div>
+                                <div className="md:col-span-2">
                                     <div className="flex items-center justify-between mb-1">
                                         <label className="block text-sm font-medium text-gray-700">
                                             <span className="text-red-500 mr-1">*</span> Permanent Address
@@ -654,57 +637,6 @@ export default function EditEmployeeProfilePage() {
                                         readOnly={sameAsCurrentAddress}
                                         disabled={sameAsCurrentAddress}
                                     />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Password Section */}
-                        <div className="mb-4">
-                            <h3 className="text-md font-medium text-gray-700 mb-3 border-l-2 border-green-500 pl-2">Login Credentials</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        <span className="text-red-500">*</span> Password
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPassword ? 'text' : 'password'}
-                                            placeholder="Enter password"
-                                            {...register('password', {
-                                                required: 'Password is required',
-                                                minLength: {
-                                                    value: 4,
-                                                    message: 'Password must be at least 4 characters'
-                                                }
-                                            })}
-                                            readOnly
-                                            className="w-full px-3 py-2 pr-10 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black bg-gray-100"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                                        >
-                                            {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
-                                        </button>
-                                    </div>
-                                    {errors.password && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-                                    )}
-                                </div>
-                                <div>
-                                    {/* keep confirmPassword registered for validation, but hide UI */}
-                                    <div className="hidden">
-                                        <input
-                                            type="hidden"
-                                            {...register('confirmPassword', {
-                                                validate: (value) => {
-                                                    const password = watch('password');
-                                                    return value === password || 'Passwords do not match';
-                                                }
-                                            })}
-                                        />
-                                    </div>
                                 </div>
                             </div>
                         </div>

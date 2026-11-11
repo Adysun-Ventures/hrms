@@ -1,11 +1,12 @@
-"use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { PDFDownloadLink, PDFViewer, Document, Page, Text, View, Link } from "@react-pdf/renderer";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { fetchDocEmployees } from '@/utils/document';
 import { FiDownload } from "react-icons/fi";
 import toast, { Toaster } from "react-hot-toast";
 import { db } from "@/firebase/config";
+import { useAuth } from "@/context/AuthContext";
 import TableHeader from "@/components/ui/TableHeader";
 import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import { ensureDocumentFonts } from "@/components/pdf/documentFont";
@@ -49,7 +50,12 @@ const resolveOfficialEmailForEmployee = async (employee, employeeId) => {
 
   for (let suffix = 0; suffix <= 20; suffix += 1) {
     const candidate = buildOfficialEmailCandidate(name, suffix);
-    const qs = await getDocs(query(collection(db, "employees"), where("officialEmail", "==", candidate)));
+    let qs;
+    try {
+      qs = await getDocs(query(collection(db, "employees"), where("officialEmail", "==", candidate)));
+    } catch {
+      return candidate; // employees can't scan others' records; take the first candidate
+    }
     const isTakenByOther = !qs.empty && qs.docs.some((d) => d.id !== employeeId);
     if (!isTakenByOther) return candidate;
   }
@@ -126,8 +132,6 @@ const ReResignationPDF = ({ data }) => {
   const hrReplyDateTime = `${formatMailDate(hrRepliesDate, true)}, ${formatMailTime(hrRepliesTime, false)}`;
   const sentDateTime = `${formatMailDate(sentMailDate, false)} ${formatMailTime(sentMailTime, true)}`;
   const generatedAt = new Date();
-  const generatedDate = formatMailDate(generatedAt.toISOString(), true);
-  const generatedTime = formatMailTime(`${String(generatedAt.getHours()).padStart(2, "0")}:${String(generatedAt.getMinutes()).padStart(2, "0")}`, false);
 
   return (
     <Document>
@@ -148,7 +152,6 @@ const ReResignationPDF = ({ data }) => {
         <Text
           style={{
             fontSize: 10,
-            // fontWeight: "bold",
             textAlign: "center",
             marginTop: 0,
             marginBottom: 8,
@@ -239,8 +242,6 @@ const ReResignationPDF = ({ data }) => {
             bottom: 12,
             left: 28,
             right: 28,
-            // borderTopWidth: 1,
-            // borderTopColor: "#D1D5DB",
             paddingTop: 4,
             flexDirection: "row",
             justifyContent: "space-between",
@@ -255,6 +256,8 @@ const ReResignationPDF = ({ data }) => {
 };
 
 export default function ReResignationV2() {
+  const { currentUserData } = useAuth();
+  const selfEmployeeId = currentUserData?.userType === "employee" ? currentUserData?.id : null;
   const [employees, setEmployees] = useState([]);
   const [employmentsByEmployeeId, setEmploymentsByEmployeeId] = useState({});
   const [employee, setEmployee] = useState(null);
@@ -277,16 +280,16 @@ export default function ReResignationV2() {
   useEffect(() => {
     const load = async () => {
       try {
-        const qs = await getDocs(collection(db, "employees"));
-        const list = qs.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const list = await fetchDocEmployees(selfEmployeeId);
         setEmployees(list);
+        if (selfEmployeeId && list[0]) handleEmployeeChange(list[0]);
       } catch (e) {
         console.error(e);
         toast.error("Failed to load employees");
       }
     };
     load();
-  }, []);
+  }, [selfEmployeeId]);
 
   const loadEmploymentForEmployee = async (id) => {
     if (!id || employmentsByEmployeeId[id]) return employmentsByEmployeeId[id] || null;
@@ -484,7 +487,7 @@ export default function ReResignationV2() {
         <TableHeader
           title="Resignation Mail"
           backButton={{
-            href: "/dashboard/documents/v2",
+            href: selfEmployeeId ? "/employee/documents" : "/dashboard/documents",
             label: "Back",
           }}
           searchValue=""

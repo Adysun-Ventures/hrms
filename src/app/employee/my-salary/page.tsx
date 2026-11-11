@@ -1,14 +1,13 @@
-'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { useAuth } from '@/context/AuthContext';
 import { useEmployeeSelfSalariesByEmployee } from '@/hooks/useSalaries';
 import TableHeader from '@/components/ui/TableHeader';
 import Pagination from '@/components/ui/Pagination';
 import { ActionButton } from '@/components/ui/ActionButton';
-import { FiDownload, FiEdit, FiEye, FiPlus } from 'react-icons/fi';
+import { FiDownload, FiEdit, FiEye } from 'react-icons/fi';
 import { FaRupeeSign, FaSyncAlt } from 'react-icons/fa';
 import { FaRegSquarePlus } from 'react-icons/fa6';
 import { Toaster } from 'react-hot-toast';

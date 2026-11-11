@@ -31,7 +31,6 @@ export async function updateUserProfile(
         };
 
     await updateDoc(userRef, updateData);
-    console.log(`✅ Profile updated successfully for ${userType}:`, userId);
   } catch (error) {
     console.error(`❌ Error updating ${userType} profile:`, error);
     throw new Error(`Failed to update profile: ${error instanceof Error ? error.message : 'Unknown error'}`);

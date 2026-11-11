@@ -1,8 +1,7 @@
-'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { FiUser, FiMail, FiPhone, FiSave, FiX, FiArrowLeft } from 'react-icons/fi';
+import { useRouter } from '@/lib/navigation';
+import { FiUser, FiMail, FiPhone, FiSave, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
@@ -208,7 +207,7 @@ export default function EditProfilePage() {
             </div>
 
             {/* Form Fields */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Full Name */}
               <div className="space-y-2">
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700">

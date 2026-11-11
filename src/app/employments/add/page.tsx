@@ -1,7 +1,6 @@
-'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from '@/lib/navigation';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
@@ -21,7 +20,6 @@ import { Employment, Employee } from '@/types';
 import { FiCheckCircle, FiPlus, FiRefreshCw, FiTrash2, FiX } from 'react-icons/fi';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
-import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import CustomDateInput from '@/components/ui/CustomDateInput';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -223,7 +221,6 @@ export default function AddEmploymentPage() {
         break;
       case 'employmentInfo':
         setValue('employmentId', '' as any, { shouldDirty: true });
-        setValue('profilePhoto', '' as any, { shouldDirty: true });
         break;
       case 'professionalReference':
         setValue('teamLead.name' as any, '', { shouldDirty: true });
@@ -279,73 +276,6 @@ export default function AddEmploymentPage() {
         break;
       default:
         break;
-    }
-  };
-
-  const compressImageToDataUrl = async (file: File) => {
-    // Keep safely under Firestore ~1MB doc limit (base64 grows ~33%).
-    const maxDimension = 512;
-    const maxBytes = 650_000;
-
-    const readAsDataUrl = (f: File) =>
-      new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ''));
-        reader.onerror = reject;
-        reader.readAsDataURL(f);
-      });
-
-    const src = await readAsDataUrl(file);
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.onload = () => resolve(el);
-      el.onerror = reject;
-      el.src = src;
-    });
-
-    const w = img.naturalWidth || img.width;
-    const h = img.naturalHeight || img.height;
-    const scale = Math.min(1, maxDimension / Math.max(w, h));
-    const outW = Math.max(1, Math.round(w * scale));
-    const outH = Math.max(1, Math.round(h * scale));
-
-    const canvas = document.createElement('canvas');
-    canvas.width = outW;
-    canvas.height = outH;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return src;
-    ctx.drawImage(img, 0, 0, outW, outH);
-
-    const tryEncode = (mime: string, quality?: number) => canvas.toDataURL(mime, quality);
-
-    // Prefer WebP for smaller output; fall back to JPEG.
-    let quality = 0.82;
-    let out = tryEncode('image/webp', quality);
-    if (!out.startsWith('data:image/webp')) out = tryEncode('image/jpeg', quality);
-
-    // Reduce quality until size is acceptable or we hit a floor.
-    while (out.length > maxBytes && quality > 0.35) {
-      quality = Number((quality - 0.07).toFixed(2));
-      out = out.startsWith('data:image/webp')
-        ? tryEncode('image/webp', quality)
-        : tryEncode('image/jpeg', quality);
-    }
-
-    return out;
-  };
-
-  const handleProfilePhotoUpload = async (file: File) => {
-    try {
-      const compressed = await compressImageToDataUrl(file);
-      // Additional guard in case of very large images.
-      if (compressed.length > 900_000) {
-        toast.error('Profile photo is too large. Please choose a smaller image.');
-        return;
-      }
-      setValue('profilePhoto', compressed as any, { shouldDirty: true, shouldValidate: false });
-    } catch (e) {
-      console.error('Profile photo upload failed', e);
-      toast.error('Could not read profile photo. Try a different image.');
     }
   };
 
@@ -636,15 +566,6 @@ export default function AddEmploymentPage() {
       shouldDirty: false,
     });
   }, [dirtyFields, incrementOtherAllowanceCalculated, setValue]);
-  const incrementGrossSalary =
-    incrementBasic + incrementHra + incrementConveyance + (Number(incrementOtherAllowanceValue) || 0);
-  const incrementPf = incrementPfIncluded ? Math.min(incrementBasic, 15000) * 0.12 : 0;
-  const incrementHikePercent = (() => {
-    const joining = Number(joiningCtcValue ?? 0) || 0;
-    const increment = Number(incrementCtcValue ?? 0) || 0;
-    if (joining <= 0) return 0;
-    return ((increment - joining) / joining) * 100;
-  })();
 
   const getIncrementSalaryBreakdown = (increment: any) => {
     const incrementCtc = Number(increment?.incrementedCtc ?? 0) || 0;
@@ -1186,29 +1107,6 @@ export default function AddEmploymentPage() {
 
       const created = await addEmployment(formattedData);
       
-      // Update localStorage with employment data including profile photo for Header component
-      if (isEmployeeUser && formattedData.profilePhoto) {
-        try {
-          // Store employment data with profile photo for Header access
-          localStorage.setItem('employeeEmploymentData', JSON.stringify(formattedData));
-          
-          // Also store in fullEmployeeData for Header component access
-          const fullEmployeeData = localStorage.getItem('fullEmployeeData');
-          if (fullEmployeeData) {
-            const parsedData = JSON.parse(fullEmployeeData);
-            parsedData.profilePhoto = formattedData.profilePhoto;
-            localStorage.setItem('fullEmployeeData', JSON.stringify(parsedData));
-          }
-          
-          // Dispatch custom event to notify Header component of profile photo update
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(new CustomEvent('profileUpdated'));
-          }
-        } catch (error) {
-          console.error('Error updating localStorage with employment data:', error);
-        }
-      }
-      
       toast.success('Employment record created successfully!', { id: 'add-employment' });
 
       if (isEmployeeUser && created?.id) {
@@ -1243,8 +1141,8 @@ export default function AddEmploymentPage() {
               <div className="h-4 bg-gray-200 rounded"></div>
               <div className="h-10 bg-gray-200 rounded"></div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[...Array(6)].map((_, index) => (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {[...Array(8)].map((_, index) => (
                 <div key={index} className="space-y-2">
                   <div className="h-4 bg-gray-200 rounded w-1/2"></div>
                   <div className="h-10 bg-gray-200 rounded"></div>
@@ -1755,30 +1653,6 @@ export default function AddEmploymentPage() {
                     {errors.employmentId && (
                       <p className="mt-1 text-sm text-red-600">{errors.employmentId.message}</p>
                     )}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Upload Profile Photo
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="w-full flex-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleProfilePhotoUpload(file);
-                        }}
-                      />
-                      {watch('profilePhoto') ? (
-                        <img
-                          src={String(watch('profilePhoto') || '')}
-                          alt="Profile preview"
-                          className="h-14 w-14 rounded-full object-cover border border-gray-200 shrink-0"
-                        />
-                      ) : null}
-                    </div>
                   </div>
 
                   {/* Joining CTC and In-hand CTC removed from this section */}

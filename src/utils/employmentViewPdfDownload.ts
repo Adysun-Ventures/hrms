@@ -3,8 +3,7 @@ import jsPDF from 'jspdf';
 
 /**
  * Rasterize DOM using the browser’s own layout/paint (via html-to-image).
- * Matches on-screen output including oklch(), SVG icons, and gradients —
- * unlike html2canvas, which re-parses CSS and breaks on modern color syntax.
+ * Matches on-screen output including oklch(), SVG icons, and gradients.
  */
 function settleLayout(): Promise<void> {
   return new Promise((resolve) => {
@@ -28,7 +27,7 @@ export async function downloadElementAsMultiPagePdf(
     skipFonts: true,
     filter: (domNode) => {
       if (!(domNode instanceof Element)) return true;
-      return !domNode.hasAttribute('data-html2canvas-ignore');
+      return !domNode.hasAttribute('data-pdf-ignore');
     },
   });
 

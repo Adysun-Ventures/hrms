@@ -1,4 +1,3 @@
-'use client';
 
 import { ReactNode } from 'react';
 import Sidebar from './Sidebar';
@@ -33,13 +32,13 @@ const DashboardLayout = ({
 
   return (
     <AuthGuard allowedUserTypes={allowedUserTypes}>
-      <div className="min-h-screen bg-gray-50">
+      <div className="app-shell min-h-screen bg-slate-50 text-slate-800">
         {isEmployee ? <EmployeeSidebar /> : <Sidebar />}
-        <Header variant="protected" />
-        <main className="pt-16 lg:pl-64 min-h-screen">
-          <div className="p-4 md:p-6">
+        <Header />
+        <main className="pt-16 lg:pl-[var(--sidebar-w)] min-h-screen">
+          <div className="p-3 md:p-4">
             {showBreadcrumb && breadcrumbItems.length > 0 && (
-              <SimpleBreadcrumb items={breadcrumbItems} className="mb-4" />
+              <SimpleBreadcrumb items={breadcrumbItems} className="mb-3" />
             )}
             {children}
           </div>

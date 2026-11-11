@@ -83,9 +83,6 @@ export function validateSalaryInputs(inputs: MonthlySalaryInputs): void {
   if (inputs.leavesCount < 0) {
     throw new Error('Leave Count cannot be negative');
   }
-  // if (inputs.fixedPay > inputs.ctc) {
-  //   throw new Error('Fixed Pay cannot be greater than CTC');
-  // }
   if (inputs.month < 1 || inputs.month > 12) {
     throw new Error('Month must be between 1 and 12');
   }
@@ -183,27 +180,5 @@ export function calculateMonthlySalary(inputs: MonthlySalaryInputs): MonthlySala
     totalDeduction,
     netSalary,
   };
-}
-
-/**
- * Helper function to calculate per month from fixed pay
- */
-export function calculatePerMonth(fixedPay: number): number {
-  return roundToTwoDecimals(fixedPay / 12);
-}
-
-/**
- * Helper function to calculate per day from per month
- * Uses fixed 30-day logic as per TOON model
- */
-export function calculatePerDay(perMonth: number): number {
-  return roundToTwoDecimals(perMonth / 30);
-}
-
-/**
- * Helper function to calculate work days from month days and leave count
- */
-export function calculateWorkDays(monthDays: number, leavesCount: number): number {
-  return Math.max(0, monthDays - leavesCount);
 }
 

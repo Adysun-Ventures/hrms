@@ -15,10 +15,6 @@ export const getQueryClient = () => {
           staleTime: 1 * 60 * 1000, // 1 minute in milliseconds
           // Retry failed requests 3 times
           retry: 3,
-          // Refetch on window focus - DISABLED to prevent unnecessary API calls
-          // refetchOnWindowFocus: false,
-          // Refetch on reconnect - DISABLED to prevent unnecessary API calls
-          // refetchOnReconnect: true,
           // Background fetching - refetch in background when data is stale
           refetchOnMount: true,
           // Silent API calls - don't show loading states for background refetches
@@ -45,10 +41,6 @@ export const getQueryClient = () => {
           staleTime: 1 * 60 * 1000, // 1 minute in milliseconds
           // Retry failed requests 3 times
           retry: 3,
-          // Refetch on window focus - DISABLED to prevent unnecessary API calls
-          // refetchOnWindowFocus: false,
-          // Refetch on reconnect - DISABLED to prevent unnecessary API calls
-          // refetchOnReconnect: true,
           // Background fetching - refetch in background when data is stale
           refetchOnMount: true,
           // Silent API calls - don't show loading states for background refetches
@@ -65,54 +57,4 @@ export const getQueryClient = () => {
   }
   
   return queryClient;
-};
-
-// Helper functions for silent API calls
-export const silentQueryOptions = {
-  // Silent query options - no loading states, background only
-  // refetchOnWindowFocus: false, // DISABLED
-  refetchOnMount: false,
-  // refetchOnReconnect: false, // DISABLED
-  notifyOnChangeProps: ['data', 'error'],
-  // Don't show loading states
-  placeholderData: (previousData: any) => previousData,
-};
-
-// Helper functions for background fetching
-export const backgroundQueryOptions = {
-  // Background fetching - only when cache is missing or stale
-  // refetchOnWindowFocus: true, // DISABLED
-  refetchOnMount: true,
-  // refetchOnReconnect: true, // DISABLED
-  // Show loading states only for initial load
-  notifyOnChangeProps: ['data', 'error'],
-  // Keep previous data while fetching
-  placeholderData: (previousData: any) => previousData,
-};
-
-// Helper functions for optimistic mutations
-export const createOptimisticMutationOptions = (queryKey: string[]) => ({
-  onMutate: async (variables: any) => {
-    const client = getQueryClient();
-    // Cancel any outgoing refetches
-    await client.cancelQueries({ queryKey });
-    
-    // Snapshot the previous value
-    const previousData = client.getQueryData(queryKey);
-    
-    // Return context for rollback
-    return { previousData, queryKey };
-  },
-  onError: (err: any, variables: any, context: any) => {
-    const client = getQueryClient();
-    // Rollback on error
-    if (context?.previousData && context?.queryKey) {
-      client.setQueryData(context.queryKey, context.previousData);
-    }
-  },
-  onSettled: () => {
-    const client = getQueryClient();
-    // Always refetch after mutation
-    client.invalidateQueries({ queryKey });
-  },
-}); 
+}; 

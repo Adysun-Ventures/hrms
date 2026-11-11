@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import Link from '@/lib/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { FaBroom } from 'react-icons/fa6';
 import { FiChevronLeft } from 'react-icons/fi';
@@ -118,7 +117,7 @@ export default function SalaryModulePage() {
               Clear
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">CTC</label>
               <input
@@ -180,8 +179,8 @@ export default function SalaryModulePage() {
 
         <div className="border-t border-gray-200 mb-6" />
 
-        <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div>
+        <div className="relative grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+          <div className="lg:col-span-2">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
                 <h2 className="text-lg font-semibold text-gray-800">Monthly</h2>
@@ -254,7 +253,7 @@ export default function SalaryModulePage() {
           </div>
           
 
-          <div>
+          <div className="lg:col-span-2">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-3">
                 <h2 className="text-lg font-semibold text-gray-800">Annually</h2>
@@ -334,8 +333,8 @@ export default function SalaryModulePage() {
             Clear
           </button>
         </div>
-        <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-4">
+        <div className="relative grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-2 space-y-4">
             <h3 className="text-base font-semibold text-gray-700">Monthly</h3>
             <div>
               <div className="flex items-center justify-between gap-3 mb-2">
@@ -399,7 +398,7 @@ export default function SalaryModulePage() {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="lg:col-span-2 space-y-4">
             <h3 className="text-base font-semibold text-gray-700">Annually</h3>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">PF (DEDUCT) Annual</label>

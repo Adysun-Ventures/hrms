@@ -13,12 +13,8 @@
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
-
 # production
-/build
+/dist
 
 # misc
 .DS_Store
@@ -32,13 +28,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env
+.env*.local
+# Firebase service-account keys
+*service-account*.json
 
-# vercel
-.vercel
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
 
 # Local Netlify folder
 .netlify

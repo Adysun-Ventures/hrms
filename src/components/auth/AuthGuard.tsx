@@ -1,7 +1,6 @@
-'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from '@/lib/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 interface AuthGuardProps {
@@ -18,34 +17,36 @@ export default function AuthGuard({
   const { currentUserData, loading } = useAuth();
   const router = useRouter();
   const [hasInitialCheckCompleted, setHasInitialCheckCompleted] = useState(false);
+  const redirected = useRef(false);
+  // Pages pass allowedUserTypes as an inline array (new every render); depend on its contents.
+  const allowedKey = allowedUserTypes.join(',');
 
   useEffect(() => {
     // Only show the blocking loader on the very first auth check.
     if (loading) return;
 
+    // Redirect once: repeating it while the target page loads restarts the navigation in a loop.
+    const go = (to: string) => {
+      if (redirected.current) return;
+      redirected.current = true;
+      router.replace(to);
+    };
+
     if (!currentUserData) {
-      router.push(redirectTo);
+      go(redirectTo);
       return;
     }
 
-    const isAllowedUserType = allowedUserTypes.includes(currentUserData.userType);
-
-    if (!isAllowedUserType) {
-      if (currentUserData.userType === 'admin') {
-        router.push('/dashboard');
-      } else if (currentUserData.userType === 'employee') {
-        router.push('/employee-dashboard');
-      } else {
-        router.push(redirectTo);
-      }
+    if (!allowedKey.split(',').includes(currentUserData.userType)) {
+      if (currentUserData.userType === 'admin') go('/dashboard');
+      else if (currentUserData.userType === 'employee') go('/employee-dashboard');
+      else go(redirectTo);
       return;
     }
 
     // At this point user is valid and first check is done.
-    if (!hasInitialCheckCompleted) {
-      setHasInitialCheckCompleted(true);
-    }
-  }, [currentUserData, loading, allowedUserTypes, redirectTo, router, hasInitialCheckCompleted]);
+    setHasInitialCheckCompleted(true);
+  }, [currentUserData, loading, allowedKey, redirectTo, router]);
 
   // Block the UI only during the very first auth check to avoid page blink on every route change.
   if (!hasInitialCheckCompleted) {

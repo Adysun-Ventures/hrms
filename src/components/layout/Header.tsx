@@ -1,28 +1,34 @@
-'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { FiLogOut, FiUser, FiChevronDown, FiFileText, FiBriefcase } from 'react-icons/fi';
-import { FaTimes } from 'react-icons/fa';
-import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import { toTitleCase } from '@/utils/stringUtils';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 
-interface HeaderProps {
-  variant?: 'public' | 'protected';
-}
+const readStoredEmployeeId = (): string | null => {
+  for (const key of ['employeeData', 'fullEmployeeData']) {
+    try {
+      const id = JSON.parse(localStorage.getItem(key) || 'null')?.employeeId;
+      if (id) return String(id);
+    } catch {}
+  }
+  return null;
+};
 
-const Header = ({ variant = 'protected' }: HeaderProps) => {
+const toDateMs = (value: any): number => {
+  if (!value) return 0;
+  const d = typeof value?.toDate === 'function' ? value.toDate() : new Date(value);
+  return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+};
+
+const Header = () => {
   const { logout, currentAdmin, currentEmployee, isEmployeeExited } = useAuth();
-  const isWorkingEmployee = Boolean(currentEmployee) && !isEmployeeExited;
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
   const [localEmployeeData, setLocalEmployeeData] = useState<any>(null);
-  const [employeeEmploymentPhoto, setEmployeeEmploymentPhoto] = useState<string | null>(null);
   const [employeeLastWorkingDate, setEmployeeLastWorkingDate] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -33,416 +39,143 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
         setIsDropdownOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Handle scroll detection for glassmorphism effect
+  // Keep employee name/ID fresh after profile edits (same tab: 'profileUpdated', other tabs: 'storage').
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 0);
+    if (!currentEmployee) return;
+    const update = () => {
+      try {
+        const stored = localStorage.getItem('employeeData');
+        if (stored) setLocalEmployeeData(JSON.parse(stored));
+      } catch {}
     };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Listen for localStorage changes and custom events to update employee data
-  useEffect(() => {
-    // Function to update employee data from localStorage
-    const updateEmployeeData = () => {
-      if (currentEmployee) {
-        try {
-          const storedData = localStorage.getItem('employeeData');
-          if (storedData) {
-            const parsedData = JSON.parse(storedData);
-            setLocalEmployeeData(parsedData);
-          }
-        } catch (error) {
-          console.error('Error reading employee data from localStorage:', error);
-        }
-      }
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === 'employeeData') update();
     };
-
-    // Initial load
-    updateEmployeeData();
-
-    // Listen for storage events (when localStorage changes in other tabs/windows)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'employeeData') {
-        updateEmployeeData();
-      }
-    };
-
-    // Listen for custom event (when profile is updated in same tab)
-    const handleProfileUpdate = () => {
-      updateEmployeeData();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('profileUpdated', handleProfileUpdate);
-
-    // Also poll for changes (in case storage event doesn't fire in same tab)
-    const interval = setInterval(updateEmployeeData, 1000);
-
+    update();
+    window.addEventListener('storage', onStorage);
+    window.addEventListener('profileUpdated', update);
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('profileUpdated', handleProfileUpdate);
-      clearInterval(interval);
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('profileUpdated', update);
     };
   }, [currentEmployee]);
 
-  // Always prefer profile photo uploaded in Employment for employee users.
+  // Last working date from the latest Employment (shown for exited employees).
   useEffect(() => {
-    let isCancelled = false;
-
-    const toDateMs = (value: any): number => {
-      if (!value) return 0;
-      if (value instanceof Date) return Number.isNaN(value.getTime()) ? 0 : value.getTime();
-      if (typeof value?.toDate === 'function') {
-        const d = value.toDate();
-        return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
-      }
-      const d = new Date(value);
-      return Number.isNaN(d.getTime()) ? 0 : d.getTime();
-    };
-
-    const fetchEmploymentPhoto = async () => {
-      if (!currentEmployee?.id) {
-        setEmployeeEmploymentPhoto(null);
-        setEmployeeLastWorkingDate(null);
-        return;
-      }
-      // Prevent showing previous employee photo while next employee data loads.
-      setEmployeeEmploymentPhoto(null);
-      setEmployeeLastWorkingDate(null);
-      try {
-        const snap = await getDocs(
-          query(collection(db, 'employments'), where('employeeId', '==', currentEmployee.id))
-        );
+    let cancelled = false;
+    setEmployeeLastWorkingDate(null);
+    if (!currentEmployee?.id || !isEmployeeExited) return;
+    getDocs(query(collection(db, 'employments'), where('employeeId', '==', currentEmployee.id)))
+      .then((snap) => {
         const rows = snap.docs.map((d) => d.data() as any);
-        rows.sort((a, b) => {
-          const aMs = toDateMs(a?.updatedAt) || toDateMs(a?.startDate || a?.joiningDate);
-          const bMs = toDateMs(b?.updatedAt) || toDateMs(b?.startDate || b?.joiningDate);
-          return bMs - aMs;
-        });
-        const latest = rows[0] || null;
-        const firstWithPhoto = rows.find((r) => String(r?.profilePhoto || '').trim());
-        const nextPhoto = firstWithPhoto ? String(firstWithPhoto.profilePhoto).trim() : null;
-        if (!isCancelled) setEmployeeEmploymentPhoto(nextPhoto);
-        if (!isCancelled) {
-          const lwdRaw = latest?.lastWorkingDate || latest?.endDate || null;
-          setEmployeeLastWorkingDate(lwdRaw ? String(lwdRaw) : null);
-        }
-      } catch (error) {
-        console.error('Error loading employment profile photo:', error);
-        if (!isCancelled) {
-          setEmployeeEmploymentPhoto(null);
-          setEmployeeLastWorkingDate(null);
-        }
-      }
-    };
-
-    fetchEmploymentPhoto();
+        rows.sort(
+          (a, b) =>
+            (toDateMs(b?.updatedAt) || toDateMs(b?.startDate || b?.joiningDate)) -
+            (toDateMs(a?.updatedAt) || toDateMs(a?.startDate || a?.joiningDate))
+        );
+        const lwd = rows[0]?.lastWorkingDate || rows[0]?.endDate || null;
+        if (!cancelled) setEmployeeLastWorkingDate(lwd ? String(lwd) : null);
+      })
+      .catch((error) => console.error('Error loading employment last working date:', error));
     return () => {
-      isCancelled = true;
+      cancelled = true;
     };
-  }, [currentEmployee?.id]);
+  }, [currentEmployee?.id, isEmployeeExited]);
 
   const handleLogout = async () => {
+    setIsDropdownOpen(false);
     try {
       await logout();
-      router.push('/login');
     } catch (error) {
       console.error('Error logging out:', error);
     }
+    router.replace('/login');
   };
 
-  const handleProfileClick = () => {
-    if (currentAdmin) {
-      router.push('/profile');
-    } else if (currentEmployee) {
-      router.push('/employee/profile');
-    }
+  const go = (path: string) => {
     setIsDropdownOpen(false);
+    router.push(path);
   };
 
-  // Get user information
-  const getUserInfo = () => {
-    if (currentAdmin) {
-      return {
-        name: toTitleCase(currentAdmin.name) || 'Admin User',
-        type: 'Admin',
-        employeeId: null
-      };
-    } else if (currentEmployee) {
-      // Use localEmployeeData if available (most up-to-date), otherwise fall back to currentEmployee
-      const employee = localEmployeeData || currentEmployee;
-      
-      // Try multiple sources to get the employeeId
-      let employeeId = null;
-      
-      try {
-        // 1. First check if employeeId exists in localEmployeeData or currentEmployee
-        if ((employee as any)?.employeeId) {
-          employeeId = (employee as any).employeeId;
-        } 
-        // 2. Try to get from localStorage
-        else {
-          const storedEmployeeData = localStorage.getItem('employeeData');
-          if (storedEmployeeData) {
-            const parsedData = JSON.parse(storedEmployeeData);
-            if (parsedData.employeeId) {
-              employeeId = parsedData.employeeId;
-            }
-          }
-        }
-        
-        // 3. If still not found, try to get from fullEmployeeData in localStorage
-        if (!employeeId) {
-          const fullEmployeeData = localStorage.getItem('fullEmployeeData');
-          if (fullEmployeeData) {
-            const parsedData = JSON.parse(fullEmployeeData);
-            if (parsedData.employeeId) {
-              employeeId = parsedData.employeeId;
-            }
-          }
-        }
-        
-        // 4. As a last resort, check if there's a hardcoded value in the dashboard
-        if (!employeeId && window && (window as any).employeeDashboardData) {
-          employeeId = (window as any).employeeDashboardData.employeeId;
-        }
-      } catch (error) {
-        console.error('Error retrieving employee ID:', error);
-      }
-      
-      return {
-        name: toTitleCase(employee.name || currentEmployee.name) || 'Employee User',
-        type: 'Employee',
-        employeeId: employeeId
-      };
-    }
-    return {
-      name: 'User',
-      type: 'Unknown',
-      employeeId: null
-    };
-  };
+  const employee = localEmployeeData || currentEmployee;
+  const userName = toTitleCase((currentAdmin || employee)?.name || '') || (currentAdmin ? 'Admin User' : 'User');
+  const subtitle = currentAdmin
+    ? 'Admin'
+    : (employee as any)?.employeeId || (currentEmployee ? readStoredEmployeeId() : null) || 'Employee';
 
-  const userInfo = getUserInfo();
-
-  // Determine header styling based on variant
-  const getHeaderStyles = () => {
-    if (variant === 'public') {
-      return isScrolled 
-        ? 'bg-white/10 backdrop-blur-md border-b border-white/20 shadow-lg' 
-        : 'bg-transparent';
-    } else {
-      // Protected variant
-      return 'bg-white border-b border-gray-200 shadow-sm';
-    }
-  };
-
-  const getHeaderEmployee = ()=>{
-    if (variant === 'public') {
-      return isScrolled 
-        ? 'bg-orange-500/10 backdrop-blur-md border-b border-white/20 shadow-lg' 
-        : 'bg-transparent';
-    } else {
-      // Protected variant
-      return 'bg-orange-500/10 border-b border-gray-200 shadow-sm';
-    }
-  }
-  const getDynamicHeaderBg = () => {
-  // Admin always white (highest priority)
-  if (currentAdmin) {
-    return 'bg-white border-b border-gray-200 shadow-sm';
-  }
-
-  // Only employee (not admin)
-  if (currentEmployee) {
-    if (isEmployeeExited) {
-      return 'bg-[#ff6347] border-b border-[#e5533d] shadow-sm';
-    }
-    return 'bg-green-600 border-b border-green-700 shadow-sm';
-  }
-
-  // Default fallback
-  return 'bg-white border-b border-gray-200 shadow-sm';
-};
-
-
-  // Determine text styling based on variant
-  const getTextStyles = () => {
-    if (variant === 'public') {
-      return isScrolled ? 'text-white' : 'text-gray-800';
-    } else {
-      // Protected variant
-      return 'text-gray-800';
-    }
-  };
-
-  // Determine hover styling based on variant
-  const getHoverStyles = () => {
-    if (variant === 'public') {
-      return isScrolled 
-        ? 'text-white hover:bg-white/10' 
-        : 'text-gray-700 hover:bg-gray-100';
-    } else {
-      // Protected variant
-      return 'text-gray-700 hover:bg-gray-100';
-    }
-  };
+  const menuItem = 'flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-slate-700 hover:bg-slate-100';
 
   return (
-    
-    
-    <header className={`h-16 fixed top-0 right-0 left-0 lg:left-64 z-10 transition-all duration-300 ${getDynamicHeaderBg()}`}>
-      <div className="relative flex items-center justify-between h-full px-4">
-        {/* Mobile title - centered on mobile, hidden on desktop */}
-        <h1 className={`text-xl font-semibold lg:hidden flex-1 text-center transition-colors duration-300 ${isEmployeeExited ? 'text-white' : getTextStyles()} opacity-0`}>
-          {isEmployeeExited ? 'Exited' : (currentAdmin ? 'Admin ' : 'Employee')}
-        </h1>
-        {isEmployeeExited && (
-          <div className="hidden lg:flex flex-1 flex-col justify-center z-10">
-            <span className="text-white font-bold text-xl leading-tight inline-flex items-center gap-2">
-              <FaTimes className="w-4 h-4" />
-              Exited
-            </span>
-            <span className="text-white/90 text-xs leading-tight mt-1">
-              LWD:{' '}
-              {employeeLastWorkingDate ? formatDateToDayMonYear(employeeLastWorkingDate) : '-'}
-            </span>
-          </div>
-        )}
-        {isWorkingEmployee && (
-          <div className="hidden lg:flex flex-1 flex-col justify-center z-10">
-            <span className="text-white font-bold text-xl leading-tight">Working</span>
-          </div>
-        )}
-        
-        {/* Always-centered logo and company name */}
-        <div className="absolute left-1/2 -translate-x-1/2 z-0">
-          <a 
-            href="https://adysunventures.com/" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="flex items-center hover:opacity-80 transition-opacity cursor-pointer"
+    <header className="h-16 fixed top-0 right-0 left-0 lg:left-[var(--sidebar-w)] z-30 bg-white border-b border-slate-200">
+      <div className="relative flex items-center h-full pl-14 pr-3 lg:pl-4">
+        {/* Employee status */}
+        {currentEmployee && (
+          <span
+            className={`hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+              isEmployeeExited ? 'bg-red-50 text-red-700 ring-1 ring-red-200' : 'bg-green-50 text-green-700 ring-1 ring-green-200'
+            }`}
           >
-            <Image
-              src="/adysun-logo.png"
-              alt="Adysun Ventures Logo"
-              width={36}
-              height={36}
-              className="object-contain mr-2 sm:mr-3"
-              priority
-            />
-            <div className="flex flex-col items-start leading-tight">
-              <span className={`text-sm sm:text-xl font-bold transition-colors duration-300 ${(isEmployeeExited || isWorkingEmployee) ? 'text-white' : getTextStyles()}`}>
-                ADYSUN VENTURES
-              </span>
-              <span className={`hidden sm:block text-xs ${(isEmployeeExited || isWorkingEmployee) ? 'text-white/90' : 'text-gray-600'}`}>
-                Inspire. Imagine. Implement.
-              </span>
-            </div>
-          </a>
-        </div>
-        
-        {/* User dropdown on the right side */}
-        <div className="relative z-10 ml-auto" ref={dropdownRef}>
+            <span className={`h-2 w-2 rounded-full ${isEmployeeExited ? 'bg-red-500' : 'bg-green-500'}`} />
+            {isEmployeeExited
+              ? `Exited${employeeLastWorkingDate ? ` · LWD ${formatDateToDayMonYear(employeeLastWorkingDate)}` : ''}`
+              : 'Working'}
+          </span>
+        )}
+
+        {/* Centered brand */}
+        <a
+          href="https://adysunventures.com/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2"
+        >
+          <img src="/adysun-logo.png" alt="Adysun Ventures" width={28} height={28} className="object-contain" />
+          <span className="hidden sm:inline text-base font-bold text-slate-900 tracking-wide">ADYSUN VENTURES</span>
+        </a>
+
+        {/* User menu */}
+        <div className="relative ml-auto" ref={dropdownRef}>
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-colors cursor-pointer ${getHoverStyles()}`}
+            className="flex items-center gap-2 pl-1.5 pr-2 py-1.5 rounded-full hover:bg-slate-100"
+            aria-haspopup="menu"
+            aria-expanded={isDropdownOpen}
           >
-            {(() => {
-              const employee = localEmployeeData || currentEmployee;
-              let profilePhoto = null;
-
-              // Admin avatar should never read employee localStorage data.
-              if (currentAdmin && !currentEmployee) {
-                profilePhoto =
-                  (currentAdmin as any)?.profilePhoto ||
-                  (currentAdmin as any)?.imageUrl ||
-                  null;
-              } else if (currentEmployee) {
-                // Employee avatar: prefer profile photo from Employment (Firestore).
-                profilePhoto = employeeEmploymentPhoto;
-              }
-              
-              return profilePhoto ? (
-                <img
-                  src={profilePhoto}
-                  alt={`${userInfo.name} profile`}
-                  className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
-                />
-              ) : (
-                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-semibold">
-                  {userInfo.name.charAt(0).toUpperCase()}
-                </div>
-              );
-            })()}
-            <div className="hidden sm:block text-left">
-              <div className={`text-sm font-medium transition-colors duration-300 ${
-                variant === 'public' ? (isScrolled ? 'text-white' : 'text-gray-900') : 'text-gray-900'
-              }`}>{userInfo.name}</div>
-              <div className={`text-xs transition-colors duration-300 ${
-                variant === 'public' ? (isScrolled ? 'text-white/70' : 'text-gray-500') : 'text-gray-500'
-              }`}>
-                {userInfo.type === 'Employee' && userInfo.employeeId ? (
-                  <span className="flex items-center">
-                    {/* <span className="mr-1">EMP ID:</span> */}
-                    <span className="font-medium">{userInfo.employeeId}</span>
-                  </span>
-                ) : (
-                  userInfo.type
-                )}
-              </div>
-            </div>
-            <FiChevronDown className={`w-4 h-4 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+            <span className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+              {userName.charAt(0).toUpperCase()}
+            </span>
+            <span className="hidden sm:block text-left leading-tight">
+              <span className="block text-sm font-semibold text-slate-900">{userName}</span>
+              <span className="block text-xs text-slate-500">{subtitle}</span>
+            </span>
+            <FiChevronDown className="w-4 h-4 text-slate-500" />
           </button>
 
-          {/* Dropdown menu */}
           {isDropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 border border-gray-200">
-              <button
-                onClick={handleProfileClick}
-                className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-              >
-                <FiUser className="w-4 h-4" />
-                My Profile
+            <div role="menu" className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg p-1 z-50 border border-slate-200">
+              <button onClick={() => go(currentAdmin ? '/profile' : '/employee/profile')} className={menuItem}>
+                <FiUser className="w-4 h-4" /> My Profile
               </button>
               {currentEmployee && (
                 <>
-                  <button
-                    onClick={() => {
-                      router.push('/employee/employment');
-                      setIsDropdownOpen(false);
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <FiBriefcase className="w-4 h-4" />
-                    My Employment
+                  <button onClick={() => go('/employee/employment')} className={menuItem}>
+                    <FiBriefcase className="w-4 h-4" /> My Employment
                   </button>
-                  <button
-                    onClick={() => {
-                      router.push('/employee/my-salary');
-                      setIsDropdownOpen(false);
-                    }}
-                    className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                  >
-                    <FiFileText className="w-4 h-4" />
-                    My Salaries
+                  <button onClick={() => go('/employee/my-salary')} className={menuItem}>
+                    <FiFileText className="w-4 h-4" /> My Salaries
                   </button>
                 </>
               )}
+              <div className="my-1 border-t border-slate-100" />
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-3 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50"
               >
-                <FiLogOut className="w-4 h-4" />
-                Logout
+                <FiLogOut className="w-4 h-4" /> Logout
               </button>
             </div>
           )}
@@ -452,4 +185,4 @@ const Header = ({ variant = 'protected' }: HeaderProps) => {
   );
 };
 
-export default Header; 
+export default Header;

@@ -1,4 +1,3 @@
-"use client";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { FiDownload, FiX } from "react-icons/fi";
@@ -7,6 +6,7 @@ import { Combobox } from "@headlessui/react";
 import { useAuth } from "@/context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { fetchDocEmployees } from '@/utils/document';
 import { db } from "@/firebase/config";
 import {
   Document,
@@ -18,7 +18,6 @@ import {
   StyleSheet,
 } from "@react-pdf/renderer";
 import { BODY_FONT_FAMILY, ensureDocumentFonts } from "@/components/pdf/documentFont";
-import { createAdysunDocx } from "@/utils/docxAdysun";
 import { getEmployeeSalaries } from "@/utils/firebaseUtils";
 
 const COMPANY_DATA = {
@@ -182,9 +181,7 @@ export default function FnfCertificate() {
 
   useEffect(() => {
     const fetchEmployees = async () => {
-      const qs = await getDocs(collection(db, "employees"));
-      const list = qs.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+      const visible = await fetchDocEmployees(selfEmployeeId);
       setCandidates(visible);
 
       const map = {};

@@ -1,14 +1,11 @@
-'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { useAuth } from '@/context/AuthContext';
 import { getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { Employment } from '@/types';
-import { formatDateToDayMonYear } from '@/utils/documentUtils';
-import { toTitleCase } from '@/utils/stringUtils';
 
 export default function EmployeeEmploymentPage() {
   const router = useRouter();

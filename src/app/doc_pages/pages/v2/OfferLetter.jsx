@@ -1,4 +1,3 @@
-'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
 import { FiChevronDown, FiDownload, FiX } from 'react-icons/fi';
@@ -15,23 +14,13 @@ import {
   Image,
 } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
-import {
-  Packer,
-  Paragraph,
-  TextRun,
-  Table,
-  TableRow,
-  TableCell,
-  AlignmentType,
-  WidthType,
-} from 'docx';
-import { createAdysunDocx } from '@/utils/docxAdysun';
 import * as XLSX from 'xlsx';
 import { useAuth } from '@/context/AuthContext';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { fetchDocEmployees } from '@/utils/document';
 import toast, { Toaster } from 'react-hot-toast';
 import { offerLetterStyles } from '@/components/pdf/PDFStyles';
 import GlobalPDFHeader from '@/components/components/docComponents/docHeader';
@@ -375,7 +364,6 @@ const OfferLetterPDF = ({
   }
 
   const name = employee?.name || '';
-  const firstName = name.split(' ')[0] || '';
   const rawAddress = employee?.currentAddress || employee?.permanentAddress || '';
   const fullAddress = rawAddress ? rawAddress.split(/[,;\n]+/).map(v => v.trim()).filter(Boolean) : [];
   const shortAddress = fullAddress.slice(-2);
@@ -504,7 +492,6 @@ const OfferLetterPDF = ({
         paddingLeft: 35,
         fontFamily: BODY_FONT_FAMILY,
         fontSize: 10,
-        // lineHeight: 1.45
       }}
       wrap={false}
     >
@@ -694,154 +681,6 @@ const OfferLetterPDF = ({
 
 };
 
-/* ---------------- DOCX BUILDER ---------------- */
-const toTitleCaseDocx = (str) => {
-  return str?.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') || '';
-};
-
-async function buildOfferLetterDocx(
-  employee,
-  employment,
-  enablePF,
-  designationOverride,
-  documentGenerateDate,
-  effectiveDate,
-  employeeSignPlace
-) {
-  const name = employee?.name || '';
-  const rawAddress = employee?.currentAddress || employee?.permanentAddress || '';
-  const fullAddress = rawAddress ? rawAddress.split(/[,;\n]+/).map(v => v.trim()).filter(Boolean) : [];
-  const shortAddress = fullAddress.slice(-2).join(', ') || '';
-  const designation =
-    (designationOverride || '').trim() ||
-    employment?.jobTitle ||
-    employment?.designation ||
-    '';
-  const joiningRaw = employment?.joiningDate || employment?.startDate || '';
-  const joiningIso = normalizeJoiningToIso(joiningRaw);
-  const joiningDateFormatted = joiningIso
-    ? formatDateToDayMonYear(joiningIso)
-    : joiningRaw || '—';
-  const effectiveIso =
-    effectiveDate && /^\d{4}-\d{2}-\d{2}$/.test(String(effectiveDate).trim())
-      ? String(effectiveDate).trim()
-      : joiningIso;
-  const effectiveDateFormatted = effectiveIso
-    ? formatDateToDayMonYear(effectiveIso)
-    : joiningDateFormatted;
-  const letterDate =
-    documentGenerateDate && /^\d{4}-\d{2}-\d{2}$/.test(documentGenerateDate)
-      ? formatDateToDayMonYear(documentGenerateDate)
-      : formatDateToDayMonYear(new Date());
-  const signPlace = employeeSignPlace || employee?.location || employment?.location || '';
-  const ctc = computeOfferLetterCtcBreakdown(employment, enablePF);
-  const fmt = (n) => n.toLocaleString('en-IN');
-
-  const tableRow = (label, m, a, bold = false) =>
-    new TableRow({
-      children: [
-        new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: label, bold })] })] }),
-        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: fmt(m), bold })] })] }),
-        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: fmt(a), bold })] })] }),
-      ],
-    });
-
-  const tableRowSection = (label) =>
-    new TableRow({
-      children: [
-        new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: label, bold: true })] })] }),
-        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: '' })] }),
-        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: '' })] }),
-      ],
-    });
-
-  const tableRowVariableAnnual = (label, annual) =>
-    new TableRow({
-      children: [
-        new TableCell({ width: { size: 40, type: WidthType.PERCENTAGE }, children: [new Paragraph({ children: [new TextRun({ text: label })] })] }),
-        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ text: '' })] }),
-        new TableCell({ width: { size: 30, type: WidthType.PERCENTAGE }, children: [new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: fmt(annual) })] })] }),
-      ],
-    });
-
-  const children = [
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: COMPANY_DATA.address, alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: COMPANY_DATA.contact, alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: '' }),
-    new Paragraph({ children: [new TextRun({ text: 'Date: ', bold: true }), new TextRun({ text: letterDate })] }),
-    new Paragraph({ text: '' }),
-    new Paragraph({ children: [new TextRun({ text: toTitleCaseDocx(name), bold: true })] }),
-    new Paragraph({ text: shortAddress }),
-    new Paragraph({ text: '' }),
-    new Paragraph({ children: [new TextRun({ text: 'LETTER OF APPOINTMENT', bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: '' }),
-    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCaseDocx(name)},` })] }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: 'We are pleased to extend an employment opportunity with ' }),
-        new TextRun({ text: COMPANY_DATA.name, bold: true }),
-        new TextRun({ text: '. You are hereby appointed to the position of ' }),
-        new TextRun({ text: designation, bold: true }),
-        new TextRun({ text: ' effective from ' }),
-        new TextRun({ text: effectiveDateFormatted, bold: true }),
-        new TextRun({ text: '. Your joining date is ' }),
-        new TextRun({ text: joiningDateFormatted, bold: true }),
-        new TextRun({ text: '.' }),
-      ],
-    }),
-    new Paragraph({ text: '' }),
-    new Paragraph({ children: [new TextRun({ text: 'CTC Breakdown – Annual and Monthly', bold: true, underline: {} })] }),
-    new Paragraph({ text: '' }),
-    new Table({
-      width: { size: 100, type: WidthType.PERCENTAGE },
-      rows: [
-        new TableRow({
-          children: [
-            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ children: [new TextRun({ text: 'Component', bold: true })] })] }),
-            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Monthly (₹)', bold: true })] })] }),
-            new TableCell({ shading: { fill: 'E0E0E0' }, children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Annual (₹)', bold: true })] })] }),
-          ],
-        }),
-        tableRow('Basic Salary', ctc.basicM, ctc.basicA),
-        tableRow('HRA', ctc.hraM, ctc.hraA),
-        tableRow('Conveyance Allowance', ctc.conveyM, ctc.conveyA),
-        tableRow('Other Allowances', ctc.otherM, ctc.otherA),
-        tableRow('Gross Salary', ctc.grossM, ctc.grossA, true),
-        tableRowSection('Deductions'),
-        tableRow('Professional Tax (est.)', ctc.ptM, ctc.ptA),
-        ...(enablePF
-          ? [tableRow('Employee PF (12% of MIN(Basic, ₹15,000))', ctc.pfM, ctc.pfA)]
-          : []),
-        tableRow('Total Deductions', ctc.totalDedM, ctc.totalDedA, true),
-        tableRow('Net In-Hand Salary', ctc.netM, ctc.netA, true),
-        tableRowSection('Additional Benefits'),
-        tableRowVariableAnnual('Ann. Perfr. Incentive (Variable)', ctc.variableAnnual),
-        tableRow('Total CTC', ctc.totalCtcM, ctc.totalCtcA, true),
-      ],
-    }),
-    new Paragraph({
-      children: enablePF
-        ? [new TextRun({ text: 'Note: Provident Fund (PF) is included in deductions as shown above.', italics: true })]
-        : [
-            new TextRun({ text: 'Note: There is currently ', italics: true }),
-            new TextRun({ text: 'no deduction for Provident Fund (PF)', bold: true, italics: true }),
-            new TextRun({ text: '.', italics: true }),
-          ],
-    }),
-    new Paragraph({ text: '' }),
-    new Paragraph({ children: [new TextRun({ text: 'Acknowledgement and Acceptance', bold: true, underline: {} })] }),
-    new Paragraph({ text: 'I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.' }),
-    new Paragraph({ text: '' }),
-    new Paragraph({ children: [new TextRun({ text: 'Candidate Name: ' }), new TextRun({ text: toTitleCaseDocx(name), bold: true })] }),
-    new Paragraph({ text: 'Signature: ________________________________' }),
-    new Paragraph({ children: [new TextRun({ text: 'Date: ' }), new TextRun({ text: letterDate })] }),
-    new Paragraph({ children: [new TextRun({ text: 'Place: ', bold: true }), new TextRun({ text: signPlace || '' })] }),
-  ];
-
-  return await createAdysunDocx({ children });
-}
-
 /* ---------------- MAIN COMPONENT ---------------- */
 function OfferLetterV2({ isForm16 = false }) {
   const { currentUserData } = useAuth();
@@ -872,11 +711,8 @@ function OfferLetterV2({ isForm16 = false }) {
   
 
 
-  const filteredCandidates = candidates.filter(c =>
-    c.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
-  const [pdfKey, setPdfKey] = useState(0);
+  const [, setPdfKey] = useState(0);
 
   useEffect(() => { fetchEmployees(); }, [selfEmployeeId]);
 
@@ -897,11 +733,7 @@ function OfferLetterV2({ isForm16 = false }) {
   };
 
   const fetchEmployees = async () => {
-    const qs = await getDocs(collection(db, 'employees'));
-    // Ensure Firestore doc.id always wins over any stored `id` field.
-    const list = qs.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-    const restrictToSelf = Boolean(selfEmployeeId) && !isForm16;
-    const visibleList = restrictToSelf ? list.filter((e) => e.id === selfEmployeeId) : list;
+    const visibleList = await fetchDocEmployees(selfEmployeeId);
     setCandidates(visibleList);
 
     const toDateMs = (value) => {
@@ -953,17 +785,6 @@ function OfferLetterV2({ isForm16 = false }) {
     }
   };
 
-  const closeEmployeePicker = () => {
-    const el = employeePickerInputRef.current;
-    if (!el) return;
-    try {
-      // HeadlessUI Combobox closes reliably on Escape.
-      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    } catch {
-      // fallback
-      el.blur?.();
-    }
-  };
 
   const normalizeDateForInput = (value) => {
     if (!value) return '';
@@ -974,19 +795,6 @@ function OfferLetterV2({ isForm16 = false }) {
     return d.toISOString().slice(0, 10);
   };
 
-  const handleSelect = e => {
-    const id = e.target.value;
-    setEmployee(candidates.find(x => x.id === id) || null);
-    const nextEmployment = employments[id] || null;
-    setEmployment(nextEmployment);
-    setDesignationOverride(getAutoDesignation(nextEmployment));
-    setEmployeeSignPlace(nextEmployment?.location || "");
-    const joiningForEffective = normalizeDateForInput(
-      nextEmployment?.joiningDate || nextEmployment?.startDate || ''
-    );
-    setEffectiveDate(joiningForEffective || '');
-    setPdfKey(k => k + 1);
-  };
 
   useEffect(() => { setPdfKey(k => k + 1); }, [enablePF]);
 
@@ -1310,7 +1118,7 @@ function OfferLetterV2({ isForm16 = false }) {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 
-{(!isEmployeeUser || isForm16) && (
+{!isEmployeeUser && (
 <div>
   <label className="block text-sm font-medium text-slate-800 mb-1">
     {isForm16 ? 'Employees' : 'Employee'} <span className="text-red-500">*</span>

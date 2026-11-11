@@ -9,7 +9,6 @@ export type EmployeeIdCardData = {
   joinDate: string;
   address: string;
   website: string;
-  profileImage: string;
   companyLogo: string;
 };
 
@@ -53,14 +52,6 @@ const IdCardFront = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
       </div>
 
       <div className="relative z-10 mt-24 flex flex-col items-center px-5">
-        <div className="h-28 w-28 rounded-full border-4 border-white shadow-md overflow-hidden bg-gray-100">
-          {data.profileImage ? (
-            <img src={data.profileImage} alt="Profile" className="h-full w-full object-cover" />
-          ) : (
-            <div className="h-full w-full flex items-center justify-center text-xs text-gray-500">Avatar</div>
-          )}
-        </div>
-
         <div className="mt-4 text-center">
           <p className="text-lg font-semibold text-gray-900">
             {first} {last ? <span className="text-red-600">{last}</span> : null}

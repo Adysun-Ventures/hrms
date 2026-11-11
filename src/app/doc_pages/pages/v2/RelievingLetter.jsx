@@ -1,4 +1,3 @@
-"use client";
 
 import React, { useState, useEffect } from "react";
 import { FiDownload, FiX } from "react-icons/fi";
@@ -13,19 +12,11 @@ import {
   View,
   Image
 } from "@react-pdf/renderer";
-import { saveAs } from "file-saver";
-import {
-  Packer,
-  Paragraph,
-  TextRun,
-  AlignmentType,
-} from "docx";
-import { createAdysunDocx } from "@/utils/docxAdysun";
 
 import { db } from "@/firebase/config";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { fetchDocEmployees } from '@/utils/document';
 import toast, { Toaster } from "react-hot-toast";
-import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 import { Combobox } from "@headlessui/react";
@@ -171,55 +162,11 @@ const DateDropdown = ({ value, onChange }) => {
   );
 };
 
-/* ---------------- DOCX BUILDER ---------------- */
-async function buildRelievingLetterDocx(employee, employment, employeeSignDate, employeeSignPlace, employeeRelievingDate, employeeResignDate, designationOverride) {
-  const employeeName = employee?.name || "";
-  const designation = designationOverride || employment?.jobTitle || employment?.designation || "";
-  const joiningDate = employment?.joiningDate || employment?.startDate || "";
-  const shortName = employeeName.split(" ")[0] || employeeName;
-  const resignDate = formatDate(employeeResignDate);
-  const relievingDate = formatDate(employeeRelievingDate);
-  const signDate = formatDate(employeeSignDate);
-  const joinDate = formatDate(joiningDate);
-  const children = [
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: signDate })] }),
-    new Paragraph({ children: [new TextRun({ text: toTitleCaseRelief(employeeName), bold: true })] }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "RELIEVING LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCaseRelief(shortName)},` })] }),
-    new Paragraph({ children: [new TextRun({ text: "This is with reference to your resignation dated " }), new TextRun({ text: resignDate, bold: true }), new TextRun({ text: "." })] }),
-    ...(designation
-      ? [new Paragraph({ children: [new TextRun({ text: "You served in the role of " }), new TextRun({ text: designation, bold: true }), new TextRun({ text: "." })] })]
-      : []),
-    new Paragraph({ text: "During your tenure with the company, you performed your duties responsibly and professionally, and maintained a positive attitude towards work and colleagues." }),
-    new Paragraph({ children: [new TextRun({ text: "We hereby confirm that you have been formally relieved from your employment effective end of day " }), new TextRun({ text: relievingDate, bold: true }), new TextRun({ text: "." })] }),
-    new Paragraph({ text: "Further, you have completed all required exit formalities including handover of company assets, documentation, access rights, and clearance." }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
-    new Paragraph({
-      text:
-        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this Relieving Letter. I acknowledge the relieving of my employment with Adysun Ventures Private Limited.",
-    }),
-    new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCaseRelief(employeeName), bold: true })] }),
-    new Paragraph({ text: "Signature: ________________________________" }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: employeeSignPlace || "" })] }),
-    new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: signDate })] }),
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
-    new Paragraph({ text: COMPANY_DATA.hrDesignation }),
-    new Paragraph({ text: COMPANY_DATA.hrEmail }),
-  ];
-  return await createAdysunDocx({ children });
-}
 
 /* ---------------- RELIEVING PDF ---------------- */
 const RelievingLetterPDF = ({
   employee,
   employment,
-  employeeSignDate,
   employeeSignPlace,
   employeeRelievingDate,
   employeeResignDate,
@@ -229,15 +176,12 @@ const RelievingLetterPDF = ({
 
   const employeeName = employee?.name || "";
   const designation = designationOverride || employment?.jobTitle || employment?.designation || "";
-  const joiningDate = employment?.joiningDate || employment?.startDate || "";
 
   const shortName = employeeName.split(" ")[0];
 
   const resignDate = formatDate(employeeResignDate);
   const relievingDate = formatDate(employeeRelievingDate);
-  const signDate = formatDate(employeeSignDate);
   const generatedDate = formatDate(documentGenerateDate || employeeRelievingDate);
-  const joinDate = formatDate(joiningDate);
 
   const rawAddress = employee?.currentAddress || employee?.permanentAddress || "";
   const fullAddress = rawAddress
@@ -416,13 +360,15 @@ function RelievingLetterV2() {
   };
 
   const fetchEmployees = async () => {
-    const qs = await getDocs(collection(db, "employees"));
-    const list = qs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+    const visible = await fetchDocEmployees(selfEmployeeId);
     setCandidates(visible);
 
     const map = {};
-    const es = await getDocs(collection(db, "employments"));
+    const es = await getDocs(
+      selfEmployeeId
+        ? query(collection(db, "employments"), where("employeeId", "==", selfEmployeeId))
+        : collection(db, "employments")
+    );
     es.forEach(d => map[d.data().employeeId] = d.data());
     setEmployments(map);
 
@@ -433,11 +379,6 @@ function RelievingLetterV2() {
     }
   };
 
-  const handleSelect = (e) => {
-    const id = e.target.value;
-    setEmployee(candidates.find(x => x.id === id) || null);
-    setEmployment(employments[id] || null);
-  };
 
   const canGenerate = Boolean(
     employee &&

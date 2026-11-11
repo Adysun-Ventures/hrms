@@ -1,21 +1,19 @@
-'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
+import { useSearchParams } from '@/lib/navigation';
 import { useForm, Controller } from 'react-hook-form';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { addEmployee } from '@/utils/firebaseUtils';
 import { getAdminDataForAudit, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere } from '@/utils/firebaseUtils';
 import { Employee } from '@/types';
 import { FiCheckCircle, FiX, FiPlus, FiEye, FiEyeOff } from 'react-icons/fi';
-import Link from 'next/link';
+import Link from '@/lib/link';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
-import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 import CustomDateInput from '@/components/ui/CustomDateInput';
-import { FaBroom, FaHandSparkles } from 'react-icons/fa6';
+import { FaBroom } from 'react-icons/fa6';
 import { collection, getDocs, limit, query, where } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 
@@ -53,8 +51,8 @@ export default function AddEmployeePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [autoFillInput, setAutoFillInput] = useState('');
-  const [isAutoFilling, setIsAutoFilling] = useState(false);
-  const [autoFillError, setAutoFillError] = useState<string | null>(null);
+  const [, setIsAutoFilling] = useState(false);
+  const [, setAutoFillError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [educationEntries, setEducationEntries] = useState<Array<{
     id: string;
@@ -843,8 +841,8 @@ export default function AddEmployeePage() {
               </div>
 
               {/* Row 2: Addresses - col-6 each in one row */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
-                <div className="md:col-span-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Current Address
                   </label>
@@ -860,7 +858,7 @@ export default function AddEmployeePage() {
                   )}
                 </div>
 
-                <div className="md:col-span-6">
+                <div className="md:col-span-2">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-sm font-medium text-gray-700">
                       Permanent Address

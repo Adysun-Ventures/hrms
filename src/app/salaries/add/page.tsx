@@ -1,15 +1,14 @@
-'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from '@/lib/navigation';
 import { Controller, useForm } from 'react-hook-form';
-import { FiArrowLeft, FiX, FiCheckCircle } from 'react-icons/fi';
+import { FiX, FiCheckCircle } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TableHeader from '@/components/ui/TableHeader';
 import toast, { Toaster } from 'react-hot-toast';
 import { useCreateSalary, useEmployeeCreateSalary } from '@/hooks/useSalaries';
 import { useQueryClient } from '@tanstack/react-query';
-import Link from 'next/link';
+import Link from '@/lib/link';
 import {
   getEmployeeNameById,
   getEmploymentsByEmployee,
@@ -431,7 +430,7 @@ export default function AddSalaryPage() {
       const finalNetSalary = finalGrossSalary - finalTotalDeduction;
 
       // Create salary record with all fields
-      const salaryId = await createSalaryMutation.mutateAsync({
+      await createSalaryMutation.mutateAsync({
         ...data,
         employeeId: employeeId || data.employeeId,
         employmentId: employmentId || data.employmentId,
@@ -583,7 +582,7 @@ export default function AddSalaryPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="px-6 pb-6">
           {/* Period Information */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {/* Year */}
             <div >
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -678,7 +677,7 @@ export default function AddSalaryPage() {
             </div>
 
             {/* Leaves Count */}
-            <div className=' md:col-span-3'>
+            <div className=' md:col-span-1'>
   <label className="block text-sm font-medium text-gray-700 mb-2">
     <span className="text-red-500 mr-1">*</span>Leave Count
     
@@ -711,7 +710,7 @@ export default function AddSalaryPage() {
 </div>
 
             {/* Payable Days - Auto-calculated */}
-            <div className=' md:col-span-3'>
+            <div className=' md:col-span-1'>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Payable Days <span className="text-xs text-gray-500">(Auto-calculated)</span>
               </label>
@@ -1026,9 +1025,9 @@ export default function AddSalaryPage() {
                 <span className="ml-2 text-[11px]">{isPfEnabled ? 'ON' : 'OFF'}</span>
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* PF (DEDUCT) - Auto-calculated */}
-              <div className="md:col-span-3">
+              <div className="md:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   PF (DEDUCT) <span className="text-xs text-gray-500">(Auto-calculated)</span>
                 </label>
@@ -1043,7 +1042,7 @@ export default function AddSalaryPage() {
               </div>
 
               {/* PT (DEDUCT) */}
-              <div className="md:col-span-3">
+              <div className="md:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   <span className="text-red-500 mr-1">*</span>PT (DEDUCT) 
                 </label>
@@ -1066,7 +1065,7 @@ export default function AddSalaryPage() {
 
 
               {/* Other Deduction */}
-              <div className="md:col-span-3">
+              <div className="md:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Other Deduction (₹)
                 </label>
@@ -1088,9 +1087,9 @@ export default function AddSalaryPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {/* Calculated Total Deduction */}
-            <div className="md:col-span-6 p-4 bg-red-50 rounded-md">
+            <div className="md:col-span-2 p-4 bg-red-50 rounded-md">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-gray-700">
                   Total Deduction (B)
@@ -1105,7 +1104,7 @@ export default function AddSalaryPage() {
             </div>
 
             {/* Calculated Net Salary */}
-            <div className="md:col-span-6 p-4 bg-green-50 rounded-md">
+            <div className="md:col-span-2 p-4 bg-green-50 rounded-md">
               <div className="flex items-center justify-between">
                 <label className="block text-sm font-semibold text-gray-700">
                   Net Salary (InHand) (C=A-B)

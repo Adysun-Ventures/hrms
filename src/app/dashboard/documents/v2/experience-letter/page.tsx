@@ -1,4 +1,3 @@
-'use client';
 
 import React from 'react';
 import DocumentGeneratorFrame from '@/components/documents/DocumentGeneratorFrame';
@@ -9,7 +8,7 @@ export default function ExperienceLetterV2Page() {
       documentType="v2/experience-letter"
       title="Experience Letter Generator (v2)"
       description="Generate and customize Experience letters with selectable text"
-      backPath="/dashboard/documents/v2"
+      backPath="/dashboard/documents"
       backLabel="Back to Documents"
       breadcrumbItems={[
         { label: 'Dashboard', href: '/dashboard' },

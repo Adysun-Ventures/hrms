@@ -22,14 +22,14 @@ const EmployeeLayout = ({
   showBreadcrumb = true 
 }: EmployeeLayoutProps) => {
   return (
-    <div className="min-h-screen bg-transparent flex flex-col">
+    <div className="app-shell min-h-screen bg-slate-50 text-slate-800 flex flex-col">
       <EmployeeSidebar />
-      <Header variant="protected" />
-      <div className="pt-16 lg:pl-64 flex-1 flex flex-col min-h-0">
+      <Header />
+      <div className="pt-16 lg:pl-[var(--sidebar-w)] flex-1 flex flex-col min-h-0">
         <main className="flex-1">
-          <div className="p-4 md:p-6">
+          <div className="p-3 md:p-4">
             {showBreadcrumb && breadcrumbItems.length > 0 && (
-              <SimpleBreadcrumb items={breadcrumbItems} className="mb-4" />
+              <SimpleBreadcrumb items={breadcrumbItems} className="mb-3" />
             )}
             {children}
           </div>

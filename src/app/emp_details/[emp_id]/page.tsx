@@ -1,9 +1,6 @@
-'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
-import { db } from '@/firebase/config';
+import { useParams } from '@/lib/navigation';
 
 type PublicEmployeeDetails = {
   name: string;
@@ -32,82 +29,14 @@ export default function PublicEmployeeDetailsPage() {
       setDetails(null);
 
       try {
-        let employmentDoc: any = null;
-        let employmentData: any = null;
-        let employeeDoc: any = null;
-        let employeeData: any = null;
-
-        // 1) Try employee lookup by public employeeId (e.g. ADV979)
-        const employeeQ = query(collection(db, 'employees'), where('employeeId', '==', empIdFromUrl));
-        const employeeSnap = await getDocs(employeeQ);
-        if (!employeeSnap.empty) {
-          employeeDoc = employeeSnap.docs[0];
-          employeeData = employeeDoc.data();
-
-          // Find latest employment for this employee doc id.
-          const empDocId = employeeDoc.id;
-          const employmentByEmployeeQ = query(
-            collection(db, 'employments'),
-            where('employeeId', '==', empDocId)
-          );
-          const employmentByEmployeeSnap = await getDocs(employmentByEmployeeQ);
-          if (!employmentByEmployeeSnap.empty) {
-            employmentDoc = employmentByEmployeeSnap.docs[0];
-            employmentData = employmentDoc.data();
-          }
-        }
-
-        // 2) Lookup by employmentId (e.g. EMPLOY001)
-        const employmentQ = query(
-          collection(db, 'employments'),
-          where('employmentId', '==', empIdFromUrl)
-        );
-        const employmentSnap = await getDocs(employmentQ);
-
-        if (!employmentSnap.empty && !employmentData) {
-          employmentDoc = employmentSnap.docs[0];
-          employmentData = employmentDoc.data();
-        } else if (!employmentData) {
-          // 3) Fallback: route param might be Firestore employment document id
-          const byDocId = await getDoc(doc(db, 'employments', empIdFromUrl));
-          if (byDocId.exists()) {
-            employmentDoc = byDocId;
-            employmentData = byDocId.data();
-          }
-        }
-
-        if (!employmentData) {
-          setError('Employee details not found.');
+        // Server returns only name / employment id / company; the browser can't read employee records.
+        const res = await fetch(`/api/emp-details/${encodeURIComponent(empIdFromUrl)}`);
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setError(json?.error || 'Employee details not found.');
           return;
         }
-
-        const employeeDocId = String(employmentData?.employeeId || employeeDoc?.id || '').trim();
-        let employeeName = '';
-        let employeeCompany = '';
-
-        if (employeeData) {
-          employeeName = String(employeeData?.name || '').trim();
-          employeeCompany = String(employeeData?.companyName || '').trim();
-        } else if (employeeDocId) {
-          const empDoc = await getDoc(doc(db, 'employees', employeeDocId));
-          if (empDoc.exists()) {
-            const empData: any = empDoc.data();
-            employeeName = String(empData?.name || '').trim();
-            employeeCompany = String(empData?.companyName || '').trim();
-          }
-        }
-
-        setDetails({
-          name: employeeName || String(employmentData?.employeeName || 'Unknown Employee'),
-          employmentId:
-            String(employmentData?.employmentId || employmentDoc?.id || empIdFromUrl).trim(),
-          companyName:
-            String(
-              employmentData?.companyName ||
-              employeeCompany ||
-              'Adysun Ventures Pvt. Ltd.'
-            ).trim(),
-        });
+        setDetails(json as PublicEmployeeDetails);
       } catch (e) {
         console.error('Failed to load public employee details:', e);
         setError('Failed to load employee details.');
@@ -132,7 +61,7 @@ export default function PublicEmployeeDetailsPage() {
         )}
 
         {!isLoading && !error && details && (
-          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-4">
             <div>
               <p className="text-sm font-medium text-gray-900">{details.name}</p>
               <p className="text-xs text-gray-500">Name</p>

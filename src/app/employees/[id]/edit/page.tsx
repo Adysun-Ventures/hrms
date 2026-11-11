@@ -1,8 +1,7 @@
-'use client';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from '@/lib/navigation';
+import Link from '@/lib/link';
 import { useForm, Controller } from 'react-hook-form';
 import { FiCheckCircle, FiEye, FiEyeOff, FiPlus, FiX } from 'react-icons/fi';
 import { FaSyncAlt } from 'react-icons/fa';
@@ -11,17 +10,13 @@ import { getEmployee, updateEmployee, checkUserByPhone, validatePANFormat, check
 import { Employee } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
-import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 import CustomDateInput from '@/components/ui/CustomDateInput';
 import { FaBroom } from 'react-icons/fa6';
 
 
-type PageParams = {
-  params: Promise<{ id: string }>;
-};
 
-export default function EditEmployeePage({ params }: PageParams) {
+export default function EditEmployeePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +30,7 @@ export default function EditEmployeePage({ params }: PageParams) {
   const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState(false);
 
   const router = useRouter();
-  const { id } = use(params);
+  const { id } = useParams() as { id: string };
 
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue, control } = useForm<Omit<Employee, 'id'>>();
   const employeeName = watch('name');
@@ -406,14 +401,14 @@ export default function EditEmployeePage({ params }: PageParams) {
                 {/* Status dropdown removed (backend logic unchanged) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    <span className="text-red-500 mr-1">*</span> Password
+                    New Password
                   </label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter password"
+                      placeholder="Leave blank to keep current"
+                      autoComplete="new-password"
                       {...register('password', {
-                        required: 'Password is required',
                         minLength: {
                           value: 4,
                           message: 'Password must be at least 4 characters'
@@ -579,8 +574,8 @@ export default function EditEmployeePage({ params }: PageParams) {
               </div>
 
               {/* Row 2: Addresses (col-6 + col-6 on desktop) */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 mt-4">
-                <div className="md:col-span-6">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     <span className="text-red-500 mr-1">*</span> Current Address
                   </label>
@@ -588,7 +583,7 @@ export default function EditEmployeePage({ params }: PageParams) {
                   {errors.currentAddress && (<p className="mt-1 text-sm text-red-600">{errors.currentAddress.message}</p>)}
                 </div>
 
-                <div className="md:col-span-6">
+                <div className="md:col-span-2">
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-sm font-medium text-gray-700">
                       <span className="text-red-500 mr-1">*</span> Permanent Address

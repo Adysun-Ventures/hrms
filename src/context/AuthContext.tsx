@@ -1,41 +1,21 @@
-'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react';
-import { 
-  signInWithPhoneNumber, 
-  PhoneAuthProvider, 
-  signOut,
-  onAuthStateChanged,
-  User,
-  RecaptchaVerifier,
-  signInWithCredential,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
-} from 'firebase/auth';
+import { signOut, onAuthStateChanged, signInWithCustomToken, User } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
 import {
-  checkAdminByPhone,
   createAdminSession,
-  checkUserByPhone,
   createLoginLog,
   closeLoginLog,
   touchLoginLog,
 } from '../utils/firebaseUtils';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-
-// Extend Window interface to include recaptchaVerifier
-declare global {
-  interface Window {
-    recaptchaVerifier: RecaptchaVerifier | null;
-  }
-}
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 
 type AdminUser = {
   id: string;
   name: string;
   email: string;
   mobile: string;
-  pass: string;
+  pass?: string;
   active: boolean;
   createdAt: any;
   isAdmin: boolean;
@@ -47,7 +27,7 @@ type EmployeeUser = {
   name: string;
   email: string;
   phone: string;
-  password: string;
+  password?: string;
   status: 'active' | 'inactive';
   createdAt: any;
   isEmployee: boolean;
@@ -57,6 +37,41 @@ type EmployeeUser = {
 
 type CurrentUser = AdminUser | EmployeeUser | null;
 
+/** Session copies of a user never carry the password (localStorage / React state). */
+export const withoutSecrets = <T extends Record<string, any> | null | undefined>(user: T): T => {
+  if (!user) return user;
+  const { pass: _pass, password: _password, confirmPassword: _confirm, ...rest } = user as Record<string, any>;
+  return rest as T;
+};
+
+/** The small employee object kept in React state / localStorage (no secrets, no PII beyond contact). */
+const toEmployeeSession = (id: string, d: Record<string, any>): EmployeeUser =>
+  ({
+    id,
+    name: d.name || '',
+    email: d.email || '',
+    phone: d.phone || '',
+    status: d.status || 'inactive',
+    employmentStatus: d.employmentStatus || '',
+    is_resigned: d.is_resigned === true || d.is_resigned === 'true' || d.is_resigned === 1,
+    createdAt: d.createdAt,
+    isEmployee: true,
+    isAdmin: false,
+    userType: 'employee',
+  }) as EmployeeUser;
+
+const SESSION_COOKIES = ['adminSessionId', 'employeeSessionId'] as const;
+const hasCookie = (name: string) =>
+  typeof document !== 'undefined' && document.cookie.split('; ').some((c) => c.startsWith(`${name}=`) && c.length > name.length + 1);
+const setSessionCookie = (name: string, value: string) => {
+  // `secure` only on https so login also works on plain-http LAN/dev hosts.
+  const secure = window.location.protocol === 'https:' ? '; secure' : '';
+  document.cookie = `${name}=${value}; path=/; max-age=86400; samesite=strict${secure}`;
+};
+const clearCookie = (name: string) => {
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+};
+
 type AuthContextType = {
   currentUser: User | null;
   currentAdmin: AdminUser | null;
@@ -64,9 +79,7 @@ type AuthContextType = {
   currentUserData: CurrentUser;
   isEmployeeExited: boolean;
   loading: boolean;
-  signInWithPhone: (phoneNumber: string) => Promise<any>;
   signInWithCredentials: (phoneNumber: string, password: string) => Promise<any>;
-  verifyOTP: (verificationId: string, otp: string) => Promise<any>;
   logout: () => Promise<void>;
 };
 
@@ -151,10 +164,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const closeActiveLoginLogs = (
     reason: 'logout' | 'browser_tab_close' | 'session_expired' | 'network_lost' | 'unknown'
   ) => {
-    const adminLogId = localStorage.getItem('adminLoginLogId') || '';
-    const employeeLogId = localStorage.getItem('employeeLoginLogId') || '';
-    if (adminLogId) closeLoginLog(adminLogId, reason);
-    if (employeeLogId) closeLoginLog(employeeLogId, reason);
+    const ids = [localStorage.getItem('adminLoginLogId'), localStorage.getItem('employeeLoginLogId')].filter(Boolean);
+    return Promise.all(ids.map((id) => closeLoginLog(id as string, reason))).catch(() => {});
   };
 
   const getDeviceType = (ua: string) => {
@@ -209,73 +220,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Restore sessions from localStorage on component mount
+  // Restore sessions from localStorage on component mount.
+  // Cookie and localStorage must agree, otherwise /login <-> dashboard can loop.
   useEffect(() => {
+    const clearAdmin = () => {
+      localStorage.removeItem('adminSessionId');
+      localStorage.removeItem('adminData');
+      clearCookie('adminSessionId');
+    };
+    const clearEmployee = () => {
+      localStorage.removeItem('employeeSessionId');
+      localStorage.removeItem('employeeData');
+      clearCookie('employeeSessionId');
+    };
+
+    // The Firebase session (persisted by the SDK) is what Firestore rules see, so it must be
+    // restored before any screen renders and reads data. Old sessions without one must log in again.
     const restoreSessions = async () => {
+      let restored = false;
       try {
-        // Check for admin session
-        const adminSessionId = localStorage.getItem('adminSessionId');
+        await auth.authStateReady();
+        const fbUser = auth.currentUser;
+        const role = fbUser ? (await fbUser.getIdTokenResult()).claims.role : null;
+
         const adminData = localStorage.getItem('adminData');
-        
-        if (adminSessionId && adminData) {
-          // console.log('🔍 Restoring admin session from localStorage');
-          const adminUser = JSON.parse(adminData);
+        if (role === 'admin' && adminData && localStorage.getItem('adminSessionId') && hasCookie('adminSessionId')) {
+          const adminUser = withoutSecrets(JSON.parse(adminData));
           setCurrentAdmin(adminUser);
           setCurrentEmployee(null);
           setCurrentUserData(adminUser);
           setIsEmployeeExited(false);
-         
-        }
-        
-        // Check for employee session
-        const employeeSessionId = localStorage.getItem('employeeSessionId');
-        const employeeData = localStorage.getItem('employeeData');
-        
-        if (employeeSessionId && employeeData) {
-          console.log('🔍 Restoring employee session from localStorage');
-          const employeeUser = JSON.parse(employeeData);
-
-          // Restore employee session, but block if status is explicitly "Resigned"
-          try {
-            const latest = await checkUserByPhone(employeeUser.phone);
-
-            if (
-              !latest ||
-              latest.userType !== 'employee'
-            ) {
-              localStorage.removeItem('employeeSessionId');
-              localStorage.removeItem('employeeData');
-              document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-            } else {
-              const terminated = await isEmployeeTerminated(latest.id);
-              if (terminated) {
-                localStorage.removeItem('employeeSessionId');
-                localStorage.removeItem('employeeData');
-                document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-                return;
-              }
-              const exited = await isEmployeeExitedStatus(latest.id);
-              // Allow employee session restore regardless of resignation status.
-              setCurrentEmployee(latest);
+          restored = true;
+        } else if (role === 'employee' && fbUser && hasCookie('employeeSessionId')) {
+          const snap = await getDoc(doc(db, 'employees', fbUser.uid));
+          if (snap.exists()) {
+            const [terminated, exited] = await Promise.all([
+              isEmployeeTerminated(fbUser.uid),
+              isEmployeeExitedStatus(fbUser.uid),
+            ]);
+            if (!terminated) {
+              const safe = toEmployeeSession(fbUser.uid, snap.data());
+              localStorage.setItem('employeeSessionId', fbUser.uid);
+              localStorage.setItem('employeeData', JSON.stringify(safe));
+              setCurrentEmployee(safe);
               setCurrentAdmin(null);
-              setCurrentUserData(latest);
+              setCurrentUserData(safe);
               setIsEmployeeExited(exited);
+              restored = true;
             }
-          } catch (e) {
-            // If validation fails, clear session for safety
-            localStorage.removeItem('employeeSessionId');
-            localStorage.removeItem('employeeData');
-            document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
           }
         }
       } catch (error) {
         console.error('Error restoring sessions:', error);
-        // Clear invalid sessions
-        localStorage.removeItem('adminSessionId');
-        localStorage.removeItem('adminData');
-        localStorage.removeItem('employeeSessionId');
-        localStorage.removeItem('employeeData');
       } finally {
+        if (!restored) {
+          clearAdmin();
+          clearEmployee();
+          if (auth.currentUser) await signOut(auth).catch(() => {});
+        }
         setLoading(false);
       }
     };
@@ -332,221 +334,89 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Note: no employment-status-based auto-logout.
 
   const signInWithCredentials = async (phoneNumber: string, password: string) => {
+    // IP/city lookup for the login log runs alongside the login call instead of after it
+    // (it never rejects; failures resolve to '-').
+    const networkMetaPromise = fetchClientNetworkMeta();
     try {
-      console.log('🔍 Debug: Input phoneNumber:', phoneNumber);
-      console.log('🔍 Debug: Input password:', password);
-      
-      // Use the common authentication function
-      const userData = await checkUserByPhone(phoneNumber);
-      
-      console.log('🔍 Debug: User data from DB:', userData);
-      
-      if (!userData) {
-        console.log('❌ No user found');
-        throw new Error('User not found');
-      }
-      
+      // Password is checked on the server; it answers with a Firebase custom token whose
+      // claims (role, employeeId) are what firestore.rules enforce.
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phoneNumber, password }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json?.error || 'Invalid mobile number or password.');
+      await signInWithCustomToken(auth, json.token);
+      const userData = json.user;
+
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+      const networkMeta = await networkMetaPromise;
+      const logMeta = {
+        ipAddress: networkMeta.ipAddress,
+        city: networkMeta.city,
+        userAgent: ua || '-',
+        deviceType: getDeviceType(ua),
+        browserNameVersion: getBrowserNameVersion(ua),
+      };
+
       if (userData.userType === 'admin') {
-        // Admin authentication
-        if (userData.active && userData.pass === password) {
-          console.log('✅ Admin password match successful!');
-          
-          // Create a custom session for the admin
-          const sessionId = await createAdminSession(userData.id, userData);
-          console.log('✅ Custom authentication session created:', sessionId);
+        const sessionId = await createAdminSession(userData.id, userData);
+        const adminLogId = await createLoginLog({
+          userId: userData.id,
+          userType: 'admin',
+          userName: userData.name,
+          sessionId,
+          ...logMeta,
+        });
 
-          const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-          const networkMeta = await fetchClientNetworkMeta();
-          const adminLogId = await createLoginLog({
-            userId: userData.id,
-            userType: 'admin',
-            userName: userData.name,
-            sessionId,
-            ipAddress: networkMeta.ipAddress,
-            city: networkMeta.city,
-            userAgent: ua || '-',
-            deviceType: getDeviceType(ua),
-            browserNameVersion: getBrowserNameVersion(ua),
-          });
-          
-          // Store session ID in localStorage for persistence
-          localStorage.setItem('adminSessionId', sessionId);
-          localStorage.setItem('adminData', JSON.stringify(userData));
-          localStorage.setItem('adminLoginLogId', adminLogId);
-          
-          // Set cookie for server-side middleware
-          document.cookie = `adminSessionId=${sessionId}; path=/; max-age=86400; secure; samesite=strict`;
-          
-          setCurrentAdmin(userData);
-          setCurrentEmployee(null);
-          setCurrentUserData(userData);
-          setIsEmployeeExited(false);
-          return { admin: userData, userType: 'admin' };
-        } else {
-          console.log('❌ Admin password mismatch or inactive!');
-          throw new Error('Invalid password or inactive account');
-        }
-      } else if (userData.userType === 'employee') {
-        // Employee authentication
-        if (userData.password === password) {
-          const terminated = await isEmployeeTerminated(userData.id);
-          if (terminated) {
-            throw new Error('Your account is locked because your employment status is Terminated.');
-          }
-          console.log('✅ Employee password match successful!');
-          
-          // Store employee data in localStorage for persistence
-          localStorage.setItem('employeeSessionId', userData.id);
-          localStorage.setItem('employeeData', JSON.stringify(userData));
+        const safeAdmin = withoutSecrets(userData);
+        localStorage.setItem('adminSessionId', sessionId);
+        localStorage.setItem('adminData', JSON.stringify(safeAdmin));
+        localStorage.setItem('adminLoginLogId', adminLogId);
 
-          const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-          const networkMeta = await fetchClientNetworkMeta();
-          const employeeLogId = await createLoginLog({
-            userId: userData.id,
-            userType: 'employee',
-            userName: userData.name,
-            sessionId: userData.id,
-            ipAddress: networkMeta.ipAddress,
-            city: networkMeta.city,
-            userAgent: ua || '-',
-            deviceType: getDeviceType(ua),
-            browserNameVersion: getBrowserNameVersion(ua),
-          });
-          localStorage.setItem('employeeLoginLogId', employeeLogId);
-          
-          // Set cookie for server-side middleware
-          document.cookie = `employeeSessionId=${userData.id}; path=/; max-age=86400; secure; samesite=strict`;
-          
-          setCurrentEmployee(userData);
-          setCurrentAdmin(null);
-          setCurrentUserData(userData);
-          const exited = await isEmployeeExitedStatus(userData.id);
-          setIsEmployeeExited(exited);
-          return { employee: userData, userType: 'employee' };
-        } else {
-          console.log('❌ Employee password mismatch!');
-          throw new Error('Invalid Mobile or password.');
-        }
-      } else {
-        console.log('❌ Unknown user type');
-        throw new Error('Invalid user type');
+        // Cookie marks the session for restore on reload.
+        clearCookie('employeeSessionId');
+        setSessionCookie('adminSessionId', sessionId);
+
+        setCurrentAdmin(safeAdmin);
+        setCurrentEmployee(null);
+        setCurrentUserData(safeAdmin);
+        setIsEmployeeExited(false);
+        return { admin: safeAdmin, userType: 'admin' };
       }
+
+      const safeEmployee = withoutSecrets(userData);
+      localStorage.setItem('employeeSessionId', userData.id);
+      localStorage.setItem('employeeData', JSON.stringify(safeEmployee));
+
+      const employeeLogId = await createLoginLog({
+        userId: userData.id,
+        userType: 'employee',
+        userName: userData.name,
+        sessionId: userData.id,
+        ...logMeta,
+      });
+      localStorage.setItem('employeeLoginLogId', employeeLogId);
+
+      clearCookie('adminSessionId');
+      setSessionCookie('employeeSessionId', userData.id);
+
+      setCurrentEmployee(safeEmployee);
+      setCurrentAdmin(null);
+      setCurrentUserData(safeEmployee);
+      setIsEmployeeExited(await isEmployeeExitedStatus(userData.id));
+      return { employee: safeEmployee, userType: 'employee' };
     } catch (error) {
       console.error('Error during credential sign in:', error);
       return Promise.reject(error);
     }
   };
 
-  const signInWithPhone = async (phoneNumber: string) => {
-    try {
-      // TEMPORARY: Development bypass for testing admin collection
-      if (phoneNumber === '+918806431723') {
-        console.log('Using development bypass for admin testing');
-        return { verificationId: 'dev-bypass-verification-id' };
-      }
-
-      // For development, you can use the test phone number: +1 999-999-9999
-      // Create a RecaptchaVerifier instance
-      if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-          size: 'invisible',
-          callback: () => {
-            // reCAPTCHA solved, allow signInWithPhoneNumber.
-            console.log('Recaptcha verified');
-          },
-          'expired-callback': () => {
-            // Response expired. Ask user to solve reCAPTCHA again.
-            console.log('Recaptcha expired');
-          }
-        });
-      }
-
-      const appVerifier = window.recaptchaVerifier;
-      if (!appVerifier) {
-        throw new Error('RecaptchaVerifier is not initialized');
-      }
-      
-      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
-      return { verificationId: confirmationResult.verificationId };
-    } catch (error) {
-      console.error('Error during phone sign in:', error);
-      // Reset the reCAPTCHA so the user can try again
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
-      return Promise.reject(error);
-    }
-  };
-
-  const verifyOTP = async (verificationId: string, otp: string) => {
-    try {
-      // TEMPORARY: Development bypass for testing admin collection
-      if (verificationId === 'dev-bypass-verification-id') {
-        console.log('Using development bypass for admin verification');
-        // Check if the user is an admin using the phone number from the login form
-        const userData = await checkUserByPhone('8806431723');
-        
-        if (userData) {
-          if (userData.userType === 'admin') {
-            setCurrentAdmin(userData);
-            setCurrentEmployee(null);
-            setCurrentUserData(userData);
-            setIsEmployeeExited(false);
-            return { user: null, admin: userData, userType: 'admin' };
-          } else if (userData.userType === 'employee') {
-            setCurrentEmployee(userData);
-            setCurrentAdmin(null);
-            setCurrentUserData(userData);
-            const exited = await isEmployeeExitedStatus(userData.id);
-            setIsEmployeeExited(exited);
-            return { user: null, employee: userData, userType: 'employee' };
-          }
-        } else {
-          setCurrentAdmin(null);
-          setCurrentEmployee(null);
-          setCurrentUserData(null);
-          return { user: null, admin: null, employee: null };
-        }
-      }
-
-      const credential = PhoneAuthProvider.credential(verificationId, otp);
-      const result = await signInWithCredential(auth, credential);
-      
-      // Check if the user is an admin or employee
-      const userData = await checkUserByPhone(result.user.phoneNumber || '');
-      
-      if (userData) {
-        if (userData.userType === 'admin') {
-          setCurrentAdmin(userData);
-          setCurrentEmployee(null);
-          setCurrentUserData(userData);
-          setIsEmployeeExited(false);
-          return { user: result.user, admin: userData, userType: 'admin' };
-        } else if (userData.userType === 'employee') {
-          setCurrentEmployee(userData);
-          setCurrentAdmin(null);
-          setCurrentUserData(userData);
-          const exited = await isEmployeeExitedStatus(userData.id);
-          setIsEmployeeExited(exited);
-          return { user: result.user, employee: userData, userType: 'employee' };
-        }
-      } else {
-        // User is authenticated but not found in admin or employee collections
-        setCurrentAdmin(null);
-        setCurrentEmployee(null);
-        setCurrentUserData(null);
-        return { user: result.user, admin: null, employee: null };
-      }
-    } catch (error) {
-      console.error('Error during OTP verification:', error);
-      return Promise.reject(error);
-    }
-  };
-
-  const logout = () => {
+  const logout = async () => {
     isLoggingOutRef.current = true;
-    closeActiveLoginLogs('logout');
+    // Close the login log while still signed in; Firestore rules reject it after signOut.
+    await closeActiveLoginLogs('logout');
 
     setCurrentAdmin(null);
     setCurrentEmployee(null);
@@ -562,9 +432,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('employeeLoginLogId');
     
     // Clear cookies
-    document.cookie = 'adminSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    document.cookie = 'employeeSessionId=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-    
+    SESSION_COOKIES.forEach(clearCookie);
+    localStorage.removeItem('fullEmployeeData');
+
     return signOut(auth);
   };
 
@@ -575,9 +445,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     currentUserData,
     isEmployeeExited,
     loading,
-    signInWithPhone,
     signInWithCredentials,
-    verifyOTP,
     logout
   };
 

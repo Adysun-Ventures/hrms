@@ -1,4 +1,3 @@
-"use client";
 
 import React, { useState, useEffect } from 'react';
 import { FiDownload, FiX } from 'react-icons/fi';
@@ -13,17 +12,10 @@ import {
   View,
   Image
 } from '@react-pdf/renderer';
-import { saveAs } from 'file-saver';
-import {
-  Packer,
-  Paragraph,
-  TextRun,
-  AlignmentType,
-} from 'docx';
-import { createAdysunDocx } from '@/utils/docxAdysun';
 
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { fetchDocEmployees } from '@/utils/document';
 import toast, { Toaster } from 'react-hot-toast';
 import { Combobox } from '@headlessui/react';
 
@@ -183,52 +175,6 @@ const DateDropdown = ({ value, onChange }) => {
   );
 };
 
-/* ---------------- DOCX BUILDER ---------------- */
-async function buildExperienceLetterDocx(employee, employment, employeeSignDate, employeeSignPlace, todaysDate, designationOverride) {
-  const employeeName = employee?.name || "";
-  const designation = designationOverride || employment?.jobTitle || "";
-  const joiningDate = employment?.joiningDate || "";
-  const relievingDate = employment?.lastWorkingDate || "";
-  const shortName = employeeName.split(" ")[0] || employeeName;
-  const children = [
-    new Paragraph({ children: [new TextRun({ text: 'ADYSUN VENTURES PVT. LTD.', bold: true })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: formatDate(todaysDate) })] }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "EXPERIENCE LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "This is to certify that " }),
-        new TextRun({ text: toTitleCase(employeeName), bold: true }),
-        new TextRun({ text: " was employed with " }),
-        new TextRun({ text: COMPANY_DATA.name, bold: true }),
-        new TextRun({ text: " as a " }),
-        new TextRun({ text: designation, bold: true }),
-        new TextRun({ text: ` from ${formatDate(joiningDate)} to ${formatDate(relievingDate) || formatDate(employeeSignDate)}.` }),
-      ],
-    }),
-    new Paragraph({ text: `During the tenure, ${shortName} performed duties with dedication and professionalism.` }),
-    new Paragraph({ text: `Based on your overall performance, we found ${shortName} to be sincere, reliable, and responsible.` }),
-    new Paragraph({ text: `We wish ${shortName} all the best in his future career opportunities.` }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
-    new Paragraph({
-      text:
-        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.",
-    }),
-    new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCase(employeeName), bold: true })] }),
-    new Paragraph({ text: "Signature: ________________________________" }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: employeeSignPlace || "" })] }),
-    new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: formatDate(employeeSignDate) })] }),
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
-    new Paragraph({ text: COMPANY_DATA.hrDesignation }),
-    new Paragraph({ text: COMPANY_DATA.hrEmail }),
-  ];
-  return await createAdysunDocx({ children });
-}
 
 /* ---------------- PDF COMPONENT ---------------- */
 const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeSignPlace,todaysDate, designationOverride }) => {
@@ -237,7 +183,6 @@ const ExperienceLetterPDF = ({ employee, employment, employeeSignDate, employeeS
   const joiningDate = employment?.joiningDate || "";
   const relievingDate = employment?.lastWorkingDate || "";
   const shortName = employeeName.split(" ")[0];
-  const date = Date.now();
   
   return (
     <Document>
@@ -339,9 +284,7 @@ const [searchTerm, setSearchTerm] = useState("");
   useEffect(() => { fetchEmployees(); }, [selfEmployeeId]);
 
   const fetchEmployees = async () => {
-    const qs = await getDocs(collection(db, "employees"));
-    const list = qs.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+    const visible = await fetchDocEmployees(selfEmployeeId);
     setCandidates(visible);
 
     const map = {};

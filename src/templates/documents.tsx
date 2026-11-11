@@ -50,8 +50,8 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     title: 'Resignation Mail',
     description: 'Generate resignation mail document',
     adminHref: '/dashboard/documents/v2/resignation-mail',
-    employeeHref: '/dashboard/documents/v2/resignation-mail',
-    roles: ['admin'],
+    employeeHref: '/employee/documents/resignation-mail',
+    roles: ['admin', 'employee'],
     icon: <FiFileText size={24} />,
   },
   {
@@ -105,7 +105,7 @@ export const DOCUMENT_TEMPLATES: DocumentTemplate[] = [
     description: 'Generate and manage Form 16 documents',
     adminHref: '/dashboard/documents/v2/form-16',
     employeeHref: '/employee/documents/form-16',
-    roles: ['admin'],
+    roles: ['admin', 'employee'],
     icon: <FiFileText size={24} />,
   },
 ];

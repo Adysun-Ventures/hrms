@@ -1,17 +1,15 @@
-'use client';
 
-import { useEffect, useMemo, useRef, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { FiArrowLeft, FiEdit, FiUser, FiBriefcase, FiCalendar, FiDollarSign, FiMapPin, FiTrendingUp, FiDownload, FiBook } from 'react-icons/fi';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useParams, useRouter } from '@/lib/navigation';
+import Link from '@/lib/link';
+import { FiArrowLeft, FiEdit, FiBriefcase, FiMapPin, FiTrendingUp, FiDownload } from 'react-icons/fi';
 import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
 import { FaTimes } from 'react-icons/fa';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
-import { Employment, Employee, ProfessionalReference } from '@/types';
 import toast, { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
-import { useEmployment, useDeleteEmployment } from '@/hooks/useEmployments';
+import { useEmployment } from '@/hooks/useEmployments';
 import { useEmployee, useEmployeeSelf } from '@/hooks/useEmployees';
 import { useEmployeeSelfSalariesByEmployee, useSalariesByEmployee } from '@/hooks/useSalaries';
 import { formatDateToDayMonYear, formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
@@ -35,16 +33,6 @@ function calcEmploymentNetSalary(
   return gross - (pf + EMPLOYMENT_PT_DEDUCT + other);
 }
 
-function professionalReferenceCell(
-  refs: ProfessionalReference[] | undefined,
-  index: number,
-  field: keyof ProfessionalReference
-): string {
-  const raw = refs?.[index]?.[field];
-  if (raw === undefined || raw === null) return '\u00a0';
-  const s = String(raw).trim();
-  return s || '\u00a0';
-}
 
 function parseNameAndDesignation(raw?: string): { name: string; designation: string } {
   const s = (raw ?? '').toString().trim();
@@ -231,11 +219,11 @@ function settleLayout(): Promise<void> {
   });
 }
 
-export default function EmploymentViewPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EmploymentViewPage() {
 
   const router = useRouter();
   const { currentUserData } = useAuth();
-  const { id } = use(params);
+  const { id } = useParams() as { id: string };
   const [employmentFullPagePdfLoading, setEmploymentFullPagePdfLoading] = useState(false);
   const [createdByName, setCreatedByName] = useState<string>('');
   const [updatedByName, setUpdatedByName] = useState<string>('');
@@ -258,20 +246,16 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
   // Employee data (admin vs employee-safe)
   const {
     data: adminEmployee,
-    isLoading: adminEmployeeLoading,
     isError: adminEmployeeIsError,
     error: adminEmployeeError,
   } = useEmployee(currentUserData?.userType === 'admin' ? (employment?.employeeId || '') : '');
   const {
     data: selfEmployee,
-    isLoading: selfEmployeeLoading,
     isError: selfEmployeeIsError,
     error: selfEmployeeError,
   } = useEmployeeSelf(currentUserData?.userType === 'employee' ? (employment?.employeeId || '') : '');
 
   const employee = currentUserData?.userType === 'admin' ? adminEmployee : selfEmployee;
-  const employeeLoading =
-    currentUserData?.userType === 'admin' ? adminEmployeeLoading : selfEmployeeLoading;
   const employeeIsError =
     currentUserData?.userType === 'admin' ? adminEmployeeIsError : selfEmployeeIsError;
   const employeeError =
@@ -370,83 +354,6 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
   })();
   const hasIncrementDetails = incrementRows.length > 0;
 
-  // Calculate real attendance statistics
-  const calculateAttendanceStats = () => {
-    if (!employment?.attendance || employment.attendance.length === 0) {
-      return {
-        totalDays: 0,
-        presentDays: 0,
-        absentDays: 0,
-        lateDays: 0,
-        halfDayDays: 0,
-        attendanceRate: 0,
-        totalHours: 0,
-        averageHours: 0
-      };
-    }
-
-    console.log(employment)
-
-    const attendance = employment.attendance;
-    const totalDays = attendance.length;
-    const presentDays = attendance.filter((record: any) => record.status === 'present').length;
-    const absentDays = attendance.filter((record: any) => record.status === 'absent').length;
-    const lateDays = attendance.filter((record: any) => record.status === 'late').length;
-    const halfDayDays = attendance.filter((record: any) => record.status === 'half-day').length;
-
-    const totalHours = attendance.reduce((sum: number, record: any) => sum + (record.totalHours || 0), 0);
-    const averageHours = totalDays > 0 ? totalHours / totalDays : 0;
-
-    const attendanceRate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
-
-    return {
-      totalDays,
-      presentDays,
-      absentDays,
-      lateDays,
-      halfDayDays,
-      attendanceRate,
-      totalHours,
-      averageHours
-    };
-  };
-
-  const attendanceStats = calculateAttendanceStats();
-
-  // Calculate current month attendance
-  const calculateCurrentMonthStats = () => {
-    if (!employment?.attendance || employment.attendance.length === 0) {
-      return {
-        currentMonthDays: 0,
-        currentMonthPresent: 0,
-        currentMonthRate: 0
-      };
-    }
-
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth();
-    const currentYear = currentDate.getFullYear();
-
-    const currentMonthAttendance = employment.attendance.filter((record: any) => {
-      const recordDate = new Date(record.date);
-      return recordDate.getMonth() === currentMonth && recordDate.getFullYear() === currentYear;
-    });
-
-    const currentMonthDays = currentMonthAttendance.length;
-    const currentMonthPresent = currentMonthAttendance.filter((record: any) =>
-      record.status === 'present' || record.status === 'late'
-    ).length;
-    const currentMonthRate = currentMonthDays > 0 ? Math.round((currentMonthPresent / currentMonthDays) * 100) : 0;
-
-    return {
-      currentMonthDays,
-      currentMonthPresent,
-      currentMonthRate
-    };
-  };
-
-  const currentMonthStats = calculateCurrentMonthStats();
-
   const showResignationDetails =
     Boolean((employment as any)?.isResignation) ||
     Boolean((employment as any)?.is_resigned) ||
@@ -462,7 +369,6 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
       joinDate: String((employment as any)?.joiningDate || (employment as any)?.startDate || ''),
       address: String((employee as any)?.currentAddress || (employee as any)?.permanentAddress || (employment as any)?.location || ''),
       website: String((employment as any)?.website || (employee as any)?.website || 'www.adysunventures.com'),
-      profileImage: String((employment as any)?.profilePhoto || (employee as any)?.imageUrl || ''),
       companyLogo: String((employee as any)?.logo || (employee as any)?.companyLogo || '/adysun-logo.png'),
     }),
     [employee, employment]
@@ -479,7 +385,6 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
       ...idCardData,
       // Prevent html-to-image CORS/taint issues from external URLs
       // while still rendering stable PNG previews.
-      profileImage: isSafeImage(idCardData.profileImage) ? idCardData.profileImage : '',
       companyLogo: isSafeImage(idCardData.companyLogo) ? idCardData.companyLogo : '/adysun-logo.png',
     };
   }, [idCardData]);
@@ -526,44 +431,6 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
     makePreviewPngs();
   }, [idCardPngRenderData]);
-
-  // Calculate real leave statistics
-  const calculateLeaveStats = () => {
-    if (!employment?.leaves || employment.leaves.length === 0) {
-      return {
-        totalLeaves: 0,
-        pendingLeaves: 0,
-        approvedLeaves: 0,
-        rejectedLeaves: 0,
-        usedLeaves: 0,
-        remainingLeaves: employment?.totalLeaves || 0
-      };
-    }
-
-    const leaves = employment.leaves;
-    const totalLeaves = leaves.length;
-    const pendingLeaves = leaves.filter((leave: any) => leave.status === 'pending').length;
-    const approvedLeaves = leaves.filter((leave: any) => leave.status === 'approved').length;
-    const rejectedLeaves = leaves.filter((leave: any) => leave.status === 'rejected').length;
-
-    const usedLeaves = leaves
-      .filter((leave: any) => leave.status === 'approved')
-      .reduce((sum: number, leave: any) => sum + (leave.totalDays || 0), 0);
-
-    const allocatedLeaves = employment?.totalLeaves || 0;
-    const remainingLeaves = Math.max(0, allocatedLeaves - usedLeaves);
-
-    return {
-      totalLeaves,
-      pendingLeaves,
-      approvedLeaves,
-      rejectedLeaves,
-      usedLeaves,
-      remainingLeaves
-    };
-  };
-
-  const leaveStats = calculateLeaveStats();
 
   // Handle error toasts (must not run during render)
   useEffect(() => {
@@ -794,8 +661,8 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
         <div className="px-6 pb-2">
           <div className="employment-view-pdf-capture space-y-0">
-          <div className="mb-8 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-            <div className="lg:col-span-9 space-y-8">
+          <div className="mb-8 grid grid-cols-1 lg:grid-cols-4 gap-4 items-start">
+            <div className="lg:col-span-3 space-y-8">
               <div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
                   <h2 className="text-lg font-semibold text-gray-900">
@@ -954,7 +821,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
             </div>
 
             {/* ID card space (front/back) */}
-            <div className="lg:col-span-3" data-html2canvas-ignore>
+            <div className="lg:col-span-1" data-pdf-ignore>
               <div className="rounded-sm border border-gray-800 bg-white p-3 h-full min-h-[340px]">
                 <div className="mb-3 text-sm text-center">
                   {employment?.employmentId ? (
@@ -1017,7 +884,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
           </div>
 
           {/* Off-screen rendered nodes used only for PNG generation */}
-          <div className="fixed -left-[99999px] top-0 pointer-events-none" aria-hidden>
+          <div className="tw-default fixed -left-[99999px] top-0 pointer-events-none" aria-hidden>
             <div ref={frontRenderRef}>
               <IdCardFront data={idCardPngRenderData} />
             </div>
@@ -1445,20 +1312,7 @@ export default function EmploymentViewPage({ params }: { params: Promise<{ id: s
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-lg font-medium text-gray-900">{employment.employmentId || '-'}</p>
-                  {(() => {
-                    const raw = String((employment as any)?.profilePhoto || '');
-                    const safe = raw.trim().startsWith('data:image/') || raw.trim().startsWith('/');
-                    return safe && raw ? (
-                      <img
-                        src={raw}
-                        alt="Profile"
-                        className="h-14 w-14 rounded-full object-cover border border-gray-200 shrink-0"
-                      />
-                    ) : null;
-                  })()}
-                </div>
+                <p className="text-lg font-medium text-gray-900">{employment.employmentId || '-'}</p>
                 <p className="text-sm text-gray-500">Employment ID</p>
               </div>
 

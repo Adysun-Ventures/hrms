@@ -1,11 +1,9 @@
-'use client';
 
-import { useState, useEffect, use } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import { FiUser, FiEdit, FiTrash2, FiArrowLeft, FiBriefcase, FiDollarSign, FiBook, FiX } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { useParams } from '@/lib/navigation';
+import { useRouter, useSearchParams } from '@/lib/navigation';
+import { FiUser, FiEdit, FiTrash2, FiBriefcase, FiBook, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { Employee } from '@/types';
 import { formatDateToDayMonYear, formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import { useEmployee, useDeleteEmployee } from '@/hooks/useEmployees';
 import { useEmploymentsByEmployee } from '@/hooks/useEmployments';
@@ -18,11 +16,8 @@ import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
 
-type PageParams = {
-  params: Promise<{ id: string }>;
-};
 
-export default function EmployeeViewPage({ params }: PageParams) {
+export default function EmployeeViewPage() {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [createdByAdmin, setCreatedByAdmin] = useState<string>('');
   const [updatedByAdmin, setUpdatedByAdmin] = useState<string>('');
@@ -30,7 +25,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const { id } = use(params);
+  const { id } = useParams() as { id: string };
   const [officialEmail, setOfficialEmail] = useState<string>('');
   
   // Add safety check for id
@@ -118,21 +113,17 @@ export default function EmployeeViewPage({ params }: PageParams) {
   const safeEmployments = Array.isArray(employments) ? employments : [];
 
   // Debug logging for deployed environment
-  console.log('🔍 Employee ID:', id);
-  console.log('🔍 Employee data:', employee);
-  console.log('🔍 Employments data:', employments);
-  console.log('🔍 Safe employments:', safeEmployments);
-  console.log('🔍 Employments loading:', employmentsLoading);
-  console.log('🔍 Employments error:', employmentsError);
 
   // Use mutation for delete operation
   const deleteEmployeeMutation = useDeleteEmployee();
 
   // Handle error states
-  if (isError && error) {
+  // Report a failed load once (calling toast during render re-renders in a loop).
+  useEffect(() => {
+    if (!isError || !error) return;
     console.error('Employee data error:', error);
     toast.error('Failed to load employee data');
-  }
+  }, [isError, error]);
 
   if (employmentsError) {
     console.error('Employments data error:', employmentsError);
@@ -460,7 +451,7 @@ export default function EmployeeViewPage({ params }: PageParams) {
           {/* 2. Contact Information Section */}
           <div className="mb-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4">Contact Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <p className="text-lg font-medium text-gray-900">{employee.phone || '-'}</p>
                 <p className="text-sm text-gray-500">Mobile No.</p>
@@ -476,12 +467,12 @@ export default function EmployeeViewPage({ params }: PageParams) {
                 <p className="text-sm text-gray-500">Official Email</p>
               </div>
 
-              <div>
+              <div className="md:col-span-2">
                 <p className="text-lg font-medium text-gray-900">{employee.currentAddress || '-'}</p>
                 <p className="text-sm text-gray-500">Current Address</p>
               </div>
 
-              <div>
+              <div className="md:col-span-2">
                 <p className="text-lg font-medium text-gray-900">{employee.permanentAddress || '-'}</p>
                 <p className="text-sm text-gray-500">Permanent Address</p>
               </div>

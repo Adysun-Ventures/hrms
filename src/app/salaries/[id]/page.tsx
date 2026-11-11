@@ -1,11 +1,9 @@
-'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { useParams, useRouter } from '@/lib/navigation';
+import Link from '@/lib/link';
 import { FiArrowLeft, FiDownload, FiEdit } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { Salary } from '@/types';
 import { formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import TableHeader from '@/components/ui/TableHeader';
@@ -13,8 +11,7 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { useEmployeeSelfSalariesByEmployee, useSalary } from '@/hooks/useSalaries';
 import { getAdminNameById, getEmployeeNameById, getEmploymentsByEmployee } from '@/utils/firebaseUtils';
 import toast, { Toaster } from 'react-hot-toast';
-import { useSearchParams } from 'next/navigation';
-import { use } from 'react';
+import { useSearchParams } from '@/lib/navigation';
 import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
 import { useAuth } from '@/context/AuthContext';
 import { pdf } from '@react-pdf/renderer';
@@ -24,11 +21,8 @@ import { saveAs } from 'file-saver';
 import { SalarySlipPDF } from '@/app/doc_pages/pages/v2/SalarySlipGenerator';
 
 
-type PageParams = {
-  params: Promise<{ id: string }>;
-};
 
-export default function SalaryViewPage({ params }: PageParams) {
+export default function SalaryViewPage() {
   const [employeeName, setEmployeeName] = useState<string>('Loading...');
   const [resolvedEmploymentId, setResolvedEmploymentId] = useState<string | null>(null);
   const [createdByName, setCreatedByName] = useState<string>('');
@@ -41,7 +35,7 @@ export default function SalaryViewPage({ params }: PageParams) {
   const { currentUserData } = useAuth();
   const isEmployeeView = currentUserData?.userType === 'employee';
   
-  const { id } = use(params);
+  const { id } = useParams() as { id: string };
 
   // Admin-safe (requires admin session)
   const {
@@ -127,11 +121,6 @@ export default function SalaryViewPage({ params }: PageParams) {
     return months[month - 1] || 'Unknown';
   };
 
-  const getMonthShort = (month: number) => {
-    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-                   'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-    return months[month - 1] || 'UNK';
-  };
 
   const getDaysInMonth = (month1to12: number, year: number) => {
     const m = Math.min(12, Math.max(1, Number(month1to12) || 1));
@@ -253,7 +242,7 @@ export default function SalaryViewPage({ params }: PageParams) {
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="animate-pulse space-y-4">
             <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="h-20 bg-gray-200 rounded"></div>
               ))}
@@ -295,7 +284,6 @@ export default function SalaryViewPage({ params }: PageParams) {
       </DashboardLayout>
     );
   }
-  console.log('Salary Data:', salary); // Debug log to check salary data structure
               
 
   const adminBreadcrumbItems = [
@@ -463,7 +451,7 @@ export default function SalaryViewPage({ params }: PageParams) {
 
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800 mb-3">Salary Inputs</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
                         <p className="text-lg font-medium text-gray-900">{formatAmount(ctc)}</p>
                         <p className="text-sm text-gray-500">CTC</p>

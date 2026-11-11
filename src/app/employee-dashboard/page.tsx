@@ -1,50 +1,26 @@
-'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import {
-  FiUser,
-  FiCalendar,
-  FiLogOut,
-  FiFileText,
-  FiLogIn,
-  FiCheck,
-  FiClock,
-  FiEye,
-  FiEdit2,
-  FiBriefcase,
-} from 'react-icons/fi';
+import { useRouter } from '@/lib/navigation';
+import { useAuth, withoutSecrets } from '@/context/AuthContext';
+import { FiEye, FiEdit2, FiBriefcase } from 'react-icons/fi';
 import { FaRupeeSign } from 'react-icons/fa';
 import toast, { Toaster } from 'react-hot-toast';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { getEmployeeSelf } from '@/utils/firebaseUtils';
 import { Employee, Employment } from '@/types';
-import { useAttendanceMarking } from '@/hooks/useAttendanceMarking';
 import { getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
 import { useEmployeeSelfSalariesByEmployee } from '@/hooks/useSalaries';
 
 export default function EmployeeDashboardPage() {
-  const { currentEmployee, currentUserData, logout, isEmployeeExited } = useAuth();
+  const { currentUserData, isEmployeeExited } = useAuth();
   const router = useRouter();
   const [fullEmployeeData, setFullEmployeeData] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
   const [employmentData, setEmploymentData] = useState<Employment[]>([]);
   const [employmentLoading, setEmploymentLoading] = useState(true);
 
-  // Attendance logic hook
-  const {
-    todayAttendance,
-    todayAttendanceLoading,
-    employmentId,
-    handleCheckIn,
-    handleCheckOut,
-    calculateTodayHours,
-    checkInMutation,
-    checkOutMutation
-  } = useAttendanceMarking();
 
   // Get the current/active employment (assuming the first one or the one without endDate)
   const currentEmployment = employmentData.find(emp => !emp.endDate) || employmentData[0];
@@ -77,14 +53,13 @@ export default function EmployeeDashboardPage() {
           setFullEmployeeData(employeeData);
 
           // Store full employee data in localStorage for other components to use
-          localStorage.setItem('fullEmployeeData', JSON.stringify(employeeData));
+          localStorage.setItem('fullEmployeeData', JSON.stringify(withoutSecrets(employeeData)));
 
           // Fetch employment basic info for the current employee
           setEmploymentLoading(true);
           try {
             const employments = await getEmployeeSelfEmployment(currentUserData.id);
             setEmploymentData(employments);
-            console.log('✅ Employment data fetched successfully:', employments.length, 'records');
           } catch (employmentError) {
             console.error('Error fetching employment data:', employmentError);
             toast.error('Failed to load employment information');
@@ -108,20 +83,9 @@ export default function EmployeeDashboardPage() {
     return null;
   }
 
-  const employee = currentEmployee || currentUserData;
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      toast.success('Logout successful');
-      router.push('/login');
-    } catch {
-      toast.error('Logout failed');
-    }
-  };
 
   // Check if employee has employment
-  const hasEmployment = !employmentLoading && employmentData.length > 0;
   const { data: employeeSalaries, isLoading: salaryCountLoading } =
     useEmployeeSelfSalariesByEmployee(currentUserData?.id || '');
   const totalSalaryCount = employeeSalaries?.length || 0;
@@ -142,14 +106,14 @@ export default function EmployeeDashboardPage() {
             <h2 className="text-3xl font-bold mb-2">Welcome, {employee?.name}! 👋</h2>
             <p className="text-blue-100 text-lg">
               You&apos;re successfully logged in to your employee portal.  <br />
-              Here you can access your profile, attendance, and leave management.
+              Here you can access your profile, employment, salary and documents.
             </p>
           </div>
         </div>
       </div> */}
 
       {/* Employee Information Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 gap-4 mb-6">
         <div className="bg-white rounded-lg shadow-sm p-6">
           <div className="-mx-6 px-6 flex items-center justify-between pb-4 mb-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-800">Employee Information</h2>
@@ -183,7 +147,7 @@ export default function EmployeeDashboardPage() {
               <p className="text-gray-500">Loading employee information...</p>
             </div>
           ) : fullEmployeeData ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {fullEmployeeData.name && (
                 <div>
                   <p className="font-medium text-gray-900">{fullEmployeeData.name}</p>
@@ -287,7 +251,7 @@ export default function EmployeeDashboardPage() {
               <p className="text-gray-500">Loading employment information...</p>
             </div>
           ) : currentEmployment ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {(currentEmployment.employmentId || fullEmployeeData?.employeeId) && (
                 <div>
                   <p className="font-medium text-gray-900">
@@ -368,7 +332,7 @@ export default function EmployeeDashboardPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <p className="font-medium text-gray-900">
                 {salaryCountLoading ? 'Loading...' : totalSalaryCount}

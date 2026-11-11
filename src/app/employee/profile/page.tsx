@@ -1,26 +1,24 @@
-'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { FiUser, FiMapPin, FiBriefcase, FiShield, FiEdit, FiArrowRight, FiBook } from 'react-icons/fi';
+import { useRouter } from '@/lib/navigation';
+import { FiUser, FiMapPin, FiShield, FiEdit, FiBook } from 'react-icons/fi';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { useAuth } from '@/context/AuthContext';
 import { formatDateToDayMonYear, formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
-import toast, { Toaster } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 import TableHeader from '@/components/ui/TableHeader';
 import { getAdminNameById, getEmployeeNameById, getEmployeeSelf,getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { FaRupeeSign, FaSyncAlt } from "react-icons/fa";
-import { Employee } from '@/types';
 
 
 
 export default function EmployeeProfilePage() {
-  const { currentUserData, currentEmployee, logout } = useAuth();
+  const { currentUserData, currentEmployee } = useAuth();
   const router = useRouter();
   const [employeeData, setEmployeeData] = useState<any>(null);
   const [createdByName, setCreatedByName] = useState<string>('-');
   const [updatedByName, setUpdatedByName] = useState<string>('-');
-  const [employmentData, setEmploymentData] = useState<any>(null);
+  const [, setEmploymentData] = useState<any>(null);
 
   // Redirect if not authenticated or not an employee
   useEffect(() => {
@@ -69,8 +67,6 @@ export default function EmployeeProfilePage() {
 
   fetchData();
 }, [currentUserData?.id]);
-console.log('Employee Data:', employmentData);
-console.log(employmentData?.[0]?.bankName);
 
 
   // Fetch created by and updated by names
@@ -138,16 +134,9 @@ console.log(employmentData?.[0]?.bankName);
 
   // Use employeeData if available, otherwise fall back to currentEmployee
   const displayEmployee = employeeData || currentEmployee;
-  const displayEmployment = employmentData;
   
 
-  const getUserStatus = () => {
-    return displayEmployee?.status === 'active' ? 'Active' : 'Inactive';
-  };
 
-  const isUserActive = () => {
-    return displayEmployee?.status === 'active';
-  };
 
   const formatDate = (date: any): string => {
     if (!date) return '-';
@@ -219,19 +208,6 @@ console.log(employmentData?.[0]?.bankName);
               variant: 'purple' as const,
               href: '/employee/my-salary'
             },
-            // {
-            //   label: 'Change Password',
-            //   icon: <FiKey />,
-            //   variant: 'secondary' as const,
-            //   href: '/employee/profile/password'
-            // },
-            // {
-            //   label: 'Logout',
-            //   icon: <FiLogOut />,
-            //   variant: 'danger' as const,
-            //   onClick: handleLogout,
-            //   disabled: isLoggingOut
-            // }
           ]}
           backButton={{
             href: '/employee-dashboard',
@@ -276,7 +252,7 @@ console.log(employmentData?.[0]?.bankName);
               <FiMapPin className="mr-2" /> Contact Information
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="p-3">
                 <p className="text-lg font-medium text-gray-900">{displayEmployee?.phone || '-'}</p>
                 <p className="text-sm text-gray-500">Mobile No</p>
@@ -287,12 +263,12 @@ console.log(employmentData?.[0]?.bankName);
                 <p className="text-sm text-gray-500">Email</p>
               </div>
 
-              <div className="p-3">
+              <div className="p-3 md:col-span-2">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.currentAddress || '-'}</p>
                 <p className="text-sm text-gray-500">Current Adress</p>
               </div>
 
-              <div className="p-3">
+              <div className="p-3 md:col-span-2">
                 <p className="text-lg font-medium text-gray-900">{(displayEmployee as any)?.permanentAddress || '-'}</p>
                 <p className="text-sm text-gray-500">Permanent Adress</p>
               </div>

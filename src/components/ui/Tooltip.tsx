@@ -154,7 +154,7 @@ const Tooltip: React.FC<TooltipProps> = ({
       {isVisible && createPortal(
         <div
           ref={tooltipRef}
-          className="fixed z-[9999]"
+          className="app-shell fixed z-[9999]"
           style={{
             top: tooltipPosition.top,
             left: tooltipPosition.left,

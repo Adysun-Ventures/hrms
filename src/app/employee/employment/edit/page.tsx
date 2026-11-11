@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import toast, { Toaster } from 'react-hot-toast';
 import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -128,7 +127,7 @@ export default function EmployeeEmploymentEditPage() {
         ) : !currentEmployment ? (
           <p className="text-gray-500">No employment record found.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Reporting Manager</label>
               <input
@@ -170,7 +169,7 @@ export default function EmployeeEmploymentEditPage() {
               />
             </div>
 
-            <div className="md:col-span-2">
+            <div className="md:col-span-4">
               <h2 className="text-lg font-semibold text-gray-800 mt-2">Bank Details</h2>
             </div>
 

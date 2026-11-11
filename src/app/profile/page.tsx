@@ -1,8 +1,7 @@
-'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { FiUser, FiMail, FiPhone, FiCalendar, FiShield, FiLogOut, FiEdit, FiKey } from 'react-icons/fi';
+import { useRouter } from '@/lib/navigation';
+import { FiUser, FiMail, FiPhone, FiCalendar, FiShield, FiLogOut, FiEdit } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';

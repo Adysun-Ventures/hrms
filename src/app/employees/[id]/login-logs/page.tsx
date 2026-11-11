@@ -1,7 +1,6 @@
-'use client';
 
-import { use, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useParams, useRouter } from '@/lib/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import TableHeader from '@/components/ui/TableHeader';
 import { FiRefreshCw } from 'react-icons/fi';
@@ -9,9 +8,6 @@ import { getEmployee, getEmployeeLoginLogs } from '@/utils/firebaseUtils';
 import { formatDateToDayMonYearWithTime } from '@/utils/documentUtils';
 import toast, { Toaster } from 'react-hot-toast';
 
-type PageParams = {
-  params: Promise<{ id: string }>;
-};
 
 type LoginLogRow = {
   id: string;
@@ -44,8 +40,8 @@ const toSessionCloseThroughText = (row: LoginLogRow) => {
   return 'Unknown';
 };
 
-export default function EmployeeLoginLogsPage({ params }: PageParams) {
-  const { id } = use(params);
+export default function EmployeeLoginLogsPage() {
+  const { id } = useParams() as { id: string };
   const router = useRouter();
   const [employeeName, setEmployeeName] = useState('Loading...');
   const [rows, setRows] = useState<LoginLogRow[]>([]);

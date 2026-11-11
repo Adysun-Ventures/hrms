@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, useEffect } from 'react';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
@@ -28,7 +27,7 @@ export default function CustomDateInput({
   max
 }: CustomDateInputProps) {
   const [displayValue, setDisplayValue] = useState<string>('');
-  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [, setIsDatePickerOpen] = useState(false);
 
   const safeName = String(name || 'date').replace(/[^a-zA-Z0-9_-]/g, '-');
 

@@ -1,4 +1,3 @@
-"use client";
 
 import React, { useState, useEffect, useMemo } from "react";
 import { FiDownload, FiX } from "react-icons/fi";
@@ -13,19 +12,11 @@ import {
   View,
   Image,
 } from "@react-pdf/renderer";
-import { saveAs } from "file-saver";
-import {
-  Packer,
-  Paragraph,
-  TextRun,
-  AlignmentType,
-} from "docx";
-import { createAdysunDocx } from "@/utils/docxAdysun";
 
 import { db } from "@/firebase/config";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { fetchDocEmployees } from '@/utils/document';
 import toast, { Toaster } from "react-hot-toast";
-import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import { Combobox } from "@headlessui/react";
@@ -231,53 +222,6 @@ const DateDropdown = ({ value, onChange }) => {
   );
 };
 
-/* ---------------- DOCX BUILDER ---------------- */
-async function buildJoiningLetterDocx(employee, designation, department, reportingManager, workLocation, joiningDate, annualCTC, probation, workingHours, signPlace, documentGenerateDate) {
-  const name = employee?.name || "";
-  const shortName = name.split(" ")[0] || name;
-  const issueDate = formatDate(documentGenerateDate || todayISO());
-  const formattedJoiningDate = formatDate(joiningDate);
-  const formattedCTC = Number(annualCTC).toLocaleString("en-IN");
-  const children = [
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: issueDate })] }),
-    new Paragraph({ children: [new TextRun({ text: toTitleCase(name), bold: true })] }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "APPOINTMENT LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "We are pleased to confirm your joining with " }),
-        new TextRun({ text: COMPANY_DATA.name, bold: true }),
-        new TextRun({ text: ". You will be joining us as a " }),
-        new TextRun({ text: designation || "", bold: true }),
-        ...(department ? [new TextRun({ text: ` in the ${department} department` })] : []),
-        new TextRun({ text: ` effective from ${formattedJoiningDate}.` }),
-      ],
-    }),
-    new Paragraph({ children: [new TextRun({ text: `Your place of posting shall be ${workLocation || ""} and you will be reporting to ${reportingManager || ""}.` })] }),
-    new Paragraph({ children: [new TextRun({ text: "Your annual Cost to Company (CTC) will be " }), new TextRun({ text: `₹${formattedCTC}`, bold: true }), new TextRun({ text: "." })] }),
-    new Paragraph({ children: [new TextRun({ text: `You will be on probation for a period of ${probation || ""}, during which your performance will be assessed.` })] }),
-    new Paragraph({ children: [new TextRun({ text: "Your working hours will be 10:00 AM - 7:00 PM, Monday to Friday." })] }),
-    new Paragraph({ text: "We warmly welcome you to our organization and look forward to your valuable contribution." }),
-    new Paragraph({ text: "Kindly acknowledge and accept this letter." }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
-    new Paragraph({
-      text:
-        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this appointment letter. I accept the offer of employment with Adysun Ventures Private Limited.",
-    }),
-    new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCase(name), bold: true })] }),
-    new Paragraph({ text: "Signature: ________________________________" }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Place: " }), new TextRun({ text: signPlace || "" })] }),
-    new Paragraph({ children: [new TextRun({ text: "Date: " }), new TextRun({ text: issueDate })] }),
-    new Paragraph({ children: [new TextRun({ text: toTitleCase(name), bold: true })] }),
-  ];
-  return await createAdysunDocx({ children });
-}
 
 /* ---------------- PDF TEMPLATE ---------------- */
 
@@ -290,7 +234,6 @@ const JoiningLetterPDF = ({
   joiningDate,
   annualCTC,
   probation,
-  workingHours,
   signPlace,
   documentGenerateDate
 }) => {
@@ -436,14 +379,6 @@ export default function JoiningLetterV2() {
   const [candidates, setCandidates] = useState([]);
   const [employee, setEmployee] = useState(null);
 
-  const departmentOptions = [
-    "Development",
-    "Engineering",
-    "Operation",
-    "HR",
-    "Finance",
-    "Support",
-  ];
   const [designation, setDesignation] = useState("");
   const [department, setDepartment] = useState("");
   const [reportingManager, setReportingManager] = useState("");
@@ -451,7 +386,7 @@ export default function JoiningLetterV2() {
   const [joiningDate, setJoiningDate] = useState("");
   const [annualCTC, setAnnualCTC] = useState("");
   const [probation, setProbation] = useState("6 Months");
-  const [workingHours, setWorkingHours] = useState("9:30 AM - 6:30 PM");
+  const [workingHours, ] = useState("9:30 AM - 6:30 PM");
   const [signPlace, setSignPlace] = useState("Pune");
   const [documentGenerateDate, setDocumentGenerateDate] = useState(todayISO());
   const [searchTerm, setSearchTerm] = useState("");
@@ -471,9 +406,7 @@ export default function JoiningLetterV2() {
 
   useEffect(() => {
     async function loadData() {
-      const qs = await getDocs(collection(db, "employees"));
-      const list = qs.docs.map((d) => ({ id: d.id, ...d.data() }));
-      const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+      const visible = await fetchDocEmployees(selfEmployeeId);
       setCandidates(visible);
 
       if (selfEmployeeId && visible.length > 0) {

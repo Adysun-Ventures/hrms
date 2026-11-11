@@ -1,7 +1,5 @@
 import React from "react";
 import { View, Text, Image } from "@react-pdf/renderer";
-import hrSign from "/public/assets/hr-sign.png";
-import logo from "/public/assets/adysunventures_logo.png";
 import { HEADER_FOOTER_FONT_FAMILY } from "@/components/pdf/documentFont";
 
 const GlobalPDFHeader = () => {

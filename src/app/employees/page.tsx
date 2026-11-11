@@ -1,8 +1,7 @@
-'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { FiEdit, FiTrash2, FiPlus, FiEye, FiBriefcase, FiDollarSign, FiX } from 'react-icons/fi';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from '@/lib/navigation';
+import { FiEdit, FiTrash2, FiEye, FiBriefcase, FiX } from 'react-icons/fi';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import toast, { Toaster } from 'react-hot-toast';
 import { formatDateToDayMonYear } from '@/utils/documentUtils';
@@ -15,7 +14,7 @@ import Pagination from '@/components/ui/Pagination';
 import { FaBan, FaCheck, FaRupeeSign, FaSyncAlt, FaTimes } from "react-icons/fa";
 import { FaRegSquarePlus } from 'react-icons/fa6';
 import { FaHandSparkles } from 'react-icons/fa6';
-import Link from 'next/link';
+import Link from '@/lib/link';
 import { addEmployee, getAdminDataForAudit } from '@/utils/firebaseUtils';
 import { toTitleCase } from '@/utils/stringUtils';
 
@@ -75,29 +74,6 @@ const EmploymentWorkingStatusBadge = ({ employeeId }: { employeeId: string }) =>
 
 
 
-const EmploymentStatusBadge = ({ employeeId }: { employeeId: string }) => {
-  const { data: employments = [] } = useEmploymentsByEmployee(employeeId);
-
-  const employment = employments[0];
-
-  if (!employment) {
-    return <span className="text-gray-400">-</span>;
-  }
-
-  const isResigned = employment.isResignation === true;
-
-  return (
-    <span
-      className={`px-2 py-0.5 inline-flex text-xs leading-5 font-normal rounded-full ${
-        isResigned
-          ? 'bg-red-100 text-red-800'
-          : 'bg-green-100 text-green-800'
-      }`}
-    >
-      {isResigned ? 'Resigned' : 'Active'}
-    </span>
-  );
-};
 
 
 // Component to display employee ID from employment record
@@ -106,7 +82,6 @@ const EmployeeIdDisplay = ({ employeeId }: { employeeId: string }) => {
 
   // Get the first (and only) employment
   const employment = employments[0];
-  console.log(employment)
 
  if (!employment || !employment.employmentId) {
   return (
@@ -188,30 +163,7 @@ const TotalSalaryCreditsDisplay = ({ employeeId }: { employeeId: string }) => {
     return <span className="text-gray-400">-</span>;
   }
 
-  // Display total salary credits count for now
   return <span>{salaries.length}</span>;
-
-  // if (!salaries || salaries.length === 0) {
-  //   return <span className="text-gray-400">-</span>;
-  // }
-
-  // // Sum up all totalSalary values from salary records
-  // const totalCredits = salaries.reduce((total, salary) => {
-  //   return total + (salary.totalSalary || 0);
-  // }, 0);
-
-  // if (totalCredits === 0) {
-  //   return <span className="text-gray-400">-</span>;
-  // }
-
-  // return (
-  //   <span>
-  //     {new Intl.NumberFormat('en-IN', {
-  //       style: 'currency',
-  //       currency: 'INR'
-  //     }).format(totalCredits)}
-  //   </span>
-  // );
 };
 interface SalaryActionButtonProps {
   employeeId: string;
@@ -317,8 +269,6 @@ export default function EmployeesPage() {
   key: 'name',
   direction: 'asc'
 });
-const [joiningDateMap, setJoiningDateMap] = useState<Record<string, number>>({});
-const [employmentByEmployeeId, setEmploymentByEmployeeId] = useState<Record<string, any>>({});
 
 
 
@@ -435,10 +385,12 @@ const [employmentByEmployeeId, setEmploymentByEmployeeId] = useState<Record<stri
   };
 
   // Handle error state
-  if (isError && error) {
+  // Report a failed load once (calling toast during render re-renders in a loop).
+  useEffect(() => {
+    if (!isError || !error) return;
     console.error('Employee data error:', error);
     toast.error('Failed to load employee data');
-  }
+  }, [isError, error]);
 
   const handleDeleteClick = (id: string) => {
     setDeleteConfirm(id);
@@ -480,13 +432,15 @@ const [employmentByEmployeeId, setEmploymentByEmployeeId] = useState<Record<stri
   }));
 };
 
-const { data: employments = [] } = useEmployments(); // all employments
+const { data: employmentsData } = useEmployments(); // all employments
 
-useEffect(() => {
+// Derived per render from the query data. (Copying it into state from an effect looped forever
+// when the query failed: the `= []` default is a new array every render.)
+const { joiningDateMap, employmentByEmployeeId } = useMemo(() => {
   const map: Record<string, number> = {};
   const byEmployee: Record<string, any> = {};
 
-  employments.forEach(emp => {
+  (employmentsData ?? []).forEach(emp => {
     map[emp.employeeId] = new Date(emp.joiningDate || 0).getTime();
     // keep latest record per employee (best-effort)
     if (!byEmployee[emp.employeeId]) {
@@ -499,9 +453,8 @@ useEffect(() => {
     if (nextTs >= prevTs) byEmployee[emp.employeeId] = emp;
   });
 
-  setJoiningDateMap(map);
-  setEmploymentByEmployeeId(byEmployee);
-}, [employments]);
+  return { joiningDateMap: map, employmentByEmployeeId: byEmployee };
+}, [employmentsData]);
 
 
   const filteredEmployees = employees
@@ -610,7 +563,7 @@ useEffect(() => {
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout allowedUserTypes={['admin']}>
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           {/* Skeleton for TableHeader */}
           <div className="space-y-6">
@@ -924,26 +877,7 @@ useEffect(() => {
                       <div className="text-sm text-gray-900">{startIndex + idx + 1}</div>
                     </td>
                     <td className="px-6 py-2 whitespace-nowrap text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {String(
-                          (employee as any).imageUrl ||
-                            (employmentByEmployeeId[employee.id] as any)?.profilePhoto ||
-                            ''
-                        ).trim() ? (
-                          <img
-                            src={String(
-                              (employee as any).imageUrl ||
-                                (employmentByEmployeeId[employee.id] as any)?.profilePhoto ||
-                                ''
-                            )}
-                            alt={`${employee.name} profile`}
-                            className="h-8 w-8 rounded-full object-cover border border-gray-300 shrink-0"
-                          />
-                        ) : (
-                          <span className="h-8 w-8 rounded-full border border-gray-300 bg-transparent shrink-0" />
-                        )}
-                        <div className="text-sm font-medium text-gray-900">{employee.name}</div>
-                      </div>
+                      <div className="text-sm font-medium text-gray-900">{employee.name}</div>
                     </td>
                     <td className="px-6 py-2 whitespace-nowrap text-center">
                       <div className="text-sm text-gray-900">

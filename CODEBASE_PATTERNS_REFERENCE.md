@@ -89,122 +89,9 @@ mt-20 (80px)   /* Content margins - **Standard for content after titles** */
 bg-gradient-to-br from-orange-400 to-orange-600  /* Orange gradients */
 ```
 
-### **Animation Patterns**
-```css
-/* Hover Effects */
-hover:scale-110      /* Icon scale on hover */
-hover:-translate-y-1 /* Card lift on hover */
-hover:-translate-y-2 /* Tech stack card lift */
-hover:shadow-xl      /* Enhanced hover shadows */
-
-/* Transitions */
-transition-all duration-300  /* Standard transition */
-transition-colors duration-200  /* Color transitions */
-
-/* Focus States */
-focus:ring-4 focus:ring-orange-300  /* Orange focus ring */
-```
-
 ---
 
 ## 🧩 **Component Architecture**
-
-### **Website Components**
-
-#### **FeatureCard Component**
-```typescript
-interface FeatureCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  variant?: 'light' | 'dark';
-  className?: string;
-}
-
-// Usage Pattern
-<FeatureCard
-  icon={<Users />}
-  title="Expert Team"
-  description="Our experienced team brings deep domain knowledge."
-  variant="light"
-/>
-```
-
-#### **BenefitCard Component**
-```typescript
-interface BenefitCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}
-
-// Standard Structure
-<div className="text-center group">
-  <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-orange-200">
-    <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-      <span className="text-white [&_*]:w-8 [&_*]:h-8">{icon}</span>
-    </div>
-    <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-orange-700 transition-colors">
-      {title}
-    </h3>
-    <p className="text-lg text-gray-700 leading-relaxed">
-      {description}
-    </p>
-  </div>
-</div>
-```
-
-#### **CTAButton Component**
-```typescript
-interface CTAButtonProps {
-  href: string;
-  children: React.ReactNode;
-  variant?: 'primary' | 'secondary';
-  className?: string;
-}
-
-// Standard Classes
-const baseClasses = "inline-flex items-center px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-orange-300";
-const primaryClasses = "bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl";
-const secondaryClasses = "bg-white text-orange-600 border-2 border-orange-600 hover:bg-orange-600 hover:text-white";
-```
-
-#### **HeroSection Component**
-```typescript
-interface HeroSectionProps {
-  title: string;
-  subtitle: string;
-  description?: string;
-  backgroundImage?: string;
-  variant?: 'dark' | 'gradient' | 'image';
-  actions?: Array<{
-    text: string;
-    href: string;
-    variant: 'primary' | 'secondary' | 'outline';
-  }>;
-  className?: string;
-}
-
-// Image Variant Pattern
-<section className="relative w-screen h-screen bg-cover bg-center bg-no-repeat">
-  <div className="absolute top-0 left-0 w-full h-full" style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }} />
-  <div className="container mx-auto py-10 relative h-full flex items-center">
-    <div className="text-left max-w-2xl">
-      <span className="text-white text-2xl md:text-3xl block mb-6 font-light">{title}</span>
-      <h2 className="text-white text-4xl md:text-5xl lg:text-6xl font-bold m-0 mb-8 leading-tight">
-        <span className="text-orange-500">{subtitle.split(':')[0]}: </span>
-        <span className="font-normal">{subtitle.split(':')[1] || subtitle}</span>
-      </h2>
-      <div className="w-24 h-px bg-white opacity-30 my-10" />
-      {description && (
-        <p className="text-white mb-10 max-w-3xl text-lg md:text-xl leading-relaxed opacity-90">
-          {description}
-        </p>
-      )}
-    </div>
-  </div>
-</section>
-```
 
 ### **Dashboard Components**
 
@@ -407,6 +294,14 @@ const onSubmit = async (data: FormData) => {
 </div>
 ```
 
+### **MANDATORY: 4-Column Grid (all forms, views, dashboards)**
+Every create/edit form, detail view and dashboard section lays out on **4 columns**:
+`grid grid-cols-1 md:grid-cols-4 gap-4` (1 column on mobile, 4 from `md`).
+
+- A normal field/value takes 1 column. Wide items span: `md:col-span-2` (address, textarea), `md:col-span-4` (section headers, full-width tables, submit rows).
+- Page-level splits use the same 4 tracks: main + side panel = `lg:col-span-3` + `lg:col-span-1`; two halves = `lg:col-span-2` each.
+- Never use `grid-cols-2/3/5/6/8/12` for layout. Only exception: a compound control that occupies one cell (day/month/year selects, hour/min/AM-PM, month strip), or a 2-column sub-grid inside a `col-span-2` half panel (still aligned to the 4 tracks).
+
 ---
 
 ## 🔥 **Backend & Data Patterns**
@@ -505,7 +400,6 @@ export const useCreateEmployee = () => {
     mutationFn: addEmployee,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.employees.lists() });
-      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.stats() });
     },
     onError: (error) => {
       console.error('Error creating employee:', error);
@@ -574,17 +468,11 @@ export const validatePANFormat = (pan: string): boolean => {
   return panRegex.test(pan.toUpperCase());
 };
 
+// Uniqueness checks run on the server (/api/lookup, signed-in only): Firestore rules
+// stop the browser from scanning other people's records.
 export const checkPANExistsAnywhere = async (pan: string): Promise<boolean> => {
-  try {
-    const [enquiriesExists, employeesExists] = await Promise.all([
-      checkPANExistsInEnquiries(pan),
-      checkPANExistsInEmployees(pan)
-    ]);
-    return enquiriesExists || employeesExists;
-  } catch (error) {
-    console.error('Error checking PAN existence:', error);
-    throw error;
-  }
+  const { exists } = await apiPost('/api/lookup', { kind: 'pan', value: pan });
+  return Boolean(exists);
 };
 ```
 
@@ -730,15 +618,15 @@ focus:ring-2 focus:ring-blue-500 focus:border-blue-500
 
 ## 🛣️ **Routing & Navigation**
 
-### **Next.js App Router Patterns**
+### **Routing (Vite + React Router, file-based)**
+
+Every `src/app/**/page.tsx` is a route (`[id]` folders become `:id`), loaded lazily by `src/main.tsx`. Add a page = add a folder with `page.tsx`.
 
 #### **Page Structure**
 ```typescript
 // Standard Page Component
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import toast from 'react-hot-toast';
@@ -769,13 +657,11 @@ export default function PageName() {
 
 #### **Dynamic Routes**
 ```typescript
-// Dynamic Route Page
-interface PageParams {
-  params: Promise<{ id: string }>;
-}
+// Dynamic Route Page (src/app/entity/[id]/page.tsx)
+import { useParams } from '@/lib/navigation';
 
-export default function DynamicPage({ params }: PageParams) {
-  const { id } = use(params);
+export default function DynamicPage() {
+  const { id } = useParams() as { id: string };
   
   // Use Tanstack Query for data fetching
   const { data, isLoading, isError } = useEntity(id);
@@ -791,36 +677,10 @@ export default function DynamicPage({ params }: PageParams) {
 }
 ```
 
-### **Middleware Pattern**
-```typescript
-// Authentication Middleware
-export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route));
-  
-  const adminSessionId = request.cookies.get('adminSessionId')?.value;
-  const employeeSessionId = request.cookies.get('employeeSessionId')?.value;
-  const isAuthenticated = adminSessionId || employeeSessionId;
-  
-  if (isProtectedRoute && !isAuthenticated) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-  
-  if (isAuthenticated && pathname === '/login') {
-    if (adminSessionId) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    } else if (employeeSessionId) {
-      return NextResponse.redirect(new URL('/employee-dashboard', request.url));
-    }
-  }
-  
-  return NextResponse.next();
-}
-```
+### **Route Protection**
+`src/components/auth/SessionGate.tsx` sends signed-out users on protected paths to `/login?redirect=…`
+(the list the old Next middleware used). Role checks stay in `DashboardLayout allowedUserTypes={[...]}` (AuthGuard).
+Server-side checks live in `netlify/functions/*` (one file per `/api/...` route) and Firestore rules.
 
 ### **Breadcrumb Pattern**
 ```typescript
@@ -998,7 +858,8 @@ toast.custom((t) => (
 ### **Common Imports**
 ```typescript
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/lib/navigation';
+import Link from '@/lib/link';
 import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';

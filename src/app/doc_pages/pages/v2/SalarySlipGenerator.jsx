@@ -1,15 +1,14 @@
-'use client';
 
 import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import Link from '@/lib/link';
 import { FiArrowLeft, FiDownload, FiX } from 'react-icons/fi';
-import { PDFViewer, PDFDownloadLink, Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
+import { PDFViewer, PDFDownloadLink, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { db } from '@/firebase/config';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { fetchDocEmployees } from '@/utils/document';
 import { CompanyHeader, Watermark } from '@/components/pdf/PDFComponents';
 import { numberToWords } from '@/components/pdf/SalaryUtils';
 import toast, { Toaster } from 'react-hot-toast';
-import SearchableDropdown from '@/components/ui/SearchableDropdown';
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
 import GlobalPDFHeader from "@/components/components/docComponents/docHeader";
 import { BODY_FONT_FAMILY, ensureDocumentFonts } from "@/components/pdf/documentFont";
@@ -58,43 +57,6 @@ const defaultSalarySlipStyles = StyleSheet.create({
 });
 
 // === ADYSUN LAYOUT STYLES ===
-const adysunSalarySlipStyles = StyleSheet.create({
-  page: { paddingTop: 24, paddingBottom: 32, paddingHorizontal: 32, fontFamily: BODY_FONT_FAMILY, fontSize: 10, backgroundColor: '#fff', color: '#111' },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  logoWrapper: { marginRight: 16 },
-  logo: { width: 66, height: 66 },
-  headerTextBlock: { alignItems: 'center' },
-  headerCompany: { fontSize: 16, fontWeight: 'bold' },
-  headerInfo: { fontSize: 9, color: '#333' },
-  horizontalRule: { marginTop: 8, marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#000', borderBottomStyle: 'solid' },
-  dateText: { fontSize: 10, marginBottom: 4 },
-  slipTitle: { fontSize: 12, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
-  detailTable: { borderWidth: 1, borderColor: '#000', borderStyle: 'solid', marginBottom: 12 },
-  detailRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#000', borderBottomStyle: 'solid' },
-  detailLastRow: { borderBottomWidth: 0 },
-  detailCellLabel: { width: '40%', padding: 6, fontWeight: 'bold', borderRightWidth: 1, borderRightColor: '#000', borderRightStyle: 'solid' },
-  detailCellValue: { width: '60%', padding: 6 },
-  dualTable: { flexDirection: 'row', borderWidth: 1, borderColor: '#000', borderStyle: 'solid', marginBottom: 8 },
-  dualColumn: { flex: 1 },
-  dualColumnDivider: { borderRightWidth: 1, borderRightColor: '#000', borderRightStyle: 'solid' },
-  dualHeader: { flexDirection: 'row', backgroundColor: '#f4f4f4', borderBottomWidth: 1, borderBottomColor: '#000', borderBottomStyle: 'solid' },
-  dualHeaderCell: { flex: 1, padding: 6, fontWeight: 'bold' },
-  dualRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#b5b5b5', borderBottomStyle: 'solid' },
-  dualRowLast: { borderBottomWidth: 0 },
-  dualCell: { flex: 1, padding: 6 },
-  dualAmountCell: { textAlign: 'right' },
-  totalsRow: { flexDirection: 'row', backgroundColor: '#f4f4f4', borderTopWidth: 1, borderTopColor: '#000', borderTopStyle: 'solid' },
-  totalsLabel: { flex: 1, padding: 6, fontWeight: 'bold' },
-  totalsAmount: { textAlign: 'right' },
-  netTable: { borderWidth: 1, borderColor: '#000', borderStyle: 'solid', marginBottom: 6 },
-  netRow: { flexDirection: 'row' },
-  netLabel: { width: '40%', padding: 6, fontWeight: 'bold', borderRightWidth: 1, borderRightColor: '#000', borderRightStyle: 'solid' },
-  netValue: { width: '60%', padding: 6, textAlign: 'right' },
-  note: { fontSize: 9, textAlign: 'center', marginVertical: 4 },
-  footerSeparator: { marginTop: 12, marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#000', borderBottomStyle: 'solid' },
-  footer: { alignItems: 'center' },
-  footerLine: { fontSize: 9, textAlign: 'center' },
-});
 
 // === HELPER FUNCTIONS ===
 const normalize = (v) => Array.isArray(v) ? v.filter(Boolean) : v ? [v] : [];
@@ -104,12 +66,6 @@ const primaryName = (v) => {
 };
 
 const getEmployeeNameText = (names, txt) => txt || normalize(names).join(', ') || 'Employee Name';
-const formatDisplayDate = (d) => formatDateToDayMonYear(d);
-const getSalarySlipMonthLabel = (d) => {
-  const date = new Date(d);
-  if (isNaN(date)) return "-";
-  return date.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
-};
 const getSalarySlipMonthUpper = (d) => formatDateToDayMonYear(d);
 const getEmployeeCodeForSlip = (employmentRow) =>
   String(employmentRow?.employmentId || '').trim();
@@ -338,11 +294,6 @@ const AdysunSalarySlipLayout = ({ formData }) => {
     { label: 'Other Deductions', amount: toNumber(f.otherDeductions) },
   ];
 
-  const footerLines = [
-    'Adysun Ventures Pvt. Ltd.',
-    'Adysun Ventures, WorkPlex, S no 47, near Bhapkar petrol pump, Pune - Satara Rd, Taware Colony, Bibwewadi, Pune, Maharashtra 411009',
-    'www.AdysunVentures.com  |  info@adysunventures.com  |  hr@adysunventures.com'
-  ];
    const toTitleCase = (str) => {
   return str
     ?.toLowerCase()
@@ -350,10 +301,6 @@ const AdysunSalarySlipLayout = ({ formData }) => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
 };
-const years = Array.from(
-  { length: (new Date().getFullYear() + 2) - 2020 + 1 },
-  (_, i) => 2020 + i
-);
 
 
   const detailRows = [
@@ -366,7 +313,6 @@ const years = Array.from(
     { label: 'Department', value: f.department },
     { label: 'Bank Name', value: f.bankName },
     { label: 'Bank Account Number', value: maskAccountNo(f.accountNo) },
-    // { label: 'IFSC Code', value: f.ifscCode },
     { label: 'PAN No.', value: maskPanNo(f.panNumber) },
     { label: 'Leaves', value: f.leaves || 0},
     { label: 'Effective Working Days', value: `${f.payableDays} Days` },
@@ -684,7 +630,7 @@ function SalarySlipGeneratorV2() {
   const [showPDF, setShowPDF] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [employee, setEmployee] = useState(null);
-  const [employment, setEmployment] = useState(null);
+  const [, setEmployment] = useState(null);
 
   const [formData, setFormData] = useState({
     companyName: DEFAULT_COMPANY_NAME,
@@ -721,28 +667,17 @@ function SalarySlipGeneratorV2() {
     companyLogo: "/assets/adysunventures_logo.png",
   });
 
-  const formatNames = (v) => {
-    const n = normalize(v);
-    return n.length === 0 ? 'Employee' : n.join('_');
-  };
-  const MONTH_NAMES = [
-  "January","February","March","April","May","June",
-  "July","August","September","October","November","December"
-];
 
 
   const getDaysInMonth = (m) => {
     const year = new Date().getFullYear();
     return new Date(year, Number(m) + 1, 0).getDate();
   };
-  const year = new Date().getFullYear();
 
   // === FETCH EMPLOYEES & EMPLOYMENT ===
   const fetchCandidates = async () => {
     try {
-      const snap = await getDocs(collection(db, 'employees'));
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+      const visible = await fetchDocEmployees(selfEmployeeId);
       setCandidates(visible);
 
       const empMap = {};
@@ -1079,7 +1014,7 @@ return (
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
         <Link
-          href="/dashboard/documents"
+          href={selfEmployeeId ? "/employee/documents" : "/dashboard/documents"}
           className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-full text-gray-700 hover:bg-gray-50 transition-colors"
         >
           <FiArrowLeft size={16} /> Back

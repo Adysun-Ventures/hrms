@@ -23,10 +23,6 @@ export const COMPANY_LINKS = {
   
   // Contact Information
   contact: {
-    // phone: {
-    //   number: '+91 9579537523',
-    //   href: 'tel:+919579537523',
-    // },
     email: {
       general: 'info@adysunventures.com',
       hr: 'hr@adysunventures.com',

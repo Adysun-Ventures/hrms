@@ -1,4 +1,3 @@
-"use client";
 
 import React, { useState, useEffect } from "react";
 import { FiDownload, FiX } from "react-icons/fi";
@@ -13,19 +12,11 @@ import {
   View,
   Image
 } from "@react-pdf/renderer";
-import { saveAs } from "file-saver";
-import {
-  Packer,
-  Paragraph,
-  TextRun,
-  AlignmentType,
-} from "docx";
-import { createAdysunDocx } from "@/utils/docxAdysun";
 
 import { db } from "@/firebase/config";
 import { collection, getDocs, query, where } from "firebase/firestore";
+import { fetchDocEmployees } from '@/utils/document';
 import toast, { Toaster } from "react-hot-toast";
-import { offerLetterStyles } from "@/components/pdf/PDFStyles";
 import { Combobox } from "@headlessui/react";
 import { useAuth } from "@/context/AuthContext";
 import GlobalPDFFooter from "@/components/components/docComponents/docFooter";
@@ -174,82 +165,11 @@ const DateDropdown = ({ value, onChange }) => {
   );
 };
 
-/* ---------------- DOCX BUILDER ---------------- */
-async function buildAppraisalLetterDocx(employee, currentCTC, percentIncrease, revisedCTC, effectiveDate, documentGenerateDate, oldDesignation, newDesignation) {
-  const employeeName = employee?.name || "";
-  const shortName = employeeName.split(" ")[0] || employeeName;
-  const formattedCurrent = Number(currentCTC).toLocaleString("en-IN");
-  const formattedRevised = Number(revisedCTC).toLocaleString("en-IN");
-  const formattedEffective = formatDate(effectiveDate);
-  const today = formatDate(documentGenerateDate || new Date());
-  const children = [
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.name, bold: true })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Date: ", bold: true }), new TextRun({ text: today })] }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "INCREMENT LETTER", bold: true, underline: {} })], alignment: AlignmentType.CENTER }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: `Dear ${toTitleCase(shortName)},` })] }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "I am pleased to inform you that due to your consistent outstanding performance and dedication to your role, we are providing you with a salary increment effective from " }),
-        new TextRun({ text: formattedEffective, bold: true }),
-        new TextRun({ text: "." }),
-      ],
-    }),
-    new Paragraph({
-      children: [
-        new TextRun({ text: "Your new annual CTC will be " }),
-        new TextRun({ text: formattedRevised, bold: true }),
-        new TextRun({ text: " which is an increase from your previous annual CTC of " }),
-        new TextRun({ text: formattedCurrent, bold: true }),
-        new TextRun({ text: "." }),
-      ],
-    }),
-    ...(oldDesignation || newDesignation
-      ? [
-          new Paragraph({
-            children: [
-              ...(oldDesignation && newDesignation && oldDesignation === newDesignation
-                ? [
-                    new TextRun({ text: "Designation remains unchanged: " }),
-                    new TextRun({ text: oldDesignation || "-", bold: true }),
-                    new TextRun({ text: "." }),
-                  ]
-                : [
-                    new TextRun({ text: "Designation update: " }),
-                    new TextRun({ text: oldDesignation || "-", bold: true }),
-                    new TextRun({ text: " to " }),
-                    new TextRun({ text: newDesignation || "-", bold: true }),
-                    new TextRun({ text: "." }),
-                  ]),
-            ],
-          }),
-        ]
-      : []),
-    new Paragraph({ text: "We appreciate your continuous hard work and commitment and we believe you will continue to excel and contribute towards the company's success." }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Acknowledgement and Acceptance", bold: true, underline: {} })] }),
-    new Paragraph({
-      text:
-        "I hereby acknowledge that I have read, understood, and agreed to the terms and conditions outlined in this increment letter. I accept the terms of this increment letter with Adysun Ventures Private Limited.",
-    }),
-    new Paragraph({ children: [new TextRun({ text: "Candidate Name: " }), new TextRun({ text: toTitleCase(employeeName), bold: true })] }),
-    new Paragraph({ text: "Signature: ________________________________" }),
-    new Paragraph({ text: "" }),
-    new Paragraph({ children: [new TextRun({ text: "Document Generate Date: " }), new TextRun({ text: today })] }),
-    new Paragraph({ children: [new TextRun({ text: COMPANY_DATA.hrName, bold: true })] }),
-    new Paragraph({ text: COMPANY_DATA.hrDesignation }),
-    new Paragraph({ text: COMPANY_DATA.hrEmail }),
-  ];
-  return await createAdysunDocx({ children });
-}
 
 /* ---------------- PDF COMPONENT ---------------- */
 const AppraisalLetterPDF = ({
   employee,
   currentCTC,
-  percentIncrease,
   revisedCTC,
   effectiveDate,
   documentGenerateDate,
@@ -414,9 +334,7 @@ export default function AppraisalLetterV2() {
 
   useEffect(() => {
     async function load() {
-      const qs = await getDocs(collection(db, "employees"));
-      const list = qs.docs.map(d => ({ id: d.id, ...d.data() }));
-      const visible = selfEmployeeId ? list.filter((e) => e.id === selfEmployeeId) : list;
+      const visible = await fetchDocEmployees(selfEmployeeId);
       setCandidates(visible);
 
       if (selfEmployeeId && visible.length > 0) {

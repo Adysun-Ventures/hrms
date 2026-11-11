@@ -1,13 +1,12 @@
-'use client';
 
 import { useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/lib/link';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { FiClipboard, FiFile, FiFileText, FiUsers } from 'react-icons/fi';
 import { Toaster, toast } from 'react-hot-toast';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useDashboardStatsOptimized } from '@/hooks/useDashboard';
+import { useRouter } from '@/lib/navigation';
+import { useEmployeeCount } from '@/hooks/useDashboard';
 
 export default function DashboardPage() {
   const { currentAdmin, currentUserData } = useAuth();
@@ -16,13 +15,10 @@ export default function DashboardPage() {
   // Use Tanstack Query for dashboard stats
   const {
     employeeCount,
-    employmentCount,
-    attendanceCount,
     isLoading,
     isError,
-    error,
-    refetch
-  } = useDashboardStatsOptimized();
+    error
+  } = useEmployeeCount();
 
   useEffect(() => {
     // Check if user is authenticated
@@ -130,13 +126,13 @@ export default function DashboardPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[1, 2].map((i) => (
             <div key={i} className="h-32 bg-gray-100 rounded-lg animate-pulse"></div>
           ))}
         </div>
       ) : isError ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {cards.map((card) => (
             <div
               key={card.title}
@@ -153,7 +149,7 @@ export default function DashboardPage() {
           ))}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-8 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {cards.map((card) => (
             <Link
               href={card.link}
@@ -174,7 +170,7 @@ export default function DashboardPage() {
 
       <div className="mt-12">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {documentQuickActions.map((doc) => (
             <Link
               key={doc.href}

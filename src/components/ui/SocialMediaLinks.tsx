@@ -1,6 +1,5 @@
-'use client';
 
-import Image from 'next/image';
+import { COMPANY_LINKS } from '@/constants/companyLinks';
 
 interface SocialMediaLinksProps {
   variant?: 'footer' | 'login';
@@ -14,7 +13,7 @@ const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMed
       title: 'Website',
       className: 'text-gray-800 border-gray-300 hover:text-gray-900 hover:border-gray-400',
       icon: (
-        <Image
+        <img
           src="/adysun-logo-icon.png"
           alt="Adysun Ventures Logo"
           width={30}
@@ -24,7 +23,7 @@ const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMed
       )
     },
     {
-      href: 'https://x.com/adysunventures',
+      href: COMPANY_LINKS.social.twitter,
       title: 'Twitter',
       className: 'text-black border-black/30 hover:border-black/60',
       icon: (
@@ -34,7 +33,7 @@ const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMed
       )
     },
     {
-      href: 'https://www.instagram.com/adysunventures/',
+      href: COMPANY_LINKS.social.instagram,
       title: 'Instagram',
       className: 'text-[#E1306C] border-[#E1306C]/40 hover:border-[#E1306C]/70',
       icon: (
@@ -44,7 +43,7 @@ const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMed
       )
     },
     {
-      href: 'https://www.linkedin.com/company/adysun-ventures/',
+      href: COMPANY_LINKS.social.linkedin,
       title: 'LinkedIn',
       className: 'text-[#0A66C2] border-[#0A66C2]/40 hover:border-[#0A66C2]/70',
       icon: (
@@ -54,7 +53,7 @@ const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMed
       )
     },
     {
-      href: 'https://g.co/kgs/C5Fe6uz',
+      href: COMPANY_LINKS.google.businessProfile,
       title: 'Google Business Profile',
       className: 'text-[#4285F4] border-[#4285F4]/40 hover:border-[#4285F4]/70',
       icon: (
@@ -67,7 +66,7 @@ const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMed
       )
     },
     {
-      href: 'https://maps.app.goo.gl/ABiUMnGGjcG7sT6o6',
+      href: COMPANY_LINKS.google.maps.pune,
       title: 'Google Maps',
       className: 'text-[#EA4335] border-[#EA4335]/40 hover:border-[#EA4335]/70',
       icon: (
@@ -91,6 +90,7 @@ const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMed
                 rel: 'noopener noreferrer',
               })}
               title={link.title}
+              aria-label={link.title}
               className={[
                 "flex justify-center items-center w-10 h-10 border-2 rounded-full transition-colors",
                 link.className || "text-gray-700 border-gray-300 hover:border-gray-400 hover:text-gray-900",
@@ -125,6 +125,7 @@ const SocialMediaLinks = ({ variant = 'footer', title = 'Follow Us' }: SocialMed
                   rel: 'noopener noreferrer',
                 })}
                 title={link.title}
+              aria-label={link.title}
                 className="flex justify-center items-center w-10 h-10 border-2 border-orange-500 hover:border-orange-600 text-orange-500 hover:text-orange-600 rounded-full transition-colors"
               >
                 {link.icon}

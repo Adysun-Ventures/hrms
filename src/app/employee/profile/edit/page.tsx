@@ -7,7 +7,7 @@ import EmployeeLayout from '@/components/layout/EmployeeLayout';
 import { useAuth, withoutSecrets } from '@/context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import { updateUserProfile } from '@/utils/profileUtils';
-import { updateEmployeeSelf, getEmployeeSelf, checkUserByPhone, validatePANFormat, checkPANExistsAnywhere, getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
+import { updateEmployeeSelf, getEmployeeSelf, validatePANFormat, checkPANExistsAnywhere, getEmployeeSelfEmployment } from '@/utils/firebaseUtils';
 import { Employee, Employment } from '@/types';
 import TableHeader from '@/components/ui/TableHeader';
 import { toTitleCase } from '@/utils/stringUtils';
@@ -143,7 +143,6 @@ export default function EditEmployeeProfilePage() {
             setValue('dateOfBirth', '' as any);
             setValue('bloodGroup', '' as any);
             setValue('homeTown', '' as any);
-            setValue('phone', '' as any);
             setValue('email', '' as any);
             setValue('currentAddress', '' as any);
             setValue('permanentAddress', '' as any);
@@ -154,7 +153,6 @@ export default function EditEmployeeProfilePage() {
         }
 
         if (section === 'contact') {
-            setValue('phone', '' as any);
             setValue('email', '' as any);
             setValue('currentAddress', '' as any);
             setValue('permanentAddress', '' as any);
@@ -246,15 +244,6 @@ export default function EditEmployeeProfilePage() {
         toast.loading('Updating profile...', { id: 'updateProfile' });
 
         try {
-            // Check if phone number is already registered with another user (if changed)
-            const formattedPhoneNumber = `+91${data.phone}`;
-            const existingUser = await checkUserByPhone(formattedPhoneNumber);
-            
-            if (existingUser && existingUser.id !== currentUserData.id) {
-                const userType = existingUser.userType === 'admin' ? 'admin' : 'employee';
-                throw new Error(`Phone number is already registered with an ${userType}`);
-            }
-
             // Validate PAN card if provided
             if (data.panCard && data.panCard.trim()) {
                 if (!validatePANFormat(data.panCard)) {
@@ -288,11 +277,10 @@ export default function EditEmployeeProfilePage() {
                 (entry.diplomaData && Object.values(entry.diplomaData).some(v => v))
             );
 
-            // Prepare update data for basic profile (name, email, phone)
+            // Basic profile (name, email). Phone is the login ID: admin-only, never sent from here.
             const basicProfileData = {
                 name: toTitleCase(data.name?.trim()),
                 email: data.email.trim(),
-                phone: data.phone.trim()
             };
 
             // Update basic profile using updateUserProfile
@@ -340,7 +328,6 @@ export default function EditEmployeeProfilePage() {
                     ...updatedEmployeeData,
                     name: basicProfileData.name,
                     email: basicProfileData.email,
-                    phone: basicProfileData.phone
                 };
                 localStorage.setItem('employeeData', JSON.stringify(withoutSecrets(mergedData)));
             }
@@ -566,20 +553,17 @@ export default function EditEmployeeProfilePage() {
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        <span className="text-red-500 mr-1">*</span> Mobile No.
+                                        Mobile No.
                                     </label>
                                     <input
                                         type="tel"
-                                        placeholder="Enter 10-digit mobile number"
-                                        {...register('phone', {
-                                            required: 'Phone number is required',
-                                            pattern: { value: /^[0-9]{10}$/, message: 'Please enter a valid 10-digit phone number' }
-                                        })}
-                                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+                                        readOnly
+                                        disabled
+                                        title="Contact HR to change your mobile number"
+                                        {...register('phone')}
+                                        className="w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-600 cursor-not-allowed"
                                     />
-                                    {errors.phone && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-                                    )}
+                                    <p className="mt-1 text-xs text-gray-500">Contact HR to change your mobile number.</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">

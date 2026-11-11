@@ -22,10 +22,10 @@ service cloud.firestore {
     match /employees/{id} {
       allow read, write: if isAdmin();
       allow get: if isEmployee() && id == me();
-      // Self profile edit; status/resignation/identity fields stay admin-only.
+      // Self profile edit; status/resignation/identity/login fields (phone = login ID) stay admin-only.
       allow update: if isEmployee() && id == me()
         && !request.resource.data.diff(resource.data).affectedKeys().hasAny(
-             ['status', 'is_resigned', 'employmentStatus', 'resignedDate', 'lastWorkingDay', 'employeeId', 'password']);
+             ['status', 'is_resigned', 'employmentStatus', 'resignedDate', 'lastWorkingDay', 'employeeId', 'password', 'phone']);
     }
 
     // Employment: read own; self-edit can't move it or change status.

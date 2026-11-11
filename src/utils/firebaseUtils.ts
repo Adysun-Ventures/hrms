@@ -1247,14 +1247,13 @@ export const updateEmployeeSelf = async (employeeId: string, employeeData: Parti
     await ensureEmployeeNotExitedForWrite(employeeId);
     
     
-    // Password goes to the server (hashed); blank means "keep the current one".
-    const { password: newPassword, ...employeeDataWithoutPassword } = employeeData as any;
+    // Password and phone (login ID) are admin-only: drop them from a self edit.
+    const { password: _password, phone: _phone, ...employeeDataWithoutPassword } = employeeData as any;
     const updateDataWithAudit = {
       ...employeeDataWithoutPassword,
       updatedAt: new Date().toISOString(),
       updatedBy: employeeId, // Employee updating their own profile
     };
-    if (newPassword) await setUserPassword(employeeId, newPassword);
     
     // Don't allow employees to update sensitive fields
     delete (updateDataWithAudit as any).status;

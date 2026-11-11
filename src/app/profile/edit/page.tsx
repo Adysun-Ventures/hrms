@@ -267,7 +267,8 @@ export default function EditProfilePage() {
                     errors.phone ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder={`Enter your ${isAdmin ? 'mobile' : 'phone'} number`}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isAdmin}
+                  title={isAdmin ? undefined : 'Contact HR to change your phone number'}
                 />
                 {errors.phone && (
                   <p className="text-sm text-red-600">{errors.phone}</p>

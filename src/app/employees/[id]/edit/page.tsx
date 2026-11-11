@@ -424,8 +424,10 @@ export default function EditEmployeePage() {
                       {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                     </button>
                   </div>
-                  {errors.password && (
+                  {errors.password ? (
                     <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                  ) : (
+                    <p className="mt-1 text-xs text-gray-500">Only admins can reset it. Share the new password with the employee.</p>
                   )}
                 </div>
 

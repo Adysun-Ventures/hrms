@@ -25,9 +25,9 @@ export async function updateUserProfile(
           mobile: data.mobile?.trim() || data.phone?.trim()
         }
       : {
+          // Employees can't change their phone (login ID); only admins, via the employee edit form.
           name: data.name.trim(),
           email: data.email.trim(),
-          phone: data.phone?.trim() || data.mobile?.trim()
         };
 
     await updateDoc(userRef, updateData);

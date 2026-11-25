@@ -44,6 +44,11 @@ body {
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-brand-50: oklch(97.7% 0.014 308.299);
+  --color-brand-100: oklch(94.6% 0.033 307.174);
+  --color-brand-400: oklch(71.4% 0.203 305.504);
+  --color-brand-500: oklch(62.7% 0.265 303.9);
+  --color-brand-600: oklch(55.8% 0.288 302.321);
 }
 
 /* App uses a light UI; keep light page/chrome even when OS prefers dark mode */
@@ -112,7 +117,7 @@ textarea:focus {
 }
 
 /* No motion: instant clicks and page changes. Spinners kept so loading never looks frozen. */
-.app-shell *:not(.animate-spin),
+.app-shell *:not(.animate-spin):not(.spinner),
 .app-shell *::before,
 .app-shell *::after {
   transition: none !important;
@@ -129,7 +134,7 @@ html:has(.app-shell) { scroll-behavior: auto; }
 }
 
 /* Compact data tables so more columns/rows fit on screen. */
-.app-shell :is(th, td):not(.tw-default *) {
+.app-shell :is(th, td):not(.tw-default *):not(.statement-root *) {
   padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
 }
 

@@ -24,9 +24,9 @@ describe('route table (same keys main.tsx gets from import.meta.glob)', () => {
     expect(new Set(paths).size).toBe(paths.length);
   });
 
-  it('has the 41 screens (40 after the 2026-11-11 cleanup + LWD confirmation mail)', () => {
-    expect(paths.length).toBe(41);
-    for (const p of ['/login', '/dashboard', '/employee-dashboard', '/employees/:id', '/employments/:id/edit', '/salaries/:id/edit', '/employee/documents/:doc', '/dashboard/documents/v2/lwd-confirmation-mail', '/emp_details/:emp_id']) {
+  it('has the 42 screens (41 + Statements)', () => {
+    expect(paths.length).toBe(42);
+    for (const p of ['/login', '/dashboard', '/employee-dashboard', '/employees/:id', '/employments/:id/edit', '/salaries/:id/edit', '/employee/documents/:doc', '/dashboard/documents/v2/lwd-confirmation-mail', '/emp_details/:emp_id', '/statements']) {
       expect(paths).toContain(p);
     }
   });
@@ -46,7 +46,7 @@ describe('no Next.js left', () => {
 
 describe('session gate (was middleware.ts)', () => {
   it('protects the same routes', () => {
-    for (const p of ['/dashboard', '/employees/x', '/employments', '/salaries/1', '/profile', '/employee-dashboard', '/employee/leaves', '/calculator'])
+    for (const p of ['/dashboard', '/employees/x', '/employments', '/salaries/1', '/profile', '/employee-dashboard', '/employee/leaves', '/calculator', '/statements'])
       expect(isProtected(p), p).toBe(true);
   });
   it('leaves public routes open', () => {

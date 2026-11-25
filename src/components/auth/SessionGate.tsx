@@ -12,6 +12,7 @@ const PROTECTED = [
   '/employee-dashboard',
   '/employee/',
   '/calculator',
+  '/statements',
 ];
 
 export const isProtected = (pathname: string) => PROTECTED.some((r) => pathname.startsWith(r));

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from '@/lib/link';
 import { usePathname } from '@/lib/navigation';
-import { FiUsers, FiMenu, FiX, FiFile, FiHome, FiChevronsLeft, FiChevronsRight } from 'react-icons/fi';
+import { FiUsers, FiMenu, FiX, FiFile, FiFileText, FiHome, FiChevronsLeft, FiChevronsRight } from 'react-icons/fi';
 import { FaCalculator } from 'react-icons/fa';
 import { useSidebarCollapse } from '@/hooks/useSidebarCollapse';
 import { useAuth } from '@/context/AuthContext';
@@ -53,6 +53,7 @@ const Sidebar = () => {
   if (currentAdmin) {
     menuItems.push(
       { path: '/dashboard/documents', name: 'Documents', icon: <FiFile className="w-5 h-5 shrink-0" /> },
+      { path: '/statements', name: 'Statements', icon: <FiFileText className="w-5 h-5 shrink-0" /> },
       { path: '/calculator', name: 'Calculator', icon: <FaCalculator className="w-5 h-5 shrink-0" /> },
     );
   }

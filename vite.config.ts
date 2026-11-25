@@ -55,7 +55,15 @@ function netlifyFunctionsDev(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), netlifyFunctionsDev()],
+  plugins: [
+    react({
+      // Exclude PDF worker & document JSX files so Vite does not inject DOM-dependent @react-refresh into the worker.
+      exclude: [/\/pdf\//, /\/node_modules\//],
+    }),
+    tailwindcss(),
+    netlifyFunctionsDev(),
+  ],
+  worker: { format: 'es' },
   resolve: { alias: { '@': src } },
   server: { port: 3000, host: true }, // host: reachable on the LAN, like next dev was
   build: { assetsDir: 'static', sourcemap: false, chunkSizeWarningLimit: 1500 },
